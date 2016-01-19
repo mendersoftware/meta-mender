@@ -1,4 +1,4 @@
-DESCRIPTION = "mender"
+DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io/"
 
 #From oe-meta-go (https://github.com/mem/oe-meta-go)
