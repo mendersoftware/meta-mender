@@ -34,6 +34,7 @@ def start_qemu():
 
 def kill_qemu():
     os.system("pkill qemu-system-arm")
+    time.sleep(1)
 
 
 def reboot(wait = 60):
