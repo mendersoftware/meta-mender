@@ -98,9 +98,6 @@ class TestUpdates:
         output = run("fw_printenv boot_part")
         assert(output == "boot_part=3")
 
-        # New filesystem! Uncomment if you need to upload mender again.
-        #put("mender")
-
         run("mender -commit")
 
         output = run("fw_printenv bootcount")
