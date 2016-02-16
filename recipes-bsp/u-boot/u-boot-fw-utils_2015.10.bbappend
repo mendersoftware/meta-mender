@@ -4,7 +4,7 @@
 inherit deploy
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += "file://0001-Enable-boot-code-specifically-for-the-U-Boot-QEMU-sc.patch"
+SRC_URI_vexpress-qemu += "file://0001-Enable-boot-code-specifically-for-the-U-Boot-QEMU-sc.patch"
 
 # Configure fw_printenv so that it looks in the right place for the environment.
 do_configure_fw_printenv () {
