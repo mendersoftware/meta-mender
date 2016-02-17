@@ -118,6 +118,24 @@ def ssh_prep_args_impl(tool):
     return (cmd, host, port)
 
 
+def determine_active_passive_part(mount_output):
+    """Given the output from mount, determine the currently active and passive
+    partition numbers, returning them as a pair in that order."""
+    if mount_output.find("/dev/mmcblk0p2") >= 0:
+        return ("2", "3")
+    elif mount_output.find("/dev/mmcblk0p3") >= 0:
+        return ("3", "2")
+    else:
+        raise Exception("Could not determine active partition. Mount output: %s"
+                        % mount_output)
+
+
+def part_device(part_number):
+    """Given partition number (but string type), return the device for that
+    partition."""
+    return "/dev/mmcblk0p" + part_number
+
+
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
 def put(file, local_path = ".", remote_path = "."):
     (scp, host, port) = scp_prep_args()

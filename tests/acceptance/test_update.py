@@ -68,14 +68,18 @@ class TestUpdates:
         assert(output.find("ret_code=0") < 0)
 
 
-    def test_image_update(self):
+    def test_file_based_image_update(self):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
-            execute(self.test_image_update)
+            execute(self.test_file_based_image_update)
             return
+
+        output = run("mount")
+        (active_before, passive_before) = determine_active_passive_part(output)
 
         run("mkfifo image.dat")
 
+        # Horrible hack to emulate a file which is as big as we need.
         (ssh, host, port) = ssh_prep_args()
         subprocess.Popen(["sh", "-c", "%s %s %s@%s cat \\> image.dat < image.dat" %
                          (ssh, port, env.user, host)])
@@ -84,10 +88,11 @@ class TestUpdates:
         reboot()
 
         output = run_after_connect("mount")
+        (active_after, passive_after) = determine_active_passive_part(output)
 
-        # The OS should have moved to /dev/mmcblk0p3, since the image was fine.
-        assert(output.find("/dev/mmcblk0p2") < 0)
-        assert(output.find("/dev/mmcblk0p3") >= 0)
+        # The OS should have moved to a new partition, since the image was fine.
+        assert(active_after == passive_before)
+        assert(passive_after == active_before)
 
         output = run("fw_printenv bootcount")
         assert(output == "bootcount=1")
@@ -96,7 +101,7 @@ class TestUpdates:
         assert(output == "upgrade_available=1")
 
         output = run("fw_printenv boot_part")
-        assert(output == "boot_part=3")
+        assert(output == "boot_part=" + active_after)
 
         run("mender -commit")
 
@@ -107,12 +112,16 @@ class TestUpdates:
         assert(output == "upgrade_available=0")
 
         output = run("fw_printenv boot_part")
-        assert(output == "boot_part=3")
+        assert(output == "boot_part=" + active_after)
+
+        active_before = active_after
+        passive_before = passive_after
 
         reboot()
 
         output = run_after_connect("mount")
+        (active_after, passive_after) = determine_active_passive_part(output)
 
-        # The OS should have moved to /dev/mmcblk0p3, since we committed.
-        assert(output.find("/dev/mmcblk0p2") < 0)
-        assert(output.find("/dev/mmcblk0p3") >= 0)
+        # The OS should have stayed on the same partition, since we committed.
+        assert(active_after == active_before)
+        assert(passive_after == passive_before)
