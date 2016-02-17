@@ -59,7 +59,7 @@ def pytest_configure(config):
 
 
 def pytest_unconfigure(config):
-    common.kill_qemu()
+    pass
 
 
 def current_hosts():
