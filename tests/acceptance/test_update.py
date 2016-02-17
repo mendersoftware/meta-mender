@@ -125,3 +125,62 @@ class TestUpdates:
         # The OS should have stayed on the same partition, since we committed.
         assert(active_after == active_before)
         assert(passive_after == passive_before)
+
+
+    def test_network_based_image_update(self):
+        if not env.host_string:
+            # This means we are not inside execute(). Recurse into it!
+            execute(self.test_network_based_image_update)
+            return
+
+        output = run("mount")
+        (active_before, passive_before) = determine_active_passive_part(output)
+
+        http_server = subprocess.Popen(["python", "-m", "SimpleHTTPServer"])
+        assert(http_server)
+
+        try:
+            sudo("mender -rootfs http://10.0.2.2:8000/image.dat")
+        finally:
+            http_server.terminate()
+
+        reboot()
+
+        output = run_after_connect("mount")
+        (active_after, passive_after) = determine_active_passive_part(output)
+
+        # The OS should have moved to a new partition, since the image was fine.
+        assert(active_after == passive_before)
+        assert(passive_after == active_before)
+
+        output = run("fw_printenv bootcount")
+        assert(output == "bootcount=1")
+
+        output = run("fw_printenv upgrade_available")
+        assert(output == "upgrade_available=1")
+
+        output = run("fw_printenv boot_part")
+        assert(output == "boot_part=" + active_after)
+
+        run("mender -commit")
+
+        output = run("fw_printenv bootcount")
+        assert(output == "bootcount=0")
+
+        output = run("fw_printenv upgrade_available")
+        assert(output == "upgrade_available=0")
+
+        output = run("fw_printenv boot_part")
+        assert(output == "boot_part=" + active_after)
+
+        active_before = active_after
+        passive_before = passive_after
+
+        reboot()
+
+        output = run_after_connect("mount")
+        (active_after, passive_after) = determine_active_passive_part(output)
+
+        # The OS should have stayed on the same partition, since we committed.
+        assert(active_after == active_before)
+        assert(passive_after == passive_before)
