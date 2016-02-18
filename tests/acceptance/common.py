@@ -170,26 +170,30 @@ def qemu_prep_fresh_host():
 @pytest.fixture(scope = "module")
 def qemu_running(request):
     kill_qemu()
-    start_qemu()
-    execute(qemu_prep_fresh_host, hosts = conftest.current_hosts())
 
     # Make sure we revert to the first root partition on next reboot, makes test
     # cases more predictable.
     def qemu_finalizer():
         def qemu_finalizer_impl():
-            sudo("fw_setenv upgrade_available 0")
-            sudo("fw_setenv boot_part 2")
-            sudo("fw_setenv bootcount 0")
-            sudo("halt")
-            halt_time = time.time()
-            # Wait up to 30 seconds for shutdown.
-            while halt_time + 30 > time.time() and is_qemu_running():
-                time.sleep(1)
+            try:
+                sudo("fw_setenv upgrade_available 0")
+                sudo("fw_setenv boot_part 2")
+                sudo("fw_setenv bootcount 0")
+                sudo("halt")
+                halt_time = time.time()
+                # Wait up to 30 seconds for shutdown.
+                while halt_time + 30 > time.time() and is_qemu_running():
+                    time.sleep(1)
+            except:
+                # Nothing we can do about that.
+                pass
             kill_qemu()
         execute(qemu_finalizer_impl, hosts = conftest.current_hosts())
 
     request.addfinalizer(qemu_finalizer)
 
+    start_qemu()
+    execute(qemu_prep_fresh_host, hosts = conftest.current_hosts())
 
 
 @pytest.fixture(scope = "function")
