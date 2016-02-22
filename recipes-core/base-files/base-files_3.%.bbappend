@@ -4,4 +4,5 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 #./meta/recipes-core/packagegroups/packagegroup-base.bb
 do_install_append () {
     install -d ${D}/u-boot
+    install -d ${D}/data
 }

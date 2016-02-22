@@ -7,15 +7,17 @@
 #    part2: first rootfs, active
 #    part3: second rootfs, inactive, mirror of first,
 #           available as failsafe for when some update fails
+#    part4: persistent data partition
 
 
 ########## CONFIGURATION START - you can override these default
 ##########                       values in your local.conf
 
 
-# Total size of the SD card. The two rootfs partition sizes are
-# auto-determined to fill the space of the SD card.
-SDIMG_SIZE_MB ?= "1000"
+# Optional location where a directory can be specified with content that should
+# be included on the data partition. Some of Mender's own files will be added to
+# this (e.g. OpenSSL certificates).
+SDIMG_DATA_PART_DIR ?= ""
 
 # Size of the first (FAT) partition, that contains the bootloader
 SDIMG_PART1_SIZE_MB ?= "128"
@@ -30,126 +32,81 @@ SDIMG_PART1_SIZE_MB ?= "128"
 # erase block is smaller.
 SDIMG_PARTITION_ALIGNMENT_MB ?= "8"
 
+# u-boot environment file to be stored on boot partition
+IMAGE_BOOT_ENV_FILE ?= "uboot.env"
+
+# u-boot environment file
+IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
 
 ########## CONFIGURATION END ##########
 
+inherit image_types
 
-# This script depends on:
-#     util-linux (fdisk)
-#     dosfstools (mkfs.vfat)
-#     mtools     (mcopy)
-#     e2fsprogs  (resize2fs)
-IMAGE_DEPENDS_sdimg = "util-linux-native dosfstools-native mtools-native e2fsprogs-native"
+WKS_FULL_PATH = "${WORKDIR}/mender-sdimg.wks"
 
 # We need to have the ext3 image generated already
 IMAGE_TYPEDEP_sdimg = "ext3"
 
-IMAGE_BOOT_ENV_FILE ?= "uboot.env"
+IMAGE_DEPENDS_sdimg = "${IMAGE_DEPENDS_wic}"
 
+IMAGE_CMD_sdimg() {
+    mkdir -p "${WORKDIR}"
 
-IMAGE_CMD_sdimg () {
+    # Workaround for the fact that the image builder requires this directory,
+    # despite not using it. If "rm_work" is enabled, this directory won't always
+    # exist.
+    mkdir -p "${IMAGE_ROOTFS}"
 
-    set -x                                      # debug output
-    set -e                                      # exit on error
-    set -u                                      # exit on unset variable
-    # Needs bash, TODO can I require that this runs under bash?
-    # set -o pipefail                             # don't hide pipeline errors
+    # Workaround for the fact the wic deletes its inputs (WTF??). These links
+    # are disposable.
+    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.ext3" \
+        "${WORKDIR}/part1.tmp"
+    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.ext3" \
+        "${WORKDIR}/part2.tmp"
 
-    cd ${DEPLOY_DIR_IMAGE}
-    ROOTFS_IMG=${IMAGE_NAME}.rootfs.ext3
-    SDIMG=${IMAGE_NAME}.rootfs.sdimg
-
-    # Assert rootfs has been correctly generated
-    test -e ${ROOTFS_IMG}
-
-    # Compute partition borders and sizes, EVERYTHING IN SECTORS (512 bytes)
-
-    SDIMG_SIZE_SECTORS=$(expr ${SDIMG_SIZE_MB} \* 2048)
     PART1_SIZE=$(expr ${SDIMG_PART1_SIZE_MB} \* 2048)
+    SDIMG_PARTITION_ALIGNMENT_KB=$(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1024)
 
-    ALIGNMENT=$(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 2048)
-    PART1_START=${ALIGNMENT}
-    PART1_END=$(expr ${PART1_START} + ${PART1_SIZE} - 1)
-    PART2_START=$(expr \( 1 + ${PART1_END} / ${ALIGNMENT} \) \* ${ALIGNMENT})
-    PART23_SIZE_UNALIGNED=$(expr \( ${SDIMG_SIZE_SECTORS} - ${PART2_START} \) / 2)
-    PART23_SIZE=$(expr ${PART23_SIZE_UNALIGNED} - ${PART23_SIZE_UNALIGNED} % ${ALIGNMENT})
-    PART2_END=$(expr ${PART2_START} + ${PART23_SIZE} - 1)
-    PART3_START=$(expr \( 1 + ${PART2_END} / ${ALIGNMENT} \) \* ${ALIGNMENT})
-    PART3_END=$(expr ${PART3_START} + ${PART23_SIZE} - 1)
-
-    # Assert we are not past the limits of the SD card size
-    test ${PART3_END} -lt ${SDIMG_SIZE_SECTORS}
-
-    # Resize rootfs to be as big as the partitions 2 and 3
-    resize2fs ${ROOTFS_IMG} ${PART23_SIZE}s
-
-    # Assert that the rootfs size is smaller than PART23_SIZE
-    ROOTFS_SIZE=$(wc -c ${ROOTFS_IMG} | cut -d\  -f1 )
-    test ${ROOTFS_SIZE} -le $(expr ${PART23_SIZE} \* 512)
-
-    dd if=/dev/zero of=${SDIMG} count=0 seek=${SDIMG_SIZE_SECTORS}
-    export PART1_START PART1_END PART2_START PART2_END PART3_START PART3_END
-    (
-        # Create DOS partition table
-        echo o
-        # 1st partition (FAT32)
-        echo n
-        echo p
-        echo 1
-        echo ${PART1_START}
-        echo ${PART1_END}
-        # 2nd partition (1st rootfs)
-        echo n
-        echo p
-        echo 2
-        echo ${PART2_START}
-        echo ${PART2_END}
-        # 3rd partition (2nd root)
-        echo n
-        echo p
-        echo 3
-        echo ${PART3_START}
-        echo ${PART3_END}
-        # 1st partition: bootable
-        echo a
-        echo 1
-        # 1st partition: type W95 FAT16 (LBA)
-        echo t
-        echo 1
-        echo e
-        # 2nd partition: type Linux
-        echo t
-        echo 2
-        echo 83
-        # 3rd partition: type Linux
-        echo t
-        echo 3
-        echo 83
-        # COMMIT changes to image file
-        echo p
-        echo w
-
-    ) | fdisk --compatibility=nondos --units=sectors ${SDIMG}
-
-    dd if=/dev/zero of=fat.dat count=${PART1_SIZE}
-    mkfs.vfat fat.dat
+    dd if=/dev/zero of="${WORKDIR}/fat.dat" count=${PART1_SIZE}
+    mkfs.vfat "${WORKDIR}/fat.dat"
 
     # Create empty environment. Just so that the file is available.
-    dd if=/dev/zero of=${IMAGE_BOOT_ENV_FILE} count=0 bs=1K seek=256
-    mcopy -i fat.dat -v ${IMAGE_BOOT_ENV_FILE} ::
-    rm -f ${IMAGE_BOOT_ENV_FILE}
+    dd if=/dev/zero of="${WORKDIR}/${IMAGE_BOOT_ENV_FILE}" count=0 bs=1K seek=256
+    mcopy -i "${WORKDIR}/fat.dat" -v ${WORKDIR}/${IMAGE_BOOT_ENV_FILE} ::
+    rm -f "${WORKDIR}/${IMAGE_BOOT_ENV_FILE}"
 
-    mcopy -i fat.dat -v ${DEPLOY_DIR_IMAGE}/uEnv.txt ::
+    # Copy uEnv.txt file to boot partition if file exists
+    if [ -e ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ] ; then
+        mcopy -i "${WORKDIR}/fat.dat" -v ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ::
+    fi
 
     # Copy boot files to boot partition
-    mcopy -i fat.dat -s ${DEPLOY_DIR_IMAGE}/${IMAGE_BOOT_FILES} ::
+    mcopy -i "${WORKDIR}/fat.dat" -s ${DEPLOY_DIR_IMAGE}/${IMAGE_BOOT_FILES} ::
 
-    dd if=fat.dat of=${SDIMG} seek=${PART1_START} conv=notrunc
-    rm -f fat.dat
+    rmdir "${WORKDIR}/data" || true
+    if [ -n "${SDIMG_DATA_PART_DIR}" ]; then
+        cp -a "${SDIMG_DATA_PART_DIR}" "${WORKDIR}/data"
+    else
+        mkdir -p "${WORKDIR}/data"
+    fi
 
-    dd if=${ROOTFS_IMG} of=${SDIMG} seek=${PART2_START} conv=notrunc
-    dd if=${ROOTFS_IMG} of=${SDIMG} seek=${PART3_START} conv=notrunc
+    # The OpenSSL certificates should go here:
+    echo "dummy certificate" > "${WORKDIR}/data/mender.cert"
 
-    # Print partition table, assert partitions are aligned and as expected
-    #TODO
+    cat > "${WORKDIR}/mender-sdimg.wks" <<EOF
+part /u-boot --source fsimage --sourceparams=file="${WORKDIR}/fat.dat"   --ondisk mmcblk0 --fstype=vfat --label u-boot   --align $SDIMG_PARTITION_ALIGNMENT_KB
+part /       --source fsimage --sourceparams=file="${WORKDIR}/part1.tmp" --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
+part /       --source fsimage --sourceparams=file="${WORKDIR}/part2.tmp" --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
+part /data   --source rootfs  --rootfs-dir="${WORKDIR}/data"             --ondisk mmcblk0 --fstype=ext3 --label data     --align $SDIMG_PARTITION_ALIGNMENT_KB
+
+# Note: "bootloader" appears to be useless in this context, but the wic
+# framework requires that it be present.
+bootloader --timeout=10  --append=""
+EOF
+
+    # Call WIC
+    IMAGE_CMD_wic
+
+    mv "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
+    ln -sfn "${IMAGE_NAME}.sdimg" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.sdimg"
 }
