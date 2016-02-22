@@ -94,7 +94,7 @@ IMAGE_CMD_sdimg() {
     echo "dummy certificate" > "${WORKDIR}/data/mender.cert"
 
     cat > "${WORKDIR}/mender-sdimg.wks" <<EOF
-part /u-boot --source fsimage --sourceparams=file="${WORKDIR}/fat.dat"   --ondisk mmcblk0 --fstype=vfat --label u-boot   --align $SDIMG_PARTITION_ALIGNMENT_KB
+part /u-boot --source fsimage --sourceparams=file="${WORKDIR}/fat.dat"  --ondisk mmcblk0 --fstype=vfat --label boot --active  --align $SDIMG_PARTITION_ALIGNMENT_KB
 part /       --source fsimage --sourceparams=file="${WORKDIR}/part1.tmp" --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
 part /       --source fsimage --sourceparams=file="${WORKDIR}/part2.tmp" --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
 part /data   --source rootfs  --rootfs-dir="${WORKDIR}/data"             --ondisk mmcblk0 --fstype=ext3 --label data     --align $SDIMG_PARTITION_ALIGNMENT_KB
