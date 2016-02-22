@@ -139,6 +139,8 @@ IMAGE_CMD_sdimg () {
     mcopy -i fat.dat -v ${IMAGE_BOOT_ENV_FILE} ::
     rm -f ${IMAGE_BOOT_ENV_FILE}
 
+    mcopy -i fat.dat -v ${DEPLOY_DIR_IMAGE}/uEnv.txt ::
+
     # Copy boot files to boot partition
     mcopy -i fat.dat -s ${DEPLOY_DIR_IMAGE}/${IMAGE_BOOT_FILES} ::
 
