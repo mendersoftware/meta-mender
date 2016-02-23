@@ -45,9 +45,21 @@ def pytest_configure(config):
 
     env.abort_on_prompts = True
 
+    # Don't allocate pseudo-TTY by default, since it is not fully functional.
+    # It can still be overriden on a case by case basis by passing
+    # "pty = True/False" to the various fabric functions. See
+    # http://www.fabfile.org/faq.html about init scripts.
+    env.always_use_pty = False
+
+    # Don't combine stderr with stdout. The login profile sometimes prints
+    # terminal specific codes there, and we don't want it interfering with our
+    # output. It can still be turned on on a case by case basis by passing
+    # combine_stderr to each run() or sudo() command.
+    env.combine_stderr = False
+
 
 def pytest_unconfigure(config):
-    common.kill_qemu()
+    pass
 
 
 def current_hosts():

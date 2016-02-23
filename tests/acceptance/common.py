@@ -37,6 +37,19 @@ def kill_qemu():
     time.sleep(1)
 
 
+def is_qemu_running():
+    while True:
+        proc = subprocess.Popen(["pgrep", "qemu"], stdout=subprocess.PIPE)
+        assert(proc)
+        try:
+            if proc.stdout.readlines() == []:
+                return False
+            else:
+                return True
+        finally:
+            proc.wait()
+
+
 def reboot(wait = 60):
     with settings(warn_only = True):
         sudo("reboot")
@@ -105,6 +118,24 @@ def ssh_prep_args_impl(tool):
     return (cmd, host, port)
 
 
+def determine_active_passive_part(mount_output):
+    """Given the output from mount, determine the currently active and passive
+    partition numbers, returning them as a pair in that order."""
+    if mount_output.find("/dev/mmcblk0p2") >= 0:
+        return ("2", "3")
+    elif mount_output.find("/dev/mmcblk0p3") >= 0:
+        return ("3", "2")
+    else:
+        raise Exception("Could not determine active partition. Mount output: %s"
+                        % mount_output)
+
+
+def part_device(part_number):
+    """Given partition number (but string type), return the device for that
+    partition."""
+    return "/dev/mmcblk0p" + part_number
+
+
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
 def put(file, local_path = ".", remote_path = "."):
     (scp, host, port) = scp_prep_args()
@@ -137,8 +168,30 @@ def qemu_prep_fresh_host():
 
 
 @pytest.fixture(scope = "module")
-def qemu_running():
+def qemu_running(request):
     kill_qemu()
+
+    # Make sure we revert to the first root partition on next reboot, makes test
+    # cases more predictable.
+    def qemu_finalizer():
+        def qemu_finalizer_impl():
+            try:
+                sudo("fw_setenv upgrade_available 0")
+                sudo("fw_setenv boot_part 2")
+                sudo("fw_setenv bootcount 0")
+                sudo("halt")
+                halt_time = time.time()
+                # Wait up to 30 seconds for shutdown.
+                while halt_time + 30 > time.time() and is_qemu_running():
+                    time.sleep(1)
+            except:
+                # Nothing we can do about that.
+                pass
+            kill_qemu()
+        execute(qemu_finalizer_impl, hosts = conftest.current_hosts())
+
+    request.addfinalizer(qemu_finalizer)
+
     start_qemu()
     execute(qemu_prep_fresh_host, hosts = conftest.current_hosts())
 
