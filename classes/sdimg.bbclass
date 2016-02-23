@@ -7,7 +7,8 @@
 #    part2: first rootfs, active
 #    part3: second rootfs, inactive, mirror of first,
 #           available as failsafe for when some update fails
-#    part4: persistent data partition
+#    part4: extended partition
+#    part5: persistent data partition
 
 
 ########## CONFIGURATION START - you can override these default
