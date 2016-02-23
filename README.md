@@ -164,7 +164,7 @@ The reason why the base image is built is the simplicity of the later booting an
 6. Booting the images with Beaglebone
 =====================================
 
-With the Mender layer configuration besides of the standard boot files and the rootfs additional image type - sdimg - is created. It is availabe in the deploy directory after build (```./tmp/deploy/images/beaglebone/core-image-base-beaglebone.sdimg```). This is a partitioned image that can be stored directly into SD card. For more information about the exact content of the image and detailed information about partitions layout please see [sdimg class documentation](https://github.com/mendersoftware/meta-mender/classes/sdimg.bbclass).
+With the Mender layer configuration besides of the standard boot files and the rootfs additional image type - sdimg - is created. It is availabe in the deploy directory after build (```./tmp/deploy/images/beaglebone/core-image-base-beaglebone.sdimg```). This is a partitioned image that can be stored directly into SD card. For more information about the exact content of the image and detailed information about partitions layout please see [sdimg class documentation](https://github.com/mendersoftware/meta-mender/blob/master/classes/sdimg.bbclass).
 
 To copy the sd image to SD card you can use following command:
 
@@ -175,7 +175,7 @@ sudo dd if=./tmp/deploy/images/beaglebone/core-image-base-beaglebone.sdimg of=/d
 To run above command you need to be in the Yocto image build directory and you need to make sure that you are copying the image to correct of device. After successful copy you can remove the SD card and insert to the Beaglebone.
 IMPORTANT: The standard Beaglebone booting process will cause that the bootloader from internal flash storage will be used. In order to use the bootloader from SD card make sure that S2 (boot) button is pressed while powering on your Beaglebone.
 
-![Booring Beaglebone from SD card](https://github.com/mendersoftware/meta-mender/beaglebone.black.sdboot.jpg "Booring Beaglebone from SD card").
+![Booring Beaglebone from SD card](https://github.com/mendersoftware/meta-mender/raw/master/beaglebone.black.sdboot.jpg "Booring Beaglebone from SD card").
 
 
 7. Testing OTA image update
