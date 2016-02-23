@@ -1,0 +1,20 @@
+##These are needed to be compliant with Angstrom's 2013.06.20 u-boot.
+console=ttyO0,115200n8
+
+#kernel_file=zImage
+#loadaddr=0x82000000
+#fdtaddr=0x88000000
+boot_dir=/boot/
+
+# this needs to be set up depending on which partition is active one
+#boot_part=2
+kernel_file=zImage
+
+loadkernel=load mmc ${mmcdev}:${boot_part} ${loadaddr} ${boot_dir}${kernel_file}
+loadfdt=load mmc ${mmcdev}:${boot_part} ${fdtaddr} ${boot_dir}${fdtfile}
+
+setbootpart=if test -n ${boot_part}; then echo Booting from partition ${boot_part}; else echo No active boot partition set, setting 2 as active partition; setenv boot_part 2; fi
+loadfiles=run loadkernel; run loadfdt
+mmcargs=setenv mmcroot /dev/mmcblk0p${boot_part}; setenv bootargs console=tty0 console=${console} root=${mmcroot}
+uenvcmd=run setbootpart; run loadfiles; run mmcargs; bootz ${loadaddr} - ${fdtaddr}
+

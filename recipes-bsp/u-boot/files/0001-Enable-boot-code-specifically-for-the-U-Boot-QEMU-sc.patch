@@ -1,0 +1,88 @@
+From b5d2adc5cf92b98d144f598bd7d7deb5c9df336b Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@mender.io>
+Date: Fri, 8 Jan 2016 17:15:11 +0100
+Subject: [PATCH] Enable boot code specifically for the U-Boot / QEMU
+ scenario.
+
+Also make sure the U-Boot environment is on SD card.
+---
+ include/configs/vexpress_common.h |   41 ++++++++++++++++++++++++++++++++-----
+ 1 file changed, 36 insertions(+), 5 deletions(-)
+
+diff --git a/include/configs/vexpress_common.h b/include/configs/vexpress_common.h
+index 98f6ae9..40ddbbf 100644
+--- a/include/configs/vexpress_common.h
++++ b/include/configs/vexpress_common.h
+@@ -169,6 +169,8 @@
+ #define CONFIG_SYS_LOAD_ADDR		(V2M_BASE + 0x8000)
+ #define LINUX_BOOT_PARAM_ADDR		(V2M_BASE + 0x2000)
+ #define CONFIG_BOOTDELAY		2
++#define CONFIG_BOOTCOUNT_LIMIT
++#define CONFIG_BOOTCOUNT_ENV
+ 
+ /* Physical Memory Map */
+ #define CONFIG_NR_DRAM_BANKS		2
+@@ -201,6 +203,34 @@
+         func(DHCP, dhcp, na)
+ #include <config_distro_bootcmd.h>
+ 
++#undef CONFIG_BOOTCOMMAND
++#define CONFIG_BOOTCOMMAND \
++    "run qemu_boot"
++
++#define CONFIG_MENDER_QEMU_ENV_SETTINGS                                 \
++    "qemu_kernel_addr=0x70000000\0"                                     \
++                                                                        \
++    "qemu_dtb_addr=0x6fc00000\0"                                        \
++                                                                        \
++    "bootlimit=1\0"                                                     \
++                                                                        \
++    "upgrade_available=0\0"                                             \
++                                                                        \
++    "boot_part=2\0"                                                     \
++                                                                        \
++    "altbootcmd=if test ${boot_part} = 2; "                             \
++    "then setenv boot_part 3; "                                         \
++    "else setenv boot_part 2; "                                         \
++    "fi; "                                                              \
++    "setenv upgrade_available 0; "                                      \
++    "saveenv; "                                                         \
++    "run qemu_boot\0"                                                   \
++                                                                        \
++    "qemu_boot=load mmc 0:${boot_part} ${qemu_kernel_addr} /boot/zImage; " \
++    "load mmc 0:${boot_part} ${qemu_dtb_addr} /boot/vexpress-v2p-ca9.dtb; " \
++    "setenv bootargs root=/dev/mmcblk0p${boot_part} console=tty0 console=ttyAMA0,115200n8; " \
++    "bootz ${qemu_kernel_addr} - ${qemu_dtb_addr}\0"
++
+ #ifdef CONFIG_VEXPRESS_ORIGINAL_MEMORY_MAP
+ #define CONFIG_PLATFORM_ENV_SETTINGS \
+ 		"loadaddr=0x80008000\0" \
+@@ -224,6 +253,7 @@
+ #endif
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+ 		CONFIG_PLATFORM_ENV_SETTINGS \
++		CONFIG_MENDER_QEMU_ENV_SETTINGS \
+                 BOOTENV \
+ 		"console=ttyAMA0,38400n8\0" \
+ 		"dram=1024M\0" \
+@@ -269,11 +299,12 @@
+ #define CONFIG_ENV_OVERWRITE		1
+ 
+ /* Store environment at top of flash */
+-#define CONFIG_ENV_IS_IN_FLASH		1
+-#define CONFIG_ENV_OFFSET		(PHYS_FLASH_SIZE - \
+-					(2 * CONFIG_ENV_SECT_SIZE))
+-#define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE1 + \
+-					 CONFIG_ENV_OFFSET)
++#define CONFIG_ENV_IS_IN_FAT		1
++#define FAT_ENV_INTERFACE               "mmc"
++#define FAT_ENV_DEVICE_AND_PART         "0:1"
++#define FAT_ENV_FILE                    "uboot.env"
++#define CONFIG_FAT_WRITE
++
+ #define CONFIG_SYS_FLASH_PROTECTION	/* The devices have real protection */
+ #define CONFIG_SYS_FLASH_EMPTY_INFO	/* flinfo indicates empty blocks */
+ #define CONFIG_SYS_FLASH_BANKS_LIST	{ CONFIG_SYS_FLASH_BASE0, \
+-- 
+1.7.9.5
+

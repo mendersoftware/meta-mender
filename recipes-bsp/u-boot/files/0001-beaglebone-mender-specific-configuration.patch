@@ -1,0 +1,205 @@
+From 2c345dee2c383773321f85a957e452589908cc61 Mon Sep 17 00:00:00 2001
+From: Marcin Pasinski <marcin.pasinski@cfengine.com>
+Date: Sun, 21 Feb 2016 21:23:36 +0100
+Subject: [PATCH] beaglebone mender specific configuration
+
+---
+ include/configs/am335x_evm.h | 133 +++++++++++++++++--------------------------
+ 1 file changed, 53 insertions(+), 80 deletions(-)
+
+diff --git a/include/configs/am335x_evm.h b/include/configs/am335x_evm.h
+index 3cf768e..f929ab3 100644
+--- a/include/configs/am335x_evm.h
++++ b/include/configs/am335x_evm.h
+@@ -46,6 +46,21 @@
+ #define CONFIG_CMD_GPT
+ #define CONFIG_EFI_PARTITION
+ 
++#define CONFIG_EXTRA_ENV_SETTINGS_MENDER "bootlimit=1\0" \
++                                  "upgrade_available=0\0" \
++                                  "boot_part=2\0" \
++                                  "altbootcmd=if test ${boot_part} = 2; then setenv boot_part 3; else setenv boot_part 2; fi; setenv upgrade_available 0; saveenv; run boot\0"
++
++#define CONFIG_ENV_IS_IN_FAT            1
++#define FAT_ENV_INTERFACE               "mmc"
++#define FAT_ENV_DEVICE_AND_PART         "0:1"
++#define FAT_ENV_FILE                    "uboot.env"
++#define CONFIG_FAT_WRITE
++
++#undef CONFIG_SYS_PROMPT 
++#define CONFIG_SYS_PROMPT "mender u-boot > "
++
++
+ #ifdef CONFIG_NAND
+ #define NANDARGS \
+ 	"mtdids=" MTDIDS_DEFAULT "\0" \
+@@ -71,9 +86,11 @@
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+ 	DEFAULT_LINUX_BOOT_ENV \
+ 	DEFAULT_MMC_TI_ARGS \
++        "bootdelay=3\0" \
+ 	"boot_fdt=try\0" \
+-	"bootpart=0:2\0" \
++	"bootpart=0:1\0" \
+ 	"bootdir=/boot\0" \
++        "fdtdir=/boot\0" \
+ 	"bootfile=zImage\0" \
+ 	"fdtfile=undefined\0" \
+ 	"console=ttyO0,115200n8\0" \
+@@ -98,14 +115,14 @@
+ 		"source ${loadaddr}\0" \
+ 	"loadbootenv=load mmc ${mmcdev} ${loadaddr} ${bootenv}\0" \
+ 	"importbootenv=echo Importing environment from mmc ...; " \
+-		"env import -t -r $loadaddr $filesize\0" \
++		"env import -t $loadaddr $filesize\0" \
+ 	"ramargs=setenv bootargs console=${console} " \
+ 		"${optargs} " \
+ 		"root=${ramroot} " \
+ 		"rootfstype=${ramrootfstype}\0" \
+ 	"loadramdisk=load mmc ${mmcdev} ${rdaddr} ramdisk.gz\0" \
+ 	"loadimage=load mmc ${bootpart} ${loadaddr} ${bootdir}/${bootfile}\0" \
+-	"loadfdt=load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
++	"loadfdt=load mmc ${bootpart} ${fdtaddr} ${fdtdir}/${fdtfile}\0" \
+ 	"mmcloados=run args_mmc; " \
+ 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+ 			"if run loadfdt; then " \
+@@ -120,56 +137,44 @@
+ 		"else " \
+ 			"bootz; " \
+ 		"fi;\0" \
+-	"mmcboot=mmc dev ${mmcdev}; " \
+-		"if mmc rescan; then " \
+-			"echo SD/MMC found on device ${mmcdev};" \
+-			"if run loadbootscript; then " \
+-				"run bootscript;" \
+-			"else " \
+-				"if run loadbootenv; then " \
+-					"echo Loaded environment from ${bootenv};" \
+-					"run importbootenv;" \
+-				"fi;" \
+-				"if test -n $uenvcmd; then " \
+-					"echo Running uenvcmd ...;" \
+-					"run uenvcmd;" \
+-				"fi;" \
+-				"if run loadimage; then " \
+-					"run mmcloados;" \
+-				"fi;" \
+-			"fi ;" \
+-		"fi;\0" \
+-	"spiboot=echo Booting from spi ...; " \
+-		"run spiargs; " \
+-		"sf probe ${spibusno}:0; " \
+-		"sf read ${loadaddr} ${spisrcaddr} ${spiimgsize}; " \
+-		"bootz ${loadaddr}\0" \
+-	"ramboot=echo Booting from ramdisk ...; " \
+-		"run ramargs; " \
+-		"bootz ${loadaddr} ${rdaddr} ${fdtaddr}\0" \
+-	"findfdt="\
+-		"if test $board_name = A335BONE; then " \
+-			"setenv fdtfile am335x-bone.dtb; fi; " \
+-		"if test $board_name = A335BNLT; then " \
+-			"setenv fdtfile am335x-boneblack.dtb; fi; " \
+-		"if test $board_name = A33515BB; then " \
+-			"setenv fdtfile am335x-evm.dtb; fi; " \
+-		"if test $board_name = A335X_SK; then " \
+-			"setenv fdtfile am335x-evmsk.dtb; fi; " \
+-		"if test $fdtfile = undefined; then " \
+-			"echo WARNING: Could not determine device tree to use; fi; \0" \
++        "mmcboot=mmcboot=mmc dev ${mmcdev}; " \
++                "if mmc rescan; then " \
++                        "echo SD/MMC found on device ${mmcdev};" \
++                        "if run loadbootenv; then " \
++                                "echo Loaded environment from ${bootenv};" \
++                                "run importbootenv;" \
++                        "fi;" \
++                        "if test -n $cape; then " \
++                                "if test -e mmc ${bootpart} ${fdtdir}/$fdtbase-$cape.dtb; then " \
++                                        "setenv fdtfile $fdtbase-$cape.dtb;" \
++                                "fi;" \
++                                "echo using: $fdtfile...;" \
++                        "fi;" \
++                        "echo Checking if uenvcmd is set ...;" \
++                        "if test -n $uenvcmd; then " \
++                                "echo Running uenvcmd ...;" \
++                                "run uenvcmd;" \
++                        "fi;" \
++                        "echo; echo uenvcmd was not defined in uEnv.txt ...;" \
++                "fi;\0" \
++        "mmcdev=0\0" \
++        "mmcpart=1\0" \
++        CONFIG_EXTRA_ENV_SETTINGS_MENDER \
+ 	NANDARGS \
+ 	NETARGS \
+ 	DFUARGS
+ #endif
+ 
+ #define CONFIG_BOOTCOMMAND \
+-	"run findfdt; " \
+-	"run mmcboot;" \
+-	"setenv mmcdev 1; " \
+-	"setenv bootpart 1:2; " \
+-	"run mmcboot;" \
+-	"run nandboot;"
++       "i2c mw 0x24 1 0x3e;" \
++       "run findfdt; " \
++       "setenv fdtfile am335x-boneblack.dtb; setenv fdtbase am335x-boneblack;" \
++       "run mmcboot;" \
++       "setenv mmcdev 1; " \
++       "setenv bootpart 1:1; " \
++       "run mmcboot;" \
++       "run nandboot;"
++
+ 
+ /* NS16550 Configuration */
+ #define CONFIG_SYS_NS16550_COM1		0x44e09000	/* Base EVM has UART0 */
+@@ -245,10 +250,7 @@
+ 					"-(NAND.file-system)"
+ #define CONFIG_SYS_NAND_U_BOOT_OFFS	0x000c0000
+ #undef CONFIG_ENV_IS_NOWHERE
+-#define CONFIG_ENV_IS_IN_NAND
+-#define CONFIG_ENV_OFFSET		0x001c0000
+-#define CONFIG_ENV_OFFSET_REDUND	0x001e0000
+-#define CONFIG_SYS_ENV_SECT_SIZE	CONFIG_SYS_NAND_BLOCK_SIZE
++
+ /* NAND: SPL related configs */
+ #ifdef CONFIG_SPL_NAND_SUPPORT
+ #define CONFIG_SPL_NAND_AM33XX_BCH
+@@ -392,35 +394,6 @@
+  * 0x0E0000 - 0x442000 : Linux Kernel
+  * 0x442000 - 0x800000 : Userland
+  */
+-#if defined(CONFIG_SPI_BOOT)
+-/* SPL related */
+-#undef CONFIG_SPL_OS_BOOT		/* Not supported by existing map */
+-#define CONFIG_SPL_SPI_SUPPORT
+-#define CONFIG_SPL_SPI_FLASH_SUPPORT
+-#define CONFIG_SPL_SPI_LOAD
+-#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x20000
+-
+-#define CONFIG_ENV_IS_IN_SPI_FLASH
+-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
+-#define CONFIG_ENV_SPI_MAX_HZ		CONFIG_SF_DEFAULT_SPEED
+-#define CONFIG_ENV_SECT_SIZE		(4 << 10) /* 4 KB sectors */
+-#define CONFIG_ENV_OFFSET		(768 << 10) /* 768 KiB in */
+-#define CONFIG_ENV_OFFSET_REDUND	(896 << 10) /* 896 KiB in */
+-#define MTDIDS_DEFAULT			"nor0=m25p80-flash.0"
+-#define MTDPARTS_DEFAULT		"mtdparts=m25p80-flash.0:128k(SPL)," \
+-					"512k(u-boot),128k(u-boot-env1)," \
+-					"128k(u-boot-env2),3464k(kernel)," \
+-					"-(rootfs)"
+-#elif defined(CONFIG_EMMC_BOOT)
+-#undef CONFIG_ENV_IS_NOWHERE
+-#define CONFIG_ENV_IS_IN_MMC
+-#define CONFIG_SPL_ENV_SUPPORT
+-#define CONFIG_SYS_MMC_ENV_DEV		1
+-#define CONFIG_SYS_MMC_ENV_PART		2
+-#define CONFIG_ENV_OFFSET		0x0
+-#define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
+-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
+-#endif
+ 
+ /* SPI flash. */
+ #define CONFIG_CMD_SF
+-- 
+1.9.1
+
