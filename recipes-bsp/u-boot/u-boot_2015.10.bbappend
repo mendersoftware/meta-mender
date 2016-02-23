@@ -1,10 +1,7 @@
 # Keep this separately from the rest of the .bb file in case that .bb file is
 # overridden from another layer.
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-
-SRC_URI_append_beaglebone = "file://0001-beaglebone-mender-specific-configuration.patch \
-                            file://uEnv.txt"
+require u-boot-mender.inc
 
 # Copy script to the deploy area with u-boot, uImage, and rootfs
 do_deploy_uenv () {

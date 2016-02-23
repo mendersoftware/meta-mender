@@ -1,13 +1,8 @@
 # Keep this separately from the rest of the .bb file in case that .bb file is
 # overridden from another layer.
+require u-boot-mender.inc
 
 DEPENDS = "u-boot"
-
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI_vexpress-qemu += "file://0001-Enable-boot-code-specifically-for-the-U-Boot-QEMU-sc.patch \
-                          file://0002-Add-missing-header-which-fails-on-recent-GCC.patch \
-                         "
-
 BOOTENV_SIZE_beaglebone = "0x20000"
 BOOTENV_SIZE_vexpress-qemu = "0x40000"
 
