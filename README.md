@@ -233,36 +233,20 @@ powering on your Beaglebone.
 7. Testing OTA image update
 ===========================
 
-There isn't enough space to store the image in a file before flashing it in the
-default partition setup.
-
-One option is to store the image on a local web server and use a URL when
-calling `mender -rootfs` (see below).
-
-To use a local file for testing purposes this can be solved the following way:
-
-Inside qemu create a FIFO (e.g. in /root):
+To apply an actual update, store the image on a local web server and use a URL
+when calling `mender -rootfs` (see below). Python provides a very simply
+out-of-the-box web server suitable for this purpose (the below command assumes
+the current directory is poky):
 
 ```
-    $ mkfifo image
+    $ cd build/tmp/deploy/images/vexpress-qemu
+    $ python -m SimpleHTTPServer
 ```
 
-On the build host, the image to update to can be copied using the following
-command:
+On the device, attempt an upgrade using the following command:
 
 ```
-    $ ssh -p8822 -l root localhost cat \> image < ../../build/tmp/deploy/images/vexpress-qemu/core-image-full-cmdline-vexpress-qemu.ext3
-```
-
-We are assuming that the above command is run from the directory
-`meta-mender/scripts` and `image` points to the Yocto build deploy directory
-where Mender images were built in the previous steps. Please also note that the
-terminal will hang as ssh will wait for qemu to accept the transferred image.
-While the pipe is open on the server side, run Mender inside qemu to start the
-remote update process:
-
-```
-    $ mender -rootfs image
+    $ mender -rootfs http://10.0.2.2/core-image-full-cmdline-vexpress-qemu.ext3
 ```
 
 Having that done reboot the system:
