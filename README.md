@@ -63,11 +63,10 @@ Having done that, clone the rest of the needed dependencies into the top level o
 
 ```
 git://github.com/mendersoftware/meta-mender
-git://github.com/mendersoftware/meta-mender-qemu
 git://github.com/mem/oe-meta-go
 ```
 
-After cloning these dependencies to the top of the build tree, the image can be built by adding the location of the layers `meta-mender`, `meta-mender-qemu` and `oe-meta-go` to `bblayers.conf`.
+After cloning these dependencies to the top of the build tree, the image can be built by adding the location of the layers `meta-mender` and `oe-meta-go` to `bblayers.conf`.
 
 In order to do so, first create the build directory for Yocto and set build environment:
 
@@ -111,7 +110,7 @@ In order to do so, edit `conf/bblayers.conf` and make sure that `BBLAYERS` looks
 ```
 
 
-3. Image building for Qemu
+3. Building image for Qemu
 ==========================
 
 Once all the configuration steps are done, the image can be built like this:
@@ -132,10 +131,10 @@ For more information about getting started with Yocto, it is recommended to read
 4. Booting the images with Qemu
 ===============================
 
-This layer contains bootable Yocto images, which can be used to boot Mender directly using qemu. In order to simplify the boot process there are qemu boot scripts provided in the directory `meta-mender-qemu/scripts`. To boot Mender, follow the instructions below:
+This layer contains bootable Yocto images, which can be used to boot Mender directly using qemu. In order to simplify the boot process there are qemu boot scripts provided in the directory `meta-mender/scripts`. To boot Mender, follow the instructions below:
 
 ```
-    $ cd ../meta-mender-qemu/scripts
+    $ cd ../meta-mender/scripts
     $ ./mender-qemu
 ```
 
@@ -181,7 +180,11 @@ IMPORTANT: The standard Beaglebone booting process will cause that the bootloade
 7. Testing OTA image update
 ===========================
 
-In the standard partitioning, there isn't enough space to put the image in a file before flashing it. For the test purposes this can be solved the following way:
+There isn't enough space to store the image in a file before flashing it in the default partition setup.
+
+One option is to store the image on a local web server and use a URL when calling `mender -rootfs` (see below).
+
+To use a local file for testing purposes this can be solved the following way:
 
 Inside qemu create a FIFO (e.g. in /root):
 
@@ -195,7 +198,7 @@ On the build host, the image to update to can be copied using the following comm
     $ ssh -p8822 -l root localhost cat \> image < ../../build/tmp/deploy/images/vexpress-qemu/core-image-full-cmdline-vexpress-qemu.ext3
 ```
 
-We are assuming that the above command is run from the directory `meta-mender-qemu/scripts` and `image` points to the Yocto build deploy directory where Mender images were built in the previous steps. Please also note that the terminal will hang as ssh will wait for qemu to accept the transferred image.
+We are assuming that the above command is run from the directory `meta-mender/scripts` and `image` points to the Yocto build deploy directory where Mender images were built in the previous steps. Please also note that the terminal will hang as ssh will wait for qemu to accept the transferred image.
 While the pipe is open on the server side, run Mender inside qemu to start the remote update process:
 
 ```
