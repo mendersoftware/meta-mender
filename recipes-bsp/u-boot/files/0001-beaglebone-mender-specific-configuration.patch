@@ -18,7 +18,7 @@ index 3cf768e..30297d9 100644
 +#define CONFIG_EXTRA_ENV_SETTINGS_MENDER "bootlimit=1\0" \
 +                                  "upgrade_available=0\0" \
 +                                  "boot_part=2\0" \
-+                                  "altbootcmd=if test ${boot_part} = 2; then setenv boot_part 3; else setenv boot_part 2; fi; setenv upgrade_available 0; saveenv; run boot\0"
++                                  "altbootcmd=if test ${boot_part} = 2; then setenv boot_part 3; else setenv boot_part 2; fi; setenv upgrade_available 0; saveenv; run bootcmd\0"
 +
 +#define CONFIG_ENV_IS_IN_FAT            1
 +#define FAT_ENV_INTERFACE               "mmc"
