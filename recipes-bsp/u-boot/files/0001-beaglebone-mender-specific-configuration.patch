@@ -1,14 +1,14 @@
-From 2c345dee2c383773321f85a957e452589908cc61 Mon Sep 17 00:00:00 2001
+From 53cfabe44dba2c88929c39b1c265799d70edcf2f Mon Sep 17 00:00:00 2001
 From: Marcin Pasinski <marcin.pasinski@cfengine.com>
-Date: Sun, 21 Feb 2016 21:23:36 +0100
+Date: Fri, 26 Feb 2016 11:56:11 +0100
 Subject: [PATCH] beaglebone mender specific configuration
 
 ---
- include/configs/am335x_evm.h | 133 +++++++++++++++++--------------------------
- 1 file changed, 53 insertions(+), 80 deletions(-)
+ include/configs/am335x_evm.h | 132 +++++++++++++++++--------------------------
+ 1 file changed, 52 insertions(+), 80 deletions(-)
 
 diff --git a/include/configs/am335x_evm.h b/include/configs/am335x_evm.h
-index 3cf768e..f929ab3 100644
+index 3cf768e..30297d9 100644
 --- a/include/configs/am335x_evm.h
 +++ b/include/configs/am335x_evm.h
 @@ -46,6 +46,21 @@
@@ -63,7 +63,7 @@ index 3cf768e..f929ab3 100644
  	"mmcloados=run args_mmc; " \
  		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
  			"if run loadfdt; then " \
-@@ -120,56 +137,44 @@
+@@ -120,56 +137,43 @@
  		"else " \
  			"bootz; " \
  		"fi;\0" \
@@ -105,7 +105,7 @@ index 3cf768e..f929ab3 100644
 -			"setenv fdtfile am335x-evmsk.dtb; fi; " \
 -		"if test $fdtfile = undefined; then " \
 -			"echo WARNING: Could not determine device tree to use; fi; \0" \
-+        "mmcboot=mmcboot=mmc dev ${mmcdev}; " \
++        "mmcboot=mmc dev ${mmcdev}; " \
 +                "if mmc rescan; then " \
 +                        "echo SD/MMC found on device ${mmcdev};" \
 +                        "if run loadbootenv; then " \
@@ -141,7 +141,6 @@ index 3cf768e..f929ab3 100644
 -	"run mmcboot;" \
 -	"run nandboot;"
 +       "i2c mw 0x24 1 0x3e;" \
-+       "run findfdt; " \
 +       "setenv fdtfile am335x-boneblack.dtb; setenv fdtbase am335x-boneblack;" \
 +       "run mmcboot;" \
 +       "setenv mmcdev 1; " \
@@ -152,7 +151,7 @@ index 3cf768e..f929ab3 100644
  
  /* NS16550 Configuration */
  #define CONFIG_SYS_NS16550_COM1		0x44e09000	/* Base EVM has UART0 */
-@@ -245,10 +250,7 @@
+@@ -245,10 +249,7 @@
  					"-(NAND.file-system)"
  #define CONFIG_SYS_NAND_U_BOOT_OFFS	0x000c0000
  #undef CONFIG_ENV_IS_NOWHERE
@@ -164,7 +163,7 @@ index 3cf768e..f929ab3 100644
  /* NAND: SPL related configs */
  #ifdef CONFIG_SPL_NAND_SUPPORT
  #define CONFIG_SPL_NAND_AM33XX_BCH
-@@ -392,35 +394,6 @@
+@@ -392,35 +393,6 @@
   * 0x0E0000 - 0x442000 : Linux Kernel
   * 0x442000 - 0x800000 : Userland
   */
