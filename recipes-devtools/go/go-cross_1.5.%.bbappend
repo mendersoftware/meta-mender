@@ -1,5 +1,5 @@
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/go-${PV}:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "\
         file://do_not_create_native_cross_compilation_tools.patch \
         "
