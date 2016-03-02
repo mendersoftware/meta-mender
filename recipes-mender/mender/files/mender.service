@@ -1,0 +1,13 @@
+[Unit]
+Description=Mender OTA update service
+After=syslog.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/bin/mender
+Restart=on-abort
+
+[Install]
+WantedBy=multi.user.target
