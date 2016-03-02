@@ -1,14 +1,14 @@
-From 53cfabe44dba2c88929c39b1c265799d70edcf2f Mon Sep 17 00:00:00 2001
+From e8cdcff366ab7b24d60360ec3bfd9fcc7bdd09cc Mon Sep 17 00:00:00 2001
 From: Marcin Pasinski <marcin.pasinski@cfengine.com>
-Date: Fri, 26 Feb 2016 11:56:11 +0100
+Date: Wed, 2 Mar 2016 13:38:57 +0100
 Subject: [PATCH] beaglebone mender specific configuration
 
 ---
- include/configs/am335x_evm.h | 132 +++++++++++++++++--------------------------
- 1 file changed, 52 insertions(+), 80 deletions(-)
+ include/configs/am335x_evm.h | 136 +++++++++++++++++--------------------------
+ 1 file changed, 54 insertions(+), 82 deletions(-)
 
 diff --git a/include/configs/am335x_evm.h b/include/configs/am335x_evm.h
-index 3cf768e..30297d9 100644
+index 3cf768e..540a82a 100644
 --- a/include/configs/am335x_evm.h
 +++ b/include/configs/am335x_evm.h
 @@ -46,6 +46,21 @@
@@ -151,6 +151,18 @@ index 3cf768e..30297d9 100644
  
  /* NS16550 Configuration */
  #define CONFIG_SYS_NS16550_COM1		0x44e09000	/* Base EVM has UART0 */
+@@ -195,9 +199,9 @@
+ #define CONFIG_SPL_POWER_SUPPORT
+ #define CONFIG_SPL_YMODEM_SUPPORT
+ 
+-/* Bootcount using the RTC block */
++/* Bootcount using the environment */
+ #define CONFIG_BOOTCOUNT_LIMIT
+-#define CONFIG_BOOTCOUNT_AM33XX
++#define CONFIG_BOOTCOUNT_ENV
+ #define CONFIG_SYS_BOOTCOUNT_BE
+ 
+ /* USB gadget RNDIS */
 @@ -245,10 +249,7 @@
  					"-(NAND.file-system)"
  #define CONFIG_SYS_NAND_U_BOOT_OFFS	0x000c0000
