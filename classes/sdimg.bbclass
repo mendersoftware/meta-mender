@@ -48,7 +48,7 @@ WKS_FULL_PATH = "${WORKDIR}/mender-sdimg.wks"
 # We need to have the ext3 image generated already
 IMAGE_TYPEDEP_sdimg = "ext3"
 
-IMAGE_DEPENDS_sdimg = "${IMAGE_DEPENDS_wic}"
+IMAGE_DEPENDS_sdimg = "${IMAGE_DEPENDS_wic} dosfstools-native"
 
 IMAGE_CMD_sdimg() {
     mkdir -p "${WORKDIR}"
