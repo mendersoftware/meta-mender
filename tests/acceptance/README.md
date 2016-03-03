@@ -19,7 +19,7 @@ test. Normally this is the "*.ext3" image inside of your build directory, in
 "tmp/deploy/images/vexpress-qemu". Then run the tests with:
 
 ```
-$ py.test -s
+$ py.test
 ```
 
 
