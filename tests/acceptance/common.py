@@ -27,7 +27,7 @@ import conftest
 # Return Popen object
 def start_qemu():
     # Relies on the meta-mender layer being next to meta-mender-qemu.
-    proc = subprocess.Popen("../../../meta-mender-qemu/scripts/mender-qemu")
+    proc = subprocess.Popen("../../../meta-mender/scripts/mender-qemu")
     execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
     return proc
 
