@@ -50,7 +50,7 @@ def is_qemu_running():
             proc.wait()
 
 
-def reboot(wait = 60):
+def reboot(wait = 120):
     with settings(warn_only = True):
         sudo("reboot")
 
@@ -64,7 +64,7 @@ def reboot(wait = 60):
     qemu_prep_after_boot()
 
 
-def run_after_connect(cmd, wait = 60):
+def run_after_connect(cmd, wait = 120):
     output = ""
     start_time = time.time()
     # Use shorter timeout to get a faster cycle.
