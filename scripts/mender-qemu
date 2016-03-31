@@ -19,5 +19,5 @@ QEMU_AUDIO_DRV=none \
     -net nic \
     -net user,hostfwd=tcp::8822-:22 \
     -display vnc=:23 \
-    -serial stdio \
+    -nographic \
     "$@"
