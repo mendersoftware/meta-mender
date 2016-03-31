@@ -1,3 +1,6 @@
+#Add meta information to the created image
+inherit mender-image-buildinfo
+IMAGE_PREPROCESS_COMMAND += "buildinfo_mender;"
 
 EXTRA_IMAGEDEPENDS += "u-boot u-boot-fw-utils"
 PREFERRED_VERSION_u-boot = "v2015.10%"
@@ -16,4 +19,5 @@ IMAGE_CLASSES += "sdimg"
 IMAGE_FSTYPES += "sdimg"
 
 IMAGE_INSTALL_append = " u-boot-fw-utils mender"
+
 
