@@ -172,14 +172,9 @@ The above should start qemu and boot the kernel and rootfs from the active
 partition.  There should also be an inactive partition available where the
 update will be stored.
 
-In order to access the U-Boot bootloader, the qemu-launching script can be run
-with the ```nographic``` option. This will give access to the bootloader and
-boot process:
-
-```
-    $ ./mender-qemu -nographic
-```
-
+If you want to forcibly close the emulator without shutting it down properly,
+press "Ctrl-c x". "Ctrl-c" will not work because it is intercepted by the shell
+inside the emulator.
 
 5. Image building for Beaglebone Black
 ======================================
