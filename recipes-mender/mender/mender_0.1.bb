@@ -9,6 +9,7 @@ inherit go
 
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https \
            file://mender.service \
+           file://mender.conf \
           "
 
 SRCREV = "${AUTOREV}"
@@ -20,6 +21,7 @@ inherit systemd
 
 SYSTEMD_SERVICE_${PN} = "mender.service"
 FILES_${PN} += "${systemd_unitdir}/system/mender.service \
+                ${sysconfdir}/mender.conf \
                "
 
 do_compile() {
@@ -37,4 +39,9 @@ do_install() {
   install -m 0755 "${B}/mender" "${D}/${bindir}"
   install -d ${D}/${systemd_unitdir}/system
   install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
+
+  #install configuration
+  install -d ${D}/${sysconfdir}
+  install -d ${D}/${sysconfdir}/mender
+  install -m 0644 ${WORKDIR}/mender.conf ${D}/${sysconfdir}/mender
 }
