@@ -85,6 +85,16 @@ class TestUpdates:
                          (ssh, port, env.user, host)])
 
         run("mender -rootfs image.dat")
+
+        output = run("fw_printenv bootcount")
+        assert(output == "bootcount=0")
+
+        output = run("fw_printenv upgrade_available")
+        assert(output == "upgrade_available=1")
+
+        output = run("fw_printenv boot_part")
+        assert(output == "boot_part=" + passive_before)
+
         reboot()
 
         output = run_after_connect("mount")
@@ -104,9 +114,6 @@ class TestUpdates:
         assert(output == "boot_part=" + active_after)
 
         run("mender -commit")
-
-        output = run("fw_printenv bootcount")
-        assert(output == "bootcount=0")
 
         output = run("fw_printenv upgrade_available")
         assert(output == "upgrade_available=0")
@@ -144,6 +151,15 @@ class TestUpdates:
         finally:
             http_server.terminate()
 
+        output = run("fw_printenv bootcount")
+        assert(output == "bootcount=0")
+
+        output = run("fw_printenv upgrade_available")
+        assert(output == "upgrade_available=1")
+
+        output = run("fw_printenv boot_part")
+        assert(output == "boot_part=" + passive_before)
+
         reboot()
 
         output = run_after_connect("mount")
@@ -163,9 +179,6 @@ class TestUpdates:
         assert(output == "boot_part=" + active_after)
 
         run("mender -commit")
-
-        output = run("fw_printenv bootcount")
-        assert(output == "bootcount=0")
 
         output = run("fw_printenv upgrade_available")
         assert(output == "upgrade_available=0")
