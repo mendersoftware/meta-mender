@@ -28,6 +28,8 @@ import conftest
 def start_qemu():
     # Relies on the meta-mender layer being next to meta-mender-qemu.
     proc = subprocess.Popen("../../../meta-mender/scripts/mender-qemu")
+    # Make sure we are connected.
+    execute(run_after_connect, "true", hosts = conftest.current_hosts())
     execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
     return proc
 
@@ -153,17 +155,12 @@ def get(file, local_path = ".", remote_path = "."):
 
 
 def qemu_prep_after_boot():
-    # TODO: It is unknown why this is needed. "/u-boot" with "auto"
-    # attribute is in fstab already... This should be removed.
-    run_after_connect("mount /u-boot || true")
+    # Nothing needed ATM.
+    pass
 
 
 def qemu_prep_fresh_host():
     # Nothing needed ATM.
-    # Uncomment this if you want to debug mender (beware that if you reboot to
-    # a new filesystem you may have to upload there as well.
-    #put("mender")
-
     pass
 
 
