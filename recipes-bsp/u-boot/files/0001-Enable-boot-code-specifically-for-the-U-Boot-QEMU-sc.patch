@@ -52,7 +52,8 @@ index 98f6ae9..40ddbbf 100644
 +    "qemu_boot=load mmc 0:${boot_part} ${qemu_kernel_addr} /boot/zImage; " \
 +    "load mmc 0:${boot_part} ${qemu_dtb_addr} /boot/vexpress-v2p-ca9.dtb; " \
 +    "setenv bootargs root=/dev/mmcblk0p${boot_part} console=tty0 console=ttyAMA0,115200n8; " \
-+    "bootz ${qemu_kernel_addr} - ${qemu_dtb_addr}\0"
++    "bootz ${qemu_kernel_addr} - ${qemu_dtb_addr} ; "                   \
++    "reset\0"
 +
  #ifdef CONFIG_VEXPRESS_ORIGINAL_MEMORY_MAP
  #define CONFIG_PLATFORM_ENV_SETTINGS \
