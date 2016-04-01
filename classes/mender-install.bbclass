@@ -18,6 +18,6 @@ VIRTUAL-RUNTIME_initscripts = ""
 IMAGE_CLASSES += "sdimg"
 IMAGE_FSTYPES += "sdimg"
 
-IMAGE_INSTALL_append = " u-boot-fw-utils mender"
+IMAGE_INSTALL_append = " u-boot-fw-utils mender ca-certificates"
 
 
