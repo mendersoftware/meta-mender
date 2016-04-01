@@ -22,7 +22,7 @@ index 98f6ae9..40ddbbf 100644
  
  /* Physical Memory Map */
  #define CONFIG_NR_DRAM_BANKS		2
-@@ -201,6 +203,34 @@
+@@ -201,6 +203,35 @@
          func(DHCP, dhcp, na)
  #include <config_distro_bootcmd.h>
  
