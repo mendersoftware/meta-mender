@@ -235,13 +235,13 @@ the current directory is poky):
 
 ```
     $ cd build/tmp/deploy/images/vexpress-qemu
-    $ python -m SimpleHTTPServer
+    $ python -m SimpleHTTPServer 8000
 ```
 
 On the device, attempt an upgrade using the following command:
 
 ```
-    $ mender -rootfs http://10.0.2.2/core-image-full-cmdline-vexpress-qemu.ext3
+    $ mender -rootfs http://10.0.2.2:8000/core-image-full-cmdline-vexpress-qemu.ext3
 ```
 
 Having that done reboot the system:
