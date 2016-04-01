@@ -35,16 +35,11 @@ class TestUpdates:
         # Make a dummy/broken update
         run("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8")
         run("mender -rootfs image.dat")
+        reboot()
 
-        try:
-            reboot()
-            # This should never be reached, because the reconnect should fail.
-            assert(False)
-        except:
-            pass
-
-        kill_qemu()
-        start_qemu()
+        # Now qemu is auto-rebooted twice; once to boot the dummy image,
+        # where it fails, and uboot auto-reboots a second time into the
+        # original parition.
 
         output = run_after_connect("mount")
 
