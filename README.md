@@ -7,10 +7,10 @@ Black using the the ```vexpress-qemu``` or ```beaglebone``` machine type
 respectively.
 
 
-What is Mender
+What is Mender?
 ==============
 
-A detailed description of Mender is provided in the [Mender
+Mender is an open source software to address a very specific problem: safely rolling out software updates and patches to connected embedded Linux devices. A detailed description of Mender is provided in the [Mender
 repository](https://github.com/mendersoftware/mender).
 
 
