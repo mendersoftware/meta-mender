@@ -50,10 +50,10 @@ Table of  contents:
 =========
 1. Pre-configuration
 2. Yocto build configuration
-3. Image building for Qemu
-4. Booting the images with Qemu
-5. Image building for Beaglebone Black
-6. Booting the images with Beaglebone
+3. Image building for QEMU
+4. Booting the images with QEMU
+5. Image building for BeagleBone Black
+6. Booting the images with BeagleBone
 7. Testing OTA image update
 8. Mender overview
 9. Project roadmap
@@ -105,7 +105,7 @@ In order to support building Mender, the following changes are needed in the
     MACHINE ??= "vexpress-qemu"
 ```
 
-for building the image that will be run on the Qemu machine or
+for building the image that will be run on the QEMU machine or
 
 ```
     INHERIT += "mender-install"
@@ -129,7 +129,7 @@ following:
 ```
 
 
-3. Building image for Qemu
+3. Building image for QEMU
 ==========================
 
 Once all the configuration steps are done, the image can be built like this:
@@ -142,24 +142,24 @@ This will build the `core-image-full-cmdline` image type. It is possible to
 build other image types, but for the simplicity of this document we will assume
 that `core-image-full-cmdline` is the selected type.
 
-At the end of a successful build, the image can be tested in qemu.  The images
+At the end of a successful build, the image can be tested in QEMU.  The images
 and build artifacts are placed in `tmp/deploy/images/vexpress-qemu/`. The
 directory should contain a file named
 ```core-image-full-cmdline-vexpress-qemu.sdimg```, which is an image that
 contains a boot partition and two other partitions, each with the kernel and
-rootfs.  This image will be used later to test Mender with qemu (more on that in
-the section 'Booting the images with Qemu' below).
+rootfs.  This image will be used later to test Mender with QEMU (more on that in
+the section 'Booting the images with QEMU' below).
 
 For more information about getting started with Yocto, it is recommended to read
 the [Yocto Project Quick Start
 guide](http://www.yoctoproject.org/docs/2.0/yocto-project-qs/yocto-project-qs.html).
 
 
-4. Booting the images with Qemu
+4. Booting the images with QEMU
 ===============================
 
 This layer contains bootable Yocto images, which can be used to boot Mender
-directly using qemu. In order to simplify the boot process there are qemu boot
+directly using QEMU. In order to simplify the boot process there are QEMU boot
 scripts provided in the directory `meta-mender/scripts`. To boot Mender, follow
 the instructions below:
 
@@ -168,7 +168,7 @@ the instructions below:
     $ ./mender-qemu
 ```
 
-The above should start qemu and boot the kernel and rootfs from the active
+The above should start QEMU and boot the kernel and rootfs from the active
 partition.  There should also be an inactive partition available where the
 update will be stored.
 
@@ -176,10 +176,10 @@ If you want to forcibly close the emulator without shutting it down properly,
 press "Ctrl-c x". "Ctrl-c" will not work because it is intercepted by the shell
 inside the emulator.
 
-5. Image building for Beaglebone Black
+5. Image building for BeagleBone Black
 ======================================
 
-In order to build image that can be run on Beaglebone Black use following
+In order to build image that can be run on BeagleBone Black use following
 command should be used:
 
 ```
@@ -190,7 +190,7 @@ The reason why the base image is built is the simplicity of the later booting
 and testing process. With the base image all needed boot and configuration files
 are created by Yocto and copied to appropriate locations in the boot partition
 and the root file system. For more information about differences while using
-different image types please see [official Yocto Beaglebone support
+different image types please see [official Yocto BeagleBone support
 page](https://www.yoctoproject.org/downloads/bsps/daisy16/beaglebone).
 
 
@@ -198,7 +198,7 @@ page](https://www.yoctoproject.org/downloads/bsps/daisy16/beaglebone).
 =====================================
 
 With the Mender layer configuration besides of the standard boot files and the
-rootfs additional image type - sdimg - is created. It is availabe in the deploy
+rootfs additional image type - sdimg - is created. It is available in the deploy
 directory after build
 (```./tmp/deploy/images/beaglebone/core-image-base-beaglebone.sdimg```). This is
 a partitioned image that can be stored directly into SD card. For more
@@ -215,10 +215,10 @@ sudo dd if=./tmp/deploy/images/beaglebone/core-image-base-beaglebone.sdimg of=/d
 To run above command you need to be in the Yocto image build directory and you
 need to make sure that you are copying the image to correct of device. After
 successful copy you can remove the SD card and insert to the Beaglebone.
-IMPORTANT: The standard Beaglebone booting process will cause that the
+IMPORTANT: The standard BeagleBone booting process will cause that the
 bootloader from internal flash storage will be used. In order to use the
 bootloader from SD card make sure that S2 (boot) button is pressed while
-powering on your Beaglebone.
+powering on your BeagleBone.
 
 ![Booring Beaglebone from SD
  card](https://github.com/mendersoftware/meta-mender/raw/master/beaglebone.black.sdboot.jpg
