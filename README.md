@@ -2,7 +2,7 @@
 
 This document outlines the steps needed to build a Yocto image containing a
 testable version of `Mender`, including the required partitioning and boot
-configuration.  It is possible to build the image for both Qemu and Beaglebone
+configuration.  It is possible to build the image for both QEMU and BeagleBone
 Black using the the ```vexpress-qemu``` or ```beaglebone``` machine type
 respectively.
 
@@ -10,7 +10,7 @@ respectively.
 What is Mender
 ==============
 
-A detailed description of Mender is provided in the [mender
+A detailed description of Mender is provided in the [Mender
 repository](https://github.com/mendersoftware/mender).
 
 
@@ -274,7 +274,7 @@ working version if the new image is broken.
 ==================
 
 For more information of what Mender is and how it works, please see the
-documentation in the [mender Github
+documentation in the [Mender GitHub
 repository](https://github.com/mendersoftware/mender) or visit [the official
 Mender website](https://mender.io).
 
