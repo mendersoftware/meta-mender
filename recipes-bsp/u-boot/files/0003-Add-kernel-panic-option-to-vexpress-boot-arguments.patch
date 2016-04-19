@@ -1,0 +1,25 @@
+From ba9c44739ac981b6b66f4b61992965421cd4cf71 Mon Sep 17 00:00:00 2001
+From: Marcin Pasinski <marcin.pasinski@cfengine.com>
+Date: Mon, 18 Apr 2016 14:55:13 +0200
+Subject: [PATCH] Add kernel panic option to vexpress boot arguments
+
+---
+ include/configs/vexpress_common.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/configs/vexpress_common.h b/include/configs/vexpress_common.h
+index 98f6ae9..16af4c7 100644
+--- a/include/configs/vexpress_common.h
++++ b/include/configs/vexpress_common.h
+@@ -230,7 +230,7 @@
+ 		"root=/dev/sda1 rw\0" \
+ 		"mtd=armflash:1M@0x800000(uboot),7M@0x1000000(kernel)," \
+ 			"24M@0x2000000(initrd)\0" \
+-		"flashargs=setenv bootargs root=${root} console=${console} " \
++		"flashargs=setenv bootargs root=${root} console=${console} panic=3" \
+ 			"mem=${dram} mtdparts=${mtd} mmci.fmax=190000 " \
+ 			"devtmpfs.mount=0  vmalloc=256M\0" \
+ 		"bootflash=run flashargs; " \
+-- 
+1.9.1
+

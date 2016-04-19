@@ -15,6 +15,6 @@ loadfdt=load mmc ${mmcdev}:${boot_part} ${fdtaddr} ${boot_dir}${fdtfile}
 
 setbootpart=if test -n ${boot_part}; then echo Booting from partition ${boot_part}; else echo No active boot partition set, setting 2 as active partition; setenv boot_part 2; fi
 loadfiles=run loadkernel; run loadfdt
-mmcargs=setenv mmcroot /dev/mmcblk0p${boot_part}; setenv bootargs console=tty0 console=${console} root=${mmcroot}
+mmcargs=setenv mmcroot /dev/mmcblk0p${boot_part}; setenv bootargs console=tty0 console=${console} root=${mmcroot} panic=3
 uenvcmd=run setbootpart; run loadfiles; run mmcargs; bootz ${loadaddr} - ${fdtaddr}
 
