@@ -16,16 +16,16 @@
 from fabric.api import *
 
 import pytest
-import unittest
-
-import os.path
 import subprocess
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
-@pytest.mark.usefixtures("qemu_running", "no_image_file")
+
+@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb")
 class TestUpdates:
+
+    @pytest.mark.skip(pytest.config.getoption("--bbb"), reason="broken on bbb.")
     def test_broken_image_update(self):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
@@ -48,7 +48,6 @@ class TestUpdates:
         assert(output.find("/dev/mmcblk0p2") >= 0)
         assert(output.find("/dev/mmcblk0p3") < 0)
 
-
     def test_too_big_image_update(self):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
@@ -61,7 +60,6 @@ class TestUpdates:
 
         assert(output.find("smaller") >= 0)
         assert(output.find("ret_code=0") < 0)
-
 
     def test_file_based_image_update(self):
         if not env.host_string:
@@ -128,8 +126,8 @@ class TestUpdates:
         assert(active_after == active_before)
         assert(passive_after == passive_before)
 
-
     def test_network_based_image_update(self):
+        http_server_location = pytest.config.getoption("--http-server")
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
             execute(self.test_network_based_image_update)
@@ -142,7 +140,7 @@ class TestUpdates:
         assert(http_server)
 
         try:
-            sudo("mender -rootfs http://10.0.2.2:8000/image.dat")
+            sudo("mender -rootfs http://%s/image.dat" % (http_server_location))
         finally:
             http_server.terminate()
 

@@ -14,17 +14,26 @@
 #    limitations under the License.
 
 from fabric.api import *
+from fabric.contrib.files import append
 import fabric.network
 
 import pytest
 import os
-import signal
 import subprocess
 import time
-
 import conftest
 
+def if_not_bbb(func):
+    def func_wrapper():
+        if pytest.config.getoption("bbb"):
+            return
+        else:
+            func()
+    return func_wrapper
+
+
 # Return Popen object
+@if_not_bbb
 def start_qemu():
     # Relies on the meta-mender layer being next to meta-mender-qemu.
     proc = subprocess.Popen("../../../meta-mender/scripts/mender-qemu")
@@ -33,12 +42,12 @@ def start_qemu():
     execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
     return proc
 
-
+@if_not_bbb
 def kill_qemu():
     os.system("pkill qemu-system-arm")
     time.sleep(1)
 
-
+@if_not_bbb
 def is_qemu_running():
     while True:
         proc = subprocess.Popen(["pgrep", "qemu"], stdout=subprocess.PIPE)
@@ -99,7 +108,7 @@ def ssh_prep_args_impl(tool):
     if not env.host_string:
         raise Exception("get()/put() called outside of execute()")
 
-    cmd = ("%s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" %
+    cmd = ("%s -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" %
            tool)
 
     host_parts = env.host_string.split(":")
@@ -164,8 +173,52 @@ def qemu_prep_fresh_host():
     pass
 
 
-@pytest.fixture(scope = "module")
+def set_first_root_part():
+    sudo("fw_setenv upgrade_available 0")
+    sudo("fw_setenv boot_part 2")
+    sudo("fw_setenv bootcount 0")
+
+
+def setup_bbb_sdcard():
+    local_sdimg = pytest.config.getoption("--sdimg-location")
+    put("core-image-base-beaglebone-modified-testing.sdimg",
+        local_path=local_sdimg,
+        remote_path="/opt/")
+    sudo("chmod +x /root/install-new-image.sh")
+
+    #easier to keep the followinf in a bash script
+    sudo("/root/install-new-image.sh")
+    reboot()
+
+
+def boot_from_internal():
+    bootline = """uenvcmd=load mmc 1:1 ${loadaddr} /boot/vmlinuz-4.1.18-ti-r56; \
+                  load mmc 1:1 ${fdtaddr} /boot/dtbs/4.1.18-ti-r56/am335x-boneblack.dtb; \
+                  setenv bootargs console=tty0 console=${console} root=/dev/mmcblk1p1; \
+                  bootz ${loadaddr} - ${fdtaddr}"""
+
+    if "yocto" in sudo("uname -a"):
+        sudo("sed '/uenvcmd/d' -i /u-boot/uEnv.txt")
+        append("/u-boot/uEnv.txt", bootline)
+        reboot()
+
+@pytest.fixture(scope="session")
+def setup_bbb(request):
+    execute(boot_from_internal)
+    execute(setup_bbb_sdcard, host=conftest.current_hosts())
+
+    def bbb_finalizer():
+        def bbb_finalizer_impl():
+                execute(boot_from_internal)
+        execute(bbb_finalizer_impl, hosts=conftest.current_hosts())
+
+    request.addfinalizer(bbb_finalizer)
+
+@pytest.fixture(scope="module")
 def qemu_running(request):
+    if pytest.config.getoption("--bbb"):
+        return
+
     kill_qemu()
 
     # Make sure we revert to the first root partition on next reboot, makes test
@@ -173,9 +226,7 @@ def qemu_running(request):
     def qemu_finalizer():
         def qemu_finalizer_impl():
             try:
-                sudo("fw_setenv upgrade_available 0")
-                sudo("fw_setenv boot_part 2")
-                sudo("fw_setenv bootcount 0")
+                set_first_root_part()
                 sudo("halt")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
@@ -185,17 +236,17 @@ def qemu_running(request):
                 # Nothing we can do about that.
                 pass
             kill_qemu()
-        execute(qemu_finalizer_impl, hosts = conftest.current_hosts())
+        execute(qemu_finalizer_impl, hosts=conftest.current_hosts())
 
     request.addfinalizer(qemu_finalizer)
 
     start_qemu()
-    execute(qemu_prep_fresh_host, hosts = conftest.current_hosts())
+    execute(qemu_prep_fresh_host, hosts=conftest.current_hosts())
 
 
-@pytest.fixture(scope = "function")
+@pytest.fixture(scope="function")
 def no_image_file(qemu_running):
-    execute(no_image_file_impl, hosts = conftest.current_hosts())
+    execute(no_image_file_impl, hosts=conftest.current_hosts())
 
 
 def no_image_file_impl():
