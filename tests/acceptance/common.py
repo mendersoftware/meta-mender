@@ -204,15 +204,16 @@ def boot_from_internal():
 
 @pytest.fixture(scope="session")
 def setup_bbb(request):
-    execute(boot_from_internal)
-    execute(setup_bbb_sdcard, host=conftest.current_hosts())
+    if pytest.config.getoption("--bbb"):
+        execute(boot_from_internal)
+        execute(setup_bbb_sdcard, host=conftest.current_hosts())
 
-    def bbb_finalizer():
-        def bbb_finalizer_impl():
-                execute(boot_from_internal)
-        execute(bbb_finalizer_impl, hosts=conftest.current_hosts())
+        def bbb_finalizer():
+            def bbb_finalizer_impl():
+                    execute(boot_from_internal)
+            execute(bbb_finalizer_impl, hosts=conftest.current_hosts())
 
-    request.addfinalizer(bbb_finalizer)
+        request.addfinalizer(bbb_finalizer)
 
 @pytest.fixture(scope="module")
 def qemu_running(request):
