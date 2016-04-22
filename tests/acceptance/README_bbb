@@ -1,0 +1,21 @@
+Quick notes about BBB testing
+-----------------------------
+
+Booting from SDCard:
+
+The BBB is designed with a button that can be pressed to force SDcard booting. In our setup,
+this button is held down everytime. We can easily make U-Boot on the SDcard boot into the
+internal OS by resetting the uenvcmd variable. At execution time, the test script makes
+sure it's starting from the internal OS, if it isnt, it sets the uenvcmd mentioned above
+and reboots the device.
+
+
+Connectivity with internal network
+
+The communication between the BBB and the build machine are via rSSH, and rely on a
+public facing machine. I use my own public machine @ wmd.no for this, and it's already
+setup to accept the keys found in keys.tar.gz The BBB connects using the keys found
+in the keys.tar.gz.gpg, I (Greg) have the symmetric key to decrypt this file. Everything
+the BBB can boot into requires that a SSH tunnel is established, so: rssh.service, and
+the keys must be copied over before booting.
+The internal OS on the emmc, the sdimg, and the update image all use this.

@@ -4,7 +4,7 @@
 from fabric.api import put, sudo, settings, env
 
 
-def setup():
+def setup_internal_bbb_os():
     env.user = "root"
     env.password = ""
 
