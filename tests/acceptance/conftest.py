@@ -19,26 +19,30 @@ import unittest
 
 import common
 
+
 def pytest_addoption(parser):
-    parser.addoption("--host", action = "store",
-                     help = ("IP to connect to, with optional port. Defaults " +
-                             "to localhost:8822, which is what the QEMU " +
-                             "script sets up."))
-    parser.addoption("--user", action = "store",
-                     help = "user to log into remote hosts with (default is root)")
+    parser.addoption("--host", action="store", default="localhost:8822",
+                     help="""IP to connect to, with optional port. Defaults
+                     to localhost:8822, which is what the QEMU script sets up.""")
+    parser.addoption("--user", action="store", default="root",
+                     help="user to log into remote hosts with (default is root)")
+    parser.addoption("--http-server", action="store", default="10.0.2.2:8000",
+                     help="""Remote HTTP server containing update image,
+                     if --bbb is set, this value is set to the s3 url""")
+    parser.addoption("--bbb", action="store_true", default=False,
+                     help="the tests are running against a BeagleBone Black")
+    parser.addoption("--sdimg-location", action="store", default="/home/jenkins/workspace/yoctobuild/meta-mender/tests/acceptance",
+                     help="location to the sdimg you want to install on the bbb")
 
 
 def pytest_configure(config):
-    host = "localhost:8822"
-    if config.getoption("host"):
-        host = config.getoption("host")
-    env.hosts = [host]
-
-    env.user = "root"
-    if config.getoption("user"):
-        env.user = config.getoption("user")
+    env.hosts = config.getoption("host")
+    env.user = config.getoption("user")
 
     env.password = ""
+
+    # Bash not always available, nor currently required:
+    env.shell = "/bin/sh -c"
 
     # Disable known_hosts file, to avoid "host identification changed" errors.
     env.disable_known_hosts = True

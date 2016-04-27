@@ -16,16 +16,23 @@
 from fabric.api import *
 
 import pytest
-import unittest
-
-import os.path
 import subprocess
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
-@pytest.mark.usefixtures("qemu_running", "no_image_file")
+
+class Helpers:
+    @staticmethod
+    def upload_to_s3():
+        subprocess.Popen(["s3cmd", "--follow-symlinks", "put", "image.dat", "s3://yocto-builds/tmp/"]).wait()
+        subprocess.Popen(["s3cmd", "setacl", "s3://yocto-builds/tmp/image.dat", "--acl-public"]).wait()
+
+
+@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb")
 class TestUpdates:
+
+    @pytest.mark.skip(pytest.config.getoption("--bbb"), reason="broken on bbb.")
     def test_broken_image_update(self):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
@@ -48,7 +55,6 @@ class TestUpdates:
         assert(output.find("/dev/mmcblk0p2") >= 0)
         assert(output.find("/dev/mmcblk0p3") < 0)
 
-
     def test_too_big_image_update(self):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
@@ -61,7 +67,6 @@ class TestUpdates:
 
         assert(output.find("smaller") >= 0)
         assert(output.find("ret_code=0") < 0)
-
 
     def test_file_based_image_update(self):
         if not env.host_string:
@@ -128,8 +133,10 @@ class TestUpdates:
         assert(active_after == active_before)
         assert(passive_after == passive_before)
 
-
     def test_network_based_image_update(self):
+        http_server_location = pytest.config.getoption("--http-server")
+        bbb = pytest.config.getoption("--bbb")
+
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
             execute(self.test_network_based_image_update)
@@ -138,13 +145,18 @@ class TestUpdates:
         output = run("mount")
         (active_before, passive_before) = determine_active_passive_part(output)
 
-        http_server = subprocess.Popen(["python", "-m", "SimpleHTTPServer"])
-        assert(http_server)
+        if bbb:
+            Helpers.upload_to_s3()
+            http_server_location = "s3-eu-west-1.amazonaws.com/yocto-builds/tmp"
+        else:
+            http_server = subprocess.Popen(["python", "-m", "SimpleHTTPServer"])
+            assert(http_server)
 
         try:
-            sudo("mender -rootfs http://10.0.2.2:8000/image.dat")
+            sudo("mender -rootfs http://%s/image.dat" % (http_server_location))
         finally:
-            http_server.terminate()
+            if not bbb:
+                http_server.terminate()
 
         output = run("fw_printenv bootcount")
         assert(output == "bootcount=0")
