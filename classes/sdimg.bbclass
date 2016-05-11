@@ -82,7 +82,10 @@ IMAGE_CMD_sdimg() {
     fi
 
     # Copy boot files to boot partition
-    mcopy -i "${WORKDIR}/fat.dat" -s ${DEPLOY_DIR_IMAGE}/${IMAGE_BOOT_FILES} ::
+    for file in ${IMAGE_BOOT_FILES}
+    do
+        mcopy -i "${WORKDIR}/fat.dat" -s ${DEPLOY_DIR_IMAGE}/$file ::
+    done
 
     rm -rf "${WORKDIR}/data" || true
     if [ -n "${SDIMG_DATA_PART_DIR}" ]; then
