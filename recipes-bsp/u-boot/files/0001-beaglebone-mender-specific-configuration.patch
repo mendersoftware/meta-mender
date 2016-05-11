@@ -63,7 +63,7 @@ index 3cf768e..540a82a 100644
  	"mmcloados=run args_mmc; " \
  		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
  			"if run loadfdt; then " \
-@@ -120,56 +137,43 @@
+@@ -120,56 +137,40 @@
  		"else " \
  			"bootz; " \
  		"fi;\0" \
@@ -143,10 +143,7 @@ index 3cf768e..540a82a 100644
 +       "i2c mw 0x24 1 0x3e;" \
 +       "setenv fdtfile am335x-boneblack.dtb; setenv fdtbase am335x-boneblack;" \
 +       "run mmcboot;" \
-+       "setenv mmcdev 1; " \
-+       "setenv bootpart 1:1; " \
-+       "run mmcboot;" \
-+       "run nandboot;"
++       "reset;"
 +
  
  /* NS16550 Configuration */
