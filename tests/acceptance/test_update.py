@@ -32,7 +32,6 @@ class Helpers:
 @pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb")
 class TestUpdates:
 
-    @pytest.mark.skip(pytest.config.getoption("--bbb"), reason="broken on bbb.")
     def test_broken_image_update(self):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
