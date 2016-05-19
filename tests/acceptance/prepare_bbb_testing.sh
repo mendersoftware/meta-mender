@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # This script is just used to establish the ssh connection and run the tests.
+set -e
 
 function run_tests() {
   cp /home/jenkins/workspace/yoctobuild/build/tmp/deploy/images/beaglebone/core-image-base-beaglebone.sdimg \
