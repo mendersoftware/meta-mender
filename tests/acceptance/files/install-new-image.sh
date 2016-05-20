@@ -5,7 +5,7 @@
 
 # It should be placed in the home directory of the BBBs internal OS
 
-IMAGE="/opt/core-image-base-beaglebone.sdimg"
+IMAGE="/opt/core-image-base-beaglebone-modified-testing.sdimg"
 SDCARD=""
 
 function modify_sdimg {
