@@ -30,13 +30,13 @@ do_compile() {
   PATH="${B}/bin:$PATH"
   export PATH
 
-  cd "${S}"
-  godep go build -o "${B}/mender"
+  cd ${S}
+  godep go build -o ${B}/mender
 }
 
 do_install() {
-  install -d "${D}/${bindir}"
-  install -m 0755 "${B}/mender" "${D}/${bindir}"
+  install -d ${D}/${bindir}
+  install -m 0755 ${B}/mender ${D}/${bindir}
   install -d ${D}/${systemd_unitdir}/system
   install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
 
