@@ -8,7 +8,11 @@
 set -e
 set -x
 
-BUILDDIR="`dirname $0`"/../../build
+# if called under Yocto/OE shell, BUILDDIR will already be set correctly
+if [ -z "$BUILDDIR" ]; then
+    # try to guess BUILDDIR
+    BUILDDIR="`dirname $0`"/../../build
+fi
 
 QEMU_AUDIO_DRV=none \
     ${BUILDDIR}/tmp/sysroots/x86_64-linux/usr/bin/qemu-system-arm \
