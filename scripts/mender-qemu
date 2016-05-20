@@ -1,5 +1,13 @@
 #!/bin/sh
 
+# usage:
+#  mender-qemu [<image-name>]
+#  mender-qemu core-image-minimal
+#
+# if image name is not provided, the script will attempt to run
+# core-image-full-cmdline
+
+
 # NOTE: current settings forward
 #           ssh: port 8822
 #           VNC: port 5923
@@ -8,14 +16,27 @@
 set -e
 set -x
 
-BUILDDIR="`dirname $0`"/../../build
+# if called under Yocto/OE shell, BUILDDIR will already be set correctly
+if [ -z "$BUILDDIR" ]; then
+    # try to guess BUILDDIR
+    BUILDDIR="`dirname $0`"/../../build
+fi
+
+IMAGE_NAME=$1
+# check if it's named like an image
+if [ -n "$IMAGE_NAME" ] && echo "$IMAGE_NAME" | grep "image" >/dev/null 2>&1; then
+    # IMAGE name was passed in command line, skip the argument
+    shift
+else
+    IMAGE_NAME=core-image-full-cmdline
+fi
 
 QEMU_AUDIO_DRV=none \
     ${BUILDDIR}/tmp/sysroots/x86_64-linux/usr/bin/qemu-system-arm \
     -M vexpress-a9 \
     -m 1G \
     -kernel ${BUILDDIR}/tmp/deploy/images/vexpress-qemu/u-boot.elf \
-    -drive file=${BUILDDIR}/tmp/deploy/images/vexpress-qemu/core-image-full-cmdline-vexpress-qemu.sdimg,if=sd,format=raw \
+    -drive file=${BUILDDIR}/tmp/deploy/images/vexpress-qemu/${IMAGE_NAME}-vexpress-qemu.sdimg,if=sd,format=raw \
     -net nic \
     -net user,hostfwd=tcp::8822-:22 \
     -display vnc=:23 \
