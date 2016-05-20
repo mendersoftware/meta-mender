@@ -41,7 +41,6 @@ do_install() {
   install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
 
   #install configuration
-  install -d ${D}/${sysconfdir}
   install -d ${D}/${sysconfdir}/mender
   install -m 0644 ${WORKDIR}/mender.conf ${D}/${sysconfdir}/mender
 }
