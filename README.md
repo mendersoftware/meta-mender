@@ -19,7 +19,7 @@ Overview
 
 This layer contains all the needed recipes to build the Mender Go binary as a
 part of the Yocto image. It currently supports cross-compiling Mender for ARM
-devices using Go 1.4 and 1.5.
+devices using Go 1.6.
 
 As Mender is a framework not just a standalone application it requires the
 bootloader and partition layout set up in a specific way. That's why it is
