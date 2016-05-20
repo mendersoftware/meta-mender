@@ -41,7 +41,10 @@ IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
 
 ########## CONFIGURATION END ##########
 
+inherit image
 inherit image_types
+
+addtask do_rootfs_wicenv before do_image_sdimg
 
 WKS_FULL_PATH = "${WORKDIR}/mender-sdimg.wks"
 
