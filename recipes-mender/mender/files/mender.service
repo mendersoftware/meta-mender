@@ -5,7 +5,7 @@ Description=Mender OTA update service
 Type=simple
 User=root
 Group=root
-ExecStart=/usr/bin/mender -daemon
+ExecStart=/usr/bin/mender -daemon -log-level=debug -log-file=/var/log/mender.log
 Restart=on-abort
 
 [Install]
