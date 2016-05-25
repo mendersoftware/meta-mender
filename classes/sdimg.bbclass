@@ -20,8 +20,11 @@
 # this (e.g. OpenSSL certificates).
 SDIMG_DATA_PART_DIR ?= ""
 
+# Size of the data partition, which is preserved across updates.
+SDIMG_DATA_PART_SIZE_MB ?= "128"
+
 # Size of the first (FAT) partition, that contains the bootloader
-SDIMG_PART1_SIZE_MB ?= "128"
+SDIMG_BOOT_PART_SIZE_MB ?= "128"
 
 # For performance reasons, we try to align the partitions to the SD
 # card's erase block. It is impossible to know this information with
@@ -39,21 +42,24 @@ IMAGE_BOOT_ENV_FILE ?= "uboot.env"
 # u-boot environment file
 IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
 
+# These are usually defined in the machine section, but for daisy this
+# concept doesn't exist yet.
+IMAGE_BOOT_FILES ?= "u-boot.${UBOOT_SUFFIX}"
+IMAGE_BOOT_FILES_append_beaglebone = " MLO"
+
 ########## CONFIGURATION END ##########
 
 inherit image
 inherit image_types
 
-addtask do_rootfs_wicenv before do_image_sdimg
-
-WKS_FULL_PATH = "${WORKDIR}/mender-sdimg.wks"
-
 # We need to have the ext3 image generated already
 IMAGE_TYPEDEP_sdimg = "ext3"
 
-IMAGE_DEPENDS_sdimg = "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native"
+IMAGE_DEPENDS_sdimg = "util-linux-native dosfstools-native mtools-native e2fsprogs-native"
 
 IMAGE_CMD_sdimg() {
+    set -x
+
     mkdir -p "${WORKDIR}"
 
     # Workaround for the fact that the image builder requires this directory,
@@ -64,30 +70,27 @@ IMAGE_CMD_sdimg() {
     # Workaround for the fact the wic deletes its inputs (WTF??). These links
     # are disposable.
     ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.ext3" \
-        "${WORKDIR}/part1.tmp"
+        "${WORKDIR}/active.ext3"
     ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.ext3" \
-        "${WORKDIR}/part2.tmp"
+        "${WORKDIR}/inactive.ext3"
 
-    PART1_SIZE=$(expr ${SDIMG_PART1_SIZE_MB} \* 2048)
-    SDIMG_PARTITION_ALIGNMENT_KB=$(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1024)
-
-    dd if=/dev/zero of="${WORKDIR}/fat.dat" count=${PART1_SIZE}
-    mkfs.vfat "${WORKDIR}/fat.dat"
+    dd if=/dev/zero of="${WORKDIR}/boot.vfat" count=0 bs=1M seek=${SDIMG_BOOT_PART_SIZE_MB}
+    mkfs.vfat "${WORKDIR}/boot.vfat"
 
     # Create empty environment. Just so that the file is available.
     dd if=/dev/zero of="${WORKDIR}/${IMAGE_BOOT_ENV_FILE}" count=0 bs=1K seek=256
-    mcopy -i "${WORKDIR}/fat.dat" -v ${WORKDIR}/${IMAGE_BOOT_ENV_FILE} ::
+    mcopy -i "${WORKDIR}/boot.vfat" -v ${WORKDIR}/${IMAGE_BOOT_ENV_FILE} ::
     rm -f "${WORKDIR}/${IMAGE_BOOT_ENV_FILE}"
 
     # Copy uEnv.txt file to boot partition if file exists
     if [ -e ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ] ; then
-        mcopy -i "${WORKDIR}/fat.dat" -v ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ::
+        mcopy -i "${WORKDIR}/boot.vfat" -v ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ::
     fi
 
     # Copy boot files to boot partition
     for file in ${IMAGE_BOOT_FILES}
     do
-        mcopy -i "${WORKDIR}/fat.dat" -s ${DEPLOY_DIR_IMAGE}/$file ::
+        mcopy -i "${WORKDIR}/boot.vfat" -s ${DEPLOY_DIR_IMAGE}/$file ::
     done
 
     rm -rf "${WORKDIR}/data" || true
@@ -100,20 +103,88 @@ IMAGE_CMD_sdimg() {
     # The OpenSSL certificates should go here:
     echo "dummy certificate" > "${WORKDIR}/data/mender.cert"
 
-    cat > "${WORKDIR}/mender-sdimg.wks" <<EOF
-part /u-boot --source fsimage --sourceparams=file="${WORKDIR}/fat.dat"  --ondisk mmcblk0 --fstype=vfat --label boot --active  --align $SDIMG_PARTITION_ALIGNMENT_KB
-part /       --source fsimage --sourceparams=file="${WORKDIR}/part1.tmp" --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
-part /       --source fsimage --sourceparams=file="${WORKDIR}/part2.tmp" --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
-part /data   --source rootfs  --rootfs-dir="${WORKDIR}/data"             --ondisk mmcblk0 --fstype=ext3 --label data     --align $SDIMG_PARTITION_ALIGNMENT_KB
+    SDIMG=${WORKDIR}/${IMAGE_BASENAME}-${MACHINE}.sdimg
 
-# Note: "bootloader" appears to be useless in this context, but the wic
-# framework requires that it be present.
-bootloader --timeout=10  --append=""
-EOF
+    ALIGNMENT_SECTORS=$(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 2048)
+    ALIGNMENT_BYTES=$(expr $ALIGNMENT_SECTORS \* 512)
 
-    # Call WIC
-    IMAGE_CMD_wic
+    PART1_START_SECTORS=$ALIGNMENT_SECTORS
+    PART1_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/boot.vfat)
+    PART1_SIZE_BYTES=$(expr \( $PART1_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
+    PART1_END_SECTORS=$(expr $PART1_START_SECTORS + $PART1_SIZE_BYTES / 512 - 1)
 
-    mv "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
+    PART2_START_SECTORS=$(expr $PART1_END_SECTORS + 1)
+    PART2_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/active.ext3)
+    PART2_SIZE_BYTES=$(expr \( $PART2_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
+    PART2_END_SECTORS=$(expr $PART2_START_SECTORS + $PART2_SIZE_BYTES / 512 - 1)
+
+    PART3_START_SECTORS=$(expr $PART2_END_SECTORS + 1)
+    PART3_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/inactive.ext3)
+    PART3_SIZE_BYTES=$(expr \( $PART3_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
+    PART3_END_SECTORS=$(expr $PART3_START_SECTORS + $PART3_SIZE_BYTES / 512 - 1)
+
+    dd if=/dev/zero of=${WORKDIR}/data.ext3 count=0 bs=1M seek=${SDIMG_DATA_PART_SIZE_MB}
+    mkfs.ext3 -F ${WORKDIR}/data.ext3 -d ${WORKDIR}/data
+
+    PART4_START_SECTORS=$(expr $PART3_END_SECTORS + 1)
+    PART4_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/data.ext3)
+    PART4_SIZE_BYTES=$(expr \( $PART4_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
+    PART4_END_SECTORS=$(expr $PART4_START_SECTORS + $PART4_SIZE_BYTES / 512 - 1)
+
+    dd if=/dev/zero of=$SDIMG count=0 seek=$(expr $PART4_END_SECTORS + 1)
+    (
+        # Create DOS partition table
+        echo o
+        # 1st partition (FAT32)
+        echo n
+        echo p
+        echo 1
+        echo $PART1_START_SECTORS
+        echo $PART1_END_SECTORS
+        # 2nd partition (1st rootfs)
+        echo n
+        echo p
+        echo 2
+        echo $PART2_START_SECTORS
+        echo $PART2_END_SECTORS
+        # 3rd partition (2nd root)
+        echo n
+        echo p
+        echo 3
+        echo $PART3_START_SECTORS
+        echo $PART3_END_SECTORS
+        # 3rd partition (2nd root)
+        echo n
+        echo p
+        echo 4
+        echo $PART4_START_SECTORS
+        echo $PART4_END_SECTORS
+        # 1st partition: bootable
+        echo a
+        echo 1
+        # 1st partition: type W95 FAT16 (LBA)
+        echo t
+        echo 1
+        echo e
+        # 2nd partition: type Linux
+        echo t
+        echo 2
+        echo 83
+        # 3rd partition: type Linux
+        echo t
+        echo 3
+        echo 83
+        # COMMIT changes to image file
+        echo p
+        echo w
+
+    ) | fdisk -c=nondos -u=sectors $SDIMG
+
+    dd if=${WORKDIR}/boot.vfat of=$SDIMG seek=$PART1_START_SECTORS conv=notrunc
+    dd if=${WORKDIR}/active.ext3 of=$SDIMG seek=$PART2_START_SECTORS conv=notrunc
+    dd if=${WORKDIR}/inactive.ext3 of=$SDIMG seek=$PART3_START_SECTORS conv=notrunc
+    dd if=${WORKDIR}/data.ext3 of=$SDIMG seek=$PART4_START_SECTORS conv=notrunc
+
+    mv "$SDIMG" "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
     ln -sfn "${IMAGE_NAME}.sdimg" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.sdimg"
 }
