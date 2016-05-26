@@ -1,6 +1,9 @@
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io/"
 
+MENDER_SERVER_URL ?= "https://mender.io"
+MENDER_CERT_LOCATION ?= "/data/mender/server.crt"
+
 #From oe-meta-go (https://github.com/mem/oe-meta-go)
 DEPENDS = "go-cross godep"
 S = "${WORKDIR}/git"
@@ -10,6 +13,7 @@ inherit go
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https \
            file://mender.service \
            file://mender.conf \
+           file://server.crt \
           "
 
 SRCREV = "${AUTOREV}"
@@ -32,6 +36,13 @@ do_compile() {
 
   cd ${S}
   godep go build -o ${B}/mender
+
+  #prepare Mender configuration file
+  cp ${WORKDIR}/mender.conf ${B}
+  sed -i -e 's#[@]MENDER_SERVER_URL[@]#${MENDER_SERVER_URL}#' ${B}/mender.conf
+  sed -i -e 's#[@]MENDER_CERT_LOCATION[@]#${MENDER_CERT_LOCATION}#' ${B}/mender.conf
+
+  
 }
 
 do_install() {
@@ -44,5 +55,8 @@ do_install() {
 
   #install configuration
   install -d ${D}/${sysconfdir}/mender
-  install -m 0644 ${WORKDIR}/mender.conf ${D}/${sysconfdir}/mender
+  install -m 0644 ${B}/mender.conf ${D}/${sysconfdir}/mender
+
+  #install server certificate
+  install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
 }
