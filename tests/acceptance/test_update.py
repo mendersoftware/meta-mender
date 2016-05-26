@@ -28,11 +28,17 @@ class Helpers:
         subprocess.Popen(["s3cmd", "--follow-symlinks", "put", "image.dat", "s3://yocto-builds/tmp/"]).wait()
         subprocess.Popen(["s3cmd", "setacl", "s3://yocto-builds/tmp/image.dat", "--acl-public"]).wait()
 
+    @staticmethod
+    # TODO: Use this when mender is more stable. Spurious errors are currently generated.
+    def check_journal_errors():
+        output = run("journalctl -a -u mender | grep error")
+        assert output == 1
 
-@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb")
+@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "mender_running")
 class TestUpdates:
 
     def test_broken_image_update(self):
+
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
             execute(self.test_broken_image_update)
