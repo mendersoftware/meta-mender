@@ -21,7 +21,7 @@
 SDIMG_DATA_PART_DIR ?= ""
 
 # Size of the first (FAT) partition, that contains the bootloader
-SDIMG_PART1_SIZE_MB ?= "128"
+SDIMG_BOOT_PART_SIZE_MB ?= "128"
 
 # For performance reasons, we try to align the partitions to the SD
 # card's erase block. It is impossible to know this information with
@@ -68,7 +68,7 @@ IMAGE_CMD_sdimg() {
     ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.ext3" \
         "${WORKDIR}/part2.tmp"
 
-    PART1_SIZE=$(expr ${SDIMG_PART1_SIZE_MB} \* 2048)
+    PART1_SIZE=$(expr ${SDIMG_BOOT_PART_SIZE_MB} \* 2048)
     SDIMG_PARTITION_ALIGNMENT_KB=$(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1024)
 
     dd if=/dev/zero of="${WORKDIR}/fat.dat" count=${PART1_SIZE}
