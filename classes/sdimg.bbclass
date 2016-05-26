@@ -20,6 +20,9 @@
 # this (e.g. OpenSSL certificates).
 SDIMG_DATA_PART_DIR ?= ""
 
+# Size of the data partition, which is preserved across updates.
+SDIMG_DATA_PART_SIZE_MB ?= "128"
+
 # Size of the first (FAT) partition, that contains the bootloader
 SDIMG_BOOT_PART_SIZE_MB ?= "128"
 
@@ -64,30 +67,30 @@ IMAGE_CMD_sdimg() {
     # Workaround for the fact the wic deletes its inputs (WTF??). These links
     # are disposable.
     ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.ext3" \
-        "${WORKDIR}/part1.tmp"
+        "${WORKDIR}/active.ext3"
     ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.ext3" \
-        "${WORKDIR}/part2.tmp"
+        "${WORKDIR}/inactive.ext3"
 
     PART1_SIZE=$(expr ${SDIMG_BOOT_PART_SIZE_MB} \* 2048)
     SDIMG_PARTITION_ALIGNMENT_KB=$(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1024)
 
-    dd if=/dev/zero of="${WORKDIR}/fat.dat" count=${PART1_SIZE}
-    mkfs.vfat "${WORKDIR}/fat.dat"
+    dd if=/dev/zero of="${WORKDIR}/boot.vfat" count=${PART1_SIZE}
+    mkfs.vfat "${WORKDIR}/boot.vfat"
 
     # Create empty environment. Just so that the file is available.
     dd if=/dev/zero of="${WORKDIR}/${IMAGE_BOOT_ENV_FILE}" count=0 bs=1K seek=256
-    mcopy -i "${WORKDIR}/fat.dat" -v ${WORKDIR}/${IMAGE_BOOT_ENV_FILE} ::
+    mcopy -i "${WORKDIR}/boot.vfat" -v ${WORKDIR}/${IMAGE_BOOT_ENV_FILE} ::
     rm -f "${WORKDIR}/${IMAGE_BOOT_ENV_FILE}"
 
     # Copy uEnv.txt file to boot partition if file exists
     if [ -e ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ] ; then
-        mcopy -i "${WORKDIR}/fat.dat" -v ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ::
+        mcopy -i "${WORKDIR}/boot.vfat" -v ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ::
     fi
 
     # Copy boot files to boot partition
     for file in ${IMAGE_BOOT_FILES}
     do
-        mcopy -i "${WORKDIR}/fat.dat" -s ${DEPLOY_DIR_IMAGE}/$file ::
+        mcopy -i "${WORKDIR}/boot.vfat" -s ${DEPLOY_DIR_IMAGE}/$file ::
     done
 
     rm -rf "${WORKDIR}/data" || true
@@ -100,11 +103,14 @@ IMAGE_CMD_sdimg() {
     # The OpenSSL certificates should go here:
     echo "dummy certificate" > "${WORKDIR}/data/mender.cert"
 
+    dd if=/dev/zero of="${WORKDIR}/data.ext3" count=0 bs=1M seek=${SDIMG_DATA_PART_SIZE_MB}
+    mkfs.ext3 -F "${WORKDIR}/data.ext3" -d "${WORKDIR}/data"
+
     cat > "${WORKDIR}/mender-sdimg.wks" <<EOF
-part /u-boot --source fsimage --sourceparams=file="${WORKDIR}/fat.dat"  --ondisk mmcblk0 --fstype=vfat --label boot --active  --align $SDIMG_PARTITION_ALIGNMENT_KB
-part /       --source fsimage --sourceparams=file="${WORKDIR}/part1.tmp" --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
-part /       --source fsimage --sourceparams=file="${WORKDIR}/part2.tmp" --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
-part /data   --source rootfs  --rootfs-dir="${WORKDIR}/data"             --ondisk mmcblk0 --fstype=ext3 --label data     --align $SDIMG_PARTITION_ALIGNMENT_KB
+part /u-boot --source fsimage --sourceparams=file="${WORKDIR}/boot.vfat"     --ondisk mmcblk0 --fstype=vfat --label boot     --align $SDIMG_PARTITION_ALIGNMENT_KB --active
+part /       --source fsimage --sourceparams=file="${WORKDIR}/active.ext3"   --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
+part /       --source fsimage --sourceparams=file="${WORKDIR}/inactive.ext3" --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
+part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.ext3"     --ondisk mmcblk0 --fstype=ext3 --label data     --align $SDIMG_PARTITION_ALIGNMENT_KB
 
 # Note: "bootloader" appears to be useless in this context, but the wic
 # framework requires that it be present.
