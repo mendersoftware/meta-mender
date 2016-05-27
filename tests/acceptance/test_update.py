@@ -28,11 +28,17 @@ class Helpers:
         subprocess.Popen(["s3cmd", "--follow-symlinks", "put", "image.dat", "s3://yocto-builds/tmp/"]).wait()
         subprocess.Popen(["s3cmd", "setacl", "s3://yocto-builds/tmp/image.dat", "--acl-public"]).wait()
 
+    @staticmethod
+    # TODO: Use this when mender is more stable. Spurious errors are currently generated.
+    def check_journal_errors():
+        output = run("journalctl -a -u mender | grep error")
+        assert output == 1
 
-@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb")
+@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "mender_running")
 class TestUpdates:
 
     def test_broken_image_update(self):
+
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
             execute(self.test_broken_image_update)
@@ -106,13 +112,18 @@ class TestUpdates:
         output = run("fw_printenv bootcount")
         assert(output == "bootcount=1")
 
-        output = run("fw_printenv upgrade_available")
-        assert(output == "upgrade_available=1")
+        """
+            The daemon is running, so it will autocommit
+            on boot. This must be changed in the future.
+        """
 
-        output = run("fw_printenv boot_part")
-        assert(output == "boot_part=" + active_after)
+        #output = run("fw_printenv upgrade_available")
+        #assert(output == "upgrade_available=1")
 
-        run("mender -commit")
+        #output = run("fw_printenv boot_part")
+        #assert(output == "boot_part=" + active_after)
+
+        #run("mender -commit")
 
         output = run("fw_printenv upgrade_available")
         assert(output == "upgrade_available=0")
@@ -178,13 +189,19 @@ class TestUpdates:
         output = run("fw_printenv bootcount")
         assert(output == "bootcount=1")
 
-        output = run("fw_printenv upgrade_available")
-        assert(output == "upgrade_available=1")
 
-        output = run("fw_printenv boot_part")
-        assert(output == "boot_part=" + active_after)
+        """
+            The daemon is running, so it will autocommit
+            on boot. This must be changed in the future.
+        """
 
-        run("mender -commit")
+        #output = run("fw_printenv upgrade_available")
+        #assert(output == "upgrade_available=1")
+
+        #output = run("fw_printenv boot_part")
+        #assert(output == "boot_part=" + active_after)
+
+        #run("mender -commit")
 
         output = run("fw_printenv upgrade_available")
         assert(output == "upgrade_available=0")
