@@ -5,7 +5,7 @@ SRC_URI += "\
         "
 
 do_compile() {
-  export GOROOT_BOOTSTRAP="${SYSROOT}${nonarch_libdir}/go-bootstrap-${GO_BOOTSTRAP_VERSION}"
+  export GOROOT_BOOTSTRAP="${SYSROOT}${prefix}/lib/go-bootstrap-${GO_BOOTSTRAP_VERSION}"
 
   ## Setting `$GOBIN` doesn't do any good, looks like it ends up copying binaries there.
   export GOROOT_FINAL="${SYSROOT}${libdir}/go"
