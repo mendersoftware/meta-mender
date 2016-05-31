@@ -5,6 +5,7 @@ Description=Mender OTA update service
 Type=simple
 User=root
 Group=root
+ExecStartPre=/bin/mkdir -p -m 0700 /data/mender
 ExecStart=/usr/bin/mender -daemon
 Restart=on-abort
 
