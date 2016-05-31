@@ -2,7 +2,7 @@ DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io/"
 
 MENDER_SERVER_URL ?= "https://mender.io"
-MENDER_CERT_LOCATION ?= "/data/mender/server.crt"
+MENDER_CERT_LOCATION ?= "/etc/mender/server.crt"
 
 #From oe-meta-go (https://github.com/mem/oe-meta-go)
 DEPENDS = "go-cross godep"
