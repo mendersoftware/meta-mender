@@ -37,7 +37,7 @@ This layer depends on:
 
 ```
   URI: git://git.yoctoproject.org/poky
-  branch: master or jethro
+  branch: master
 
   URI: git://github.com/mendersoftware/meta-mender
   branch: master
@@ -62,72 +62,58 @@ Table of  contents:
 1. Pre-configuration
 ====================
 
-We first need to clone the latest Yocto sources from:
+First, we need to clone the latest Yocto Project source:
 
 ```
-git://git.yoctoproject.org/git/poky
+    $ git clone git://git.yoctoproject.org/poky.git
 ```
 
-Having done that, clone the rest of the needed dependencies into the top level
-of the Yocto build tree (usually yocto/poky). All the required dependencies are
-provided in the 'Dependencies' section above. At the moment, the needed Yocto
-layers for building a complete image are:
+Having done that, we can clone the meta-mender and oe-meta-go layers into the top level
+of the Yocto build tree (in directory poky):
 
 ```
-git://github.com/mendersoftware/meta-mender
-git://github.com/mem/oe-meta-go
+    $ cd poky
+    $ git clone git://github.com/mendersoftware/meta-mender
+    $ git clone git://github.com/mem/oe-meta-go
 ```
 
-After cloning these dependencies to the top of the build tree, the image can be
-built by adding the location of the layers `meta-mender` and `oe-meta-go` to
-`bblayers.conf`.
-
-In order to do so, first create the build directory for Yocto and set build
-environment:
+Next, we initialize the build environment:
 
 ```
     $ source oe-init-build-env
 ```
 
-This should create the build environment and build directory, and running the
-command should change the current directory to the build directory. In this
-document, we assume that the name of the build directory is `build`.
+This creates a build directory with the default name, ```build```, and makes it the
+current working directory.
 
+2. Yocto Project configuration
+==============================
 
-2. Yocto build configuration
-============================
+We need to incororate the two layers, meta-mender and oe-meta-go, into
+our project:
+```
+    $ bitbake-layers add-layer ../meta-mender
+    $ bitbake-layers add-layer ../oe-meta-go
+```
+We can generate a mender test build for one of two machines: a target emulated
+by QEMU or a BeagelBone Black.
 
-In order to support building Mender, the following changes are needed in the
-```conf/local.conf``` file:
+For QEMU, add these lines to the start of ```conf/local.conf```:
 
 ```
     INHERIT += "mender-install"
-    MACHINE ??= "vexpress-qemu"
+    MACHINE = "vexpress-qemu"
 ```
 
-for building the image that will be run on the QEMU machine or
+For the BeagleBone Black, add these lines:
 
 ```
     INHERIT += "mender-install"
-    MACHINE ??= "beaglebone"
+    MACHINE = "beaglebone"
 ```
 
-for building image supported by Beaglebone Black.
-
-The layers used for building the image need to be included.  In order to do so,
-edit `conf/bblayers.conf` and make sure that `BBLAYERS` looks like the
-following:
-
-```
-    BBLAYERS ?= " \
-      <YOCTO-INSTALL-DIR>/yocto/poky/meta \
-      <YOCTO-INSTALL-DIR>/yocto/poky/meta-yocto \
-      <YOCTO-INSTALL-DIR>/yocto/poky/meta-yocto-bsp \
-      <YOCTO-INSTALL-DIR>/yocto/poky/meta-mender \
-      <YOCTO-INSTALL-DIR>/yocto/poky/oe-meta-go \
-      "
-```
-
+It is also suggested to add ```INHERIT += "rm_work"``` to ```conf/local.conf```
+in order to conserve disk space during the build.
 
 3. Building image for QEMU
 ==========================
@@ -152,7 +138,7 @@ the section 'Booting the images with QEMU' below).
 
 For more information about getting started with Yocto, it is recommended to read
 the [Yocto Project Quick Start
-guide](http://www.yoctoproject.org/docs/2.0/yocto-project-qs/yocto-project-qs.html).
+guide](http://www.yoctoproject.org/docs/2.1/yocto-project-qs/yocto-project-qs.html).
 
 
 4. Booting the images with QEMU
@@ -160,21 +146,25 @@ guide](http://www.yoctoproject.org/docs/2.0/yocto-project-qs/yocto-project-qs.ht
 
 This layer contains bootable Yocto images, which can be used to boot Mender
 directly using QEMU. In order to simplify the boot process there are QEMU boot
-scripts provided in the directory `meta-mender/scripts`. To boot Mender, follow
-the instructions below:
+scripts provided in the directory `meta-mender/scripts`. To boot Mender:
 
 ```
-    $ cd ../meta-mender/scripts
-    $ ./mender-qemu
+    $ ../meta-mender/scripts/mender-qemu
 ```
 
-The above should start QEMU and boot the kernel and rootfs from the active
+The above will start QEMU and boot the kernel and rootfs from the active
 partition.  There should also be an inactive partition available where the
 update will be stored.
 
-If you want to forcibly close the emulator without shutting it down properly,
-press "Ctrl-c x". "Ctrl-c" will not work because it is intercepted by the shell
-inside the emulator.
+Log on with the user name root, no password.
+
+To terminate QEMU, we can power it down by typing this at the command prompt:
+```
+    # poweroff
+```
+
+Or, we can force the emulator to close down unconditionally by 
+pressing "Ctrl-A" followed by "X".
 
 5. Image building for BeagleBone Black
 ======================================
@@ -241,13 +231,13 @@ the current directory is poky):
 On the device, attempt an upgrade using the following command:
 
 ```
-    $ mender -rootfs http://10.0.2.2:8000/core-image-full-cmdline-vexpress-qemu.ext3
+    # mender -rootfs http://10.0.2.2:8000/core-image-full-cmdline-vexpress-qemu.ext3
 ```
 
 Having that done reboot the system:
 
 ```
-    $ reboot
+    # reboot
 ```
 
 Now the system should boot the kernel and corresponding rootfs from the
@@ -259,7 +249,7 @@ If the update was successful and (currently manual) verification of the
 installation is successful, run:
 
 ```
-    $ mender -commit
+    # mender -commit
 ```
 
 This ensures that the current kernel and rootfs pair will become the active. If
@@ -289,5 +279,3 @@ device automatically and the whole update and roll-back process will be
 automatic.  There is also ongoing work on the server side of Mender, where it
 will be possible to schedule image updates and get reports for the update status
 for each and every device connected to the server.
-
-
