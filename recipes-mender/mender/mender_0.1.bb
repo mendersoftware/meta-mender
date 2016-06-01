@@ -36,21 +36,32 @@ do_compile() {
   PATH="${B}/bin:$PATH"
   export PATH
 
-  cd ${S}
-  godep go build -o ${B}/mender
+  # mender is using vendored dependencies, any 3rd party libraries go to into
+  # /vendor directory inside mender source tree. In order for `go build` to pick
+  # up vendored deps from our source tree, the mender source tree itself must be
+  # located inside $GOPATH/src, for instance $GOPATH/src/mender
+  #
+  # recreate temporary $GOPATH/src/mender structure and link our source tree
+  mkdir -p ${B}/src
+  test -e ${B}/src/mender || ln -s ${S} ${B}/src/mender
+  cd ${B}/src/mender
+
+  # run verbose build, we should see which dependencies are pulled in
+  oe_runmake V=1 install
 
   #prepare Mender configuration file
   cp ${WORKDIR}/mender.conf ${B}
   sed -i -e 's#[@]MENDER_SERVER_URL[@]#${MENDER_SERVER_URL}#' ${B}/mender.conf
   sed -i -e 's#[@]MENDER_CERT_LOCATION[@]#${MENDER_CERT_LOCATION}#' ${B}/mender.conf
-
-  
 }
 
 do_install() {
   install -d ${D}/${bindir}
+
+  # mender is picked up from our fake GOPATH=${B}
   install -t ${D}/${bindir} -m 0755 \
-          ${B}/mender ${S}/support/mender-device-identity
+          ${B}/bin/mender \
+          ${S}/support/mender-device-identity
 
   install -d ${D}/${systemd_unitdir}/system
   install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
