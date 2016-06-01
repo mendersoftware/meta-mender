@@ -89,7 +89,7 @@ current working directory.
 2. Yocto Project configuration
 ==============================
 
-We need to incororate the two layers, meta-mender and oe-meta-go, into
+We need to incorporate the two layers, meta-mender and oe-meta-go, into
 our project:
 ```
     $ bitbake-layers add-layer ../meta-mender
@@ -203,8 +203,10 @@ sudo dd if=./tmp/deploy/images/beaglebone/core-image-base-beaglebone.sdimg of=/d
 ```
 
 To run above command you need to be in the Yocto image build directory and you
-need to make sure that you are copying the image to correct of device. After
-successful copy you can remove the SD card and insert to the Beaglebone.
+need to make sure that you are copying the image to correct `of` device
+(corresponding to the SD card). After a successful copy
+you can remove the SD card and insert to the Beaglebone.
+
 IMPORTANT: The standard BeagleBone booting process will cause that the
 bootloader from internal flash storage will be used. In order to use the
 bootloader from SD card make sure that S2 (boot) button is pressed while
