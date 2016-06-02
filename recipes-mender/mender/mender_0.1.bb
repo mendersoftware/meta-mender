@@ -58,9 +58,14 @@ do_compile() {
 do_install() {
   install -d ${D}/${bindir}
 
-  # mender is picked up from our fake GOPATH=${B}
+  GOOS=$(eval $(go env) && echo $GOOS)
+  GOARCH=$(eval $(go env) && echo $GOARCH)
+  # mender is picked up from our fake GOPATH=${B}/bin; because go build is so
+  # consistent, if it's a cross compilation build, binaries will be in
+  # ${GOPATH}/bin/${GOOS}_${GOARCH}, howver if it's not, the binaries are in
+  # ${GOPATH}/bin; handle cross compiled case only
   install -t ${D}/${bindir} -m 0755 \
-          ${B}/bin/mender \
+          ${B}/bin/${GOOS}_${GOARCH}/mender \
           ${S}/support/mender-device-identity
 
   install -d ${D}/${systemd_unitdir}/system
