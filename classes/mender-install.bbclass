@@ -11,3 +11,14 @@ DISTRO_FEATURES_BACKFILL_CONSIDERED = "sysvinit"
 VIRTUAL-RUNTIME_initscripts = ""
 
 IMAGE_INSTALL_append = " mender ca-certificates"
+
+# The storage device that holds the device partitions.
+MENDER_STORAGE_DEVICE ?= "/dev/mmcblk0"
+
+# The base name of the devices that hold individual partitions.
+# This is often MENDER_STORAGE_DEVICE + "p".
+MENDER_STORAGE_DEVICE_BASE ?= "/dev/mmcblk0p"
+
+# The numbers of the two rootfs partitions in the A/B partition layout.
+MENDER_PARTITION_A_NUMBER ?= "2"
+MENDER_PARTITION_B_NUMBER ?= "3"
