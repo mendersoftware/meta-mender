@@ -42,6 +42,11 @@ IMAGE_BOOT_ENV_FILE ?= "uboot.env"
 # u-boot environment file
 IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
 
+# This will be embedded into the boot sector, where depends on the offset
+# variable.
+IMAGE_BOOTLOADER_FILE ?= "u-boot.${UBOOT_SUFFIX}"
+IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ?= "2"
+
 ########## CONFIGURATION END ##########
 
 inherit image
@@ -119,6 +124,16 @@ EOF
 
     # Call WIC
     IMAGE_CMD_wic
+
+    # Embed boot loader in boot sector.
+    if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
+        if [ $(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${IMAGE_BOOTLOADER_FILE}) ]; then
+            bberror "Not enough space to embed boot loader in boot sector. Increase SDIMG_PARTITION_ALIGNMENT_MB."
+            exit 1
+        fi
+
+        dd if="${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" of="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" bs=512 seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} conv=notrunc
+    fi
 
     mv "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
     ln -sfn "${IMAGE_NAME}.sdimg" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.sdimg"
