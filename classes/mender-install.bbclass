@@ -1,4 +1,4 @@
-PREFERRED_VERSION_go_cross = "1.5%"
+PREFERRED_VERSION_go_cross = "1.6%"
 
 #Add support for systemd
 DISTRO_FEATURES_append = " systemd"
