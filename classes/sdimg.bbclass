@@ -46,6 +46,10 @@ IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
 # concept doesn't exist yet.
 IMAGE_BOOT_FILES ?= "u-boot.${UBOOT_SUFFIX}"
 IMAGE_BOOT_FILES_append_beaglebone = " MLO"
+# This will be embedded into the boot sector, where depends on the offset
+# variable.
+IMAGE_BOOTLOADER_FILE ?= "u-boot.${UBOOT_SUFFIX}"
+IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ?= "2"
 
 ########## CONFIGURATION END ##########
 
@@ -206,6 +210,16 @@ IMAGE_CMD_sdimg() {
     dd if=${WORKDIR}/active.ext3 of=$SDIMG seek=$PART2_START_SECTORS conv=notrunc
     dd if=${WORKDIR}/inactive.ext3 of=$SDIMG seek=$PART3_START_SECTORS conv=notrunc
     dd if=${WORKDIR}/data.ext3 of=$SDIMG seek=$PART5_START_SECTORS conv=notrunc
+
+    # Embed boot loader in boot sector.
+    if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
+        if [ $(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${IMAGE_BOOTLOADER_FILE}) ]; then
+            bberror "Not enough space to embed boot loader in boot sector. Increase SDIMG_PARTITION_ALIGNMENT_MB."
+            exit 1
+        fi
+
+        dd if="${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" of="$SDIMG" bs=512 seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} conv=notrunc
+    fi
 
     mv "$SDIMG" "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
     ln -sfn "${IMAGE_NAME}.sdimg" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.sdimg"
