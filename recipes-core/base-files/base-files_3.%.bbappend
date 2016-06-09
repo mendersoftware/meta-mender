@@ -15,6 +15,6 @@ do_patch_device_menderimage() {
 addtask do_patch_device after do_patch before do_install
 
 do_install_append_menderimage () {
-    install -d ${D}/u-boot
+    install -d ${D}/uboot
     install -d ${D}/data
 }
