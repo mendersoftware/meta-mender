@@ -107,7 +107,7 @@ IMAGE_CMD_sdimg() {
     mkfs.ext3 -F "${WORKDIR}/data.ext3" -d "${WORKDIR}/data"
 
     cat > "${WORKDIR}/mender-sdimg.wks" <<EOF
-part /u-boot --source fsimage --sourceparams=file="${WORKDIR}/boot.vfat"     --ondisk mmcblk0 --fstype=vfat --label boot     --align $SDIMG_PARTITION_ALIGNMENT_KB --active
+part /uboot  --source fsimage --sourceparams=file="${WORKDIR}/boot.vfat"     --ondisk mmcblk0 --fstype=vfat --label boot     --align $SDIMG_PARTITION_ALIGNMENT_KB --active
 part /       --source fsimage --sourceparams=file="${WORKDIR}/active.ext3"   --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
 part /       --source fsimage --sourceparams=file="${WORKDIR}/inactive.ext3" --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
 part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.ext3"     --ondisk mmcblk0 --fstype=ext3 --label data     --align $SDIMG_PARTITION_ALIGNMENT_KB
