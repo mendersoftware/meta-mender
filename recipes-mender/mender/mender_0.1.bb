@@ -54,9 +54,9 @@ do_compile() {
   sed -i -e 's#[@]MENDER_SERVER_URL[@]#${MENDER_SERVER_URL}#' ${B}/mender.conf
   sed -i -e 's#[@]MENDER_CERT_LOCATION[@]#${MENDER_CERT_LOCATION}#' ${B}/mender.conf
 
-  if [ -n "${MENDER_PARTITION_A_NUMBER}" ] && [ -n "${MENDER_PARTITION_B_NUMBER}" ]; then
-    sed -i -e 's#[@]MENDER_PARTITION_A_NUMBER[@]#${MENDER_PARTITION_A_NUMBER}#' ${B}/mender.conf
-    sed -i -e 's#[@]MENDER_PARTITION_B_NUMBER[@]#${MENDER_PARTITION_B_NUMBER}#' ${B}/mender.conf
+  if [ -n "${MENDER_ROOTFS_PART_A}" ] && [ -n "${MENDER_ROOTFS_PART_B}" ]; then
+    sed -i -e 's#[@]MENDER_ROOTFS_PART_A[@]#${MENDER_ROOTFS_PART_A}#' ${B}/mender.conf
+    sed -i -e 's#[@]MENDER_ROOTFS_PART_B[@]#${MENDER_ROOTFS_PART_B}#' ${B}/mender.conf
   fi
 }
 
