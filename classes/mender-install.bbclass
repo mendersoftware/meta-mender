@@ -19,6 +19,12 @@ MENDER_STORAGE_DEVICE ?= "/dev/mmcblk0"
 # This is often MENDER_STORAGE_DEVICE + "p".
 MENDER_STORAGE_DEVICE_BASE ?= "/dev/mmcblk0p"
 
+# The partition number holding the boot partition.
+MENDER_BOOT_PART ?= "${MENDER_STORAGE_DEVICE_BASE}1"
+
 # The numbers of the two rootfs partitions in the A/B partition layout.
-MENDER_PARTITION_A_NUMBER ?= "2"
-MENDER_PARTITION_B_NUMBER ?= "3"
+MENDER_ROOTFS_PART_A ?= "${MENDER_STORAGE_DEVICE_BASE}2"
+MENDER_ROOTFS_PART_B ?= "${MENDER_STORAGE_DEVICE_BASE}3"
+
+# The partition number holding the data partition.
+MENDER_DATA_PART ?= "${MENDER_STORAGE_DEVICE_BASE}5"
