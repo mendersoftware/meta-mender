@@ -1,3 +1,5 @@
+inherit mender-install
+
 # Class that creates an SD card image that boots under qemu's emulation
 # for vexpress-a9 board. See the script mender-qemu for an example of
 # how to boot the image.
