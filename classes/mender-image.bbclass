@@ -1,3 +1,5 @@
+inherit mender-install
+
 OVERRIDES_append = ":menderimage"
 
 #Add meta information to the created image
