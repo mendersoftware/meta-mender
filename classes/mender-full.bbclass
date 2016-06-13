@@ -3,3 +3,4 @@
 inherit mender-boot
 inherit mender-image
 inherit mender-install
+inherit mender-systemd
