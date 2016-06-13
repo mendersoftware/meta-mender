@@ -8,9 +8,13 @@ do_patch_device() {
     true
 }
 do_patch_device_menderimage() {
-    if [ -n "${MENDER_STORAGE_DEVICE_BASE}" ]; then
-        sed -i -e 's,/dev/mmcblk0p,${MENDER_STORAGE_DEVICE_BASE},g' ${S}/fstab
+    if [ -z "${MENDER_BOOT_PART}" ] || [ -z "${MENDER_DATA_PART}" ]; then
+        bberror "MENDER_BOOT_PART or MENDER_DATA_PART not set."
+        exit 1
     fi
+
+    sed -i -e 's,@MENDER_BOOT_PART@,${MENDER_BOOT_PART},g' ${S}/fstab
+    sed -i -e 's,@MENDER_DATA_PART@,${MENDER_DATA_PART},g' ${S}/fstab
 }
 addtask do_patch_device after do_patch before do_install
 
