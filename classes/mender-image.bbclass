@@ -1,3 +1,5 @@
+# Class for those who want a Mender-ready device image.
+
 inherit mender-install
 
 OVERRIDES_append = ":menderimage"

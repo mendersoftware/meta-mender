@@ -1,3 +1,5 @@
+# Class for those who want to install the Mender client into the image.
+
 PREFERRED_VERSION_go_cross = "1.6%"
 
 # Add support for systemd
