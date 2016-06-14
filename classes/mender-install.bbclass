@@ -1,23 +1,22 @@
-#Add meta information to the created image
-inherit mender-image-buildinfo
-IMAGE_PREPROCESS_COMMAND += "buildinfo_mender;"
+# Class for those who want to install the Mender client into the image.
 
-EXTRA_IMAGEDEPENDS += "u-boot u-boot-fw-utils"
-PREFERRED_VERSION_u-boot = "v2015.10%"
-PREFERRED_VERSION_u-boot-fw-utils = "v2015.10%"
-PREFERRED_VERSION_go_cross = "1.5%"
+PREFERRED_VERSION_go_cross = "1.6%"
 
-#Add support for systemd
-DISTRO_FEATURES_append = " systemd"
-VIRTUAL-RUNTIME_init_manager = "systemd"
-DISTRO_FEATURES_BACKFILL_CONSIDERED = "sysvinit"
-VIRTUAL-RUNTIME_initscripts = ""
+IMAGE_INSTALL_append = " mender ca-certificates"
 
+# The storage device that holds the device partitions.
+MENDER_STORAGE_DEVICE ?= "/dev/mmcblk0"
 
-#Make sure we are creating sdimg with all needed partitioning.
-IMAGE_CLASSES += "sdimg"
-IMAGE_FSTYPES += "sdimg"
+# The base name of the devices that hold individual partitions.
+# This is often MENDER_STORAGE_DEVICE + "p".
+MENDER_STORAGE_DEVICE_BASE ?= "/dev/mmcblk0p"
 
-IMAGE_INSTALL_append = " u-boot-fw-utils mender ca-certificates"
+# The partition number holding the boot partition.
+MENDER_BOOT_PART ?= "${MENDER_STORAGE_DEVICE_BASE}1"
 
+# The numbers of the two rootfs partitions in the A/B partition layout.
+MENDER_ROOTFS_PART_A ?= "${MENDER_STORAGE_DEVICE_BASE}2"
+MENDER_ROOTFS_PART_B ?= "${MENDER_STORAGE_DEVICE_BASE}3"
 
+# The partition number holding the data partition.
+MENDER_DATA_PART ?= "${MENDER_STORAGE_DEVICE_BASE}5"

@@ -1,3 +1,5 @@
+inherit mender-install
+
 # Class that creates an SD card image that boots under qemu's emulation
 # for vexpress-a9 board. See the script mender-qemu for an example of
 # how to boot the image.
@@ -41,6 +43,12 @@ IMAGE_BOOT_ENV_FILE ?= "uboot.env"
 
 # u-boot environment file
 IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
+
+# This will be embedded into the boot sector, or close to the boot sector, where
+# exactly depends on the offset variable.
+IMAGE_BOOTLOADER_FILE ?= "u-boot.${UBOOT_SUFFIX}"
+# Offset of bootloader, in sectors (512 bytes).
+IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ?= "2"
 
 ########## CONFIGURATION END ##########
 
@@ -119,6 +127,16 @@ EOF
 
     # Call WIC
     IMAGE_CMD_wic
+
+    # Embed boot loader in image, offset relative to boot sector.
+    if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
+        if [ $(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${IMAGE_BOOTLOADER_FILE}) ]; then
+            bberror "Not enough space to embed boot loader in boot sector. Increase SDIMG_PARTITION_ALIGNMENT_MB."
+            exit 1
+        fi
+
+        dd if="${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" of="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" bs=512 seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} conv=notrunc
+    fi
 
     mv "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
     ln -sfn "${IMAGE_NAME}.sdimg" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.sdimg"
