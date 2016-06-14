@@ -6,8 +6,8 @@ cat > ${IMAGE_ROOTFS}${sysconfdir}/build_mender << END
 ------------------------
 Mender device manifest:|
 ------------------------
-DEVICE_TYPE=$DEVICE_TYPE
-IMAGE_ID=$IMAGE_ID
+DEVICE_TYPE=${DEVICE_TYPE}
+IMAGE_ID=${IMAGE_ID}
 ------------------------
 END
 }
