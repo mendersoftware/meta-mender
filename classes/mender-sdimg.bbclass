@@ -1,3 +1,5 @@
+inherit mender-install
+
 # Class that creates an SD card image that boots under qemu's emulation
 # for vexpress-a9 board. See the script mender-qemu for an example of
 # how to boot the image.
@@ -46,6 +48,11 @@ IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
 # concept doesn't exist yet.
 IMAGE_BOOT_FILES ?= "u-boot.${UBOOT_SUFFIX}"
 IMAGE_BOOT_FILES_append_beaglebone = " MLO"
+# This will be embedded into the boot sector, or close to the boot sector, where
+# exactly depends on the offset variable.
+IMAGE_BOOTLOADER_FILE ?= "u-boot.${UBOOT_SUFFIX}"
+# Offset of bootloader, in sectors (512 bytes).
+IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ?= "2"
 
 ########## CONFIGURATION END ##########
 
@@ -108,16 +115,19 @@ IMAGE_CMD_sdimg() {
     ALIGNMENT_SECTORS=$(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 2048)
     ALIGNMENT_BYTES=$(expr $ALIGNMENT_SECTORS \* 512)
 
+    # Boot partition sectors (primary)
     PART1_START_SECTORS=$ALIGNMENT_SECTORS
     PART1_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/boot.vfat)
     PART1_SIZE_BYTES=$(expr \( $PART1_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
     PART1_END_SECTORS=$(expr $PART1_START_SECTORS + $PART1_SIZE_BYTES / 512 - 1)
 
+    # Active partition sectors (primary)
     PART2_START_SECTORS=$(expr $PART1_END_SECTORS + 1)
     PART2_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/active.ext3)
     PART2_SIZE_BYTES=$(expr \( $PART2_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
     PART2_END_SECTORS=$(expr $PART2_START_SECTORS + $PART2_SIZE_BYTES / 512 - 1)
 
+    # Inactive partition sectors (primary)
     PART3_START_SECTORS=$(expr $PART2_END_SECTORS + 1)
     PART3_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/inactive.ext3)
     PART3_SIZE_BYTES=$(expr \( $PART3_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
@@ -126,12 +136,24 @@ IMAGE_CMD_sdimg() {
     dd if=/dev/zero of=${WORKDIR}/data.ext3 count=0 bs=1M seek=${SDIMG_DATA_PART_SIZE_MB}
     mkfs.ext3 -F ${WORKDIR}/data.ext3 -d ${WORKDIR}/data
 
+    # Extended partition sectors
     PART4_START_SECTORS=$(expr $PART3_END_SECTORS + 1)
-    PART4_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/data.ext3)
+    # One extra alignment block for extended partition table.
+    PART4_SIZE_BYTES_UNALIGNED=$(expr $(stat -L -c %s ${WORKDIR}/data.ext3) + $ALIGNMENT_BYTES)
     PART4_SIZE_BYTES=$(expr \( $PART4_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
     PART4_END_SECTORS=$(expr $PART4_START_SECTORS + $PART4_SIZE_BYTES / 512 - 1)
 
-    dd if=/dev/zero of=$SDIMG count=0 seek=$(expr $PART4_END_SECTORS + 1)
+    # Data partition sectors (extended)
+    # Starts inside the extended partition, after one alignment block.
+    PART5_START_SECTORS=$(expr $PART4_START_SECTORS + $ALIGNMENT_SECTORS)
+    PART5_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/data.ext3)
+    PART5_SIZE_BYTES=$(expr \( $PART5_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
+    PART5_END_SECTORS=$(expr $PART5_START_SECTORS + $PART5_SIZE_BYTES / 512 - 1)
+
+    # Sanity check: These should be equal.
+    test $PART4_END_SECTORS -eq $PART5_END_SECTORS
+
+    dd if=/dev/zero of=$SDIMG count=0 seek=$(expr $PART5_END_SECTORS + 1)
     (
         # Create DOS partition table
         echo o
@@ -153,12 +175,15 @@ IMAGE_CMD_sdimg() {
         echo 3
         echo $PART3_START_SECTORS
         echo $PART3_END_SECTORS
-        # 3rd partition (2nd root)
+        # 4th partition (extended)
         echo n
-        echo p
-        echo 4
+        echo e
         echo $PART4_START_SECTORS
         echo $PART4_END_SECTORS
+        # 5th partition (data partition)
+        echo n
+        echo $PART5_START_SECTORS
+        echo $PART5_END_SECTORS
         # 1st partition: bootable
         echo a
         echo 1
@@ -174,6 +199,10 @@ IMAGE_CMD_sdimg() {
         echo t
         echo 3
         echo 83
+        # 5th partition: type Linux
+        echo t
+        echo 5
+        echo 83
         # COMMIT changes to image file
         echo p
         echo w
@@ -183,7 +212,17 @@ IMAGE_CMD_sdimg() {
     dd if=${WORKDIR}/boot.vfat of=$SDIMG seek=$PART1_START_SECTORS conv=notrunc
     dd if=${WORKDIR}/active.ext3 of=$SDIMG seek=$PART2_START_SECTORS conv=notrunc
     dd if=${WORKDIR}/inactive.ext3 of=$SDIMG seek=$PART3_START_SECTORS conv=notrunc
-    dd if=${WORKDIR}/data.ext3 of=$SDIMG seek=$PART4_START_SECTORS conv=notrunc
+    dd if=${WORKDIR}/data.ext3 of=$SDIMG seek=$PART5_START_SECTORS conv=notrunc
+
+    # Embed boot loader in image, offset relative to boot sector.
+    if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
+        if [ $(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${IMAGE_BOOTLOADER_FILE}) ]; then
+            bberror "Not enough space to embed boot loader in boot sector. Increase SDIMG_PARTITION_ALIGNMENT_MB."
+            exit 1
+        fi
+
+        dd if="${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" of="$SDIMG" bs=512 seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} conv=notrunc
+    fi
 
     mv "$SDIMG" "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
     ln -sfn "${IMAGE_NAME}.sdimg" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.sdimg"

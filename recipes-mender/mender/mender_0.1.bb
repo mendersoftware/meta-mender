@@ -50,9 +50,14 @@ do_compile() {
   oe_runmake V=1 install
 
   #prepare Mender configuration file
-  cp ${WORKDIR}/mender.conf ${B}
+  cp ${S}/mender.conf ${B}
   sed -i -e 's#[@]MENDER_SERVER_URL[@]#${MENDER_SERVER_URL}#' ${B}/mender.conf
   sed -i -e 's#[@]MENDER_CERT_LOCATION[@]#${MENDER_CERT_LOCATION}#' ${B}/mender.conf
+
+  if [ -n "${MENDER_ROOTFS_PART_A}" ] && [ -n "${MENDER_ROOTFS_PART_B}" ]; then
+    sed -i -e 's#[@]MENDER_ROOTFS_PART_A[@]#${MENDER_ROOTFS_PART_A}#' ${B}/mender.conf
+    sed -i -e 's#[@]MENDER_ROOTFS_PART_B[@]#${MENDER_ROOTFS_PART_B}#' ${B}/mender.conf
+  fi
 }
 
 do_install() {
@@ -69,12 +74,12 @@ do_install() {
           ${S}/support/mender-device-identity
 
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${S}/mender.service ${D}/${systemd_unitdir}/system
 
   #install configuration
   install -d ${D}/${sysconfdir}/mender
   install -m 0644 ${B}/mender.conf ${D}/${sysconfdir}/mender
 
   #install server certificate
-  install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
+  install -m 0444 ${S}/server.crt ${D}/${sysconfdir}/mender
 }
