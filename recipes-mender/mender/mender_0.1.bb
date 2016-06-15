@@ -30,6 +30,35 @@ FILES_${PN} += "${systemd_unitdir}/system/mender.service \
                 ${sysconfdir}/mender.conf \
                "
 
+do_configure() {
+  # Move/copy all file:// URIs into WORKDIR. We need to manually move/copy them
+  # because externalsrc builds do not automatically fetch local files from the
+  # bb recipe, and we need to put them in WORKDIR because we should not copy
+  # them into S if it is external.
+
+  # Bitbake quoting rules mean we need to make an intermediate variable here.
+  SRC_URI='${SRC_URI}'
+  for file in $SRC_URI; do
+    case $file in
+      file://)
+        if [ -n "${EXTERNALSRC}" ]; then
+          for path in ${FILESPATH}; do
+            if [ -e $path/$file ]; then
+              cp -r $path/$file ${WORKDIR}
+              break
+            fi
+          done
+        else
+          mv `basename $file` ${WORKDIR}
+        fi
+        ;;
+      *)
+        continue
+        ;;
+    esac
+  done
+}
+
 do_compile() {
   GOPATH="${B}:${S}"
   export GOPATH
@@ -50,7 +79,7 @@ do_compile() {
   oe_runmake V=1 install
 
   #prepare Mender configuration file
-  cp ${S}/mender.conf ${B}
+  cp ${WORKDIR}/mender.conf ${B}
   sed -i -e 's#[@]MENDER_SERVER_URL[@]#${MENDER_SERVER_URL}#' ${B}/mender.conf
   sed -i -e 's#[@]MENDER_CERT_LOCATION[@]#${MENDER_CERT_LOCATION}#' ${B}/mender.conf
 
@@ -74,12 +103,12 @@ do_install() {
           ${S}/support/mender-device-identity
 
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${S}/mender.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
 
   #install configuration
   install -d ${D}/${sysconfdir}/mender
   install -m 0644 ${B}/mender.conf ${D}/${sysconfdir}/mender
 
   #install server certificate
-  install -m 0444 ${S}/server.crt ${D}/${sysconfdir}/mender
+  install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
 }
