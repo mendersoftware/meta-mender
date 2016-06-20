@@ -1,0 +1,70 @@
+From 35481b3b1547db1c6988205868958ff2bc11b612 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@mender.io>
+Date: Fri, 17 Jun 2016 14:54:04 +0200
+Subject: [PATCH] BBB: Use Mender boot code for selecting boot device and
+ partition.
+
+---
+ include/configs/am335x_evm.h      | 11 +++++------
+ include/configs/ti_armv7_common.h |  2 +-
+ 2 files changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/include/configs/am335x_evm.h b/include/configs/am335x_evm.h
+index 3cf768e..5d21335 100644
+--- a/include/configs/am335x_evm.h
++++ b/include/configs/am335x_evm.h
+@@ -104,8 +104,8 @@
+ 		"root=${ramroot} " \
+ 		"rootfstype=${ramrootfstype}\0" \
+ 	"loadramdisk=load mmc ${mmcdev} ${rdaddr} ramdisk.gz\0" \
+-	"loadimage=load mmc ${bootpart} ${loadaddr} ${bootdir}/${bootfile}\0" \
+-	"loadfdt=load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
++	"loadimage=load ${mender_uboot_root} ${loadaddr} ${bootdir}/${bootfile}\0" \
++	"loadfdt=load ${mender_uboot_root} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
+ 	"mmcloados=run args_mmc; " \
+ 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+ 			"if run loadfdt; then " \
+@@ -164,6 +164,7 @@
+ #endif
+ 
+ #define CONFIG_BOOTCOMMAND \
++	"run mender_setup; " \
+ 	"run findfdt; " \
+ 	"run mmcboot;" \
+ 	"setenv mmcdev 1; " \
+@@ -197,7 +198,7 @@
+ 
+ /* Bootcount using the RTC block */
+ #define CONFIG_BOOTCOUNT_LIMIT
+-#define CONFIG_BOOTCOUNT_AM33XX
++#define CONFIG_BOOTCOUNT_ENV
+ #define CONFIG_SYS_BOOTCOUNT_BE
+ 
+ /* USB gadget RNDIS */
+@@ -245,9 +246,7 @@
+ 					"-(NAND.file-system)"
+ #define CONFIG_SYS_NAND_U_BOOT_OFFS	0x000c0000
+ #undef CONFIG_ENV_IS_NOWHERE
+-#define CONFIG_ENV_IS_IN_NAND
+-#define CONFIG_ENV_OFFSET		0x001c0000
+-#define CONFIG_ENV_OFFSET_REDUND	0x001e0000
++#define CONFIG_ENV_IS_IN_FAT
+ #define CONFIG_SYS_ENV_SECT_SIZE	CONFIG_SYS_NAND_BLOCK_SIZE
+ /* NAND: SPL related configs */
+ #ifdef CONFIG_SPL_NAND_SUPPORT
+diff --git a/include/configs/ti_armv7_common.h b/include/configs/ti_armv7_common.h
+index 6dc6515..026aac7 100644
+--- a/include/configs/ti_armv7_common.h
++++ b/include/configs/ti_armv7_common.h
+@@ -61,7 +61,7 @@
+ #define DEFAULT_MMC_TI_ARGS \
+ 	"mmcdev=0\0" \
+ 	"mmcrootfstype=ext4 rootwait\0" \
+-	"finduuid=part uuid mmc 0:2 uuid\0" \
++	"finduuid=part uuid ${mender_uboot_root} uuid\0" \
+ 	"args_mmc=run finduuid;setenv bootargs console=${console} " \
+ 		"${optargs} " \
+ 		"root=PARTUUID=${uuid} rw " \
+-- 
+2.8.2
+
