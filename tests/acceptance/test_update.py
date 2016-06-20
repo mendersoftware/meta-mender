@@ -97,8 +97,8 @@ class TestUpdates:
         output = run("fw_printenv upgrade_available")
         assert(output == "upgrade_available=1")
 
-        output = run("fw_printenv boot_part")
-        assert(output == "boot_part=" + passive_before)
+        output = run("fw_printenv mender_boot_part")
+        assert(output == "mender_boot_part=" + passive_before)
 
         reboot()
 
@@ -120,16 +120,16 @@ class TestUpdates:
         #output = run("fw_printenv upgrade_available")
         #assert(output == "upgrade_available=1")
 
-        #output = run("fw_printenv boot_part")
-        #assert(output == "boot_part=" + active_after)
+        #output = run("fw_printenv mender_boot_part")
+        #assert(output == "mender_boot_part=" + active_after)
 
         #run("mender -commit")
 
         output = run("fw_printenv upgrade_available")
         assert(output == "upgrade_available=0")
 
-        output = run("fw_printenv boot_part")
-        assert(output == "boot_part=" + active_after)
+        output = run("fw_printenv mender_boot_part")
+        assert(output == "mender_boot_part=" + active_after)
 
         active_before = active_after
         passive_before = passive_after
@@ -174,8 +174,8 @@ class TestUpdates:
         output = run("fw_printenv upgrade_available")
         assert(output == "upgrade_available=1")
 
-        output = run("fw_printenv boot_part")
-        assert(output == "boot_part=" + passive_before)
+        output = run("fw_printenv mender_boot_part")
+        assert(output == "mender_boot_part=" + passive_before)
 
         reboot()
 
@@ -198,16 +198,16 @@ class TestUpdates:
         #output = run("fw_printenv upgrade_available")
         #assert(output == "upgrade_available=1")
 
-        #output = run("fw_printenv boot_part")
-        #assert(output == "boot_part=" + active_after)
+        #output = run("fw_printenv mender_boot_part")
+        #assert(output == "mender_boot_part=" + active_after)
 
         #run("mender -commit")
 
         output = run("fw_printenv upgrade_available")
         assert(output == "upgrade_available=0")
 
-        output = run("fw_printenv boot_part")
-        assert(output == "boot_part=" + active_after)
+        output = run("fw_printenv mender_boot_part")
+        assert(output == "mender_boot_part=" + active_after)
 
         active_before = active_after
         passive_before = passive_after
