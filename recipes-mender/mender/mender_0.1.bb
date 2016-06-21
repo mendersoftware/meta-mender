@@ -82,4 +82,12 @@ do_install() {
 
   #install server certificate
   install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
+
+  install -d ${D}/${localstatedir}/lib/mender
+}
+
+do_install_append_menderimage() {
+  # symlink /var/lib/mender to /data/mender
+  rm -rf ${D}/${localstatedir}/lib/mender
+  ln -s /data/mender ${D}/${localstatedir}/lib/mender
 }
