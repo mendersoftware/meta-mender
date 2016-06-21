@@ -1,15 +1,11 @@
 # Class to help deal with systemd and Mender.
 
-# Suggested method for adding support for systemd, enabled by default for QEMU.
+# Suggested method for adding support for systemd, enabled by default for QEMU (vexpress-qemu.conf)
 #
 #DISTRO_FEATURES_append = " systemd"
 #VIRTUAL-RUNTIME_init_manager = "systemd"
 #DISTRO_FEATURES_BACKFILL_CONSIDERED = "sysvinit"
 #VIRTUAL-RUNTIME_initscripts = ""
-DISTRO_FEATURES_append_vexpress-qemu = " systemd"
-VIRTUAL-RUNTIME_init_manager_vexpress-qemu = "systemd"
-DISTRO_FEATURES_BACKFILL_CONSIDERED_vexpress-qemu = "sysvinit"
-VIRTUAL-RUNTIME_initscripts_vexpress-qemu = ""
 
 # Note that a very common error with systemd is that the system hangs during the
 # boot process while looking for devices. This is almost always because the
