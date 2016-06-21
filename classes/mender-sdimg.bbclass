@@ -26,7 +26,7 @@ SDIMG_DATA_PART_DIR ?= ""
 SDIMG_DATA_PART_SIZE_MB ?= "128"
 
 # Size of the first (FAT) partition, that contains the bootloader
-SDIMG_BOOT_PART_SIZE_MB ?= "128"
+SDIMG_BOOT_PART_SIZE_MB ?= "8"
 
 # For performance reasons, we try to align the partitions to the SD
 # card's erase block. It is impossible to know this information with
