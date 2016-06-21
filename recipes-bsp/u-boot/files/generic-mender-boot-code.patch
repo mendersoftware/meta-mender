@@ -51,7 +51,7 @@ index 0000000..c5a1c11
 +#endif
 +
 +#define FAT_ENV_INTERFACE       MENDER_UBOOT_STORAGE_INTERFACE
-+#define FAT_ENV_DEVICE_AND_PART MENDER_UBOOT_STORAGE_DEVICE ":" MENDER_BOOT_PART_NUMBER
++#define FAT_ENV_DEVICE_AND_PART __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":" __stringify(MENDER_BOOT_PART_NUMBER)
 +#define FAT_ENV_DEVICE          MENDER_UBOOT_STORAGE_DEVICE
 +#define FAT_ENV_PART            MENDER_BOOT_PART_NUMBER
 +#define FAT_ENV_FILE            "uboot.env"
@@ -121,16 +121,16 @@ index 0000000..09a52e7
 +                                                                        \
 +    "upgrade_available=0\0"                                             \
 +                                                                        \
-+    "mender_boot_part=" MENDER_ROOTFS_PART_A_NUMBER "\0"                \
++    "mender_boot_part=" __stringify(MENDER_ROOTFS_PART_A_NUMBER) "\0"   \
 +                                                                        \
 +    "mender_setup="                                                     \
 +    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part};" \
-+    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " MENDER_UBOOT_STORAGE_DEVICE ":${mender_boot_part}\0" \
++    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}\0" \
 +                                                                        \
 +    "mender_altbootcmd="                                                \
-+    "if test ${mender_boot_part} = " MENDER_ROOTFS_PART_A_NUMBER "; "   \
-+    "then setenv mender_boot_part " MENDER_ROOTFS_PART_B_NUMBER "; "    \
-+    "else setenv mender_boot_part " MENDER_ROOTFS_PART_A_NUMBER "; "    \
++    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "  \
++    "then setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_B_NUMBER) "; "   \
++    "else setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "   \
 +    "fi; "                                                              \
 +    "setenv upgrade_available 0; "                                      \
 +    "saveenv; "                                                         \

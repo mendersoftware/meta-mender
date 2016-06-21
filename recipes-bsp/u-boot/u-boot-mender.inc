@@ -22,8 +22,6 @@ SRC_URI_append_vexpress-qemu = " file://0001-Enable-U-Boot-on-QEMU-to-use-Mender
 # Generic tasks.
 ################################################################################
 do_provide_mender_defines() {
-    MENDER_BOOT_PART_UBOOT_INTERFACE=`get_uboot_interface_from_device ${MENDER_BOOT_PART}`
-    MENDER_BOOT_PART_UBOOT_DEVICE=`get_uboot_device_from_device ${MENDER_BOOT_PART}`
     MENDER_BOOT_PART_NUMBER=`get_part_number_from_device ${MENDER_BOOT_PART}`
     MENDER_ROOTFS_PART_A_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_A}`
     MENDER_ROOTFS_PART_B_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_B}`
@@ -44,11 +42,11 @@ do_provide_mender_defines() {
 /* This file is provided by the meta-mender layer. */
 
 /* Shell variables */
-#define MENDER_BOOT_PART_NUMBER "$MENDER_BOOT_PART_NUMBER"
-#define MENDER_ROOTFS_PART_A_NUMBER "$MENDER_ROOTFS_PART_A_NUMBER"
-#define MENDER_ROOTFS_PART_B_NUMBER "$MENDER_ROOTFS_PART_B_NUMBER"
+#define MENDER_BOOT_PART_NUMBER $MENDER_BOOT_PART_NUMBER
+#define MENDER_ROOTFS_PART_A_NUMBER $MENDER_ROOTFS_PART_A_NUMBER
+#define MENDER_ROOTFS_PART_B_NUMBER $MENDER_ROOTFS_PART_B_NUMBER
 #define MENDER_UBOOT_STORAGE_INTERFACE "$MENDER_UBOOT_STORAGE_INTERFACE"
-#define MENDER_UBOOT_STORAGE_DEVICE "$MENDER_UBOOT_STORAGE_DEVICE"
+#define MENDER_UBOOT_STORAGE_DEVICE $MENDER_UBOOT_STORAGE_DEVICE
 
 /* BB variables. */
 #define MENDER_STORAGE_DEVICE_BASE "${MENDER_STORAGE_DEVICE_BASE}"
