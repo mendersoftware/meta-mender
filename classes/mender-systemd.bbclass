@@ -6,7 +6,7 @@
 #VIRTUAL-RUNTIME_init_manager = "systemd"
 #DISTRO_FEATURES_BACKFILL_CONSIDERED = "sysvinit"
 #VIRTUAL-RUNTIME_initscripts = ""
-DISTRO_FEATURES_vexpress-qemu_append = " systemd"
+DISTRO_FEATURES_append_vexpress-qemu = " systemd"
 VIRTUAL-RUNTIME_init_manager_vexpress-qemu = "systemd"
 DISTRO_FEATURES_BACKFILL_CONSIDERED_vexpress-qemu = "sysvinit"
 VIRTUAL-RUNTIME_initscripts_vexpress-qemu = ""
