@@ -133,6 +133,7 @@ index 0000000..d79049f
 +#define CONFIG_MENDER_ENV_SETTINGS                                      \
 +    MENDER_DEFAULT_ALTBOOTCMD                                           \
 +    "bootlimit=1\0"                                                     \
++    "bootcount=0\0"                                                     \
 +                                                                        \
 +    "upgrade_available=0\0"                                             \
 +                                                                        \
