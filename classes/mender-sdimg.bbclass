@@ -39,7 +39,10 @@ SDIMG_BOOT_PART_SIZE_MB ?= "8"
 SDIMG_PARTITION_ALIGNMENT_MB ?= "8"
 
 # u-boot environment file
-IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
+#IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
+IMAGE_UENV_TXT_FILE ?= ""
+
+IMAGE_BOOT_FILES_append = " ${IMAGE_UENV_TXT_FILE}"
 
 # This will be embedded into the boot sector, or close to the boot sector, where
 # exactly depends on the offset variable.
@@ -81,11 +84,6 @@ IMAGE_CMD_sdimg() {
 
     dd if=/dev/zero of="${WORKDIR}/boot.vfat" count=${PART1_SIZE}
     mkfs.vfat "${WORKDIR}/boot.vfat"
-
-    # Copy uEnv.txt file to boot partition if file exists
-    if [ -e ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ] ; then
-        mcopy -i "${WORKDIR}/boot.vfat" -v ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ::
-    fi
 
     # Copy boot files to boot partition
     for file in ${IMAGE_BOOT_FILES}
