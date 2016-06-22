@@ -1,9 +1,9 @@
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000..c5a1c11
+index 0000000..73f658b
 --- /dev/null
 +++ b/include/config_mender.h
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,59 @@
 +/*
 +  Copyright (C) 2016  Mender Software
 +
@@ -50,6 +50,10 @@ index 0000000..c5a1c11
 +# error FAT_ENV_FILE should not be defined explicitly (will be auto-configured).
 +#endif
 +
++#if MENDER_BOOTENV_SIZE != CONFIG_ENV_SIZE
++# error 'CONFIG_ENV_SIZE' define must be equal to bitbake variable 'BOOTENV_SIZE' set in U-Boot build recipe.
++#endif
++
 +#define FAT_ENV_INTERFACE       MENDER_UBOOT_STORAGE_INTERFACE
 +#define FAT_ENV_DEVICE_AND_PART __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":" __stringify(MENDER_BOOT_PART_NUMBER)
 +#define FAT_ENV_DEVICE          MENDER_UBOOT_STORAGE_DEVICE
@@ -82,7 +86,7 @@ index 90431be..7130437 100644
  #endif
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000..09a52e7
+index 0000000..d79049f
 --- /dev/null
 +++ b/include/env_mender.h
 @@ -0,0 +1,51 @@

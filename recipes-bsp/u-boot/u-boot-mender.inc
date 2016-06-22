@@ -1,6 +1,14 @@
 inherit mender-helpers
+inherit deploy
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+
+BOOTENV_SIZE ??= "0x20000"
+
+BOOTENV_SIZE_beaglebone ?= "0x20000"
+BOOTENV_SIZE_vexpress-qemu ?= "0x40000"
+
+DEPLOYDIR = "${WORKDIR}/deploy-${PN}"
 
 ################################################################################
 # Generic patches.
@@ -50,6 +58,22 @@ do_provide_mender_defines() {
 
 /* BB variables. */
 #define MENDER_STORAGE_DEVICE_BASE "${MENDER_STORAGE_DEVICE_BASE}"
+
+/* For sanity checks. */
+#define MENDER_BOOTENV_SIZE ${BOOTENV_SIZE}
 EOF
 }
 addtask do_provide_mender_defines after do_patch before do_configure
+
+do_compile_append() {
+    # create fw_env.config file
+    cat > ${WORKDIR}/fw_env.config <<EOF
+/uboot/uboot.env 0x0000 ${BOOTENV_SIZE}
+EOF
+}
+
+do_deploy_prepend() {
+    # Create empty environment. Just so that the file is available.
+    mkdir -p ${DEPLOYDIR}
+    dd if=/dev/zero of="${DEPLOYDIR}/${IMAGE_BOOT_ENV_FILE}" count=0 bs=1 seek=`printf %d ${BOOTENV_SIZE}`
+}
