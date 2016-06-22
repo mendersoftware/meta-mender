@@ -39,11 +39,13 @@ SDIMG_BOOT_PART_SIZE_MB ?= "128"
 SDIMG_PARTITION_ALIGNMENT_MB ?= "8"
 
 # u-boot environment file
-IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
+#IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
+IMAGE_UENV_TXT_FILE ?= ""
 
 # These are usually defined in the machine section, but for daisy this
 # concept doesn't exist yet.
 IMAGE_BOOT_FILES ?= "u-boot.${UBOOT_SUFFIX}"
+IMAGE_BOOT_FILES_append = " ${IMAGE_UENV_TXT_FILE}"
 IMAGE_BOOT_FILES_append_beaglebone = " MLO"
 # This will be embedded into the boot sector, or close to the boot sector, where
 # exactly depends on the offset variable.
@@ -80,11 +82,6 @@ IMAGE_CMD_sdimg() {
 
     dd if=/dev/zero of="${WORKDIR}/boot.vfat" count=0 bs=1M seek=${SDIMG_BOOT_PART_SIZE_MB}
     mkfs.vfat "${WORKDIR}/boot.vfat"
-
-    # Copy uEnv.txt file to boot partition if file exists
-    if [ -e ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ] ; then
-        mcopy -i "${WORKDIR}/boot.vfat" -v ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ::
-    fi
 
     # Copy boot files to boot partition
     for file in ${IMAGE_BOOT_FILES}
