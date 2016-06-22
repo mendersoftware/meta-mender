@@ -3,8 +3,6 @@
 require u-boot-mender.inc
 
 DEPENDS = "u-boot"
-BOOTENV_SIZE_beaglebone = "0x20000"
-BOOTENV_SIZE_vexpress-qemu = "0x40000"
 
 # Configure fw_printenv so that it looks in the right place for the environment.
 do_configure_fw_printenv () {
