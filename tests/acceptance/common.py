@@ -198,7 +198,8 @@ def boot_from_internal():
                   bootz ${loadaddr} - ${fdtaddr}"""
 
     if "yocto" in sudo("uname -a"):
-        sudo("sed '/uenvcmd/d' -i /uboot/uEnv.txt")
+        with settings(warn_only=True):
+            sudo("sed '/uenvcmd/d' -i /uboot/uEnv.txt")
         append("/uboot/uEnv.txt", bootline)
         reboot()
 
