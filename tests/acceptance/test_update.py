@@ -34,7 +34,7 @@ class Helpers:
         output = run("journalctl -a -u mender | grep error")
         assert output == 1
 
-@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "mender_running")
+@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "mender_running", "fake_auth_token")
 class TestUpdates:
 
     def test_broken_image_update(self):
