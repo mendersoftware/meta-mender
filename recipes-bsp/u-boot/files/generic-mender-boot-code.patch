@@ -99,7 +99,7 @@ new file mode 100644
 index 0000000..d79049f
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,52 @@
 +/*
 +  Copyright (C) 2016  Mender Software
 +
@@ -126,7 +126,8 @@ index 0000000..d79049f
 +#ifdef MENDER_NO_DEFAULT_ALTBOOTCMD
 +# define MENDER_DEFAULT_ALTBOOTCMD
 +#else
-+# define MENDER_DEFAULT_ALTBOOTCMD "altbootcmd=run mender_altbootcmd\0"
++# define MENDER_DEFAULT_ALTBOOTCMD "altbootcmd=run mender_altbootcmd; " \
++    "run bootcmd\0"
 +#endif
 +
 +#define CONFIG_MENDER_ENV_SETTINGS                                      \
@@ -148,7 +149,7 @@ index 0000000..d79049f
 +    "fi; "                                                              \
 +    "setenv upgrade_available 0; "                                      \
 +    "saveenv; "                                                         \
-+    "run bootcmd\0"
++    "run mender_setup\0"
 +
 +#endif // ENV_MENDER_H
 diff --git a/scripts/Makefile.autoconf b/scripts/Makefile.autoconf
