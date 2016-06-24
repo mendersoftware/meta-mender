@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000..73f658b
 --- /dev/null
 +++ b/include/config_mender.h
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,69 @@
 +/*
 +  Copyright (C) 2016  Mender Software
 +
@@ -43,9 +43,19 @@ index 0000000..73f658b
 +#ifdef FAT_ENV_INTERFACE
 +# error FAT_ENV_INTERFACE should not be defined explicitly (will be auto-configured).
 +#endif
++
++/* Post-daisy variant. */
 +#ifdef FAT_ENV_DEVICE_AND_PART
 +# error FAT_ENV_DEVICE_AND_PART should not be defined explicitly (will be auto-configured).
 +#endif
++/* Daisy-and-earlier variants. */
++#ifdef FAT_ENV_DEVICE
++# error FAT_ENV_DEVICE should not be defined explicitly (will be auto-configured).
++#endif
++#ifdef FAT_ENV_PART
++# error FAT_ENV_PART should not be defined explicitly (will be auto-configured).
++#endif
++
 +#ifdef FAT_ENV_FILE
 +# error FAT_ENV_FILE should not be defined explicitly (will be auto-configured).
 +#endif
