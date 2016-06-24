@@ -20,8 +20,10 @@ SRCREV = "${AUTOREV}"
 PVBASE := "${PV}"
 PV = "${PVBASE}+git${SRCPV}"
 
-LICENSE = "Apache-2.0"
-LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
+# DO NOT change the checksum here without make sure that ALL licenses (including
+# dependencies) are included in the LICENSE variable below.
+LIC_FILES_CHKSUM = "file://LIC_FILES_CHKSUM.sha256;md5=c7a1129be03e0721d67d247981e667de"
+LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & MIT"
 
 inherit systemd
 
