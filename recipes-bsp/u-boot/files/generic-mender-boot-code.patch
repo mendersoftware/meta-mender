@@ -85,7 +85,7 @@ new file mode 100644
 index 0000000..09a52e7
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,52 @@
 +/*
 +  Copyright (C) 2016  Mender Software
 +
@@ -118,6 +118,7 @@ index 0000000..09a52e7
 +#define CONFIG_MENDER_ENV_SETTINGS                                      \
 +    MENDER_DEFAULT_ALTBOOTCMD                                           \
 +    "bootlimit=1\0"                                                     \
++    "bootcount=0\0"                                                     \
 +                                                                        \
 +    "upgrade_available=0\0"                                             \
 +                                                                        \
