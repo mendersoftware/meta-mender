@@ -31,12 +31,18 @@ else
     IMAGE_NAME=core-image-full-cmdline
 fi
 
+if [ -d ${BUILDDIR}/tmp-glibc ]; then
+    BUILDTMP=${BUILDDIR}/tmp-glibc
+else
+    BUILDTMP=${BUILDDIR}/tmp
+fi
+
 QEMU_AUDIO_DRV=none \
-    ${BUILDDIR}/tmp/sysroots/x86_64-linux/usr/bin/qemu-system-arm \
+    ${BUILDTMP}/sysroots/x86_64-linux/usr/bin/qemu-system-arm \
     -M vexpress-a9 \
     -m 1G \
-    -kernel ${BUILDDIR}/tmp/deploy/images/vexpress-qemu/u-boot.elf \
-    -drive file=${BUILDDIR}/tmp/deploy/images/vexpress-qemu/${IMAGE_NAME}-vexpress-qemu.sdimg,if=sd,format=raw \
+    -kernel ${BUILDTMP}/deploy/images/vexpress-qemu/u-boot.elf \
+    -drive file=${BUILDTMP}/deploy/images/vexpress-qemu/${IMAGE_NAME}-vexpress-qemu.sdimg,if=sd,format=raw \
     -net nic \
     -net user,hostfwd=tcp::8822-:22 \
     -display vnc=:23 \
