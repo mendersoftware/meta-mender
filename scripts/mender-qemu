@@ -6,7 +6,7 @@
 #
 # if image name is not provided, the script will attempt to run
 # core-image-full-cmdline
-
+#
 
 # NOTE: current settings forward
 #           ssh: port 8822
@@ -37,12 +37,16 @@ else
     BUILDTMP=${BUILDDIR}/tmp-glibc
 fi
 
+UBOOT_ELF=${UBOOT_ELF:-"${BUILDTMP}/deploy/images/vexpress-qemu/u-boot.elf"}
+VEXPRESS_SDIMG=${VEXPRESS_SDIMG:-"${BUILDTMP}/deploy/images/vexpress-qemu/${IMAGE_NAME}-vexpress-qemu.sdimg"}
+QEMU_SYSTEM_ARM=${QEMU_SYSTEM_ARM:-"${BUILDTMP}/sysroots/x86_64-linux/usr/bin/qemu-system-arm"}
+
 QEMU_AUDIO_DRV=none \
-    ${BUILDTMP}/sysroots/x86_64-linux/usr/bin/qemu-system-arm \
+    $QEMU_SYSTEM_ARM \
     -M vexpress-a9 \
     -m 1G \
-    -kernel ${BUILDTMP}/deploy/images/vexpress-qemu/u-boot.elf \
-    -drive file=${BUILDTMP}/deploy/images/vexpress-qemu/${IMAGE_NAME}-vexpress-qemu.sdimg,if=sd,format=raw \
+    -kernel "$UBOOT_ELF" \
+    -drive file="$VEXPRESS_SDIMG",if=sd,format=raw \
     -net nic \
     -net user,hostfwd=tcp::8822-:22 \
     -display vnc=:23 \
