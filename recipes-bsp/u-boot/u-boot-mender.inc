@@ -1,6 +1,14 @@
 inherit mender-helpers
+inherit deploy
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+
+BOOTENV_SIZE ??= "0x20000"
+
+BOOTENV_SIZE_beaglebone ?= "0x20000"
+BOOTENV_SIZE_vexpress-qemu ?= "0x40000"
+
+DEPLOYDIR = "${WORKDIR}/deploy-${PN}"
 
 ################################################################################
 # Generic patches.
@@ -22,8 +30,6 @@ SRC_URI_append_vexpress-qemu = " file://0001-Enable-U-Boot-on-QEMU-to-use-Mender
 # Generic tasks.
 ################################################################################
 do_provide_mender_defines() {
-    MENDER_BOOT_PART_UBOOT_INTERFACE=`get_uboot_interface_from_device ${MENDER_BOOT_PART}`
-    MENDER_BOOT_PART_UBOOT_DEVICE=`get_uboot_device_from_device ${MENDER_BOOT_PART}`
     MENDER_BOOT_PART_NUMBER=`get_part_number_from_device ${MENDER_BOOT_PART}`
     MENDER_ROOTFS_PART_A_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_A}`
     MENDER_ROOTFS_PART_B_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_B}`
@@ -44,14 +50,30 @@ do_provide_mender_defines() {
 /* This file is provided by the meta-mender layer. */
 
 /* Shell variables */
-#define MENDER_BOOT_PART_NUMBER "$MENDER_BOOT_PART_NUMBER"
-#define MENDER_ROOTFS_PART_A_NUMBER "$MENDER_ROOTFS_PART_A_NUMBER"
-#define MENDER_ROOTFS_PART_B_NUMBER "$MENDER_ROOTFS_PART_B_NUMBER"
+#define MENDER_BOOT_PART_NUMBER $MENDER_BOOT_PART_NUMBER
+#define MENDER_ROOTFS_PART_A_NUMBER $MENDER_ROOTFS_PART_A_NUMBER
+#define MENDER_ROOTFS_PART_B_NUMBER $MENDER_ROOTFS_PART_B_NUMBER
 #define MENDER_UBOOT_STORAGE_INTERFACE "$MENDER_UBOOT_STORAGE_INTERFACE"
-#define MENDER_UBOOT_STORAGE_DEVICE "$MENDER_UBOOT_STORAGE_DEVICE"
+#define MENDER_UBOOT_STORAGE_DEVICE $MENDER_UBOOT_STORAGE_DEVICE
 
 /* BB variables. */
 #define MENDER_STORAGE_DEVICE_BASE "${MENDER_STORAGE_DEVICE_BASE}"
+
+/* For sanity checks. */
+#define MENDER_BOOTENV_SIZE ${BOOTENV_SIZE}
 EOF
 }
 addtask do_provide_mender_defines after do_patch before do_configure
+
+do_compile_append() {
+    # create fw_env.config file
+    cat > ${WORKDIR}/fw_env.config <<EOF
+/uboot/uboot.env 0x0000 ${BOOTENV_SIZE}
+EOF
+}
+
+do_deploy_prepend() {
+    # Create empty environment. Just so that the file is available.
+    mkdir -p ${DEPLOYDIR}
+    dd if=/dev/zero of="${DEPLOYDIR}/${IMAGE_BOOT_ENV_FILE}" count=0 bs=1 seek=`printf %d ${BOOTENV_SIZE}`
+}

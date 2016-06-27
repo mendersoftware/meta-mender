@@ -26,7 +26,7 @@ SDIMG_DATA_PART_DIR ?= ""
 SDIMG_DATA_PART_SIZE_MB ?= "128"
 
 # Size of the first (FAT) partition, that contains the bootloader
-SDIMG_BOOT_PART_SIZE_MB ?= "8"
+SDIMG_BOOT_PART_SIZE_MB ?= "16"
 
 # For performance reasons, we try to align the partitions to the SD
 # card's erase block. It is impossible to know this information with
@@ -38,11 +38,11 @@ SDIMG_BOOT_PART_SIZE_MB ?= "8"
 # erase block is smaller.
 SDIMG_PARTITION_ALIGNMENT_MB ?= "8"
 
-# u-boot environment file to be stored on boot partition
-IMAGE_BOOT_ENV_FILE ?= "uboot.env"
-
 # u-boot environment file
-IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
+#IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
+IMAGE_UENV_TXT_FILE ?= ""
+
+IMAGE_BOOT_FILES_append = " ${IMAGE_UENV_TXT_FILE}"
 
 # This will be embedded into the boot sector, or close to the boot sector, where
 # exactly depends on the offset variable.
@@ -84,16 +84,6 @@ IMAGE_CMD_sdimg() {
 
     dd if=/dev/zero of="${WORKDIR}/boot.vfat" count=${PART1_SIZE}
     mkfs.vfat "${WORKDIR}/boot.vfat"
-
-    # Create empty environment. Just so that the file is available.
-    dd if=/dev/zero of="${WORKDIR}/${IMAGE_BOOT_ENV_FILE}" count=0 bs=1K seek=256
-    mcopy -i "${WORKDIR}/boot.vfat" -v ${WORKDIR}/${IMAGE_BOOT_ENV_FILE} ::
-    rm -f "${WORKDIR}/${IMAGE_BOOT_ENV_FILE}"
-
-    # Copy uEnv.txt file to boot partition if file exists
-    if [ -e ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ] ; then
-        mcopy -i "${WORKDIR}/boot.vfat" -v ${DEPLOY_DIR_IMAGE}/${IMAGE_UENV_TXT_FILE} ::
-    fi
 
     # Copy boot files to boot partition
     for file in ${IMAGE_BOOT_FILES}
