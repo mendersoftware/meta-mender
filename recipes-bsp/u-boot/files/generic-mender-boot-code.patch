@@ -99,7 +99,7 @@ new file mode 100644
 index 0000000..d79049f
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,53 @@
 +/*
 +  Copyright (C) 2016  Mender Software
 +
