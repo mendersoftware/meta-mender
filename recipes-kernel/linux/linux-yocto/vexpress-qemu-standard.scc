@@ -2,4 +2,3 @@ define KMACHINE vexpress-qemu
 
 define KARCH arm
 define KTYPE standard
-branch master

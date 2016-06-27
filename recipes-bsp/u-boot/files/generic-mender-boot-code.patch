@@ -1,0 +1,167 @@
+diff --git a/include/config_mender.h b/include/config_mender.h
+new file mode 100644
+index 0000000..73f658b
+--- /dev/null
++++ b/include/config_mender.h
+@@ -0,0 +1,69 @@
++/*
++  Copyright (C) 2016  Mender Software
++
++  This program is free software; you can redistribute it and/or
++  modify it under the terms of the GNU General Public License
++  as published by the Free Software Foundation; either version 2
++  of the License, or (at your option) any later version.
++
++  This program is distributed in the hope that it will be useful,
++  but WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  GNU General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with this program; if not, write to the Free Software
++  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++*/
++
++#ifndef CONFIG_MENDER_H
++#define CONFIG_MENDER_H
++
++#include <config_mender_defines.h>
++
++#ifndef CONFIG_ENV_IS_IN_FAT
++# error CONFIG_ENV_IS_IN_FAT is required for Mender to work
++#endif
++
++#ifndef CONFIG_BOOTCOUNT_LIMIT
++# error CONFIG_BOOTCOUNT_LIMIT is required for Mender to work
++#endif
++
++/* Currently Mender needs bootcount to reside in environment file. */
++#ifndef CONFIG_BOOTCOUNT_ENV
++# error CONFIG_BOOTCOUNT_ENV is required for Mender to work
++#endif
++
++#ifdef FAT_ENV_INTERFACE
++# error FAT_ENV_INTERFACE should not be defined explicitly (will be auto-configured).
++#endif
++
++/* Post-daisy variant. */
++#ifdef FAT_ENV_DEVICE_AND_PART
++# error FAT_ENV_DEVICE_AND_PART should not be defined explicitly (will be auto-configured).
++#endif
++/* Daisy-and-earlier variants. */
++#ifdef FAT_ENV_DEVICE
++# error FAT_ENV_DEVICE should not be defined explicitly (will be auto-configured).
++#endif
++#ifdef FAT_ENV_PART
++# error FAT_ENV_PART should not be defined explicitly (will be auto-configured).
++#endif
++
++#ifdef FAT_ENV_FILE
++# error FAT_ENV_FILE should not be defined explicitly (will be auto-configured).
++#endif
++
++#if MENDER_BOOTENV_SIZE != CONFIG_ENV_SIZE
++# error 'CONFIG_ENV_SIZE' define must be equal to bitbake variable 'BOOTENV_SIZE' set in U-Boot build recipe.
++#endif
++
++#define FAT_ENV_INTERFACE       MENDER_UBOOT_STORAGE_INTERFACE
++#define FAT_ENV_DEVICE_AND_PART __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":" __stringify(MENDER_BOOT_PART_NUMBER)
++#define FAT_ENV_DEVICE          MENDER_UBOOT_STORAGE_DEVICE
++#define FAT_ENV_PART            MENDER_BOOT_PART_NUMBER
++#define FAT_ENV_FILE            "uboot.env"
++
++#define CONFIG_FAT_WRITE
++
++#endif /* CONFIG_MENDER_H */
+diff --git a/include/env_default.h b/include/env_default.h
+index 90431be..7130437 100644
+--- a/include/env_default.h
++++ b/include/env_default.h
+@@ -10,6 +10,8 @@
+ 
+ #include <env_callback.h>
+ 
++#include <env_mender.h>
++
+ #ifdef DEFAULT_ENV_INSTANCE_EMBEDDED
+ env_t environment __PPCENV__ = {
+ 	ENV_CRC,	/* CRC Sum */
+@@ -22,6 +24,7 @@ static char default_environment[] = {
+ #else
+ const uchar default_environment[] = {
+ #endif
++	CONFIG_MENDER_ENV_SETTINGS
+ #ifdef	CONFIG_ENV_CALLBACK_LIST_DEFAULT
+ 	ENV_CALLBACK_VAR "=" CONFIG_ENV_CALLBACK_LIST_DEFAULT "\0"
+ #endif
+diff --git a/include/env_mender.h b/include/env_mender.h
+new file mode 100644
+index 0000000..d79049f
+--- /dev/null
++++ b/include/env_mender.h
+@@ -0,0 +1,53 @@
++/*
++  Copyright (C) 2016  Mender Software
++
++  This program is free software; you can redistribute it and/or
++  modify it under the terms of the GNU General Public License
++  as published by the Free Software Foundation; either version 2
++  of the License, or (at your option) any later version.
++
++  This program is distributed in the hope that it will be useful,
++  but WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  GNU General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with this program; if not, write to the Free Software
++  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++*/
++
++#ifndef ENV_MENDER_H
++#define ENV_MENDER_H
++
++#include <config_mender_defines.h>
++
++#ifdef MENDER_NO_DEFAULT_ALTBOOTCMD
++# define MENDER_DEFAULT_ALTBOOTCMD
++#else
++# define MENDER_DEFAULT_ALTBOOTCMD "altbootcmd=run mender_altbootcmd; " \
++    "run bootcmd\0"
++#endif
++
++#define CONFIG_MENDER_ENV_SETTINGS                                      \
++    MENDER_DEFAULT_ALTBOOTCMD                                           \
++    "bootlimit=1\0"                                                     \
++    "bootcount=0\0"                                                     \
++                                                                        \
++    "upgrade_available=0\0"                                             \
++                                                                        \
++    "mender_boot_part=" __stringify(MENDER_ROOTFS_PART_A_NUMBER) "\0"   \
++                                                                        \
++    "mender_setup="                                                     \
++    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part};" \
++    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}\0" \
++                                                                        \
++    "mender_altbootcmd="                                                \
++    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "  \
++    "then setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_B_NUMBER) "; "   \
++    "else setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "   \
++    "fi; "                                                              \
++    "setenv upgrade_available 0; "                                      \
++    "saveenv; "                                                         \
++    "run mender_setup\0"
++
++#endif /* ENV_MENDER_H */
+diff --git a/mkconfig b/mkconfig
+index b96c81f..902fa3f 100755
+--- a/mkconfig
++++ b/mkconfig
+@@ -185,6 +185,7 @@ cat << EOF >> config.h
+ #include <asm/config.h>
+ #include <config_fallbacks.h>
+ #include <config_uncmd_spl.h>
++#include <config_mender.h>
+ EOF
+ 
+ exit 0

@@ -175,7 +175,7 @@ def qemu_prep_fresh_host():
 
 def set_first_root_part():
     sudo("fw_setenv upgrade_available 0")
-    sudo("fw_setenv boot_part 2")
+    sudo("fw_setenv mender_boot_part 2")
     sudo("fw_setenv bootcount 0")
 
 
