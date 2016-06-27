@@ -31,10 +31,10 @@ else
     IMAGE_NAME=core-image-full-cmdline
 fi
 
-if [ -d ${BUILDDIR}/tmp-glibc ]; then
-    BUILDTMP=${BUILDDIR}/tmp-glibc
-else
+if [ -d ${BUILDDIR}/tmp ]; then
     BUILDTMP=${BUILDDIR}/tmp
+else
+    BUILDTMP=${BUILDDIR}/tmp-glibc
 fi
 
 QEMU_AUDIO_DRV=none \
