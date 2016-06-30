@@ -73,6 +73,7 @@ class TestUpdates:
         assert(output.find("smaller") >= 0)
         assert(output.find("ret_code=0") < 0)
 
+    @pytest.mark.xfail
     def test_file_based_image_update(self):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
@@ -143,6 +144,7 @@ class TestUpdates:
         assert(active_after == active_before)
         assert(passive_after == passive_before)
 
+    @pytest.mark.xfail
     def test_network_based_image_update(self):
         http_server_location = pytest.config.getoption("--http-server")
         bbb = pytest.config.getoption("--bbb")
