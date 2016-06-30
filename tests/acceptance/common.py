@@ -270,3 +270,11 @@ def mender_running_impl():
 
     if result.return_code == 1:
         raise Exception("Mender is not running!")
+
+@pytest.fixture(scope="module")
+def fake_auth_token():
+    execute(fake_auth_token_impl, hosts=conftest.current_hosts())
+
+
+def fake_auth_token_impl():
+    run("echo 'test1234' > /var/lib/mender/authtoken")

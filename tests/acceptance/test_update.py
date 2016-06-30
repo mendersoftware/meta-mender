@@ -34,7 +34,7 @@ class Helpers:
         output = run("journalctl -a -u mender | grep error")
         assert output == 1
 
-@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "mender_running")
+@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "mender_running", "fake_auth_token")
 class TestUpdates:
 
     def test_broken_image_update(self):
@@ -73,7 +73,6 @@ class TestUpdates:
         assert(output.find("smaller") >= 0)
         assert(output.find("ret_code=0") < 0)
 
-    @pytest.mark.xfail
     def test_file_based_image_update(self):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
@@ -144,7 +143,6 @@ class TestUpdates:
         assert(active_after == active_before)
         assert(passive_after == passive_before)
 
-    @pytest.mark.xfail
     def test_network_based_image_update(self):
         http_server_location = pytest.config.getoption("--http-server")
         bbb = pytest.config.getoption("--bbb")
