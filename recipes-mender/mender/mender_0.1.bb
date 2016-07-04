@@ -76,7 +76,7 @@ do_install() {
           ${S}/support/mender-device-identity
 
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
+  #install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
 
   #install configuration
   install -d ${D}/${sysconfdir}/mender
