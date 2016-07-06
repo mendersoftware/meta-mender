@@ -86,7 +86,7 @@ IMAGE_CMD_sdimg() {
     mkfs.vfat "${WORKDIR}/boot.vfat"
 
     # Copy boot files to boot partition
-    for file in ${IMAGE_BOOT_FILES}
+    for file in "${IMAGE_BOOT_FILES}"
     do
         mcopy -i "${WORKDIR}/boot.vfat" -s ${DEPLOY_DIR_IMAGE}/$file ::
     done
