@@ -15,6 +15,7 @@ SRC_URI = "git://github.com/mendersoftware/mender;protocol=https \
            file://mender.service \
            file://mender.conf \
            file://server.crt \
+           file://sysvinit-mender \
           "
 
 SRCREV = "${AUTOREV}"
@@ -27,11 +28,15 @@ LIC_FILES_CHKSUM = "file://LIC_FILES_CHKSUM.sha256;md5=c7a1129be03e0721d67d24798
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & MIT"
 
 inherit systemd
+inherit update-rc.d
 
 SYSTEMD_SERVICE_${PN} = "mender.service"
 FILES_${PN} += "${systemd_unitdir}/system/mender.service \
                 ${sysconfdir}/mender.conf \
                "
+
+INITSCRIPT_NAME = "mender"
+INITSCRIPT_PARAMS = "start 99 2 3 5 . stop 20 0 6 ."
 
 do_compile() {
   GOPATH="${B}:${S}"
@@ -76,8 +81,13 @@ do_install() {
           ${B}/bin/${GOOS}_${GOARCH}/mender \
           ${S}/support/mender-device-identity
 
-  install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
+  if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+    install -d ${D}/${systemd_unitdir}/system
+    install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
+  else
+    install -d ${D}${sysconfdir}/init.d
+    install -m 0755 ${WORKDIR}/sysvinit-mender ${D}${sysconfdir}/init.d/mender
+  fi
 
   #install configuration
   install -d ${D}/${sysconfdir}/mender
