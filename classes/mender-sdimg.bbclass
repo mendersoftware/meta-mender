@@ -55,7 +55,7 @@ IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ?= "2"
 inherit image
 inherit image_types
 
-addtask do_rootfs_wicenv before do_image_sdimg
+addtask do_rootfs_wicenv after do_image before do_image_sdimg
 
 WKS_FULL_PATH = "${WORKDIR}/mender-sdimg.wks"
 
