@@ -7,6 +7,7 @@ MENDER_CERT_LOCATION ?= ""
 #From oe-meta-go (https://github.com/mem/oe-meta-go)
 DEPENDS = "go-cross godep"
 S = "${WORKDIR}/git"
+B = "${WORKDIR}/build"
 
 inherit go
 
