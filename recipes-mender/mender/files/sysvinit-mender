@@ -1,0 +1,34 @@
+### BEGIN INIT INFO
+# Provides:             mender
+# Required-Start:       $time
+# Required-Stop:        $time
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description:    Mender OTA Client
+### END INIT INFO
+
+set -e
+
+case "$1" in
+  start)
+        echo -n "Starting Mender OTA Client: "
+        start-stop-daemon -S -b -n mender -a /usr/bin/mender -- -daemon
+        echo "done"
+        ;;
+  stop)
+        echo -n "Stopping Mender OTA Client: "
+        start-stop-daemon -K -n mender
+        echo "done"
+        ;;
+  restart)
+        $0 stop
+        $0 start
+        ;;
+  *)
+        echo "Usage: mender { start | stop | restart }" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
+
