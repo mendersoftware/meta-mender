@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SRC_PATH=${1:-"/home/jenkins/workspace/yoctobuild/build/tmp/deploy/images/beaglebone/core-image-base-beaglebone.ext3"}
+SRC_PATH=${1:-"$WORKSPACE/build/tmp/deploy/images/beaglebone/core-image-base-beaglebone.ext3"}
 DST_PATH=${2:-`pwd`"/core-image-base-beaglebone-modified-testing.ext3"}
 
 cp ${SRC_PATH} ${DST_PATH}
