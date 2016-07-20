@@ -84,9 +84,17 @@ IMAGE_CMD_sdimg() {
     mkfs.vfat "${WORKDIR}/boot.vfat"
 
     # Copy boot files to boot partition
-    for file in ${IMAGE_BOOT_FILES}
+    IMAGE_BOOT_FILES="${IMAGE_BOOT_FILES}"
+    for entry in $IMAGE_BOOT_FILES
     do
-        mcopy -i "${WORKDIR}/boot.vfat" -s ${DEPLOY_DIR_IMAGE}/$file ::
+        # Handle special ';' syntax. See documentation for IMAGE_BOOT_FILES.
+        dir="${entry#*;}"
+        if [ "$dir" = "$entry" ]
+        then
+            dir=
+        fi
+        file="${entry%;*}"
+        mcopy -i "${WORKDIR}/boot.vfat" -s ${DEPLOY_DIR_IMAGE}/$file ::$dir
     done
 
     rm -rf "${WORKDIR}/data" || true

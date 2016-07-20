@@ -198,7 +198,8 @@ def boot_from_internal():
                   bootz ${loadaddr} - ${fdtaddr}"""
 
     if "yocto" in sudo("uname -a"):
-        sudo("sed '/uenvcmd/d' -i /uboot/uEnv.txt")
+        with settings(warn_only=True):
+            sudo("sed '/uenvcmd/d' -i /uboot/uEnv.txt")
         append("/uboot/uEnv.txt", bootline)
         reboot()
 
@@ -253,20 +254,3 @@ def no_image_file(qemu_running):
 def no_image_file_impl():
     run("rm -f image.dat")
 
-
-@pytest.fixture(scope="function")
-def mender_running():
-    execute(mender_running_impl, hosts=conftest.current_hosts())
-
-
-def mender_running_impl():
-    with settings(warn_only=True):
-        for _ in range(0, 15):
-            result = run("pidof mender")
-            if result.return_code == 1:
-                time.sleep(2)
-            else:
-                break
-
-    if result.return_code == 1:
-        raise Exception("Mender is not running!")

@@ -13,6 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import os
+import os.path
+
 from fabric.api import *
 
 import unittest
@@ -31,7 +34,8 @@ def pytest_addoption(parser):
                      if --bbb is set, this value is set to the s3 url""")
     parser.addoption("--bbb", action="store_true", default=False,
                      help="the tests are running against a BeagleBone Black")
-    parser.addoption("--sdimg-location", action="store", default="/home/jenkins/workspace/yoctobuild/meta-mender/tests/acceptance",
+    parser.addoption("--sdimg-location", action="store",
+                     default=os.path.join(os.environ["WORKSPACE"], "meta-mender/tests/acceptance"),
                      help="location to the sdimg you want to install on the bbb")
 
 

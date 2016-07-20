@@ -34,7 +34,7 @@ class Helpers:
         output = run("journalctl -a -u mender | grep error")
         assert output == 1
 
-@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "mender_running")
+@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb")
 class TestUpdates:
 
     def test_broken_image_update(self):
@@ -70,7 +70,7 @@ class TestUpdates:
         run("dd if=/dev/zero of=image.dat bs=1M count=0 seek=2048")
         output = run('mender -rootfs image.dat ; echo "ret_code=$?"')
 
-        assert(output.find("smaller") >= 0)
+        assert(output.find("too small") >= 0)
         assert(output.find("ret_code=0") < 0)
 
     def test_file_based_image_update(self):
@@ -112,18 +112,13 @@ class TestUpdates:
         output = run("fw_printenv bootcount")
         assert(output == "bootcount=1")
 
-        """
-            The daemon is running, so it will autocommit
-            on boot. This must be changed in the future.
-        """
+        output = run("fw_printenv upgrade_available")
+        assert(output == "upgrade_available=1")
 
-        #output = run("fw_printenv upgrade_available")
-        #assert(output == "upgrade_available=1")
+        output = run("fw_printenv mender_boot_part")
+        assert(output == "mender_boot_part=" + active_after)
 
-        #output = run("fw_printenv mender_boot_part")
-        #assert(output == "mender_boot_part=" + active_after)
-
-        #run("mender -commit")
+        run("mender -commit")
 
         output = run("fw_printenv upgrade_available")
         assert(output == "upgrade_available=0")
@@ -189,19 +184,13 @@ class TestUpdates:
         output = run("fw_printenv bootcount")
         assert(output == "bootcount=1")
 
+        output = run("fw_printenv upgrade_available")
+        assert(output == "upgrade_available=1")
 
-        """
-            The daemon is running, so it will autocommit
-            on boot. This must be changed in the future.
-        """
+        output = run("fw_printenv mender_boot_part")
+        assert(output == "mender_boot_part=" + active_after)
 
-        #output = run("fw_printenv upgrade_available")
-        #assert(output == "upgrade_available=1")
-
-        #output = run("fw_printenv mender_boot_part")
-        #assert(output == "mender_boot_part=" + active_after)
-
-        #run("mender -commit")
+        run("mender -commit")
 
         output = run("fw_printenv upgrade_available")
         assert(output == "upgrade_available=0")
