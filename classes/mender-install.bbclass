@@ -1,8 +1,6 @@
 # Class for those who want to install the Mender client into the image.
 
-PREFERRED_VERSION_go_cross = "1.6%"
-
-IMAGE_INSTALL_append = " mender ca-certificates"
+# ------------------------------ CONFIGURATION ---------------------------------
 
 # The storage device that holds the device partitions.
 MENDER_STORAGE_DEVICE ?= "/dev/mmcblk0"
@@ -30,3 +28,10 @@ MENDER_ROOTFS_PART_B ?= "${MENDER_STORAGE_DEVICE_BASE}3"
 
 # The partition number holding the data partition.
 MENDER_DATA_PART ?= "${MENDER_STORAGE_DEVICE_BASE}5"
+
+# --------------------------- END OF CONFIGURATION -----------------------------
+
+
+PREFERRED_VERSION_go_cross = "1.6%"
+
+IMAGE_INSTALL_append = " mender ca-certificates"
