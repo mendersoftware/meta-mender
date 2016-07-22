@@ -58,8 +58,14 @@ IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ?= "2"
 inherit image
 inherit image_types
 
-# We need to have the ext3 image generated already
-IMAGE_TYPEDEP_sdimg = "ext3"
+python() {
+    fslist = d.getVar('IMAGE_FSTYPES', None).split()
+    for fs in fslist:
+        if fs in ["ext2", "ext3", "ext4"]:
+            # We need to have the filesystem image generated already. Make it
+            # dependent on all image types we support.
+            d.setVar('IMAGE_TYPEDEP_sdimg_append', " " + fs)
+}
 
 IMAGE_DEPENDS_sdimg = "util-linux-native dosfstools-native mtools-native e2fsprogs-native"
 
@@ -79,6 +85,26 @@ IMAGE_CMD_sdimg() {
         bbfatal "$@"
     }
 
+    # Figure out which filesystem type to use.
+    FSTYPE=
+    for fs in ${IMAGE_FSTYPES}
+    do
+        case $fs in
+        ext2|ext3|ext4)
+            if [ -n "$FSTYPE" ]
+            then
+                sdimg_warn "More than one filesystem candidate found in IMAGE_FSTYPES = '${IMAGE_FSTYPES}'. Using $FSTYPE and ignoring $fs."
+            else
+                FSTYPE=$fs
+            fi
+            ;;
+        esac
+    done
+    if [ -z "$FSTYPE" ]
+    then
+        sdimg_fatal "No filesystem appropriate for sdimg was found in IMAGE_FSTYPES = '${IMAGE_FSTYPES}'."
+    fi
+
     mkdir -p "${WORKDIR}"
 
     # Workaround for the fact that the image builder requires this directory,
@@ -88,10 +114,10 @@ IMAGE_CMD_sdimg() {
 
     # Workaround for the fact the wic deletes its inputs (WTF??). These links
     # are disposable.
-    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.ext3" \
-        "${WORKDIR}/active.ext3"
-    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.ext3" \
-        "${WORKDIR}/inactive.ext3"
+    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
+        "${WORKDIR}/active.$FSTYPE"
+    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
+        "${WORKDIR}/inactive.$FSTYPE"
 
     dd if=/dev/zero of="${WORKDIR}/boot.vfat" count=0 bs=1M seek=${SDIMG_BOOT_PART_SIZE_MB}
     mkfs.vfat "${WORKDIR}/boot.vfat"
@@ -133,30 +159,30 @@ IMAGE_CMD_sdimg() {
 
     # Active partition sectors (primary)
     PART2_START_SECTORS=$(expr $PART1_END_SECTORS + 1)
-    PART2_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/active.ext3)
+    PART2_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/active.$FSTYPE)
     PART2_SIZE_BYTES=$(expr \( $PART2_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
     PART2_END_SECTORS=$(expr $PART2_START_SECTORS + $PART2_SIZE_BYTES / 512 - 1)
 
     # Inactive partition sectors (primary)
     PART3_START_SECTORS=$(expr $PART2_END_SECTORS + 1)
-    PART3_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/inactive.ext3)
+    PART3_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/inactive.$FSTYPE)
     PART3_SIZE_BYTES=$(expr \( $PART3_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
     PART3_END_SECTORS=$(expr $PART3_START_SECTORS + $PART3_SIZE_BYTES / 512 - 1)
 
-    dd if=/dev/zero of=${WORKDIR}/data.ext3 count=0 bs=1M seek=${SDIMG_DATA_PART_SIZE_MB}
-    mkfs.ext3 -F ${WORKDIR}/data.ext3 -d ${WORKDIR}/data
+    dd if=/dev/zero of=${WORKDIR}/data.$FSTYPE count=0 bs=1M seek=${SDIMG_DATA_PART_SIZE_MB}
+    mkfs.$FSTYPE -F ${WORKDIR}/data.$FSTYPE -d ${WORKDIR}/data
 
     # Extended partition sectors
     PART4_START_SECTORS=$(expr $PART3_END_SECTORS + 1)
     # One extra alignment block for extended partition table.
-    PART4_SIZE_BYTES_UNALIGNED=$(expr $(stat -L -c %s ${WORKDIR}/data.ext3) + $ALIGNMENT_BYTES)
+    PART4_SIZE_BYTES_UNALIGNED=$(expr $(stat -L -c %s ${WORKDIR}/data.$FSTYPE) + $ALIGNMENT_BYTES)
     PART4_SIZE_BYTES=$(expr \( $PART4_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
     PART4_END_SECTORS=$(expr $PART4_START_SECTORS + $PART4_SIZE_BYTES / 512 - 1)
 
     # Data partition sectors (extended)
     # Starts inside the extended partition, after one alignment block.
     PART5_START_SECTORS=$(expr $PART4_START_SECTORS + $ALIGNMENT_SECTORS)
-    PART5_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/data.ext3)
+    PART5_SIZE_BYTES_UNALIGNED=$(stat -L -c %s ${WORKDIR}/data.$FSTYPE)
     PART5_SIZE_BYTES=$(expr \( $PART5_SIZE_BYTES_UNALIGNED + $ALIGNMENT_BYTES - 1 \) / $ALIGNMENT_BYTES \* $ALIGNMENT_BYTES)
     PART5_END_SECTORS=$(expr $PART5_START_SECTORS + $PART5_SIZE_BYTES / 512 - 1)
 
@@ -220,9 +246,9 @@ IMAGE_CMD_sdimg() {
     ) | fdisk -c=nondos -u=sectors $SDIMG
 
     dd if=${WORKDIR}/boot.vfat of=$SDIMG seek=$PART1_START_SECTORS conv=notrunc
-    dd if=${WORKDIR}/active.ext3 of=$SDIMG seek=$PART2_START_SECTORS conv=notrunc
-    dd if=${WORKDIR}/inactive.ext3 of=$SDIMG seek=$PART3_START_SECTORS conv=notrunc
-    dd if=${WORKDIR}/data.ext3 of=$SDIMG seek=$PART5_START_SECTORS conv=notrunc
+    dd if=${WORKDIR}/active.$FSTYPE of=$SDIMG seek=$PART2_START_SECTORS conv=notrunc
+    dd if=${WORKDIR}/inactive.$FSTYPE of=$SDIMG seek=$PART3_START_SECTORS conv=notrunc
+    dd if=${WORKDIR}/data.$FSTYPE of=$SDIMG seek=$PART5_START_SECTORS conv=notrunc
 
     # Embed boot loader in image, offset relative to boot sector.
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
