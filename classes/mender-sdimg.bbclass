@@ -65,6 +65,21 @@ IMAGE_TYPEDEP_sdimg = "ext3"
 IMAGE_DEPENDS_sdimg = "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native"
 
 IMAGE_CMD_sdimg() {
+    set -e
+
+    # For some reason, logging is not working correctly inside IMAGE_CMD bodies,
+    # so wrap all logging in these functions that also have an echo. This won't
+    # prevent warnings from being hidden deep in log files, but there is nothing
+    # we can do about that.
+    sdimg_warn() {
+        echo "$@"
+        bbwarn "$@"
+    }
+    sdimg_fatal() {
+        echo "$@"
+        bbfatal "$@"
+    }
+
     mkdir -p "${WORKDIR}"
 
     # Workaround for the fact that the image builder requires this directory,
@@ -129,8 +144,7 @@ EOF
     # Embed boot loader in image, offset relative to boot sector.
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
         if [ $(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${IMAGE_BOOTLOADER_FILE}) ]; then
-            bberror "Not enough space to embed boot loader in boot sector. Increase SDIMG_PARTITION_ALIGNMENT_MB."
-            exit 1
+            sdimg_fatal "Not enough space to embed boot loader in boot sector. Increase SDIMG_PARTITION_ALIGNMENT_MB."
         fi
 
         dd if="${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" of="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" bs=512 seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} conv=notrunc
