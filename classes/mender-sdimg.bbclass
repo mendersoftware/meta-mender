@@ -59,12 +59,53 @@ addtask do_rootfs_wicenv after do_image before do_image_sdimg
 
 WKS_FULL_PATH = "${WORKDIR}/mender-sdimg.wks"
 
-# We need to have the ext3 image generated already
-IMAGE_TYPEDEP_sdimg = "ext3"
+python() {
+    fslist = d.getVar('IMAGE_FSTYPES', None).split()
+    for fs in fslist:
+        if fs in ["ext2", "ext3", "ext4"]:
+            # We need to have the filesystem image generated already. Make it
+            # dependent on all image types we support.
+            d.setVar('IMAGE_TYPEDEP_sdimg_append', " " + fs)
+}
 
 IMAGE_DEPENDS_sdimg = "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native"
 
 IMAGE_CMD_sdimg() {
+    set -e
+
+    # For some reason, logging is not working correctly inside IMAGE_CMD bodies,
+    # so wrap all logging in these functions that also have an echo. This won't
+    # prevent warnings from being hidden deep in log files, but there is nothing
+    # we can do about that.
+    sdimg_warn() {
+        echo "$@"
+        bbwarn "$@"
+    }
+    sdimg_fatal() {
+        echo "$@"
+        bbfatal "$@"
+    }
+
+    # Figure out which filesystem type to use.
+    FSTYPE=
+    for fs in ${IMAGE_FSTYPES}
+    do
+        case $fs in
+        ext2|ext3|ext4)
+            if [ -n "$FSTYPE" ]
+            then
+                sdimg_warn "More than one filesystem candidate found in IMAGE_FSTYPES = '${IMAGE_FSTYPES}'. Using $FSTYPE and ignoring $fs."
+            else
+                FSTYPE=$fs
+            fi
+            ;;
+        esac
+    done
+    if [ -z "$FSTYPE" ]
+    then
+        sdimg_fatal "No filesystem appropriate for sdimg was found in IMAGE_FSTYPES = '${IMAGE_FSTYPES}'."
+    fi
+
     mkdir -p "${WORKDIR}"
 
     # Workaround for the fact that the image builder requires this directory,
@@ -74,10 +115,10 @@ IMAGE_CMD_sdimg() {
 
     # Workaround for the fact the wic deletes its inputs (WTF??). These links
     # are disposable.
-    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.ext3" \
-        "${WORKDIR}/active.ext3"
-    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.ext3" \
-        "${WORKDIR}/inactive.ext3"
+    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
+        "${WORKDIR}/active.$FSTYPE"
+    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
+        "${WORKDIR}/inactive.$FSTYPE"
 
     PART1_SIZE=$(expr ${SDIMG_BOOT_PART_SIZE_MB} \* 2048)
     SDIMG_PARTITION_ALIGNMENT_KB=$(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1024)
@@ -109,14 +150,14 @@ IMAGE_CMD_sdimg() {
     # The OpenSSL certificates should go here:
     echo "dummy certificate" > "${WORKDIR}/data/mender.cert"
 
-    dd if=/dev/zero of="${WORKDIR}/data.ext3" count=0 bs=1M seek=${SDIMG_DATA_PART_SIZE_MB}
-    mkfs.ext3 -F "${WORKDIR}/data.ext3" -d "${WORKDIR}/data"
+    dd if=/dev/zero of="${WORKDIR}/data.$FSTYPE" count=0 bs=1M seek=${SDIMG_DATA_PART_SIZE_MB}
+    mkfs.$FSTYPE -F "${WORKDIR}/data.$FSTYPE" -d "${WORKDIR}/data"
 
     cat > "${WORKDIR}/mender-sdimg.wks" <<EOF
 part /uboot  --source fsimage --sourceparams=file="${WORKDIR}/boot.vfat"     --ondisk mmcblk0 --fstype=vfat --label boot     --align $SDIMG_PARTITION_ALIGNMENT_KB --active
-part /       --source fsimage --sourceparams=file="${WORKDIR}/active.ext3"   --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
-part /       --source fsimage --sourceparams=file="${WORKDIR}/inactive.ext3" --ondisk mmcblk0 --fstype=ext3 --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
-part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.ext3"     --ondisk mmcblk0 --fstype=ext3 --label data     --align $SDIMG_PARTITION_ALIGNMENT_KB
+part /       --source fsimage --sourceparams=file="${WORKDIR}/active.$FSTYPE"   --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
+part /       --source fsimage --sourceparams=file="${WORKDIR}/inactive.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
+part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE"     --ondisk mmcblk0 --fstype=$FSTYPE --label data     --align $SDIMG_PARTITION_ALIGNMENT_KB
 
 # Note: "bootloader" appears to be useless in this context, but the wic
 # framework requires that it be present.
@@ -129,8 +170,7 @@ EOF
     # Embed boot loader in image, offset relative to boot sector.
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
         if [ $(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${IMAGE_BOOTLOADER_FILE}) ]; then
-            bberror "Not enough space to embed boot loader in boot sector. Increase SDIMG_PARTITION_ALIGNMENT_MB."
-            exit 1
+            sdimg_fatal "Not enough space to embed boot loader in boot sector. Increase SDIMG_PARTITION_ALIGNMENT_MB."
         fi
 
         dd if="${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" of="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" bs=512 seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} conv=notrunc
