@@ -35,7 +35,7 @@ def pytest_addoption(parser):
     parser.addoption("--bbb", action="store_true", default=False,
                      help="the tests are running against a BeagleBone Black")
     parser.addoption("--sdimg-location", action="store",
-                     default=os.path.join(os.environ["WORKSPACE"], "meta-mender/tests/acceptance"),
+                     default=os.getcwd(),
                      help="location to the sdimg you want to install on the bbb")
 
 
