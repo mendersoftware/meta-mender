@@ -4,11 +4,13 @@ require u-boot-mender.inc
 
 DEPENDS = "u-boot"
 
-# Configure fw_printenv so that it looks in the right place for the environment.
-do_configure_fw_printenv () {
-    cat > ${D}${sysconfdir}/fw_env.config <<EOF
+do_compile_append() {
+    # create fw_env.config file
+    cat > ${WORKDIR}/fw_env.config <<EOF
 /uboot/uboot.env 0x0000 ${BOOTENV_SIZE}
 EOF
 }
-addtask do_configure_fw_printenv before do_package after do_install
 
+do_install_append() {
+    install -m 0644 ${WORKDIR}/fw_env.config ${D}${sysconfdir}/fw_env.config
+}
