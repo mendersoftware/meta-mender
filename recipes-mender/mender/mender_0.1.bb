@@ -94,8 +94,10 @@ do_install() {
   install -d ${D}/${localstatedir}/lib/mender
 }
 
-do_install_append_menderimage() {
-  # symlink /var/lib/mender to /data/mender
-  rm -rf ${D}/${localstatedir}/lib/mender
-  ln -s /data/mender ${D}/${localstatedir}/lib/mender
+do_install_append() {
+  if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', 'true', 'false', d)}; then
+    # symlink /var/lib/mender to /data/mender
+    rm -rf ${D}/${localstatedir}/lib/mender
+    ln -s /data/mender ${D}/${localstatedir}/lib/mender
+  fi
 }

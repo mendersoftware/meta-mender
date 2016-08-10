@@ -1,13 +1,13 @@
-FILESEXTRAPATHS_prepend_menderimage := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS_prepend := "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', '${THISDIR}/${PN}:', '', d)}"
 
 #TODO: ${@bb.utils.contains("MACHINE_FEATURES", "sd", "packagegroup-mender-sd", "", d)}
 #./meta/recipes-core/packagegroups/packagegroup-base.bb
 
 do_patch_device() {
-    # Noop if we're not building a mender-image.
-    true
-}
-do_patch_device_menderimage() {
+    if ! ${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', 'true', 'false', d)}; then
+        exit 0
+    fi
+
     if [ -z "${MENDER_BOOT_PART}" ] || [ -z "${MENDER_DATA_PART}" ]; then
         bberror "MENDER_BOOT_PART or MENDER_DATA_PART not set."
         exit 1
@@ -18,7 +18,11 @@ do_patch_device_menderimage() {
 }
 addtask do_patch_device after do_patch before do_install
 
-do_install_append_menderimage () {
+do_install_append () {
+    if ! ${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', 'true', 'false', d)}; then
+        exit 0
+    fi
+
     install -d ${D}/uboot
     install -d ${D}/data
 }
