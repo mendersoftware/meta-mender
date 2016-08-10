@@ -1,5 +1,5 @@
 DESCRIPTION = "Mender tool for doing OTA software updates."
-HOMEPAGE = "https://mender.io/"
+HOMEPAGE = "https://mender-api-gateway"
 
 MENDER_SERVER_URL ?= "https://mender.io"
 MENDER_CERT_LOCATION ?= "${sysconfdir}/mender/server.crt"
