@@ -17,7 +17,7 @@ MENDER_UBOOT_STORAGE_DEVICE ?= ""
 
 # The base name of the devices that hold individual partitions.
 # This is often MENDER_STORAGE_DEVICE + "p".
-MENDER_STORAGE_DEVICE_BASE ?= "/dev/mmcblk0p"
+MENDER_STORAGE_DEVICE_BASE ?= "${MENDER_STORAGE_DEVICE}p"
 
 # The partition number holding the boot partition.
 MENDER_BOOT_PART ?= "${MENDER_STORAGE_DEVICE_BASE}1"
