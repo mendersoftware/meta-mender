@@ -3,6 +3,8 @@ HOMEPAGE = "https://mender.io/"
 
 MENDER_SERVER_URL ?= "https://mender.io"
 MENDER_CERT_LOCATION ?= "${sysconfdir}/mender/server.crt"
+# Tenant token
+MENDER_TENANT_TOKEN ?= "dummy"
 
 #From oe-meta-go (https://github.com/mem/oe-meta-go)
 DEPENDS = "go-cross godep"
@@ -61,6 +63,8 @@ do_compile() {
     sed -i -e 's#[@]MENDER_ROOTFS_PART_A[@]#${MENDER_ROOTFS_PART_A}#' ${B}/mender.conf
     sed -i -e 's#[@]MENDER_ROOTFS_PART_B[@]#${MENDER_ROOTFS_PART_B}#' ${B}/mender.conf
   fi
+
+  echo "${MENDER_TENANT_TOKEN}" > ${B}/tenant.conf
 }
 
 do_install() {
@@ -82,6 +86,7 @@ do_install() {
   #install configuration
   install -d ${D}/${sysconfdir}/mender
   install -m 0644 ${B}/mender.conf ${D}/${sysconfdir}/mender
+  install -m 0600 ${B}/tenant.conf ${D}/${sysconfdir}/mender
 
   #install server certificate
   install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
