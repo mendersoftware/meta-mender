@@ -65,13 +65,6 @@ EOF
 }
 addtask do_provide_mender_defines after do_patch before do_configure
 
-do_compile_append() {
-    # create fw_env.config file
-    cat > ${WORKDIR}/fw_env.config <<EOF
-/uboot/uboot.env 0x0000 ${BOOTENV_SIZE}
-EOF
-}
-
 do_deploy_prepend() {
     # Create empty environment. Just so that the file is available.
     mkdir -p ${DEPLOYDIR}
