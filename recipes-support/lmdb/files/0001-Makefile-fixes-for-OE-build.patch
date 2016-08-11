@@ -1,0 +1,82 @@
+From 27b7778bd65a769e11f622f76872b97bf60613f4 Mon Sep 17 00:00:00 2001
+Message-Id: <27b7778bd65a769e11f622f76872b97bf60613f4.1470901235.git.maciej.borzecki@rndity.com>
+From: Maciej Borzecki <maciej.borzecki@rndity.com>
+Date: Thu, 11 Aug 2016 09:29:33 +0200
+Subject: [PATCH] Makefile: fixes for OE build
+
+Based on [1]. Main changes wrt. vanilla sources:
+- rename lmdb.so to lmdb.so.0.0.0
+- lmdb.so is a symlink to lmdb.so
+- lmdb tools (mdb*) link with shared library
+
+[1]. https://github.com/schnitzeltony/meta-qt5-extra/blob/master/recipes-support/lmdb/files/0001-Patch-the-main-Makefile.patch
+
+Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
+---
+ libraries/liblmdb/Makefile | 23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/libraries/liblmdb/Makefile b/libraries/liblmdb/Makefile
+index 0940c49..ac2802b 100644
+--- a//Makefile
++++ b//Makefile
+@@ -26,6 +26,7 @@ OPT = -O2 -g
+ CFLAGS	= $(THREADS) $(OPT) $(W) $(XCFLAGS)
+ LDLIBS	=
+ SOLIBS	=
++SOVERSION = 0.0.0
+ prefix	= /usr/local
+ exec_prefix = $(prefix)
+ bindir = $(exec_prefix)/bin
+@@ -37,7 +38,7 @@ mandir = $(datarootdir)/man
+ ########################################################################
+ 
+ IHDRS	= lmdb.h
+-ILIBS	= liblmdb.a liblmdb.so
++ILIBS	= liblmdb.a liblmdb.so liblmdb.so.$(SOVERSION)
+ IPROGS	= mdb_stat mdb_copy mdb_dump mdb_load
+ IDOCS	= mdb_stat.1 mdb_copy.1 mdb_dump.1 mdb_load.1
+ PROGS	= $(IPROGS) mtest mtest2 mtest3 mtest4 mtest5
+@@ -49,12 +50,12 @@ install: $(ILIBS) $(IPROGS) $(IHDRS)
+ 	mkdir -p $(DESTDIR)$(includedir)
+ 	mkdir -p $(DESTDIR)$(mandir)/man1
+ 	for f in $(IPROGS); do cp $$f $(DESTDIR)$(bindir); done
+-	for f in $(ILIBS); do cp $$f $(DESTDIR)$(libdir); done
++	for f in $(ILIBS); do cp -d $$f $(DESTDIR)$(libdir); done
+ 	for f in $(IHDRS); do cp $$f $(DESTDIR)$(includedir); done
+ 	for f in $(IDOCS); do cp $$f $(DESTDIR)$(mandir)/man1; done
+ 
+ clean:
+-	rm -rf $(PROGS) *.[ao] *.[ls]o *~ testdb
++	rm -rf $(PROGS) *.[ao] *.[ls]o* *~ testdb
+ 
+ test:	all
+ 	rm -rf testdb && mkdir testdb
+@@ -63,14 +64,18 @@ test:	all
+ liblmdb.a:	mdb.o midl.o
+ 	$(AR) rs $@ mdb.o midl.o
+ 
+-liblmdb.so:	mdb.lo midl.lo
++liblmdb.so:	liblmdb.so.$(SOVERSION)
++	rm -f $@
++	ln -s $< $@
++
++liblmdb.so.$(SOVERSION):	mdb.lo midl.lo
+ #	$(CC) $(LDFLAGS) -pthread -shared -Wl,-Bsymbolic -o $@ mdb.o midl.o $(SOLIBS)
+-	$(CC) $(LDFLAGS) -pthread -shared -o $@ mdb.lo midl.lo $(SOLIBS)
++	$(CC) $(LDFLAGS) -pthread -shared -Wl,-soname,$@ -o $@ mdb.lo midl.lo $(SOLIBS)
+ 
+-mdb_stat: mdb_stat.o liblmdb.a
+-mdb_copy: mdb_copy.o liblmdb.a
+-mdb_dump: mdb_dump.o liblmdb.a
+-mdb_load: mdb_load.o liblmdb.a
++mdb_stat: mdb_stat.o liblmdb.so
++mdb_copy: mdb_copy.o liblmdb.so
++mdb_dump: mdb_dump.o liblmdb.so
++mdb_load: mdb_load.o liblmdb.so
+ mtest:    mtest.o    liblmdb.a
+ mtest2:	mtest2.o liblmdb.a
+ mtest3:	mtest3.o liblmdb.a
+-- 
+2.5.0
+
