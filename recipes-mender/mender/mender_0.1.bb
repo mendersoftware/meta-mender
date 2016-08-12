@@ -5,6 +5,7 @@ MENDER_SERVER_URL ?= "https://mender-api-gateway"
 MENDER_CERT_LOCATION ?= "${sysconfdir}/mender/server.crt"
 # Tenant token
 MENDER_TENANT_TOKEN ?= "dummy"
+SYSTEMD_AUTO_ENABLE ?= "disable"
 
 #From oe-meta-go (https://github.com/mem/oe-meta-go)
 DEPENDS = "go-cross godep"
