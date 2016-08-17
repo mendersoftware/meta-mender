@@ -45,7 +45,7 @@ RANDOM_MAC="52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"
 QEMU_AUDIO_DRV=none \
     $QEMU_SYSTEM_ARM \
     -M vexpress-a9 \
-    -m 1G \
+    -m 512M \
     -kernel "$UBOOT_ELF" \
     -drive file="$VEXPRESS_SDIMG",if=sd,format=raw \
     -net nic,macaddr="$RANDOM_MAC" \
