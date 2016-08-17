@@ -1,4 +1,4 @@
-From 4811089b0e308f17d54832a405723e64deea2636 Mon Sep 17 00:00:00 2001
+From b701b72baa0ba88561e101cca9efe8772207c354 Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@mender.io>
 Date: Fri, 12 Aug 2016 10:15:11 +0200
 Subject: [PATCH] Generic boot code for Mender.
@@ -7,9 +7,9 @@ Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
 ---
  include/config_mender.h   | 69 +++++++++++++++++++++++++++++++++++++++++++++++
  include/env_default.h     |  3 +++
- include/env_mender.h      | 59 ++++++++++++++++++++++++++++++++++++++++
+ include/env_mender.h      | 64 +++++++++++++++++++++++++++++++++++++++++++
  scripts/Makefile.autoconf |  3 ++-
- 4 files changed, 133 insertions(+), 1 deletion(-)
+ 4 files changed, 138 insertions(+), 1 deletion(-)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
@@ -111,10 +111,10 @@ index 3096576..fcb1086 100644
  #endif
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000..bb3939f
+index 0000000..d13d0b1
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,64 @@
 +/*
 +  Copyright (C) 2016  Mender Software
 +
@@ -171,7 +171,12 @@ index 0000000..bb3939f
 +    "fi; "                                                              \
 +    "setenv upgrade_available 0; "                                      \
 +    "saveenv; "                                                         \
-+    "run mender_setup\0"
++    "run mender_setup\0"                                                \
++                                                                        \
++    "mender_try_to_recover="                                            \
++    "if test ${upgrade_available} = 1; "                                \
++    "then reset; "                                                      \
++    "fi\0"
 +
 +#endif /* ENV_MENDER_H */
 diff --git a/scripts/Makefile.autoconf b/scripts/Makefile.autoconf
