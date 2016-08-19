@@ -1,6 +1,21 @@
+From b701b72baa0ba88561e101cca9efe8772207c354 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@mender.io>
+Date: Fri, 12 Aug 2016 10:15:11 +0200
+Subject: [PATCH] Generic boot code for Mender.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
+---
+ include/config_mender.h   | 69 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/env_default.h     |  3 +++
+ include/env_mender.h      | 64 +++++++++++++++++++++++++++++++++++++++++++
+ scripts/Makefile.autoconf |  3 ++-
+ 4 files changed, 138 insertions(+), 1 deletion(-)
+ create mode 100644 include/config_mender.h
+ create mode 100644 include/env_mender.h
+
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000..73f658b
+index 0000000..3c1ecd6
 --- /dev/null
 +++ b/include/config_mender.h
 @@ -0,0 +1,69 @@
@@ -96,10 +111,10 @@ index 3096576..fcb1086 100644
  #endif
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000..d79049f
+index 0000000..d13d0b1
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,53 @@
+@@ -0,0 +1,64 @@
 +/*
 +  Copyright (C) 2016  Mender Software
 +
@@ -139,6 +154,12 @@ index 0000000..d79049f
 +                                                                        \
 +    "mender_boot_part=" __stringify(MENDER_ROOTFS_PART_A_NUMBER) "\0"   \
 +                                                                        \
++    "mender_uboot_boot=" MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":" __stringify(MENDER_BOOT_PART_NUMBER) "\0" \
++                                                                        \
++    "mender_uboot_if=" MENDER_UBOOT_STORAGE_INTERFACE "\0"              \
++                                                                        \
++    "mender_uboot_dev=" __stringify(MENDER_UBOOT_STORAGE_DEVICE) "\0"   \
++                                                                        \
 +    "mender_setup="                                                     \
 +    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part};" \
 +    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}\0" \
@@ -150,14 +171,19 @@ index 0000000..d79049f
 +    "fi; "                                                              \
 +    "setenv upgrade_available 0; "                                      \
 +    "saveenv; "                                                         \
-+    "run mender_setup\0"
++    "run mender_setup\0"                                                \
++                                                                        \
++    "mender_try_to_recover="                                            \
++    "if test ${upgrade_available} = 1; "                                \
++    "then reset; "                                                      \
++    "fi\0"
 +
 +#endif /* ENV_MENDER_H */
 diff --git a/scripts/Makefile.autoconf b/scripts/Makefile.autoconf
-index d668982..be8290b 100644
+index 01a739d..4c4067d 100644
 --- a/scripts/Makefile.autoconf
 +++ b/scripts/Makefile.autoconf
-@@ -95,7 +95,8 @@ define filechk_config_h
+@@ -98,7 +98,8 @@ define filechk_config_h
  	echo \#include \<config_uncmd_spl.h\>;				\
  	echo \#include \<configs/$(CONFIG_SYS_CONFIG_NAME).h\>;		\
  	echo \#include \<asm/config.h\>;				\
@@ -167,3 +193,6 @@ index d668982..be8290b 100644
  endef
  
  include/config.h: scripts/Makefile.autoconf create_symlink FORCE
+-- 
+2.7.4
+
