@@ -1,5 +1,7 @@
 [Unit]
 Description=Mender OTA update service
+After=network-online.target network.target
+Requires=network-online.target
 
 [Service]
 Type=simple
