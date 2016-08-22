@@ -13,7 +13,7 @@ do_compile() {
   export GOPATH
 
   # Compile for build architecture.
-  GOARCH= go install github.com/tools/godep
+  CGO_ENABLED=0 GOARCH= go install github.com/tools/godep
 }
 
 do_install() {
