@@ -36,6 +36,10 @@ FILES_${PN} += "${systemd_unitdir}/system/mender.service \
                 ${sysconfdir}/mender.conf \
                "
 
+# Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
+# like. We disable those checks here.
+INSANE_SKIP_${PN} = "ldflags"
+
 do_compile() {
   GOPATH="${B}:${S}"
   export GOPATH
