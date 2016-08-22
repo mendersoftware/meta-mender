@@ -1,0 +1,77 @@
+From 69d477a05526221bdf4ace8920d761e0cc8a25d3 Mon Sep 17 00:00:00 2001
+Message-Id: <69d477a05526221bdf4ace8920d761e0cc8a25d3.1470905747.git.maciej.borzecki@rndity.com>
+From: Bryan Matsuo <bryan.matsuo@gmail.com>
+Date: Wed, 27 Jul 2016 12:21:37 -0700
+Subject: [PATCH] lmdb: use 31-bit lengths when on 32-bit architectures
+
+The package detects architecture bit-width using techniques from the
+runtime package to avoid duplication and omission of code for various
+architectures.
+
+The architecture detection hacks are moved to their own internal package
+to avoid golint complaining about weird looking constant formulae.
+
+(cherry-picked from 69d477a05526221bdf4ace8920d761e0cc8a25d3 in https://github.com/bmatsuo/lmdb-go)
+Status: backport
+Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
+---
+ src/github.com/bmatsuo/lmdb-go/internal/lmdbarch/width.go |  7 +++++++
+ src/github.com/bmatsuo/lmdb-go/lmdb/val.go                | 24 +++++++++++++++++-------
+ 2 files changed, 24 insertions(+), 7 deletions(-)
+ create mode 100644 internal/lmdbarch/width.go
+
+diff --git a/internal/lmdbarch/width.go b/internal/lmdbarch/width.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..b7514185ad87f1605daea1ae430235adaacbacf0
+--- /dev/null
++++ b/internal/lmdbarch/width.go
+@@ -0,0 +1,7 @@
++// Package lmdbarch contains some architecture detection constants.  The
++// primary reason the package exists is because the constant definitions are
++// scary and some will not pass linters.
++package lmdbarch
++
++// Width64 is 1 for 64-bit architectures and 0 otherwise.
++const Width64 = 1 << (^uintptr(0) >> 63) / 2
+diff --git a/lmdb/val.go b/lmdb/val.go
+index 4227a8d90b8157d91c262f3d2a000e1b6cb07fc5..528d7f01dc723435c7b0b5d570eb1aa61278eadb 100644
+--- a/lmdb/val.go
++++ b/lmdb/val.go
+@@ -7,17 +7,27 @@ package lmdb
+ */
+ import "C"
+ 
+-import "unsafe"
++import (
++	"unsafe"
+ 
+-// valMaxSize is the largest portable data size allowed by Go (larger can cause
+-// an error like "type [...]byte larger than address space").  See runtime
+-// source file malloc.go for more information about memory limits.
++	"github.com/bmatsuo/lmdb-go/internal/lmdbarch"
++)
++
++// valSizeBits is the number of bits which constraining the length of the
++// single values in an LMDB database, either 32 or 31 depending on the
++// platform.  valMaxSize is the largest data size allowed based.  See runtime
++// source file malloc.go and the compiler typecheck.go for more information
++// about memory limits and array bound limits.
+ //
+ //		https://github.com/golang/go/blob/a03bdc3e6bea34abd5077205371e6fb9ef354481/src/runtime/malloc.go#L151-L164
++//		https://github.com/golang/go/blob/36a80c5941ec36d9c44d6f3c068d13201e023b5f/src/cmd/compile/internal/gc/typecheck.go#L383
+ //
+-// Luckily, the value 2^32-1 coincides with the maximum data size for LMDB
+-// (MAXDATASIZE).
+-const valMaxSize = 1<<32 - 1
++// On 64-bit systems, luckily, the value 2^32-1 coincides with the maximum data
++// size for LMDB (MAXDATASIZE).
++const (
++	valSizeBits = lmdbarch.Width64*32 + (1-lmdbarch.Width64)*31
++	valMaxSize  = 1<<valSizeBits - 1
++)
+ 
+ // Multi is a wrapper for a contiguous page of sorted, fixed-length values
+ // passed to Cursor.PutMulti or retrieved using Cursor.Get with the
+-- 
+2.5.0
+

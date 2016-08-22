@@ -8,7 +8,7 @@ MENDER_TENANT_TOKEN ?= "dummy"
 SYSTEMD_AUTO_ENABLE ?= "disable"
 
 #From oe-meta-go (https://github.com/mem/oe-meta-go)
-DEPENDS = "go-cross godep"
+DEPENDS = "go-cross godep lmdb-go"
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
@@ -35,13 +35,16 @@ SYSTEMD_SERVICE_${PN} = "mender.service"
 FILES_${PN} += "${systemd_unitdir}/system/mender.service \
                 ${sysconfdir}/mender.conf \
                "
+export CGO_ENABLED = "1"
+export CGO_CFLAGS = "${CFLAGS} --sysroot=${STAGING_DIR_TARGET}"
+export CGO_LDFLAGS = "${LDFLAGS} --sysroot=${STAGING_DIR_TARGET}"
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
 # like. We disable those checks here.
 INSANE_SKIP_${PN} = "ldflags"
 
 do_compile() {
-  GOPATH="${B}:${S}"
+  GOPATH="${B}:${S}:${STAGING_LIBDIR}/${TARGET_SYS}/go"
   export GOPATH
   PATH="${B}/bin:$PATH"
   export PATH
