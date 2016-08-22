@@ -15,6 +15,7 @@ DEPLOYDIR = "${WORKDIR}/deploy-${PN}"
 ################################################################################
 SRC_URI_append = " file://0002-Add-missing-header-which-fails-on-recent-GCC.patch"
 SRC_URI_append = " file://0001-Generic-boot-code-for-Mender.patch"
+SRC_URI_append = " file://0002-Integration-of-Mender-boot-code-into-U-Boot.patch"
 
 ################################################################################
 # Board specific patches
