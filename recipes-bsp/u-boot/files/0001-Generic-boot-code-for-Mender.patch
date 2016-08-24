@@ -91,7 +91,7 @@ new file mode 100644
 index 0000000..d13d0b1
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,64 @@
+@@ -0,0 +1,67 @@
 +/*
 +  Copyright (C) 2016  Mender Software
 +
@@ -138,8 +138,11 @@ index 0000000..d13d0b1
 +    "mender_uboot_dev=" __stringify(MENDER_UBOOT_STORAGE_DEVICE) "\0"   \
 +                                                                        \
 +    "mender_setup="                                                     \
-+    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part};" \
-+    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}\0" \
++    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; " \
++    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}; " \
++    "setenv expand_bootargs setenv bootargs ${bootargs}; "              \
++    "run expand_bootargs; "                                             \
++    "setenv expand_bootargs\0"                                          \
 +                                                                        \
 +    "mender_altbootcmd="                                                \
 +    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "  \
