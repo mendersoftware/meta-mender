@@ -16,7 +16,7 @@ function finish {
 
 trap finish EXIT
 for i in {1...5};
-  do ssh -Cfo ExitOnForwardFailure=yes bbb@wmd.no -L 12345:localhost:12345 -N
+  do ssh -Cfo ExitOnForwardFailure=yes -o StrictHostKeyChecking=no bbb@wmd.no -L 12345:localhost:12345 -N
   PID=$(pgrep -f '12345:localhost:12345')
   if [ "$PID" -gt 0 ];
     then
