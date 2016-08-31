@@ -6,7 +6,7 @@ set -e
 function run_tests() {
   cp $BBB_IMAGE_DIR/core-image-base-beaglebone.sdimg \
      ./core-image-base-beaglebone-modified-testing.sdimg
-  bash prepare_ext3_testing.sh
+  bash prepare_ext4_testing.sh
   py.test --bbb --host=127.0.0.1:12345 --sdimg-location=`pwd`
 }
 
