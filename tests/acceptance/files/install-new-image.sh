@@ -11,7 +11,7 @@ SDCARD=""
 function modify_sdimg {
   PART_OFFSET=$(fdisk -l $IMAGE | grep core-image-base-beaglebone-modified-testing.sdimg2 | awk '{sum = $2 * 512; print sum}')
   mkdir /mnt/sdimg 2>/dev/null
-  mount -t ext3 \
+  mount -t ext4 \
         -o loop,offset="$PART_OFFSET" \
         $IMAGE /mnt/sdimg
 
