@@ -155,9 +155,10 @@ image file / package file / etc.), listed as bare file names. There may be one
 or multiple files listed.  For example:
 
 ```
-[
-  "core-image-minimal-201608110900.ext4"
-]
+{ "files" : [
+  {"file": "core-image-minimal-201608110900.ext4"},
+  {"file": "core-image-base-201608110900.ext4"},
+]}
 ```
 
 
