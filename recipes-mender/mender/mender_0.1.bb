@@ -82,7 +82,10 @@ do_install() {
   # ${GOPATH}/bin/${GOOS}_${GOARCH}, howver if it's not, the binaries are in
   # ${GOPATH}/bin; handle cross compiled case only
   install -t ${D}/${bindir} -m 0755 \
-          ${B}/bin/${GOOS}_${GOARCH}/mender \
+          ${B}/bin/${GOOS}_${GOARCH}/mender
+
+  install -d ${D}/${datadir}/mender/identity
+  install -t ${D}/${datadir}/mender/identity -m 0755 \
           ${S}/support/mender-device-identity
 
   install -d ${D}/${systemd_unitdir}/system
