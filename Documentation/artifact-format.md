@@ -155,10 +155,7 @@ image file / package file / etc.), listed as bare file names. There may be one
 or multiple files listed.  For example:
 
 ```
-{ "files" : [
-  {"file": "core-image-minimal-201608110900.ext4"},
-  {"file": "core-image-base-201608110900.ext4"}
-]}
+{ "file" : ["core-image-minimal-201608110900.ext4", "core-image-base-201608110900.ext4"]}
 ```
 
 
@@ -167,14 +164,14 @@ or multiple files listed.  For example:
 Format: JSON
 
 A file that provides information about the type of package contained within the
-tar file. The contents of this file depends on the `type` specified in
-`header-info`. For `rootfs-image` there is only one entry in this file, which is
-the name of the image file inside `data` (without the `data` path). For
-instance:
+tar file. The first and the only one required entry is the type of the update 
+corresponding to the type in `header-info` file. Rest of the content depends on the 
+`type` specified in `header-info`. For `rootfs-image` there is no additional fields 
+required. For instance:
 
 ```
 {
-  "rootfs": "core-image-minimal-201608110900.ext4"
+  "type": "rootfs-image"
 }
 ```
 
