@@ -1,9 +1,9 @@
 [Unit]
 Description=Mender OTA update service
-After=network.target nss-lookup.target
+After=systemd-resolved.service
 
 [Service]
-Type=simple
+Type=idle
 User=root
 Group=root
 ExecStartPre=/bin/mkdir -p -m 0700 /data/mender
