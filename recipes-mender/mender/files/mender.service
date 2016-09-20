@@ -1,7 +1,6 @@
 [Unit]
 Description=Mender OTA update service
-After=network-online.target nss-lookup.target
-Wants=network-online.target
+After=network.target nss-lookup.target
 
 [Service]
 Type=simple
