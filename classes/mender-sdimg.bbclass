@@ -169,7 +169,7 @@ EOF
 
     # Embed boot loader in image, offset relative to boot sector.
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
-        if [ $(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${IMAGE_BOOTLOADER_FILE}) ]; then
+        if [ $(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}) ]; then
             sdimg_fatal "Not enough space to embed boot loader in boot sector. Increase SDIMG_PARTITION_ALIGNMENT_MB."
         fi
 
