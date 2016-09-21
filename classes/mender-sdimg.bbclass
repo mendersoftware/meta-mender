@@ -115,9 +115,9 @@ IMAGE_CMD_sdimg() {
 
     # Workaround for the fact the wic deletes its inputs (WTF??). These links
     # are disposable.
-    ln -sfn "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
+    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
         "${WORKDIR}/active.$FSTYPE"
-    ln -sfn "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
+    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
         "${WORKDIR}/inactive.$FSTYPE"
 
     PART1_SIZE=$(expr ${SDIMG_BOOT_PART_SIZE_MB} \* 2048)
