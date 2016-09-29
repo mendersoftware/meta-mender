@@ -1,7 +1,7 @@
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
-MENDER_SERVER_URL ?= "https://mender-api-gateway"
+MENDER_SERVER_URL ?= "https://docker.mender.io"
 MENDER_CERT_LOCATION ?= "${sysconfdir}/mender/server.crt"
 # Tenant token
 MENDER_TENANT_TOKEN ?= "dummy"
