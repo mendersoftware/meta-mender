@@ -7,8 +7,6 @@ MENDER_CERT_LOCATION ?= "${sysconfdir}/mender/server.crt"
 MENDER_TENANT_TOKEN ?= "dummy"
 SYSTEMD_AUTO_ENABLE ?= "disable"
 
-#From oe-meta-go (https://github.com/mem/oe-meta-go)
-DEPENDS = "go-cross godep"
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
