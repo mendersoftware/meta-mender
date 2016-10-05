@@ -115,9 +115,9 @@ IMAGE_CMD_sdimg() {
 
     # Workaround for the fact the wic deletes its inputs (WTF??). These links
     # are disposable.
-    ln -sfn "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
+    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
         "${WORKDIR}/active.$FSTYPE"
-    ln -sfn "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
+    ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
         "${WORKDIR}/inactive.$FSTYPE"
 
     PART1_SIZE=$(expr ${SDIMG_BOOT_PART_SIZE_MB} \* 2048)
@@ -167,18 +167,15 @@ EOF
     # Call WIC
     IMAGE_CMD_wic
 
-    wicimgname="${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.wic"
-    outimgname="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
-    mv "${wicimgname}" "${outimgname}"
-
     # Embed boot loader in image, offset relative to boot sector.
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
         if [ $(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}) ]; then
             sdimg_fatal "Not enough space to embed boot loader in boot sector. Increase SDIMG_PARTITION_ALIGNMENT_MB."
         fi
 
-        dd if="${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" of="${outimgname}" bs=512 seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} conv=notrunc
+        dd if="${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" of="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" bs=512 seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} conv=notrunc
     fi
 
-    ln -sfn "${outimgname}" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.sdimg"
+    mv "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
+    ln -sfn "${IMAGE_NAME}.sdimg" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.sdimg"
 }
