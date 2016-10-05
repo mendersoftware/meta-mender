@@ -4,8 +4,8 @@ IMAGE_DEPENDS_artifactimg = "artifacts-native"
 ARTIFACTIMG_FSTYPE  ?= "ext4"
 IMAGE_CMD_artifactimg = "artifacts write rootfs-image \
                       -i ${IMAGE_ID} -t ${DEVICE_TYPE}\
-                      -u ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
-                      -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.artifactimg \
+                      -u ${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
+                      -o ${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.artifactimg \
                       "
 
 IMAGE_CMD_artifactimg[vardepsexclude] += "IMAGE_ID"
