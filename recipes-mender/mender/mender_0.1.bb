@@ -38,6 +38,8 @@ FILES_${PN} += "${systemd_unitdir}/system/mender.service \
 # like. We disable those checks here.
 INSANE_SKIP_${PN} = "ldflags"
 
+GO_IMPORT = "github.com/mendersoftware/mender"
+
 do_compile() {
   GOPATH="${B}:${S}"
   export GOPATH
@@ -47,12 +49,12 @@ do_compile() {
   # mender is using vendored dependencies, any 3rd party libraries go to into
   # /vendor directory inside mender source tree. In order for `go build` to pick
   # up vendored deps from our source tree, the mender source tree itself must be
-  # located inside $GOPATH/src, for instance $GOPATH/src/mender
+  # located inside $GOPATH/src/${GO_IMPORT}
   #
-  # recreate temporary $GOPATH/src/mender structure and link our source tree
-  mkdir -p ${B}/src
-  test -e ${B}/src/mender || ln -s ${S} ${B}/src/mender
-  cd ${B}/src/mender
+  # recreate temporary $GOPATH/src/${GO_IMPORT} structure and link our source tree
+  mkdir -p ${B}/src/$(dirname ${GO_IMPORT})
+  test -e ${B}/src/${GO_IMPORT} || ln -s ${S} ${B}/src/${GO_IMPORT}
+  cd ${B}/src/${GO_IMPORT}
 
   # run verbose build, we should see which dependencies are pulled in
   oe_runmake V=1 install
