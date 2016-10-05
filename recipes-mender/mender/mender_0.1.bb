@@ -12,7 +12,7 @@ B = "${WORKDIR}/build"
 
 inherit go
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https \
+SRC_URI = "git://github.com/mendersoftware/mender;branch=stable;protocol=https \
            file://mender.service \
            file://mender.conf \
            file://server.crt \
