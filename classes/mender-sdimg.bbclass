@@ -44,6 +44,9 @@ IMAGE_UENV_TXT_FILE ?= ""
 
 IMAGE_BOOT_FILES_append = " ${IMAGE_UENV_TXT_FILE}"
 
+# make sure to provide a weak default
+UBOOT_SUFFIX ??= "bin"
+
 # This will be embedded into the boot sector, or close to the boot sector, where
 # exactly depends on the offset variable.
 IMAGE_BOOTLOADER_FILE ?= "u-boot.${UBOOT_SUFFIX}"
