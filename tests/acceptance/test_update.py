@@ -25,8 +25,8 @@ from common import *
 class Helpers:
     @staticmethod
     def upload_to_s3():
-        subprocess.Popen(["s3cmd", "--follow-symlinks", "put", "image.dat", "s3://yocto-builds/tmp/"]).wait()
-        subprocess.Popen(["s3cmd", "setacl", "s3://yocto-builds/tmp/image.dat", "--acl-public"]).wait()
+        subprocess.Popen(["s3cmd", "--follow-symlinks", "put", "image.dat", "s3://mender/temp/"]).wait()
+        subprocess.Popen(["s3cmd", "setacl", "s3://mender/temp/image.dat", "--acl-public"]).wait()
 
     @staticmethod
     # TODO: Use this when mender is more stable. Spurious errors are currently generated.
