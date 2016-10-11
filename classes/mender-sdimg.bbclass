@@ -84,7 +84,7 @@ python() {
 IMAGE_DEPENDS_sdimg = "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native"
 
 IMAGE_CMD_sdimg() {
-    set -e
+    set -e -x
 
     # For some reason, logging is not working correctly inside IMAGE_CMD bodies,
     # so wrap all logging in these functions that also have an echo. This won't
@@ -176,6 +176,8 @@ part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE"     
 # framework requires that it be present.
 bootloader --timeout=10  --append=""
 EOF
+
+    cat "${WORKDIR}/mender-sdimg.wks"
 
     # Call WIC
     IMAGE_CMD_wic
