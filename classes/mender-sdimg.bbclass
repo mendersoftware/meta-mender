@@ -70,8 +70,6 @@ inherit image_types
 
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
 
-WKS_FULL_PATH = "${WORKDIR}/mender-sdimg.wks"
-
 python() {
     fslist = d.getVar('IMAGE_FSTYPES', None).split()
     for fs in fslist:
@@ -126,32 +124,8 @@ IMAGE_CMD_sdimg() {
     # exist.
     mkdir -p "${IMAGE_ROOTFS}"
 
-    # Workaround for the fact the wic deletes its inputs (WTF??). These links
-    # are disposable.
-    ln -sfn "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
-        "${WORKDIR}/active.$FSTYPE"
-    ln -sfn "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
-        "${WORKDIR}/inactive.$FSTYPE"
-
     PART1_SIZE=$(expr ${MENDER_BOOT_PART_SIZE_MB} \* 2048)
     MENDER_PARTITION_ALIGNMENT_KB=$(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024)
-
-    dd if=/dev/zero of="${WORKDIR}/boot.vfat" count=${PART1_SIZE}
-    mkfs.vfat "${WORKDIR}/boot.vfat"
-
-    # Copy boot files to boot partition
-    IMAGE_BOOT_FILES="${IMAGE_BOOT_FILES}"
-    for entry in $IMAGE_BOOT_FILES
-    do
-        # Handle special ';' syntax. See documentation for IMAGE_BOOT_FILES.
-        dir="${entry#*;}"
-        if [ "$dir" = "$entry" ]
-        then
-            dir=
-        fi
-        file="${entry%;*}"
-        mcopy -i "${WORKDIR}/boot.vfat" -s ${DEPLOY_DIR_IMAGE}/$file ::$dir
-    done
 
     rm -rf "${WORKDIR}/data" || true
     if [ -n "${MENDER_DATA_PART_DIR}" ]; then
@@ -166,30 +140,27 @@ IMAGE_CMD_sdimg() {
     dd if=/dev/zero of="${WORKDIR}/data.$FSTYPE" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
     mkfs.$FSTYPE -F "${WORKDIR}/data.$FSTYPE" -d "${WORKDIR}/data"
 
-    cat > "${WORKDIR}/mender-sdimg.wks" <<EOF
-part /uboot  --source fsimage --sourceparams=file="${WORKDIR}/boot.vfat"     --ondisk mmcblk0 --fstype=vfat --label boot     --align $MENDER_PARTITION_ALIGNMENT_KB --active
-part /       --source fsimage --sourceparams=file="${WORKDIR}/active.$FSTYPE"   --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $MENDER_PARTITION_ALIGNMENT_KB
-part /       --source fsimage --sourceparams=file="${WORKDIR}/inactive.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $MENDER_PARTITION_ALIGNMENT_KB
+    wks="${WORKDIR}/mender-sdimg.wks"
+    cat > "$wks" <<EOF
+part /boot  --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align $MENDER_PARTITION_ALIGNMENT_KB --active --size ${MENDER_BOOT_PART_SIZE_MB}
+part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $MENDER_PARTITION_ALIGNMENT_KB
+part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $MENDER_PARTITION_ALIGNMENT_KB
 part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE"     --ondisk mmcblk0 --fstype=$FSTYPE --label data     --align $MENDER_PARTITION_ALIGNMENT_KB
 
-# Note: "bootloader" appears to be useless in this context, but the wic
-# framework requires that it be present.
-bootloader --timeout=10  --append=""
 EOF
 
     # Call WIC
-    IMAGE_CMD_wic
-
-    wicimgname="${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.wic"
     outimgname="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
-    mv "${wicimgname}" "${outimgname}"
+    wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-sdimg"
+    BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR_TARGET}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
+    mv "$wicout/build/$(basename "${wks%.wks}")"*.direct "$outimgname"
+    rm -rf "$wicout/"
 
     # Embed boot loader in image, offset relative to boot sector.
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
         if [ $(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}) ]; then
             sdimg_fatal "Not enough space to embed boot loader in boot sector. Increase MENDER_PARTITION_ALIGNMENT_MB."
         fi
-
         dd if="${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" of="${outimgname}" bs=512 seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} conv=notrunc
     fi
 
