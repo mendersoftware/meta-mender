@@ -20,13 +20,13 @@ inherit mender-install
 # Optional location where a directory can be specified with content that should
 # be included on the data partition. Some of Mender's own files will be added to
 # this (e.g. OpenSSL certificates).
-SDIMG_DATA_PART_DIR ?= ""
+MENDER_DATA_PART_DIR ?= ""
 
 # Size of the data partition, which is preserved across updates.
-SDIMG_DATA_PART_SIZE_MB ?= "128"
+MENDER_DATA_PART_SIZE_MB ?= "128"
 
 # Size of the first (FAT) partition, that contains the bootloader
-SDIMG_BOOT_PART_SIZE_MB ?= "16"
+MENDER_BOOT_PART_SIZE_MB ?= "16"
 
 # For performance reasons, we try to align the partitions to the SD
 # card's erase block. It is impossible to know this information with
@@ -36,7 +36,17 @@ SDIMG_BOOT_PART_SIZE_MB ?= "16"
 #
 # 8MB alignment is a safe setting that might waste some space if the
 # erase block is smaller.
-SDIMG_PARTITION_ALIGNMENT_MB ?= "8"
+MENDER_PARTITION_ALIGNMENT_MB ?= "8"
+
+python() {
+    deprecated_vars = ['SDIMG_DATA_PART_DIR', 'SDIMG_DATA_PART_SIZE_MB',
+                       'SDIMG_BOOT_PART_SIZE_MB', 'SDIMG_PARTITION_ALIGNMENT_MB']
+    for varname in deprecated_vars:
+        cur = d.getVar(varname, True)
+        if cur:
+            newvarname = varname.replace('SDIMG_', 'MENDER_')
+            bb.fatal('Detected use of deprecated var %s, please replace it with %s in your setup' % (varname, newvarname))
+}
 
 # u-boot environment file
 #IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
@@ -123,8 +133,8 @@ IMAGE_CMD_sdimg() {
     ln -sfn "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$FSTYPE" \
         "${WORKDIR}/inactive.$FSTYPE"
 
-    PART1_SIZE=$(expr ${SDIMG_BOOT_PART_SIZE_MB} \* 2048)
-    SDIMG_PARTITION_ALIGNMENT_KB=$(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1024)
+    PART1_SIZE=$(expr ${MENDER_BOOT_PART_SIZE_MB} \* 2048)
+    MENDER_PARTITION_ALIGNMENT_KB=$(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024)
 
     dd if=/dev/zero of="${WORKDIR}/boot.vfat" count=${PART1_SIZE}
     mkfs.vfat "${WORKDIR}/boot.vfat"
@@ -144,8 +154,8 @@ IMAGE_CMD_sdimg() {
     done
 
     rm -rf "${WORKDIR}/data" || true
-    if [ -n "${SDIMG_DATA_PART_DIR}" ]; then
-        cp -a "${SDIMG_DATA_PART_DIR}" "${WORKDIR}/data"
+    if [ -n "${MENDER_DATA_PART_DIR}" ]; then
+        cp -a "${MENDER_DATA_PART_DIR}" "${WORKDIR}/data"
     else
         mkdir -p "${WORKDIR}/data"
     fi
@@ -153,14 +163,14 @@ IMAGE_CMD_sdimg() {
     # The OpenSSL certificates should go here:
     echo "dummy certificate" > "${WORKDIR}/data/mender.cert"
 
-    dd if=/dev/zero of="${WORKDIR}/data.$FSTYPE" count=0 bs=1M seek=${SDIMG_DATA_PART_SIZE_MB}
+    dd if=/dev/zero of="${WORKDIR}/data.$FSTYPE" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
     mkfs.$FSTYPE -F "${WORKDIR}/data.$FSTYPE" -d "${WORKDIR}/data"
 
     cat > "${WORKDIR}/mender-sdimg.wks" <<EOF
-part /uboot  --source fsimage --sourceparams=file="${WORKDIR}/boot.vfat"     --ondisk mmcblk0 --fstype=vfat --label boot     --align $SDIMG_PARTITION_ALIGNMENT_KB --active
-part /       --source fsimage --sourceparams=file="${WORKDIR}/active.$FSTYPE"   --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
-part /       --source fsimage --sourceparams=file="${WORKDIR}/inactive.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $SDIMG_PARTITION_ALIGNMENT_KB
-part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE"     --ondisk mmcblk0 --fstype=$FSTYPE --label data     --align $SDIMG_PARTITION_ALIGNMENT_KB
+part /uboot  --source fsimage --sourceparams=file="${WORKDIR}/boot.vfat"     --ondisk mmcblk0 --fstype=vfat --label boot     --align $MENDER_PARTITION_ALIGNMENT_KB --active
+part /       --source fsimage --sourceparams=file="${WORKDIR}/active.$FSTYPE"   --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $MENDER_PARTITION_ALIGNMENT_KB
+part /       --source fsimage --sourceparams=file="${WORKDIR}/inactive.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $MENDER_PARTITION_ALIGNMENT_KB
+part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE"     --ondisk mmcblk0 --fstype=$FSTYPE --label data     --align $MENDER_PARTITION_ALIGNMENT_KB
 
 # Note: "bootloader" appears to be useless in this context, but the wic
 # framework requires that it be present.
@@ -172,8 +182,8 @@ EOF
 
     # Embed boot loader in image, offset relative to boot sector.
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
-        if [ $(expr ${SDIMG_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}) ]; then
-            sdimg_fatal "Not enough space to embed boot loader in boot sector. Increase SDIMG_PARTITION_ALIGNMENT_MB."
+        if [ $(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}) ]; then
+            sdimg_fatal "Not enough space to embed boot loader in boot sector. Increase MENDER_PARTITION_ALIGNMENT_MB."
         fi
 
         dd if="${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" of="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" bs=512 seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} conv=notrunc
