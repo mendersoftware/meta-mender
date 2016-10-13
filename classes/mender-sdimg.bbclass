@@ -58,8 +58,10 @@ IMAGE_BOOT_FILES_append = " ${IMAGE_UENV_TXT_FILE}"
 UBOOT_SUFFIX ??= "bin"
 
 # This will be embedded into the boot sector, or close to the boot sector, where
-# exactly depends on the offset variable.
-IMAGE_BOOTLOADER_FILE ?= "u-boot.${UBOOT_SUFFIX}"
+# exactly depends on the offset variable. Since it is a machine specific
+# setting, the default value is an empty string.
+IMAGE_BOOTLOADER_FILE ?= ""
+
 # Offset of bootloader, in sectors (512 bytes).
 IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ?= "2"
 
