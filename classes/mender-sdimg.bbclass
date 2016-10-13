@@ -141,10 +141,19 @@ IMAGE_CMD_sdimg() {
     mkfs.$FSTYPE -F "${WORKDIR}/data.$FSTYPE" -d "${WORKDIR}/data"
 
     wks="${WORKDIR}/mender-sdimg.wks"
-    cat > "$wks" <<EOF
-part /boot  --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align $MENDER_PARTITION_ALIGNMENT_KB --active --size ${MENDER_BOOT_PART_SIZE_MB}
-part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $MENDER_PARTITION_ALIGNMENT_KB
-part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label platform --align $MENDER_PARTITION_ALIGNMENT_KB
+    rm -f "$wks"
+    if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
+        bootloader_align_kb=$(expr $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
+        cat >> "$wks" <<EOF
+# embed bootloader
+part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" --ondisk mmcblk0 --align $bootloader_align_kb --no-table
+EOF
+    fi
+
+    cat >> "$wks" <<EOF
+part /boot   --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align $MENDER_PARTITION_ALIGNMENT_KB --active --size ${MENDER_BOOT_PART_SIZE_MB}
+part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label primary --align $MENDER_PARTITION_ALIGNMENT_KB
+part         --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary --align $MENDER_PARTITION_ALIGNMENT_KB
 part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE"     --ondisk mmcblk0 --fstype=$FSTYPE --label data     --align $MENDER_PARTITION_ALIGNMENT_KB
 
 EOF
@@ -155,14 +164,6 @@ EOF
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR_TARGET}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/build/$(basename "${wks%.wks}")"*.direct "$outimgname"
     rm -rf "$wicout/"
-
-    # Embed boot loader in image, offset relative to boot sector.
-    if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
-        if [ $(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1048576 - ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) -lt $(stat -c %s ${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}) ]; then
-            sdimg_fatal "Not enough space to embed boot loader in boot sector. Increase MENDER_PARTITION_ALIGNMENT_MB."
-        fi
-        dd if="${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" of="${outimgname}" bs=512 seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} conv=notrunc
-    fi
 
     ln -sfn "${IMAGE_NAME}.sdimg" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.sdimg"
 }
