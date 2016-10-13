@@ -171,6 +171,5 @@ EOF
     mv "$wicout/build/$(basename "${wks%.wks}")"*.direct "$outimgname"
     rm -rf "$wicout/"
 
-    mv "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.wic" "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
     ln -sfn "${IMAGE_NAME}.sdimg" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.sdimg"
 }
