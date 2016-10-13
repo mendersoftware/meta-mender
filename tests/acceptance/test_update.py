@@ -70,7 +70,7 @@ class TestUpdates:
         run("dd if=/dev/zero of=image.dat bs=1M count=0 seek=2048")
         output = run('mender -rootfs image.dat ; echo "ret_code=$?"')
 
-        assert(output.find("too small") >= 0)
+        assert(output.find("no space left on device") >= 0)
         assert(output.find("ret_code=0") < 0)
 
     def test_file_based_image_update(self):
