@@ -1,4 +1,3 @@
 *.pyc
 /.cache
 /__pycache__
-/image.dat

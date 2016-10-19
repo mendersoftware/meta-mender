@@ -73,13 +73,13 @@ class TestUpdates:
         assert(output.find("no space left on device") >= 0)
         assert(output.find("ret_code=0") < 0)
 
-    def test_network_based_image_update(self):
+    def test_network_based_image_update(self, image_dat):
         http_server_location = pytest.config.getoption("--http-server")
         bbb = pytest.config.getoption("--bbb")
 
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
-            execute(self.test_network_based_image_update)
+            execute(self.test_network_based_image_update, image_dat)
             return
 
         output = run("mount")
