@@ -16,6 +16,11 @@ inherit mender-install
 ########## CONFIGURATION START - you can override these default
 ##########                       values in your local.conf
 
+# Total size of the medium that mender sdimg will be written to. The size of
+# rootfs partition will be calculated automatically by subtracting the size of
+# boot and data partitions along with some predefined overhead (see
+# MENDER_PARTITIONING_OVERHEAD_MB).
+MENDER_STORAGE_TOTAL_SIZE_MB ?= "1024"
 
 # Optional location where a directory can be specified with content that should
 # be included on the data partition. Some of Mender's own files will be added to
@@ -37,6 +42,17 @@ MENDER_BOOT_PART_SIZE_MB ?= "16"
 # 8MB alignment is a safe setting that might waste some space if the
 # erase block is smaller.
 MENDER_PARTITION_ALIGNMENT_MB ?= "8"
+
+# Estimate how much space may be lost due to partitioning alignment. Use a
+# simple heuristic for now - 4 partitions * alignment
+def get_overhead(d):
+    align = d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True)
+    if align:
+        return 4 * int(align)
+    return 0
+
+# Overhead lost due to partitioning.
+MENDER_PARTITIONING_OVERHEAD_MB ?= "${@get_overhead(d)}"
 
 python() {
     deprecated_vars = ['SDIMG_DATA_PART_DIR', 'SDIMG_DATA_PART_SIZE_MB',
@@ -126,7 +142,19 @@ IMAGE_CMD_sdimg() {
     # exist.
     mkdir -p "${IMAGE_ROOTFS}"
 
-    PART1_SIZE=$(expr ${MENDER_BOOT_PART_SIZE_MB} \* 2048)
+    REMAINING_SIZE=$(expr ${MENDER_STORAGE_TOTAL_SIZE_MB} - \
+                          ${MENDER_BOOT_PART_SIZE_MB} - \
+                          ${MENDER_DATA_PART_SIZE_MB} - \
+                          ${MENDER_PARTITIONING_OVERHEAD_MB})
+    ROOTFS_SIZE=$(expr $REMAINING_SIZE / 2)
+
+    # create rootfs
+    dd if=/dev/zero of=${WORKDIR}/rootfs.$FSTYPE count=1 seek=$ROOTFS_SIZE bs=1M
+    mkfs.$FSTYPE -F -i 4096 ${WORKDIR}/rootfs.$FSTYPE -d ${IMAGE_ROOTFS}
+    stat ${WORKDIR}/rootfs.$FSTYPE
+    ln -s ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/active
+    ln -s ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/inactive
+
     MENDER_PARTITION_ALIGNMENT_KB=$(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024)
 
     rm -rf "${WORKDIR}/data" || true
@@ -154,10 +182,9 @@ EOF
 
     cat >> "$wks" <<EOF
 part /boot   --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align $MENDER_PARTITION_ALIGNMENT_KB --active --size ${MENDER_BOOT_PART_SIZE_MB}
-part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label primary --align $MENDER_PARTITION_ALIGNMENT_KB
-part         --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary --align $MENDER_PARTITION_ALIGNMENT_KB
-part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE"     --ondisk mmcblk0 --fstype=$FSTYPE --label data     --align $MENDER_PARTITION_ALIGNMENT_KB
-
+part /       --source fsimage --sourceparams=file="${WORKDIR}/active" --ondisk mmcblk0 --label primary --align $MENDER_PARTITION_ALIGNMENT_KB
+part         --source fsimage --sourceparams=file="${WORKDIR}/inactive" --ondisk mmcblk0 --label secondary --align $MENDER_PARTITION_ALIGNMENT_KB
+part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align $MENDER_PARTITION_ALIGNMENT_KB
 EOF
 
     # Call WIC
