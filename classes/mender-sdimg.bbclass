@@ -87,7 +87,7 @@ python() {
 
 IMAGE_DEPENDS_sdimg = "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native"
 
-IMAGE_INSTALL_append_beaglebone = " kernel-devicetree kernel-image-zimage"
+IMAGE_INSTALL_append_beaglebone = " kernel-devicetree"
 
 IMAGE_CMD_sdimg() {
     set -e
