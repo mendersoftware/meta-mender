@@ -254,3 +254,19 @@ def no_image_file(qemu_running):
 def no_image_file_impl():
     run("rm -f image.dat")
 
+@pytest.fixture(scope="function")
+def bitbake_path(request):
+    """Fixture that enables the same PATH as bitbake does when it builds for the
+    test that invokes it."""
+
+    old_path = os.environ['PATH']
+
+    # Hardcoded value for now. This should be fetched from bitbake itself.
+    os.environ['PATH'] = os.path.join(os.environ['BUILDDIR'], "tmp/sysroots/x86_64-linux/usr/bin")
+
+    def path_restore():
+        os.environ['PATH'] = old_path
+
+    request.addfinalizer(path_restore)
+
+    return os.environ['PATH']
