@@ -19,6 +19,7 @@ import fabric.network
 
 import pytest
 import os
+import re
 import subprocess
 import time
 import conftest
@@ -298,6 +299,29 @@ def successful_image_update_mender(request, latest_mender_image):
     request.addfinalizer(cleanup_image_dat)
 
     return "successful_image_update.mender"
+
+@pytest.fixture(scope="session")
+def bitbake_variables():
+    """Returns a map of all bitbake variables active for the build."""
+
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    current_dir = os.open(".", os.O_RDONLY)
+    os.chdir(os.environ['BUILDDIR'])
+
+    output = subprocess.Popen(["bitbake", "-e", "core-image-minimal"], stdout=subprocess.PIPE)
+    matcher = re.compile('^([A-Za-z][^=]*)="(.*)"$')
+    ret = {}
+    for line in output.stdout:
+        line = line.strip()
+        match = matcher.match(line)
+        if match is not None:
+            ret[match.group(1)] = match.group(2)
+
+    output.wait()
+    os.fchdir(current_dir)
+
+    return ret
 
 @pytest.fixture(scope="function")
 def bitbake_path(request):

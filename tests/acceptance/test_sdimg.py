@@ -23,30 +23,6 @@ import re
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
-@pytest.fixture(scope="session")
-def bitbake_variables():
-    """Returns a map of all bitbake variables active for the build."""
-
-    assert(os.environ.get('BUILDDIR', False), "BUILDDIR must be set")
-
-    current_dir = os.open(".", os.O_RDONLY)
-    os.chdir(os.environ['BUILDDIR'])
-
-    output = subprocess.Popen(["bitbake", "-e", "core-image-minimal"], stdout=subprocess.PIPE)
-    matcher = re.compile('^([A-Za-z][^=]*)="(.*)"$')
-    ret = {}
-    for line in output.stdout:
-        line = line.strip()
-        match = matcher.match(line)
-        if match is not None:
-            ret[match.group(1)] = match.group(2)
-
-    output.wait()
-    os.fchdir(current_dir)
-
-    return ret
-
-
 class EmbeddedBootloader:
     loader = None
     offset = 0
