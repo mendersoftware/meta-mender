@@ -310,7 +310,7 @@ def bitbake_variables():
     os.chdir(os.environ['BUILDDIR'])
 
     output = subprocess.Popen(["bitbake", "-e", "core-image-minimal"], stdout=subprocess.PIPE)
-    matcher = re.compile('^([A-Za-z][^=]*)="(.*)"$')
+    matcher = re.compile('^(?:export )?([A-Za-z][^=]*)="(.*)"$')
     ret = {}
     for line in output.stdout:
         line = line.strip()
