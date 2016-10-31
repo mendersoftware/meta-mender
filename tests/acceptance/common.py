@@ -324,14 +324,13 @@ def bitbake_variables():
     return ret
 
 @pytest.fixture(scope="function")
-def bitbake_path(request):
+def bitbake_path(request, bitbake_variables):
     """Fixture that enables the same PATH as bitbake does when it builds for the
     test that invokes it."""
 
     old_path = os.environ['PATH']
 
-    # Hardcoded value for now. This should be fetched from bitbake itself.
-    os.environ['PATH'] += os.pathsep + os.path.join(os.environ['BUILDDIR'], "tmp/sysroots/x86_64-linux/usr/bin")
+    os.environ['PATH'] = bitbake_variables['PATH']
 
     def path_restore():
         os.environ['PATH'] = old_path
