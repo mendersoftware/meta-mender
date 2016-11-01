@@ -307,7 +307,7 @@ def bitbake_path(request):
     old_path = os.environ['PATH']
 
     # Hardcoded value for now. This should be fetched from bitbake itself.
-    os.environ['PATH'] = os.path.join(os.environ['BUILDDIR'], "tmp/sysroots/x86_64-linux/usr/bin")
+    os.environ['PATH'] += os.pathsep + os.path.join(os.environ['BUILDDIR'], "tmp/sysroots/x86_64-linux/usr/bin")
 
     def path_restore():
         os.environ['PATH'] = old_path
