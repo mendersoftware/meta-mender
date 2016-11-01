@@ -256,7 +256,7 @@ def no_image_file_impl():
     run("rm -f image.dat")
 
 def latest_build_artifact(extension):
-    if os.environ.get('BUILDDIR', False):
+    if not os.environ.get('BUILDDIR', False):
         raise Exception("BUILDDIR needs to be defined")
 
     output = subprocess.check_output(["sh", "-c", "ls -t $BUILDDIR/tmp*/deploy/images/*/*%s | head -n 1" % extension])
