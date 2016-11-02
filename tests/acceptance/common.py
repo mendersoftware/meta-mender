@@ -248,9 +248,70 @@ def qemu_running(request):
 
 @pytest.fixture(scope="function")
 def no_image_file(qemu_running):
+    """Make sure 'image.dat' is not present on the device."""
     execute(no_image_file_impl, hosts=conftest.current_hosts())
 
 
 def no_image_file_impl():
     run("rm -f image.dat")
 
+def latest_build_artifact(extension):
+    if not os.environ.get('BUILDDIR', False):
+        raise Exception("BUILDDIR needs to be defined")
+
+    output = subprocess.check_output(["sh", "-c", "ls -t $BUILDDIR/tmp*/deploy/images/*/*%s | head -n 1" % extension])
+    output = output.rstrip('\r\n')
+    print("Found latest image of type '%s' to be: %s" % (extension, output))
+    return output
+
+@pytest.fixture(scope="session")
+def latest_rootfs():
+    # Find latest built rootfs.
+    return latest_build_artifact(".ext[234]")
+
+@pytest.fixture(scope="session")
+def latest_sdimg():
+    # Find latest built rootfs.
+    return latest_build_artifact(".sdimg")
+
+@pytest.fixture(scope="session")
+def latest_mender_image():
+    # Find latest built rootfs.
+    return latest_build_artifact(".mender")
+
+@pytest.fixture(scope="function")
+def image_dat(request, latest_rootfs):
+    """Provide a 'image.dat' file in the current directory that contains the
+    latest built rootfs."""
+
+    if os.path.lexists("image.dat"):
+        print("Using existing 'image.dat' in current directory")
+        return "image.dat"
+
+    os.symlink(latest_rootfs, "image.dat")
+
+    print("Symlinking 'image.dat' to '%s'" % latest_rootfs)
+
+    def cleanup_image_dat():
+        os.remove("image.dat")
+
+    request.addfinalizer(cleanup_image_dat)
+
+    return "image.dat"
+
+@pytest.fixture(scope="function")
+def bitbake_path(request):
+    """Fixture that enables the same PATH as bitbake does when it builds for the
+    test that invokes it."""
+
+    old_path = os.environ['PATH']
+
+    # Hardcoded value for now. This should be fetched from bitbake itself.
+    os.environ['PATH'] = os.path.join(os.environ['BUILDDIR'], "tmp/sysroots/x86_64-linux/usr/bin")
+
+    def path_restore():
+        os.environ['PATH'] = old_path
+
+    request.addfinalizer(path_restore)
+
+    return os.environ['PATH']
