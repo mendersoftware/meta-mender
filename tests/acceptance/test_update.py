@@ -29,8 +29,8 @@ else:
 class Helpers:
     @staticmethod
     def upload_to_s3():
-        subprocess.Popen(["s3cmd", "--follow-symlinks", "put", "successful_image_update.dat", "s3://mender/temp/"]).wait()
-        subprocess.Popen(["s3cmd", "setacl", "s3://mender/temp/successful_image_update.dat", "--acl-public"]).wait()
+        subprocess.call(["s3cmd", "--follow-symlinks", "put", "successful_image_update.dat", "s3://mender/temp/"])
+        subprocess.call(["s3cmd", "setacl", "s3://mender/temp/successful_image_update.dat", "--acl-public"])
 
     @staticmethod
     # TODO: Use this when mender is more stable. Spurious errors are currently generated.
@@ -49,8 +49,8 @@ class TestUpdates:
             return
 
         # Make a dummy/broken update
-        subprocess.Popen("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True).wait()
-        subprocess.Popen("artifacts write rootfs-image -t %s -i test-update -u image.dat -o image.mender" % image_type, shell=True).wait()
+        subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
+        subprocess.call("artifacts write rootfs-image -t %s -i test-update -u image.dat -o image.mender" % image_type, shell=True)
         put("image.mender", remote_path="/var/tmp/image.mender")
         run("mender -rootfs /var/tmp/image.mender")
         reboot()
@@ -73,8 +73,8 @@ class TestUpdates:
             return
 
         # Make a too big update
-        subprocess.Popen("dd if=/dev/zero of=image.dat bs=1M count=0 seek=1024", shell=True).wait()
-        subprocess.Popen("artifacts write rootfs-image -t %s -i test-update-too-big -u image.dat -o image-too-big.mender" % image_type, shell=True).wait()
+        subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=1024", shell=True)
+        subprocess.call("artifacts write rootfs-image -t %s -i test-update-too-big -u image.dat -o image-too-big.mender" % image_type, shell=True)
         put("image-too-big.mender", remote_path="/var/tmp/image-too-big.mender")
         output = run("mender -rootfs /var/tmp/image-too-big.mender ; echo 'ret_code=$?'")
 
