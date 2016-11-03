@@ -57,7 +57,7 @@ class TestUpdates:
 
         # Now qemu is auto-rebooted twice; once to boot the dummy image,
         # where it fails, and uboot auto-reboots a second time into the
-        # original parition.
+        # original partition.
 
         output = run_after_connect("mount")
 
