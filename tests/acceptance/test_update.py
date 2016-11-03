@@ -66,6 +66,10 @@ class TestUpdates:
         assert(output.find("/dev/mmcblk0p2") >= 0)
         assert(output.find("/dev/mmcblk0p3") < 0)
 
+        # Cleanup.
+        os.remove("image.mender")
+        os.remove("image.dat")
+
     def test_too_big_image_update(self):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
@@ -78,9 +82,12 @@ class TestUpdates:
         put("image-too-big.mender", remote_path="/var/tmp/image-too-big.mender")
         output = run("mender -rootfs /var/tmp/image-too-big.mender ; echo 'ret_code=$?'")
 
-
         assert(output.find("no space left on device") >= 0)
         assert(output.find("ret_code=0") < 0)
+
+        # Cleanup.
+        os.remove("image-too-big.mender")
+        os.remove("image.dat")
 
     def test_network_based_image_update(self):
         http_server_location = pytest.config.getoption("--http-server")
