@@ -280,24 +280,24 @@ def latest_mender_image():
     return latest_build_artifact(".mender")
 
 @pytest.fixture(scope="function")
-def image_dat(request, latest_rootfs):
-    """Provide a 'image.dat' file in the current directory that contains the
-    latest built rootfs."""
+def successful_image_update_mender(request, latest_mender_image):
+    """Provide a 'successful_image_update.mender' file in the current directory that
+    contains the latest built update."""
 
-    if os.path.lexists("image.dat"):
-        print("Using existing 'image.dat' in current directory")
-        return "image.dat"
+    if os.path.lexists("successful_image_update.mender"):
+        print("Using existing 'successful_image_update.mender' in current directory")
+        return "successful_image_update.mender"
 
-    os.symlink(latest_rootfs, "image.dat")
+    os.symlink(latest_mender_image, "successful_image_update.mender")
 
-    print("Symlinking 'image.dat' to '%s'" % latest_rootfs)
+    print("Symlinking 'successful_image_update.mender' to '%s'" % latest_mender_image)
 
     def cleanup_image_dat():
-        os.remove("image.dat")
+        os.remove("successful_image_update.mender")
 
     request.addfinalizer(cleanup_image_dat)
 
-    return "image.dat"
+    return "successful_image_update.mender"
 
 @pytest.fixture(scope="function")
 def bitbake_path(request):

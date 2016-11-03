@@ -29,8 +29,8 @@ else:
 class Helpers:
     @staticmethod
     def upload_to_s3():
-        subprocess.call(["s3cmd", "--follow-symlinks", "put", "successful_image_update.dat", "s3://mender/temp/"])
-        subprocess.call(["s3cmd", "setacl", "s3://mender/temp/successful_image_update.dat", "--acl-public"])
+        subprocess.call(["s3cmd", "--follow-symlinks", "put", "successful_image_update.mender", "s3://mender/temp/"])
+        subprocess.call(["s3cmd", "setacl", "s3://mender/temp/successful_image_update.mender", "--acl-public"])
 
     @staticmethod
     # TODO: Use this when mender is more stable. Spurious errors are currently generated.
@@ -89,13 +89,13 @@ class TestUpdates:
         os.remove("image-too-big.mender")
         os.remove("image.dat")
 
-    def test_network_based_image_update(self):
+    def test_network_based_image_update(self, successful_image_update_mender):
         http_server_location = pytest.config.getoption("--http-server")
         bbb = pytest.config.getoption("--bbb")
 
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
-            execute(self.test_network_based_image_update)
+            execute(self.test_network_based_image_update, successful_image_update_mender)
             return
 
         output = run("mount")
@@ -109,7 +109,7 @@ class TestUpdates:
             assert(http_server)
 
         try:
-            run("mender -rootfs http://%s/successful_image_update.dat" % (http_server_location))
+            run("mender -rootfs http://%s/successful_image_update.mender" % (http_server_location))
         finally:
             if not bbb:
                 http_server.terminate()
