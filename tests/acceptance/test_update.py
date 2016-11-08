@@ -21,12 +21,16 @@ import subprocess
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
+if pytest.config.getoption("--bbb"):
+    image_type = "beaglebone"
+else:
+    image_type = "vexpress-qemu"
 
 class Helpers:
     @staticmethod
     def upload_to_s3():
-        subprocess.Popen(["s3cmd", "--follow-symlinks", "put", "image.dat", "s3://mender/temp/"]).wait()
-        subprocess.Popen(["s3cmd", "setacl", "s3://mender/temp/image.dat", "--acl-public"]).wait()
+        subprocess.call(["s3cmd", "--follow-symlinks", "put", "successful_image_update.mender", "s3://mender/temp/"])
+        subprocess.call(["s3cmd", "setacl", "s3://mender/temp/successful_image_update.mender", "--acl-public"])
 
     @staticmethod
     # TODO: Use this when mender is more stable. Spurious errors are currently generated.
@@ -34,7 +38,7 @@ class Helpers:
         output = run("journalctl -a -u mender | grep error")
         assert output == 1
 
-@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb")
+@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "bitbake_path")
 class TestUpdates:
 
     def test_broken_image_update(self):
@@ -45,13 +49,15 @@ class TestUpdates:
             return
 
         # Make a dummy/broken update
-        run("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8")
-        run("mender -rootfs image.dat")
+        subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
+        subprocess.call("artifacts write rootfs-image -t %s -i test-update -u image.dat -o image.mender" % image_type, shell=True)
+        put("image.mender", remote_path="/var/tmp/image.mender")
+        run("mender -rootfs /var/tmp/image.mender")
         reboot()
 
         # Now qemu is auto-rebooted twice; once to boot the dummy image,
         # where it fails, and uboot auto-reboots a second time into the
-        # original parition.
+        # original partition.
 
         output = run_after_connect("mount")
 
@@ -60,6 +66,10 @@ class TestUpdates:
         assert(output.find("/dev/mmcblk0p2") >= 0)
         assert(output.find("/dev/mmcblk0p3") < 0)
 
+        # Cleanup.
+        os.remove("image.mender")
+        os.remove("image.dat")
+
     def test_too_big_image_update(self):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
@@ -67,19 +77,25 @@ class TestUpdates:
             return
 
         # Make a too big update
-        run("dd if=/dev/zero of=image.dat bs=1M count=0 seek=2048")
-        output = run('mender -rootfs image.dat ; echo "ret_code=$?"')
+        subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=1024", shell=True)
+        subprocess.call("artifacts write rootfs-image -t %s -i test-update-too-big -u image.dat -o image-too-big.mender" % image_type, shell=True)
+        put("image-too-big.mender", remote_path="/var/tmp/image-too-big.mender")
+        output = run("mender -rootfs /var/tmp/image-too-big.mender ; echo 'ret_code=$?'")
 
         assert(output.find("no space left on device") >= 0)
         assert(output.find("ret_code=0") < 0)
 
-    def test_network_based_image_update(self, image_dat):
+        # Cleanup.
+        os.remove("image-too-big.mender")
+        os.remove("image.dat")
+
+    def test_network_based_image_update(self, successful_image_update_mender):
         http_server_location = pytest.config.getoption("--http-server")
         bbb = pytest.config.getoption("--bbb")
 
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
-            execute(self.test_network_based_image_update, image_dat)
+            execute(self.test_network_based_image_update, successful_image_update_mender)
             return
 
         output = run("mount")
@@ -87,13 +103,13 @@ class TestUpdates:
 
         if bbb:
             Helpers.upload_to_s3()
-            http_server_location = "s3-eu-west-1.amazonaws.com/yocto-builds/tmp"
+            http_server_location = "s3.amazonaws.com/mender/temp"
         else:
             http_server = subprocess.Popen(["python", "-m", "SimpleHTTPServer"])
             assert(http_server)
 
         try:
-            sudo("mender -rootfs http://%s/image.dat" % (http_server_location))
+            run("mender -rootfs http://%s/successful_image_update.mender" % (http_server_location))
         finally:
             if not bbb:
                 http_server.terminate()
