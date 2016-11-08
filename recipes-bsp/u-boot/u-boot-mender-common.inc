@@ -1,8 +1,6 @@
 inherit mender-helpers
 inherit deploy
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-
 BOOTENV_SIZE ??= "0x20000"
 
 BOOTENV_SIZE_beaglebone ?= "0x20000"
@@ -13,6 +11,8 @@ DEPLOYDIR = "${WORKDIR}/deploy-${PN}"
 ################################################################################
 # Generic patches.
 ################################################################################
+FILESEXTRAPATHS_prepend := "${THISDIR}/patches/generic:"
+
 SRC_URI_append = " file://0002-Add-missing-header-which-fails-on-recent-GCC.patch"
 SRC_URI_append = " file://0001-Generic-boot-code-for-Mender.patch"
 SRC_URI_append = " file://0002-Integration-of-Mender-boot-code-into-U-Boot.patch"
@@ -20,8 +20,10 @@ SRC_URI_append = " file://0002-Integration-of-Mender-boot-code-into-U-Boot.patch
 ################################################################################
 # Board specific patches
 ################################################################################
+FILESEXTRAPATHS_prepend_beaglebone := "${THISDIR}/patches/bsp/beaglebone:"
 SRC_URI_append_beaglebone = " file://0001-BBB-Use-Mender-boot-code-for-selecting-boot-device-a.patch"
 
+FILESEXTRAPATHS_prepend_vexpress-qemu := "${THISDIR}/patches/bsp/vexpress-qemu:"
 SRC_URI_append_vexpress-qemu = " file://0001-Enable-U-Boot-on-QEMU-to-use-Mender-boot-code.patch \
                                  file://0003-Add-kernel-panic-option-to-vexpress-boot-arguments.patch"
 
