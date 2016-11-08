@@ -19,6 +19,7 @@ import fabric.network
 
 import pytest
 import os
+import re
 import subprocess
 import time
 import conftest
@@ -299,15 +300,37 @@ def successful_image_update_mender(request, latest_mender_image):
 
     return "successful_image_update.mender"
 
+@pytest.fixture(scope="session")
+def bitbake_variables():
+    """Returns a map of all bitbake variables active for the build."""
+
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    current_dir = os.open(".", os.O_RDONLY)
+    os.chdir(os.environ['BUILDDIR'])
+
+    output = subprocess.Popen(["bitbake", "-e", "core-image-minimal"], stdout=subprocess.PIPE)
+    matcher = re.compile('^(?:export )?([A-Za-z][^=]*)="(.*)"$')
+    ret = {}
+    for line in output.stdout:
+        line = line.strip()
+        match = matcher.match(line)
+        if match is not None:
+            ret[match.group(1)] = match.group(2)
+
+    output.wait()
+    os.fchdir(current_dir)
+
+    return ret
+
 @pytest.fixture(scope="function")
-def bitbake_path(request):
+def bitbake_path(request, bitbake_variables):
     """Fixture that enables the same PATH as bitbake does when it builds for the
     test that invokes it."""
 
     old_path = os.environ['PATH']
 
-    # Hardcoded value for now. This should be fetched from bitbake itself.
-    os.environ['PATH'] += os.pathsep + os.path.join(os.environ['BUILDDIR'], "tmp/sysroots/x86_64-linux/usr/bin")
+    os.environ['PATH'] = bitbake_variables['PATH']
 
     def path_restore():
         os.environ['PATH'] = old_path
