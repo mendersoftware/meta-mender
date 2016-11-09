@@ -19,6 +19,7 @@ import fabric.network
 
 import pytest
 import os
+import re
 import subprocess
 import time
 import conftest
@@ -280,34 +281,56 @@ def latest_mender_image():
     return latest_build_artifact(".mender")
 
 @pytest.fixture(scope="function")
-def image_dat(request, latest_rootfs):
-    """Provide a 'image.dat' file in the current directory that contains the
-    latest built rootfs."""
+def successful_image_update_mender(request, latest_mender_image):
+    """Provide a 'successful_image_update.mender' file in the current directory that
+    contains the latest built update."""
 
-    if os.path.lexists("image.dat"):
-        print("Using existing 'image.dat' in current directory")
-        return "image.dat"
+    if os.path.lexists("successful_image_update.mender"):
+        print("Using existing 'successful_image_update.mender' in current directory")
+        return "successful_image_update.mender"
 
-    os.symlink(latest_rootfs, "image.dat")
+    os.symlink(latest_mender_image, "successful_image_update.mender")
 
-    print("Symlinking 'image.dat' to '%s'" % latest_rootfs)
+    print("Symlinking 'successful_image_update.mender' to '%s'" % latest_mender_image)
 
     def cleanup_image_dat():
-        os.remove("image.dat")
+        os.remove("successful_image_update.mender")
 
     request.addfinalizer(cleanup_image_dat)
 
-    return "image.dat"
+    return "successful_image_update.mender"
+
+@pytest.fixture(scope="session")
+def bitbake_variables():
+    """Returns a map of all bitbake variables active for the build."""
+
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    current_dir = os.open(".", os.O_RDONLY)
+    os.chdir(os.environ['BUILDDIR'])
+
+    output = subprocess.Popen(["bitbake", "-e", "core-image-minimal"], stdout=subprocess.PIPE)
+    matcher = re.compile('^(?:export )?([A-Za-z][^=]*)="(.*)"$')
+    ret = {}
+    for line in output.stdout:
+        line = line.strip()
+        match = matcher.match(line)
+        if match is not None:
+            ret[match.group(1)] = match.group(2)
+
+    output.wait()
+    os.fchdir(current_dir)
+
+    return ret
 
 @pytest.fixture(scope="function")
-def bitbake_path(request):
+def bitbake_path(request, bitbake_variables):
     """Fixture that enables the same PATH as bitbake does when it builds for the
     test that invokes it."""
 
     old_path = os.environ['PATH']
 
-    # Hardcoded value for now. This should be fetched from bitbake itself.
-    os.environ['PATH'] = os.path.join(os.environ['BUILDDIR'], "tmp/sysroots/x86_64-linux/usr/bin")
+    os.environ['PATH'] = bitbake_variables['PATH']
 
     def path_restore():
         os.environ['PATH'] = old_path

@@ -46,6 +46,12 @@ do_compile() {
   PATH="${B}/bin:$PATH"
   export PATH
 
+  DEFAULT_CERT_MD5="e034532805e44b9125b443c32bbde581"
+
+  if [ "$(md5sum ${WORKDIR}/server.crt | awk '{ print $1 }')" = $DEFAULT_CERT_MD5 ]; then
+    bbwarn "You are building with the default server certificate, which is not intended for production use"
+  fi
+
   # mender is using vendored dependencies, any 3rd party libraries go to into
   # /vendor directory inside mender source tree. In order for `go build` to pick
   # up vendored deps from our source tree, the mender source tree itself must be
