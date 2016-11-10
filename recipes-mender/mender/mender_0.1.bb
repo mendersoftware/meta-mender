@@ -40,6 +40,10 @@ INSANE_SKIP_${PN} = "ldflags"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
 
+RDEPENDS_${PN} += " \
+    u-boot-fw-utils \
+    "
+
 do_compile() {
   GOPATH="${B}:${S}"
   export GOPATH
