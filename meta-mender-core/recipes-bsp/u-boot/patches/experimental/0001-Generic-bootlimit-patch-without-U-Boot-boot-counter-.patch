@@ -1,0 +1,63 @@
+From c6d03a9c4d0e1af6eaeb47087a64b374764bc00b Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@mender.io>
+Date: Tue, 8 Nov 2016 14:12:19 +0100
+Subject: [PATCH 1/2] Generic bootlimit patch without U-Boot boot counter
+ support.
+
+Basically we implement it using simple logic in the script.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
+---
+ include/config_mender.h | 12 ++++++++----
+ include/env_mender.h    |  9 +++++++++
+ 2 files changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/include/config_mender.h b/include/config_mender.h
+index 3c1ecd6..62c0442 100644
+--- a/include/config_mender.h
++++ b/include/config_mender.h
+@@ -25,13 +25,17 @@
+ # error CONFIG_ENV_IS_IN_FAT is required for Mender to work
+ #endif
+ 
+-#ifndef CONFIG_BOOTCOUNT_LIMIT
+-# error CONFIG_BOOTCOUNT_LIMIT is required for Mender to work
++#ifdef CONFIG_BOOTCOUNT_LIMIT
++# error CONFIG_BOOTCOUNT_LIMIT is incompatible with custom bootlimit patch
+ #endif
+ 
+ /* Currently Mender needs bootcount to reside in environment file. */
+-#ifndef CONFIG_BOOTCOUNT_ENV
+-# error CONFIG_BOOTCOUNT_ENV is required for Mender to work
++#ifdef CONFIG_BOOTCOUNT_ENV
++# error CONFIG_BOOTCOUNT_ENV is incompatible with custom bootlimit patch
++#endif
++
++#ifndef CONFIG_CMD_SETEXPR
++# error CONFIG_CMD_SETEXPR is required when using custom bootlimit patch
+ #endif
+ 
+ #ifdef FAT_ENV_INTERFACE
+diff --git a/include/env_mender.h b/include/env_mender.h
+index 2c43fd3..455a828 100644
+--- a/include/env_mender.h
++++ b/include/env_mender.h
+@@ -44,6 +44,15 @@
+     "mender_uboot_dev=" __stringify(MENDER_UBOOT_STORAGE_DEVICE) "\0"   \
+                                                                         \
+     "mender_setup="                                                     \
++    "if test ${upgrade_available} -eq 1; then "                         \
++    "    if test ${bootcount} -ge ${bootlimit}; then "                  \
++    "        echo \"Boot count exceeded. Running altbootcmd.\"; "       \
++    "        run altbootcmd; "                                          \
++    "    else "                                                         \
++    "        setexpr bootcount ${bootcount} + 1; "                      \
++    "        saveenv; "                                                 \
++    "    fi; "                                                          \
++    "fi; "                                                              \
+     "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; " \
+     "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}; " \
+     "setenv expand_bootargs setenv bootargs ${bootargs}; "              \
+-- 
+2.7.4
+
