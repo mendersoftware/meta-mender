@@ -6,7 +6,7 @@ IMAGE_BUILDINFO_VARS = "DISTRO DATETIME PN IMAGE_ID DEVICE_TYPE"
 
 buildinfo_mender () {
 mkdir -p ${IMAGE_ROOTFS}${sysconfdir}/mender
-cat > ${IMAGE_ROOTFS}${sysconfdir}/mender/build_mender << END
+cat > ${IMAGE_ROOTFS}${sysconfdir}/mender/artifact-info << END
 ------------------------
 Mender device manifest:|
 ------------------------
