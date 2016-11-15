@@ -3,7 +3,7 @@ IMAGE_DEPENDS_mender = "artifacts-native"
 
 ARTIFACTIMG_FSTYPE  ?= "ext4"
 IMAGE_CMD_mender = "artifacts write rootfs-image \
-                      -i ${IMAGE_ID} -t ${DEVICE_TYPE}\
+                      -n ${IMAGE_ID} -t ${DEVICE_TYPE}\
                       -u ${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
                       -o ${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender \
                       "
