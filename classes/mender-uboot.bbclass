@@ -7,3 +7,4 @@ IMAGE_BOOT_ENV_FILE ?= "uboot.env"
 IMAGE_BOOT_FILES_append = " ${IMAGE_BOOT_ENV_FILE}"
 
 EXTRA_IMAGEDEPENDS += "u-boot"
+PACKAGECONFIG_append_pn-mender = " u-boot"

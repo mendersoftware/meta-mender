@@ -40,8 +40,9 @@ INSANE_SKIP_${PN} = "ldflags"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
 
+PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
+
 RDEPENDS_${PN} += " \
-    u-boot-fw-utils \
     mender-artifact \
     "
 
