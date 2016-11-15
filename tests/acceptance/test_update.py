@@ -50,7 +50,7 @@ class TestUpdates:
 
         # Make a dummy/broken update
         subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
-        subprocess.call("artifacts write rootfs-image -t %s -i test-update -u image.dat -o image.mender" % image_type, shell=True)
+        subprocess.call("artifacts write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
         put("image.mender", remote_path="/var/tmp/image.mender")
         run("mender -rootfs /var/tmp/image.mender")
         reboot()
@@ -78,7 +78,7 @@ class TestUpdates:
 
         # Make a too big update
         subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=1024", shell=True)
-        subprocess.call("artifacts write rootfs-image -t %s -i test-update-too-big -u image.dat -o image-too-big.mender" % image_type, shell=True)
+        subprocess.call("artifacts write rootfs-image -t %s -n test-update-too-big -u image.dat -o image-too-big.mender" % image_type, shell=True)
         put("image-too-big.mender", remote_path="/var/tmp/image-too-big.mender")
         output = run("mender -rootfs /var/tmp/image-too-big.mender ; echo 'ret_code=$?'")
 
