@@ -1,0 +1,39 @@
+From 74c365ec9e6cdcd2fa924456113d47f09f6bc833 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@mender.io>
+Date: Tue, 8 Nov 2016 14:19:33 +0100
+Subject: [PATCH 2/2] Enable custom bootlimit code for vexpress-qemu.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
+---
+ configs/vexpress_ca9x4_defconfig  | 2 +-
+ include/configs/vexpress_common.h | 2 --
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/configs/vexpress_ca9x4_defconfig b/configs/vexpress_ca9x4_defconfig
+index 2947fc1..11c44fd 100644
+--- a/configs/vexpress_ca9x4_defconfig
++++ b/configs/vexpress_ca9x4_defconfig
+@@ -11,6 +11,6 @@ CONFIG_TARGET_VEXPRESS_CA9X4=y
+ # CONFIG_CMD_FPGA is not set
+ # CONFIG_CMD_ECHO is not set
+ # CONFIG_CMD_ITEST is not set
+-# CONFIG_CMD_SETEXPR is not set
++CONFIG_CMD_SETEXPR=y
+ # CONFIG_CMD_NFS is not set
+ # CONFIG_CMD_MISC is not set
+diff --git a/include/configs/vexpress_common.h b/include/configs/vexpress_common.h
+index c1a8b33..36539be 100644
+--- a/include/configs/vexpress_common.h
++++ b/include/configs/vexpress_common.h
+@@ -170,8 +170,6 @@
+ #define CONFIG_SYS_LOAD_ADDR		(V2M_BASE + 0x8000)
+ #define LINUX_BOOT_PARAM_ADDR		(V2M_BASE + 0x2000)
+ #define CONFIG_BOOTDELAY		2
+-#define CONFIG_BOOTCOUNT_LIMIT
+-#define CONFIG_BOOTCOUNT_ENV
+ 
+ /* Physical Memory Map */
+ #define CONFIG_NR_DRAM_BANKS		2
+-- 
+2.7.4
+

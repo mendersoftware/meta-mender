@@ -34,4 +34,8 @@ MENDER_DATA_PART ?= "${MENDER_STORAGE_DEVICE_BASE}5"
 
 PREFERRED_VERSION_go_cross = "1.6%"
 
-IMAGE_INSTALL_append = " mender ca-certificates"
+IMAGE_INSTALL_append = " \
+    mender \
+    ca-certificates \
+    mender-artifact \
+    "

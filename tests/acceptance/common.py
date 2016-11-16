@@ -36,8 +36,7 @@ def if_not_bbb(func):
 # Return Popen object
 @if_not_bbb
 def start_qemu():
-    # Relies on the meta-mender layer being next to meta-mender-qemu.
-    proc = subprocess.Popen("../../../meta-mender/scripts/mender-qemu")
+    proc = subprocess.Popen("../../meta-mender-qemu/scripts/mender-qemu")
     # Make sure we are connected.
     execute(run_after_connect, "true", hosts = conftest.current_hosts())
     execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
