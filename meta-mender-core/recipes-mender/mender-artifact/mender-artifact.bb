@@ -1,6 +1,12 @@
 DESCRIPTION = "Mender artifact information"
 HOMEPAGE = "https://mender.io"
 LICENSE = "Apache-2.0"
+LIC_FILES_CHKSUM = "file://Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
+
+FILESPATH = "${COMMON_LICENSE_DIR}"
+SRC_URI = "file://Apache-2.0"
+
+S = "${WORKDIR}"
 
 inherit allarch
 
