@@ -152,8 +152,8 @@ IMAGE_CMD_sdimg() {
     dd if=/dev/zero of=${WORKDIR}/rootfs.$FSTYPE count=0 seek=$ROOTFS_SIZE bs=1M
     mkfs.$FSTYPE -F -i 4096 ${WORKDIR}/rootfs.$FSTYPE -d ${IMAGE_ROOTFS}
     stat ${WORKDIR}/rootfs.$FSTYPE
-    ln -s ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/active
-    ln -s ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/inactive
+    ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/active
+    ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/inactive
 
     MENDER_PARTITION_ALIGNMENT_KB=$(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024)
 
