@@ -23,6 +23,8 @@ import re
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
+e2cp_installed = subprocess.call(["which", "e2cp"]) == 0
+
 class EmbeddedBootloader:
     loader = None
     offset = 0
@@ -138,3 +140,49 @@ class TestSdimg:
         # not by more than the calculated overhead..
         assert(parts_end[4] <= total_size)
         assert(parts_end[4] >= total_size - part_overhead)
+
+
+    @pytest.mark.skipif(not e2cp_installed, reason="Needs e2tools to be installed")
+    def test_device_type(self, latest_sdimg, bitbake_variables, bitbake_path):
+        """Test that device type file is correctly embedded."""
+
+        try:
+            output = subprocess.Popen(["fdisk", "-l", "-o", "device,start,end", latest_sdimg],
+                                      stdout=subprocess.PIPE)
+            for line in output.stdout:
+                if re.search("sdimg5", line) is None:
+                    continue
+
+                match = re.match("\s*\S+\s+(\S+)\s+(\S+)", line)
+                assert(match is not None)
+                start = int(match.group(1))
+                end = (int(match.group(2)) + 1)
+            output.wait()
+
+            subprocess.check_call(["dd", "if=" + latest_sdimg, "of=data-part.fs",
+                                   "skip=%d" % start, "count=%d" % (end - start)])
+            subprocess.check_call(["e2cp", "-p", "data-part.fs:mender/device_type", "."])
+
+            assert(os.stat("device_type").st_mode & 0777 == 0444)
+
+            fd = open("device_type")
+
+            lines = fd.readlines()
+            assert(len(lines) == 1)
+            lines[0] = lines[0].rstrip('\n\r')
+            assert(lines[0] == "device_type=%s" % bitbake_variables["MENDER_DEVICE_TYPE"])
+
+            fd.close()
+
+        except:
+            subprocess.call(["ls", "-l", "device_type"])
+            print("Contents of artifact_info:")
+            subprocess.call(["cat", "device_type"])
+            raise
+
+        finally:
+            try:
+                os.remove("data-part.fs")
+                os.remove("device_type")
+            except:
+                pass
