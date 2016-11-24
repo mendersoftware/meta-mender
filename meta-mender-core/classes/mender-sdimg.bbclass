@@ -164,8 +164,9 @@ IMAGE_CMD_sdimg() {
         mkdir -p "${WORKDIR}/data"
     fi
 
-    # The OpenSSL certificates should go here:
-    echo "dummy certificate" > "${WORKDIR}/data/mender.cert"
+    mkdir -p "${WORKDIR}/data/mender"
+    echo "device_type=${MENDER_DEVICE_TYPE}" > "${WORKDIR}/data/mender/device_type"
+    chmod 0444 "${WORKDIR}/data/mender/device_type"
 
     dd if=/dev/zero of="${WORKDIR}/data.$FSTYPE" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
     mkfs.$FSTYPE -F "${WORKDIR}/data.$FSTYPE" -d "${WORKDIR}/data"

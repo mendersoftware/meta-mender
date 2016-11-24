@@ -29,6 +29,12 @@ MENDER_ROOTFS_PART_B ?= "${MENDER_STORAGE_DEVICE_BASE}3"
 # The partition number holding the data partition.
 MENDER_DATA_PART ?= "${MENDER_STORAGE_DEVICE_BASE}5"
 
+# Device type of device when making an initial partitioned image.
+MENDER_DEVICE_TYPE ?= "${MACHINE}"
+
+# Space separated list of device types compatible with the built update.
+MENDER_DEVICE_TYPES_COMPATIBLE ?= "${MACHINE}"
+
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 
