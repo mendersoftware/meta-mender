@@ -41,12 +41,14 @@ class Helpers:
 @pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "bitbake_path")
 class TestUpdates:
 
-    def test_broken_image_update(self):
+    def test_broken_image_update(self, bitbake_variables):
 
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
-            execute(self.test_broken_image_update)
+            execute(self.test_broken_image_update, bitbake_variables)
             return
+
+        (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
         # Make a dummy/broken update
         subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
@@ -61,10 +63,10 @@ class TestUpdates:
 
         output = run_after_connect("mount")
 
-        # The update should have reverted to /dev/mmcblk0p2, since the image was
-        # bogus.
-        assert(output.find("/dev/mmcblk0p2") >= 0)
-        assert(output.find("/dev/mmcblk0p3") < 0)
+        # The update should have reverted to the original active partition,
+        # since the image was bogus.
+        assert(output.find(active_before) >= 0)
+        assert(output.find(passive_before) < 0)
 
         # Cleanup.
         os.remove("image.mender")
@@ -89,17 +91,16 @@ class TestUpdates:
         os.remove("image-too-big.mender")
         os.remove("image.dat")
 
-    def test_network_based_image_update(self, successful_image_update_mender):
+    def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables):
         http_server_location = pytest.config.getoption("--http-server")
         bbb = pytest.config.getoption("--bbb")
 
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
-            execute(self.test_network_based_image_update, successful_image_update_mender)
+            execute(self.test_network_based_image_update, successful_image_update_mender, bitbake_variables)
             return
 
-        output = run("mount")
-        (active_before, passive_before) = determine_active_passive_part(output)
+        (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
         if bbb:
             Helpers.upload_to_s3()
@@ -121,12 +122,12 @@ class TestUpdates:
         assert(output == "upgrade_available=1")
 
         output = run("fw_printenv mender_boot_part")
-        assert(output == "mender_boot_part=" + passive_before)
+        assert(output == "mender_boot_part=" + passive_before[-1:])
 
         reboot()
 
-        output = run_after_connect("mount")
-        (active_after, passive_after) = determine_active_passive_part(output)
+        run_after_connect("true")
+        (active_after, passive_after) = determine_active_passive_part(bitbake_variables)
 
         # The OS should have moved to a new partition, since the image was fine.
         assert(active_after == passive_before)
@@ -139,7 +140,7 @@ class TestUpdates:
         assert(output == "upgrade_available=1")
 
         output = run("fw_printenv mender_boot_part")
-        assert(output == "mender_boot_part=" + active_after)
+        assert(output == "mender_boot_part=" + active_after[-1:])
 
         run("mender -commit")
 
@@ -147,15 +148,15 @@ class TestUpdates:
         assert(output == "upgrade_available=0")
 
         output = run("fw_printenv mender_boot_part")
-        assert(output == "mender_boot_part=" + active_after)
+        assert(output == "mender_boot_part=" + active_after[-1:])
 
         active_before = active_after
         passive_before = passive_after
 
         reboot()
 
-        output = run_after_connect("mount")
-        (active_after, passive_after) = determine_active_passive_part(output)
+        run_after_connect("true")
+        (active_after, passive_after) = determine_active_passive_part(bitbake_variables)
 
         # The OS should have stayed on the same partition, since we committed.
         assert(active_after == active_before)
