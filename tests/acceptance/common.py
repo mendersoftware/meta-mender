@@ -129,13 +129,18 @@ def ssh_prep_args_impl(tool):
     return (cmd, host, port)
 
 
-def determine_active_passive_part(mount_output):
+def determine_active_passive_part(bitbake_variables):
     """Given the output from mount, determine the currently active and passive
-    partition numbers, returning them as a pair in that order."""
-    if mount_output.find("/dev/mmcblk0p2") >= 0:
-        return ("2", "3")
-    elif mount_output.find("/dev/mmcblk0p3") >= 0:
-        return ("3", "2")
+    partitions, returning them as a pair in that order."""
+
+    mount_output = run("mount")
+    a = bitbake_variables["MENDER_ROOTFS_PART_A"]
+    b = bitbake_variables["MENDER_ROOTFS_PART_B"]
+
+    if mount_output.find(a) >= 0:
+        return (a, b)
+    elif mount_output.find(b) >= 0:
+        return (b, a)
     else:
         raise Exception("Could not determine active partition. Mount output: %s"
                         % mount_output)
