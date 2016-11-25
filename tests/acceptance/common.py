@@ -146,12 +146,6 @@ def determine_active_passive_part(bitbake_variables):
                         % mount_output)
 
 
-def part_device(part_number):
-    """Given partition number (but string type), return the device for that
-    partition."""
-    return "/dev/mmcblk0p" + part_number
-
-
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
 def put(file, local_path = ".", remote_path = "."):
     (scp, host, port) = scp_prep_args()
