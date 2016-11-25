@@ -161,3 +161,70 @@ class TestUpdates:
         # The OS should have stayed on the same partition, since we committed.
         assert(active_after == active_before)
         assert(passive_after == passive_before)
+
+
+    # See MEN-480.
+    @pytest.mark.skipif(True, reason="Doesn't work yet")
+    def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables):
+        """This tests a very specific scenario: Consider the following production
+        scenario: You are currently running an update on rootfs partition
+        B. Then you attempt another update, which happens to be broken (but you
+        don't know that yet). This will put the update in rootfs partition
+        A. However, just as U-Boot is about to switch to rootfs partition A,
+        using `upgrade_available=1` (and hence triggering bootlimit), the device
+        loses power. This causes the stored U-Boot environment to become
+        corrupt. On the next boot, U-Boot detects this and reverts to its built
+        in environment instead.
+
+        But this is a problem: The default environment will boot from rootfs
+        partition A, which contains a broken update. And since U-Boot at this
+        point doesn't know that an update was in progress, it will not attempt
+        to boot from anywhere else (`upgrade_available=0`). Hence the device is
+        bricked.
+
+        This is what a redundant U-Boot environment is supposed to protect
+        against by always providing two copies of the stored environment, and
+        guaranteeing that at least one of them is always valid.
+
+        In a test we cannot pull the power from the device reliably, but it's
+        quite easy to simulate the situation by setting up the above scenario,
+        and then corrupting the environment manually with a file write.
+
+        """
+
+        if not env.host_string:
+            # This means we are not inside execute(). Recurse into it!
+            execute(self.test_redundant_uboot_env, successful_image_update_mender, bitbake_variables)
+            return
+
+        (active, passive) = determine_active_passive_part(bitbake_variables)
+
+        if active != bitbake_variables["MENDER_ROOTFS_PART_B"]:
+            # We are not running the secondary partition. This is a requirement
+            # for this test to test the correct scenario. Do a full update, so
+            # that we end up on the right partition. Run the full update test to
+            # correct this. If running all the tests in order with a fresh
+            # build, the correct partition will usually be selected already.
+            self.test_network_based_image_update(successful_image_update_mender, bitbake_variables)
+
+            (active, passive) = determine_active_passive_part(bitbake_variables)
+            assert(active == bitbake_variables["MENDER_ROOTFS_PART_B"])
+
+        # Make a dummy/broken update
+        subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
+        subprocess.call("artifacts write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
+        put("image.mender", remote_path="/var/tmp/image.mender")
+        run("mender -rootfs /var/tmp/image.mender")
+
+        # Now manually corrupt the environment.
+        # A few bytes should do it!
+        run("dd if=/dev/zero of=/uboot/uboot.env bs=1 count=64 conv=notrunc")
+
+        reboot()
+
+        # We should have recovered.
+        run_after_connect("true")
+
+        # And we should be back at the second rootfs partition.
+        (active, passive) = determine_active_passive_part(bitbake_variables)
+        assert(active == bitbake_variables["MENDER_ROOTFS_PART_B"])
