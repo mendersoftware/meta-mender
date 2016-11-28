@@ -6,6 +6,8 @@ MENDER_CERT_LOCATION ?= "${sysconfdir}/mender/server.crt"
 # Tenant token
 MENDER_TENANT_TOKEN ?= "dummy"
 SYSTEMD_AUTO_ENABLE ?= "disable"
+MENDER_UPDATE_POLL_INTERVAL_SECONDS ?= "1800"
+MENDER_INVENTORY_POLL_INTERVAL_SECONDS ?= "1800"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
@@ -75,6 +77,8 @@ do_compile() {
   cp ${WORKDIR}/mender.conf ${B}
   sed -i -e 's#[@]MENDER_SERVER_URL[@]#${MENDER_SERVER_URL}#' ${B}/mender.conf
   sed -i -e 's#[@]MENDER_CERT_LOCATION[@]#${MENDER_CERT_LOCATION}#' ${B}/mender.conf
+  sed -i -e 's#[@]MENDER_UPDATE_POLL_INTERVAL_SECONDS[@]#${MENDER_UPDATE_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
+  sed -i -e 's#[@]MENDER_INVENTORY_POLL_INTERVAL_SECONDS[@]#${MENDER_INVENTORY_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
 
   if [ -n "${MENDER_ROOTFS_PART_A}" ] && [ -n "${MENDER_ROOTFS_PART_B}" ]; then
     sed -i -e 's#[@]MENDER_ROOTFS_PART_A[@]#${MENDER_ROOTFS_PART_A}#' ${B}/mender.conf
