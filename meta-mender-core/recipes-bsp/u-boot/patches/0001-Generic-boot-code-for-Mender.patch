@@ -35,8 +35,8 @@ index 0000000..3c1ecd6
 +  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 +*/
 +
-+#ifndef CONFIG_MENDER_H
-+#define CONFIG_MENDER_H
++#ifndef HEADER_CONFIG_MENDER_H
++#define HEADER_CONFIG_MENDER_H
 +
 +#include <config_mender_defines.h>
 +
@@ -85,7 +85,7 @@ index 0000000..3c1ecd6
 +
 +#define CONFIG_FAT_WRITE
 +
-+#endif /* CONFIG_MENDER_H */
++#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
 index 0000000..d13d0b1
@@ -110,8 +110,8 @@ index 0000000..d13d0b1
 +  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 +*/
 +
-+#ifndef ENV_MENDER_H
-+#define ENV_MENDER_H
++#ifndef HEADER_ENV_MENDER_H
++#define HEADER_ENV_MENDER_H
 +
 +#include <config_mender_defines.h>
 +
@@ -158,7 +158,7 @@ index 0000000..d13d0b1
 +    "then reset; "                                                      \
 +    "fi\0"
 +
-+#endif /* ENV_MENDER_H */
++#endif /* HEADER_ENV_MENDER_H */
 -- 
 2.7.4
 
