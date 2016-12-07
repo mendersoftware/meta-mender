@@ -172,9 +172,8 @@ def qemu_prep_fresh_host():
     pass
 
 
-def set_first_root_part():
+def manual_uboot_commit():
     sudo("fw_setenv upgrade_available 0")
-    sudo("fw_setenv mender_boot_part 2")
     sudo("fw_setenv bootcount 0")
 
 
@@ -227,7 +226,7 @@ def qemu_running(request):
     def qemu_finalizer():
         def qemu_finalizer_impl():
             try:
-                set_first_root_part()
+                manual_uboot_commit()
                 sudo("halt")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
