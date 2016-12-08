@@ -100,7 +100,7 @@ python() {
 IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native"
 
 IMAGE_CMD_sdimg() {
-    set -e
+    set -ex
 
     # For some reason, logging is not working correctly inside IMAGE_CMD bodies,
     # so wrap all logging in these functions that also have an echo. This won't
