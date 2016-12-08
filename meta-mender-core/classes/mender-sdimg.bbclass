@@ -97,7 +97,7 @@ python() {
             d.setVar('IMAGE_TYPEDEP_sdimg_append', " " + fs)
 }
 
-IMAGE_DEPENDS_sdimg = "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native"
+IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native"
 
 IMAGE_CMD_sdimg() {
     set -e
