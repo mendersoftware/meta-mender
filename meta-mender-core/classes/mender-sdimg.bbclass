@@ -158,10 +158,10 @@ IMAGE_CMD_sdimg() {
     MENDER_PARTITION_ALIGNMENT_KB=$(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024)
 
     rm -rf "${WORKDIR}/data" || true
+    mkdir -p "${WORKDIR}/data"
+
     if [ -n "${MENDER_DATA_PART_DIR}" ]; then
-        cp -a "${MENDER_DATA_PART_DIR}" "${WORKDIR}/data"
-    else
-        mkdir -p "${WORKDIR}/data"
+        find "${MENDER_DATA_PART_DIR}" -not -name . -exec cp -a '{}' "${WORKDIR}/data" \;
     fi
 
     mkdir -p "${WORKDIR}/data/mender"
