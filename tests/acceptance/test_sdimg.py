@@ -114,13 +114,18 @@ class TestSdimg:
         fdisk.wait()
 
         alignment = int(bitbake_variables['MENDER_PARTITION_ALIGNMENT_MB']) * 1024 * 1024
+        uboot_env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
         total_size = int(bitbake_variables['MENDER_STORAGE_TOTAL_SIZE_MB']) * 1024 * 1024
         part_overhead = int(bitbake_variables['MENDER_PARTITIONING_OVERHEAD_MB']) * 1024 * 1024
         boot_part_size = int(bitbake_variables['MENDER_BOOT_PART_SIZE_MB']) * 1024 * 1024
         data_part_size = int(bitbake_variables['MENDER_DATA_PART_SIZE_MB']) * 1024 * 1024
 
-        # First partition should be at the first alignment boundary.
-        assert(parts_start[0] == alignment)
+        # Uboot environment should be aligned.
+        assert(uboot_env_size % alignment == 0)
+
+        # First partition should start after exactly one alignment, plus the
+        # U-Boot environment.
+        assert(parts_start[0] == alignment + uboot_env_size)
 
         # Subsequent partitions should start where previous one left off.
         assert(parts_start[1] == parts_end[0])
