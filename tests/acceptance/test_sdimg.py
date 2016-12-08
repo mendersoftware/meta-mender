@@ -51,6 +51,23 @@ def align_up(bytes, alignment):
     return (int(bytes) + int(alignment) - 1) / int(alignment) * int(alignment)
 
 
+def extract_partition(sdimg, number):
+    output = subprocess.Popen(["fdisk", "-l", "-o", "device,start,end", sdimg],
+                              stdout=subprocess.PIPE)
+    for line in output.stdout:
+        if re.search("sdimg%d" % number, line) is None:
+            continue
+
+        match = re.match("\s*\S+\s+(\S+)\s+(\S+)", line)
+        assert(match is not None)
+        start = int(match.group(1))
+        end = (int(match.group(2)) + 1)
+    output.wait()
+
+    subprocess.check_call(["dd", "if=" + sdimg, "of=sdimg%d.fs" % number,
+                           "skip=%d" % start, "count=%d" % (end - start)])
+
+
 class TestSdimg:
     def test_bootloader_embed(self, embedded_bootloader, latest_sdimg):
         """Test that IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
@@ -152,21 +169,9 @@ class TestSdimg:
         """Test that device type file is correctly embedded."""
 
         try:
-            output = subprocess.Popen(["fdisk", "-l", "-o", "device,start,end", latest_sdimg],
-                                      stdout=subprocess.PIPE)
-            for line in output.stdout:
-                if re.search("sdimg5", line) is None:
-                    continue
+            extract_partition(latest_sdimg, 5)
 
-                match = re.match("\s*\S+\s+(\S+)\s+(\S+)", line)
-                assert(match is not None)
-                start = int(match.group(1))
-                end = (int(match.group(2)) + 1)
-            output.wait()
-
-            subprocess.check_call(["dd", "if=" + latest_sdimg, "of=data-part.fs",
-                                   "skip=%d" % start, "count=%d" % (end - start)])
-            subprocess.check_call(["e2cp", "-p", "data-part.fs:mender/device_type", "."])
+            subprocess.check_call(["e2cp", "-p", "sdimg5.fs:mender/device_type", "."])
 
             assert(os.stat("device_type").st_mode & 0777 == 0444)
 
@@ -187,7 +192,43 @@ class TestSdimg:
 
         finally:
             try:
-                os.remove("data-part.fs")
+                os.remove("sdimg5.fs")
                 os.remove("device_type")
+            except:
+                pass
+
+    @pytest.mark.skipif(not e2cp_installed, reason="Needs e2tools to be installed")
+    def test_data_ownership(self, latest_sdimg, bitbake_variables, bitbake_path):
+        """Test that the owner of files on the data partition is root."""
+
+        try:
+            extract_partition(latest_sdimg, 5)
+
+            def check_dir(dir):
+                e2ls = subprocess.Popen(["e2ls", "-l", "sdimg5.fs:%s" % dir], stdout=subprocess.PIPE)
+                entries = e2ls.stdout.readlines()
+                e2ls.wait()
+
+                for entry in entries:
+                    columns = entry.split()
+
+                    if len(columns) == 0:
+                        # e2ls might output empty lines too.
+                        continue
+
+                    assert(columns[2] == "0")
+                    assert(columns[3] == "0")
+
+                    mode = int(columns[1], 8)
+                    # Recurse into directories, but skip lost+found, which has
+                    # some weird issues with e2ls.
+                    if mode & 040000 and columns[7] != "lost+found":
+                        check_dir(os.path.join(dir, columns[7]))
+
+            check_dir(".")
+
+        finally:
+            try:
+                os.remove("sdimg5.fs")
             except:
                 pass
