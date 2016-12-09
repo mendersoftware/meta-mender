@@ -94,27 +94,29 @@ class TestUpdates:
 
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
-        # Make a dummy/broken update
-        subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
-        subprocess.call("artifacts write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
-        put("image.mender", remote_path="/var/tmp/image.mender")
-        run("mender -rootfs /var/tmp/image.mender")
-        reboot()
+        try:
+            # Make a dummy/broken update
+            subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
+            subprocess.call("artifacts write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
+            put("image.mender", remote_path="/var/tmp/image.mender")
+            run("mender -rootfs /var/tmp/image.mender")
+            reboot()
 
-        # Now qemu is auto-rebooted twice; once to boot the dummy image,
-        # where it fails, and uboot auto-reboots a second time into the
-        # original partition.
+            # Now qemu is auto-rebooted twice; once to boot the dummy image,
+            # where it fails, and uboot auto-reboots a second time into the
+            # original partition.
 
-        output = run_after_connect("mount")
+            output = run_after_connect("mount")
 
-        # The update should have reverted to the original active partition,
-        # since the image was bogus.
-        assert(output.find(active_before) >= 0)
-        assert(output.find(passive_before) < 0)
+            # The update should have reverted to the original active partition,
+            # since the image was bogus.
+            assert(output.find(active_before) >= 0)
+            assert(output.find(passive_before) < 0)
 
-        # Cleanup.
-        os.remove("image.mender")
-        os.remove("image.dat")
+        finally:
+            # Cleanup.
+            os.remove("image.mender")
+            os.remove("image.dat")
 
     def test_too_big_image_update(self):
         if not env.host_string:
@@ -122,18 +124,20 @@ class TestUpdates:
             execute(self.test_too_big_image_update)
             return
 
-        # Make a too big update
-        subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=1024", shell=True)
-        subprocess.call("artifacts write rootfs-image -t %s -n test-update-too-big -u image.dat -o image-too-big.mender" % image_type, shell=True)
-        put("image-too-big.mender", remote_path="/var/tmp/image-too-big.mender")
-        output = run("mender -rootfs /var/tmp/image-too-big.mender ; echo 'ret_code=$?'")
+        try:
+            # Make a too big update
+            subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=1024", shell=True)
+            subprocess.call("artifacts write rootfs-image -t %s -n test-update-too-big -u image.dat -o image-too-big.mender" % image_type, shell=True)
+            put("image-too-big.mender", remote_path="/var/tmp/image-too-big.mender")
+            output = run("mender -rootfs /var/tmp/image-too-big.mender ; echo 'ret_code=$?'")
 
-        assert(output.find("no space left on device") >= 0)
-        assert(output.find("ret_code=0") < 0)
+            assert(output.find("no space left on device") >= 0)
+            assert(output.find("ret_code=0") < 0)
 
-        # Cleanup.
-        os.remove("image-too-big.mender")
-        os.remove("image.dat")
+        finally:
+            # Cleanup.
+            os.remove("image-too-big.mender")
+            os.remove("image.dat")
 
     def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables):
         http_server_location = pytest.config.getoption("--http-server")
