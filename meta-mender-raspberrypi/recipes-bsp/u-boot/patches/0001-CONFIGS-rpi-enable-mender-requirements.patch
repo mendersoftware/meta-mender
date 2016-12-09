@@ -1,11 +1,11 @@
-From 3267334937464b9c84b812f20fb12cab8b8dd0d5 Mon Sep 17 00:00:00 2001
+From eb40f711ee831be664d0bd4f7c4dbce7c2521cba Mon Sep 17 00:00:00 2001
 From: Mirza Krak <mirza.krak@gmail.com>
-Date: Sun, 30 Oct 2016 21:39:10 +0100
-Subject: [PATCH 1/1] CONFIGS: rpi: enable mender.io requirements
+Date: Sun, 30 Oct 2016 21:28:43 +0100
+Subject: [PATCH 1/1] configs: rpi: enable mender requirements
 
 Which are CONFIG_BOOTCOUNT_ENV and CONFIG_BOOTCOUNT_LIMIT.
 
-Mender.io also requires that FAT_ENV_INTERFACE, FAT_ENV_DEVICE_AND_PART
+Mender also requires that FAT_ENV_INTERFACE, FAT_ENV_DEVICE_AND_PART
 and FAT_ENV_FILE are not present in the configuration.
 
 Signed-off-by: Mirza Krak <mirza.krak@gmail.com>
