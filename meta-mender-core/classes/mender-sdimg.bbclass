@@ -115,10 +115,15 @@ IMAGE_CMD_sdimg() {
     # exist.
     mkdir -p "${IMAGE_ROOTFS}"
 
+    boot_env_size=$(stat -c '%s' "${DEPLOY_DIR_IMAGE}/uboot.env")
+    # Round up to nearest MB.
+    boot_env_size_mb=$(expr \( $boot_env_size + 1048575 \) / 1048576)
+
     REMAINING_SIZE=$(expr ${MENDER_STORAGE_TOTAL_SIZE_MB} - \
                           ${MENDER_BOOT_PART_SIZE_MB} - \
                           ${MENDER_DATA_PART_SIZE_MB} - \
-                          ${MENDER_PARTITIONING_OVERHEAD_MB})
+                          ${MENDER_PARTITIONING_OVERHEAD_MB} - \
+                          $boot_env_size_mb)
     ROOTFS_SIZE=$(expr $REMAINING_SIZE / 2)
 
     # create rootfs
