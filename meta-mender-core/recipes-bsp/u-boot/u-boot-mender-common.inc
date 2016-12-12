@@ -1,5 +1,4 @@
 inherit mender-helpers
-inherit deploy
 
 BOOTENV_SIZE ??= "0x20000"
 
@@ -47,6 +46,8 @@ do_provide_mender_defines() {
 
 /* BB variables. */
 #define MENDER_STORAGE_DEVICE_BASE "${MENDER_STORAGE_DEVICE_BASE}"
+#define MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1 ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1}
+#define MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2 ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2}
 
 /* For sanity checks. */
 #define MENDER_BOOTENV_SIZE ${BOOTENV_SIZE}
@@ -54,8 +55,30 @@ EOF
 }
 addtask do_provide_mender_defines after do_patch before do_configure
 
-do_deploy_prepend() {
-    # Create empty environment. Just so that the file is available.
-    mkdir -p ${DEPLOYDIR}
-    dd if=/dev/zero of="${DEPLOYDIR}/${IMAGE_BOOT_ENV_FILE}" count=0 bs=1 seek=`printf %d ${BOOTENV_SIZE}`
-}
+################################################################################
+# Helpers and internal variables.
+################################################################################
+
+def mender_get_env_total_aligned_size(bootenv_size, alignment_mb):
+    alignment_bytes = alignment_mb * 1024 * 1024
+    env_aligned_size = int((bootenv_size + alignment_bytes - 1) / alignment_bytes) * alignment_bytes
+
+    # Total size, original and redundant environment.
+    total_env_size = env_aligned_size * 2
+
+    return "%d" % total_env_size
+
+MENDER_BOOTENV_TOTAL_ALIGNED_SIZE = "${@mender_get_env_total_aligned_size(${BOOTENV_SIZE}, ${MENDER_PARTITION_ALIGNMENT_MB})}"
+
+def mender_get_env_offset(start_offset, index, total_aligned_size):
+    if index == 1:
+        return "0x%x" % int(start_offset)
+    elif index == 2:
+        return "0x%x" % int(start_offset + total_aligned_size / 2)
+    else:
+        raise Exception("env index out of range in mender_get_env_offset: Should not happen")
+
+MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1 = "${@mender_get_env_offset(${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}, 1, \
+                                                                     ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE})}"
+MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2 = "${@mender_get_env_offset(${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}, 2, \
+                                                                     ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE})}"
