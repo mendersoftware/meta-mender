@@ -77,11 +77,6 @@ class Helpers:
 
         return checksums
 
-@pytest.fixture(scope="function", params=[False, True])
-def corrupt_old_env(request):
-    """Whether we should corrupt the old or new environment section."""
-    return request.param
-
 @pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "bitbake_path")
 class TestUpdates:
 
@@ -210,7 +205,7 @@ class TestUpdates:
         assert(active_after == active_before)
         assert(passive_after == passive_before)
 
-    def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables, corrupt_old_env):
+    def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables):
         """This tests a very specific scenario: Consider the following production
         scenario: You are currently running an update on rootfs partition
         B. Then you attempt another update, which happens to be broken (but you
@@ -239,7 +234,7 @@ class TestUpdates:
 
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
-            execute(self.test_redundant_uboot_env, successful_image_update_mender, bitbake_variables, corrupt_old_env)
+            execute(self.test_redundant_uboot_env, successful_image_update_mender, bitbake_variables)
             return
 
         (active, passive) = determine_active_passive_part(bitbake_variables)
@@ -275,17 +270,9 @@ class TestUpdates:
             assert(old_checksums[0] != new_checksums[0] or old_checksums[1] != new_checksums[1])
 
             if old_checksums[0] != new_checksums[0]:
-                changed = 0
+                to_corrupt = 0
             elif old_checksums[1] != new_checksums[1]:
-                changed = 1
-
-            if corrupt_old_env:
-                # We should corrupt the old environment. Unlikely to happen in
-                # practice, but should be recoverable as well.
-                to_corrupt = 1 - changed
-            else:
-                # We should corrupt the new environment.
-                to_corrupt = changed
+                to_corrupt = 1
 
             offsets = Helpers.get_env_offsets(bitbake_variables)
 
@@ -301,9 +288,7 @@ class TestUpdates:
             # were intermediary steps. This is important to avoid so that the
             # environment is not in a half updated state.
             new_env = run("fw_printenv")
-            if not corrupt_old_env:
-                # Only relevant when corrupting the new environment.
-                assert orig_env == new_env
+            assert orig_env == new_env
 
             reboot()
 
