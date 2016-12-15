@@ -5,7 +5,7 @@ MENDER_SERVER_URL ?= "https://docker.mender.io"
 MENDER_CERT_LOCATION ?= "${sysconfdir}/mender/server.crt"
 # Tenant token
 MENDER_TENANT_TOKEN ?= "dummy"
-SYSTEMD_AUTO_ENABLE ?= "disable"
+SYSTEMD_AUTO_ENABLE ?= "enable"
 MENDER_UPDATE_POLL_INTERVAL_SECONDS ?= "1800"
 MENDER_INVENTORY_POLL_INTERVAL_SECONDS ?= "1800"
 
