@@ -1,4 +1,4 @@
-From 23d7802eecc8c21471df83fbe18f4d6be9310eec Mon Sep 17 00:00:00 2001
+From 67d40c63380d3dbf5a4cc5b4ba1d1c2b05c68211 Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@mender.io>
 Date: Fri, 12 Aug 2016 10:13:46 +0200
 Subject: [PATCH] BBB: Use Mender boot code for selecting boot device and
@@ -6,12 +6,12 @@ Subject: [PATCH] BBB: Use Mender boot code for selecting boot device and
 
 Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
 ---
- include/configs/am335x_evm.h      | 29 +++++++++++++----------------
+ include/configs/am335x_evm.h      | 34 +++++++++++++---------------------
  include/configs/ti_armv7_common.h |  2 +-
- 2 files changed, 14 insertions(+), 17 deletions(-)
+ 2 files changed, 14 insertions(+), 22 deletions(-)
 
 diff --git a/include/configs/am335x_evm.h b/include/configs/am335x_evm.h
-index 6ebe0b3..0157f97 100644
+index 6ebe0b3..de817c6 100644
 --- a/include/configs/am335x_evm.h
 +++ b/include/configs/am335x_evm.h
 @@ -69,9 +69,8 @@
@@ -96,10 +96,22 @@ index 6ebe0b3..0157f97 100644
 -#define CONFIG_ENV_IS_IN_NAND
 -#define CONFIG_ENV_OFFSET		0x001c0000
 -#define CONFIG_ENV_OFFSET_REDUND	0x001e0000
-+#define CONFIG_ENV_IS_IN_FAT
++#define CONFIG_ENV_IS_IN_MMC
  #define CONFIG_SYS_ENV_SECT_SIZE	CONFIG_SYS_NAND_BLOCK_SIZE
  /* NAND: SPL related configs */
  #ifdef CONFIG_SPL_NAND_SUPPORT
+@@ -456,11 +453,6 @@
+ #undef CONFIG_ENV_IS_NOWHERE
+ #define CONFIG_ENV_IS_IN_MMC
+ #define CONFIG_SPL_ENV_SUPPORT
+-#define CONFIG_SYS_MMC_ENV_DEV		1
+-#define CONFIG_SYS_MMC_ENV_PART		2
+-#define CONFIG_ENV_OFFSET		0x0
+-#define CONFIG_ENV_OFFSET_REDUND	(CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
+-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
+ #endif
+ 
+ /* SPI flash. */
 diff --git a/include/configs/ti_armv7_common.h b/include/configs/ti_armv7_common.h
 index 199612b..42e817f 100644
 --- a/include/configs/ti_armv7_common.h
