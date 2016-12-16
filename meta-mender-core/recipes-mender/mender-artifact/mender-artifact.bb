@@ -13,6 +13,11 @@ inherit allarch
 PV = "0.1"
 
 do_compile() {
+    if [ -z "${MENDER_ARTIFACT_NAME}" ]; then
+        bberror "Need to define MENDER_ARTIFACT_NAME variable."
+        exit 1
+    fi
+
     cat > ${B}/artifact_info << END
 artifact_name=${MENDER_ARTIFACT_NAME}
 END

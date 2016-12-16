@@ -2,9 +2,10 @@
 
 inherit mender-install
 
-# u-boot environment file to be stored on boot partition
-IMAGE_BOOT_ENV_FILE ?= "uboot.env"
-IMAGE_BOOT_FILES_append = " ${IMAGE_BOOT_ENV_FILE}"
-
 EXTRA_IMAGEDEPENDS += "u-boot"
 PACKAGECONFIG_append_pn-mender = " u-boot"
+
+def mender_mb2bytes(mb):
+    return mb * 1024 * 1024
+
+MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET ?= "${@mender_mb2bytes(${MENDER_PARTITION_ALIGNMENT_MB})}"
