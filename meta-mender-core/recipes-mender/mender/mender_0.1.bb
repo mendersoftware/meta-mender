@@ -46,7 +46,7 @@ GO_IMPORT = "github.com/mendersoftware/mender"
 PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
 
 RDEPENDS_${PN} += " \
-    mender-artifact \
+    mender-artifact-info \
     "
 
 do_compile() {
