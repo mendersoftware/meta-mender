@@ -16,7 +16,7 @@ PV = "${PVBASE}+git${SRCPV}"
 
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = " \
-                    file://LIC_FILES_CHKSUM.sha256;md5=907fcd0a30c237408413d6b347270f4f \
+                    file://LIC_FILES_CHKSUM.sha256;md5=f4a3edb2a8fe8e2ecde8062ba20b1c86 \
                     "
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
