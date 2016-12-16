@@ -1,33 +1,57 @@
-DESCRIPTION = "Mender artifact information"
-HOMEPAGE = "https://mender.io"
+DESCRIPTION = "Mender image artifact library"
+GO_IMPORT = "github.com/mendersoftware/mender-artifact"
+
+inherit go
+# these are fixed in oe-meta-go
+GOBIN_FINAL_class-native = "${GOROOT_FINAL}/bin"
+GOROOT_class-native = "${STAGING_LIBDIR_NATIVE}/go"
+export GOROOT
+export GOBIN_FINAL
+
+SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https"
+
+SRCREV = "${AUTOREV}"
+PVBASE := "${PV}"
+PV = "${PVBASE}+git${SRCPV}"
+
 LICENSE = "Apache-2.0"
-LIC_FILES_CHKSUM = "file://Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
+LIC_FILES_CHKSUM = " \
+                    file://LIC_FILES_CHKSUM.sha256;md5=907fcd0a30c237408413d6b347270f4f \
+                    "
+S = "${WORKDIR}/git"
+B = "${WORKDIR}/build"
 
-FILESPATH = "${COMMON_LICENSE_DIR}"
-SRC_URI = "file://Apache-2.0"
+GOPATHDIR = "${B}/src/${GO_IMPORT}"
 
-S = "${WORKDIR}"
-
-inherit allarch
-
-PV = "0.1"
+BBCLASSEXTEND = "native"
 
 do_compile() {
-    if [ -z "${MENDER_ARTIFACT_NAME}" ]; then
-        bberror "Need to define MENDER_ARTIFACT_NAME variable."
-        exit 1
-    fi
+    # we could check out the sources at some destsuffix and use default
+    # do_compile from go.bbclass, but that would prevent us from always building
+    # the most recent version due to recursive expansion if SRCPV
 
-    cat > ${B}/artifact_info << END
-artifact_name=${MENDER_ARTIFACT_NAME}
-END
+    install -d ${GOPATHDIR}
+    # we could also try symlinking ${S} into our fake GOPATH, however `go build...`
+    # ignores symlinks in GOPATH
+    rsync -av --exclude '.git' --delete ${S}/ ${GOPATHDIR}/
+
+    GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go go env
+    if test -n "${GO_INSTALL}" ; then
+       GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go go install -v ${GO_INSTALL}
+    fi
 }
 
 do_install() {
-    install -d ${D}${sysconfdir}/mender
-    install -m 0644 -t ${D}${sysconfdir}/mender ${B}/artifact_info
-}
+    install -d ${D}${GOROOT_FINAL}
+    rsync -av \
+          --exclude '*/vendor/github.com/mendersoftware/mendertesting/*.sh' \
+          ${B}/ ${D}${GOROOT_FINAL}
 
-FILES_${PN} += " \
-    ${sysconfdir}/mender/artifact_info \
-"
+    if test -e ${D}${GOBIN_FINAL} ; then
+        install -d ${D}${bindir}
+        find ${D}${GOBIN_FINAL} ! -type d -print0 | xargs -r0 mv --target-directory="${D}${bindir}"
+        rmdir -p ${D}${GOBIN_FINAL} || true
+        chown -R root:root ${D}${bindir}
+    fi
+    chown -R root:root ${D}${GOROOT_FINAL}
+}
