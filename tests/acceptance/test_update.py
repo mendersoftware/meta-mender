@@ -278,8 +278,9 @@ class TestUpdates:
 
             # Now manually corrupt the environment.
             # A few bytes should do it!
-            run("dd if=/dev/zero of=%s bs=1 count=64 seek=%d oflag=sync"
+            run("dd if=/dev/zero of=%s bs=1 count=64 seek=%d"
                 % (bitbake_variables["MENDER_STORAGE_DEVICE"], offsets[to_corrupt]))
+            run("sync")
 
             # Check atomicity of Mender environment update: The contents of the
             # environment before the update should be identical to the
