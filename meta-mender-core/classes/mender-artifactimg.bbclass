@@ -1,5 +1,5 @@
 
-IMAGE_DEPENDS_mender = "artifacts-native"
+IMAGE_DEPENDS_mender = "mender-artifact-native"
 
 ARTIFACTIMG_FSTYPE  ?= "ext4"
 IMAGE_CMD_mender () {
@@ -10,7 +10,7 @@ IMAGE_CMD_mender () {
     fi
 
     # Trim leading/trailing spaces, and replace spaces with commas for
-    # consumption by artifacts tool.
+    # consumption by mender-artifact tool.
     devs_compatible=
     sep=
     for dev in ${MENDER_DEVICE_TYPES_COMPATIBLE}; do
@@ -22,7 +22,7 @@ IMAGE_CMD_mender () {
         bberror "MENDER_DEVICE_TYPES_COMPATIBLE variable cannot be empty."
     fi
 
-    artifacts write rootfs-image \
+    mender-artifact write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} -t "$devs_compatible" \
         -u ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
         -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender \

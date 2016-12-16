@@ -26,7 +26,7 @@ import hashlib
 from common import *
 
 # The format of the artifact file which is tested here is documented at:
-# https://github.com/mendersoftware/artifacts/blob/master/Documentation/artifact-format.md
+# https://github.com/mendersoftware/mender-artifact/blob/master/Documentation/artifact-format.md
 
 class TestMenderArtifact:
     def test_order(self, latest_mender_image):
@@ -141,6 +141,6 @@ class TestMenderArtifact:
 
 
     def test_artifacts_validation(self, latest_mender_image, bitbake_path):
-        """Test that the artifacts tool validates the update successfully."""
+        """Test that the mender-artifact tool validates the update successfully."""
 
-        subprocess.check_call(["artifacts", "validate", latest_mender_image])
+        subprocess.check_call(["mender-artifact", "validate", latest_mender_image])
