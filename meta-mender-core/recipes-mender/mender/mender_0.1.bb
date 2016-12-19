@@ -8,6 +8,7 @@ MENDER_TENANT_TOKEN ?= "dummy"
 SYSTEMD_AUTO_ENABLE ?= "disable"
 MENDER_UPDATE_POLL_INTERVAL_SECONDS ?= "1800"
 MENDER_INVENTORY_POLL_INTERVAL_SECONDS ?= "1800"
+MENDER_RETRY_POLL_INTERVAL_SECONDS ?= "300"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
@@ -45,7 +46,7 @@ GO_IMPORT = "github.com/mendersoftware/mender"
 PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
 
 RDEPENDS_${PN} += " \
-    mender-artifact \
+    mender-artifact-info \
     "
 
 do_compile() {
@@ -79,6 +80,7 @@ do_compile() {
   sed -i -e 's#[@]MENDER_CERT_LOCATION[@]#${MENDER_CERT_LOCATION}#' ${B}/mender.conf
   sed -i -e 's#[@]MENDER_UPDATE_POLL_INTERVAL_SECONDS[@]#${MENDER_UPDATE_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
   sed -i -e 's#[@]MENDER_INVENTORY_POLL_INTERVAL_SECONDS[@]#${MENDER_INVENTORY_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
+  sed -i -e 's#[@]MENDER_RETRY_POLL_INTERVAL_SECONDS[@]#${MENDER_RETRY_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
 
   if [ -n "${MENDER_ROOTFS_PART_A}" ] && [ -n "${MENDER_ROOTFS_PART_B}" ]; then
     sed -i -e 's#[@]MENDER_ROOTFS_PART_A[@]#${MENDER_ROOTFS_PART_A}#' ${B}/mender.conf

@@ -92,7 +92,7 @@ class TestUpdates:
         try:
             # Make a dummy/broken update
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
-            subprocess.call("artifacts write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
+            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
             run("mender -rootfs /var/tmp/image.mender")
             reboot()
@@ -122,7 +122,7 @@ class TestUpdates:
         try:
             # Make a too big update
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=1024", shell=True)
-            subprocess.call("artifacts write rootfs-image -t %s -n test-update-too-big -u image.dat -o image-too-big.mender" % image_type, shell=True)
+            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update-too-big -u image.dat -o image-too-big.mender" % image_type, shell=True)
             put("image-too-big.mender", remote_path="/var/tmp/image-too-big.mender")
             output = run("mender -rootfs /var/tmp/image-too-big.mender ; echo 'ret_code=$?'")
 
@@ -259,7 +259,7 @@ class TestUpdates:
         try:
             # Make a dummy/broken update
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
-            subprocess.call("artifacts write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
+            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
             run("mender -rootfs /var/tmp/image.mender")
 
@@ -278,8 +278,9 @@ class TestUpdates:
 
             # Now manually corrupt the environment.
             # A few bytes should do it!
-            run("dd if=/dev/zero of=%s bs=1 count=64 seek=%d oflag=sync"
+            run("dd if=/dev/zero of=%s bs=1 count=64 seek=%d"
                 % (bitbake_variables["MENDER_STORAGE_DEVICE"], offsets[to_corrupt]))
+            run("sync")
 
             # Check atomicity of Mender environment update: The contents of the
             # environment before the update should be identical to the

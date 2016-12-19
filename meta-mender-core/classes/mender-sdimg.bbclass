@@ -129,7 +129,6 @@ IMAGE_CMD_sdimg() {
     # create rootfs
     dd if=/dev/zero of=${WORKDIR}/rootfs.$FSTYPE count=0 seek=$ROOTFS_SIZE bs=1M
     mkfs.$FSTYPE -F -i 4096 ${WORKDIR}/rootfs.$FSTYPE -d ${IMAGE_ROOTFS}
-    stat ${WORKDIR}/rootfs.$FSTYPE
     ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/active
     ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/inactive
 
