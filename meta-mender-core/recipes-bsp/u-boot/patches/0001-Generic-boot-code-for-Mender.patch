@@ -1,0 +1,155 @@
+From 8d4e298b76c4cfc78f7f5b8061cc86cf0cc39aec Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@mender.io>
+Date: Mon, 22 Aug 2016 10:47:08 +0200
+Subject: [PATCH] Generic boot code for Mender.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
+---
+ include/config_mender.h | 78 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/env_mender.h    | 67 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 145 insertions(+)
+ create mode 100644 include/config_mender.h
+ create mode 100644 include/env_mender.h
+
+diff --git a/include/config_mender.h b/include/config_mender.h
+new file mode 100644
+index 0000000..043f97d
+--- /dev/null
++++ b/include/config_mender.h
+@@ -0,0 +1,60 @@
++/*
++  Copyright (C) 2016  Mender Software
++
++  This program is free software; you can redistribute it and/or
++  modify it under the terms of the GNU General Public License
++  as published by the Free Software Foundation; either version 2
++  of the License, or (at your option) any later version.
++
++  This program is distributed in the hope that it will be useful,
++  but WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  GNU General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with this program; if not, write to the Free Software
++  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++*/
++
++#ifndef HEADER_CONFIG_MENDER_H
++#define HEADER_CONFIG_MENDER_H
++
++#include <config_mender_defines.h>
++
++#ifndef CONFIG_ENV_IS_IN_MMC
++# error CONFIG_ENV_IS_IN_MMC is required for Mender to work
++#endif
++
++#ifndef CONFIG_BOOTCOUNT_LIMIT
++# error CONFIG_BOOTCOUNT_LIMIT is required for Mender to work
++#endif
++
++/* Currently Mender needs bootcount to reside in environment. */
++#ifndef CONFIG_BOOTCOUNT_ENV
++# error CONFIG_BOOTCOUNT_ENV is required for Mender to work
++#endif
++
++#ifdef CONFIG_SYS_MMC_ENV_DEV
++# error CONFIG_SYS_MMC_ENV_DEV should not be defined explicitly (will be auto-configured).
++#endif
++#ifdef CONFIG_SYS_MMC_ENV_PART
++# error CONFIG_SYS_MMC_ENV_PART should not be defined explicitly (will be auto-configured).
++#endif
++#ifdef CONFIG_ENV_OFFSET
++# error CONFIG_ENV_OFFSET should not be defined explicitly (will be auto-configured).
++#endif
++#ifdef CONFIG_ENV_OFFSET_REDUND
++# error CONFIG_ENV_OFFSET_REDUND should not be defined explicitly (will be auto-configured).
++#endif
++
++#if MENDER_BOOTENV_SIZE != CONFIG_ENV_SIZE
++# error 'CONFIG_ENV_SIZE' define must be equal to bitbake variable 'BOOTENV_SIZE' set in U-Boot build recipe.
++#endif
++
++#define CONFIG_SYS_MMC_ENV_DEV   MENDER_UBOOT_STORAGE_DEVICE
++/* Use MMC partition zero to select whole user area of memory card. */
++#define CONFIG_SYS_MMC_ENV_PART  0
++#define CONFIG_ENV_OFFSET        MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
++#define CONFIG_ENV_OFFSET_REDUND MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
++
++#endif /* HEADER_CONFIG_MENDER_H */
+diff --git a/include/env_mender.h b/include/env_mender.h
+new file mode 100644
+index 0000000..2c43fd3
+--- /dev/null
++++ b/include/env_mender.h
+@@ -0,0 +1,67 @@
++/*
++  Copyright (C) 2016  Mender Software
++
++  This program is free software; you can redistribute it and/or
++  modify it under the terms of the GNU General Public License
++  as published by the Free Software Foundation; either version 2
++  of the License, or (at your option) any later version.
++
++  This program is distributed in the hope that it will be useful,
++  but WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  GNU General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with this program; if not, write to the Free Software
++  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++*/
++
++#ifndef HEADER_ENV_MENDER_H
++#define HEADER_ENV_MENDER_H
++
++#include <config_mender_defines.h>
++
++#ifdef MENDER_NO_DEFAULT_ALTBOOTCMD
++# define MENDER_DEFAULT_ALTBOOTCMD
++#else
++# define MENDER_DEFAULT_ALTBOOTCMD "altbootcmd=run mender_altbootcmd; " \
++    "run bootcmd\0"
++#endif
++
++#define MENDER_ENV_SETTINGS                                             \
++    MENDER_DEFAULT_ALTBOOTCMD                                           \
++    "bootlimit=1\0"                                                     \
++    "bootcount=0\0"                                                     \
++                                                                        \
++    "upgrade_available=0\0"                                             \
++                                                                        \
++    "mender_boot_part=" __stringify(MENDER_ROOTFS_PART_A_NUMBER) "\0"   \
++                                                                        \
++    "mender_uboot_boot=" MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":" __stringify(MENDER_BOOT_PART_NUMBER) "\0" \
++                                                                        \
++    "mender_uboot_if=" MENDER_UBOOT_STORAGE_INTERFACE "\0"              \
++                                                                        \
++    "mender_uboot_dev=" __stringify(MENDER_UBOOT_STORAGE_DEVICE) "\0"   \
++                                                                        \
++    "mender_setup="                                                     \
++    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; " \
++    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}; " \
++    "setenv expand_bootargs setenv bootargs ${bootargs}; "              \
++    "run expand_bootargs; "                                             \
++    "setenv expand_bootargs\0"                                          \
++                                                                        \
++    "mender_altbootcmd="                                                \
++    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "  \
++    "then setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_B_NUMBER) "; "   \
++    "else setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "   \
++    "fi; "                                                              \
++    "setenv upgrade_available 0; "                                      \
++    "saveenv; "                                                         \
++    "run mender_setup\0"                                                \
++                                                                        \
++    "mender_try_to_recover="                                            \
++    "if test ${upgrade_available} = 1; "                                \
++    "then reset; "                                                      \
++    "fi\0"
++
++#endif /* HEADER_ENV_MENDER_H */
+-- 
+2.7.4
+

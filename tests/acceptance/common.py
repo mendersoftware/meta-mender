@@ -19,6 +19,7 @@ import fabric.network
 
 import pytest
 import os
+import re
 import subprocess
 import time
 import conftest
@@ -35,8 +36,7 @@ def if_not_bbb(func):
 # Return Popen object
 @if_not_bbb
 def start_qemu():
-    # Relies on the meta-mender layer being next to meta-mender-qemu.
-    proc = subprocess.Popen("../../../meta-mender/scripts/mender-qemu")
+    proc = subprocess.Popen("../../meta-mender-qemu/scripts/mender-qemu")
     # Make sure we are connected.
     execute(run_after_connect, "true", hosts = conftest.current_hosts())
     execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
@@ -129,22 +129,21 @@ def ssh_prep_args_impl(tool):
     return (cmd, host, port)
 
 
-def determine_active_passive_part(mount_output):
+def determine_active_passive_part(bitbake_variables):
     """Given the output from mount, determine the currently active and passive
-    partition numbers, returning them as a pair in that order."""
-    if mount_output.find("/dev/mmcblk0p2") >= 0:
-        return ("2", "3")
-    elif mount_output.find("/dev/mmcblk0p3") >= 0:
-        return ("3", "2")
+    partitions, returning them as a pair in that order."""
+
+    mount_output = run("mount")
+    a = bitbake_variables["MENDER_ROOTFS_PART_A"]
+    b = bitbake_variables["MENDER_ROOTFS_PART_B"]
+
+    if mount_output.find(a) >= 0:
+        return (a, b)
+    elif mount_output.find(b) >= 0:
+        return (b, a)
     else:
         raise Exception("Could not determine active partition. Mount output: %s"
                         % mount_output)
-
-
-def part_device(part_number):
-    """Given partition number (but string type), return the device for that
-    partition."""
-    return "/dev/mmcblk0p" + part_number
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
@@ -173,9 +172,8 @@ def qemu_prep_fresh_host():
     pass
 
 
-def set_first_root_part():
+def manual_uboot_commit():
     sudo("fw_setenv upgrade_available 0")
-    sudo("fw_setenv mender_boot_part 2")
     sudo("fw_setenv bootcount 0")
 
 
@@ -228,7 +226,7 @@ def qemu_running(request):
     def qemu_finalizer():
         def qemu_finalizer_impl():
             try:
-                set_first_root_part()
+                manual_uboot_commit()
                 sudo("halt")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
@@ -248,9 +246,92 @@ def qemu_running(request):
 
 @pytest.fixture(scope="function")
 def no_image_file(qemu_running):
+    """Make sure 'image.dat' is not present on the device."""
     execute(no_image_file_impl, hosts=conftest.current_hosts())
 
 
 def no_image_file_impl():
     run("rm -f image.dat")
 
+def latest_build_artifact(extension):
+    if not os.environ.get('BUILDDIR', False):
+        raise Exception("BUILDDIR needs to be defined")
+
+    output = subprocess.check_output(["sh", "-c", "ls -t $BUILDDIR/tmp*/deploy/images/*/*%s | head -n 1" % extension])
+    output = output.rstrip('\r\n')
+    print("Found latest image of type '%s' to be: %s" % (extension, output))
+    return output
+
+@pytest.fixture(scope="session")
+def latest_rootfs():
+    # Find latest built rootfs.
+    return latest_build_artifact(".ext[234]")
+
+@pytest.fixture(scope="session")
+def latest_sdimg():
+    # Find latest built rootfs.
+    return latest_build_artifact(".sdimg")
+
+@pytest.fixture(scope="session")
+def latest_mender_image():
+    # Find latest built rootfs.
+    return latest_build_artifact(".mender")
+
+@pytest.fixture(scope="function")
+def successful_image_update_mender(request, latest_mender_image):
+    """Provide a 'successful_image_update.mender' file in the current directory that
+    contains the latest built update."""
+
+    if os.path.lexists("successful_image_update.mender"):
+        print("Using existing 'successful_image_update.mender' in current directory")
+        return "successful_image_update.mender"
+
+    os.symlink(latest_mender_image, "successful_image_update.mender")
+
+    print("Symlinking 'successful_image_update.mender' to '%s'" % latest_mender_image)
+
+    def cleanup_image_dat():
+        os.remove("successful_image_update.mender")
+
+    request.addfinalizer(cleanup_image_dat)
+
+    return "successful_image_update.mender"
+
+@pytest.fixture(scope="session")
+def bitbake_variables():
+    """Returns a map of all bitbake variables active for the build."""
+
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    current_dir = os.open(".", os.O_RDONLY)
+    os.chdir(os.environ['BUILDDIR'])
+
+    output = subprocess.Popen(["bitbake", "-e", "core-image-minimal"], stdout=subprocess.PIPE)
+    matcher = re.compile('^(?:export )?([A-Za-z][^=]*)="(.*)"$')
+    ret = {}
+    for line in output.stdout:
+        line = line.strip()
+        match = matcher.match(line)
+        if match is not None:
+            ret[match.group(1)] = match.group(2)
+
+    output.wait()
+    os.fchdir(current_dir)
+
+    return ret
+
+@pytest.fixture(scope="function")
+def bitbake_path(request, bitbake_variables):
+    """Fixture that enables the same PATH as bitbake does when it builds for the
+    test that invokes it."""
+
+    old_path = os.environ['PATH']
+
+    os.environ['PATH'] = bitbake_variables['PATH']
+
+    def path_restore():
+        os.environ['PATH'] = old_path
+
+    request.addfinalizer(path_restore)
+
+    return os.environ['PATH']

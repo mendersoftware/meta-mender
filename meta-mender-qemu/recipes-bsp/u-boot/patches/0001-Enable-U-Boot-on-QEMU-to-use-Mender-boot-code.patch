@@ -1,0 +1,72 @@
+From 9e08be63de49ce60a1c3f42781e5d212a65511b5 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@mender.io>
+Date: Thu, 16 Jun 2016 10:34:23 +0200
+Subject: [PATCH] Enable U-Boot on QEMU to use Mender boot code.
+
+Also make sure the U-Boot environment is on SD card.
+---
+ include/configs/vexpress_common.h | 27 ++++++++++++++++++++++-----
+ 1 file changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/include/configs/vexpress_common.h b/include/configs/vexpress_common.h
+index a8eba31..1a234eb 100644
+--- a/include/configs/vexpress_common.h
++++ b/include/configs/vexpress_common.h
+@@ -167,6 +167,9 @@
+ #define CONFIG_SYS_LOAD_ADDR		(V2M_BASE + 0x8000)
+ #define LINUX_BOOT_PARAM_ADDR		(V2M_BASE + 0x2000)
+ 
++#define CONFIG_BOOTCOUNT_LIMIT
++#define CONFIG_BOOTCOUNT_ENV
++
+ /* Physical Memory Map */
+ #define CONFIG_NR_DRAM_BANKS		2
+ #define PHYS_SDRAM_1			(V2M_BASE)	/* SDRAM Bank #1 */
+@@ -197,6 +200,22 @@
+         func(DHCP, dhcp, na)
+ #include <config_distro_bootcmd.h>
+ 
++#undef CONFIG_BOOTCOMMAND
++#define CONFIG_BOOTCOMMAND \
++    "run mender_setup; " \
++    "run qemu_boot"
++
++#define MENDER_QEMU_ENV_SETTINGS                                        \
++    "qemu_kernel_addr=0x70000000\0"                                     \
++                                                                        \
++    "qemu_dtb_addr=0x6fc00000\0"                                        \
++                                                                        \
++    "qemu_boot=load ${mender_uboot_root} ${qemu_kernel_addr} /boot/zImage; " \
++    "load ${mender_uboot_root} ${qemu_dtb_addr} /boot/vexpress-v2p-ca9.dtb; " \
++    "setenv bootargs root=${mender_kernel_root} console=tty0 console=ttyAMA0,115200n8; " \
++    "bootz ${qemu_kernel_addr} - ${qemu_dtb_addr} ; "                   \
++    "reset\0"
++
+ #ifdef CONFIG_VEXPRESS_ORIGINAL_MEMORY_MAP
+ #define CONFIG_PLATFORM_ENV_SETTINGS \
+ 		"loadaddr=0x80008000\0" \
+@@ -220,6 +239,7 @@
+ #endif
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+ 		CONFIG_PLATFORM_ENV_SETTINGS \
++		MENDER_QEMU_ENV_SETTINGS \
+                 BOOTENV \
+ 		"console=ttyAMA0,38400n8\0" \
+ 		"dram=1024M\0" \
+@@ -265,11 +285,8 @@
+ #define CONFIG_ENV_OVERWRITE		1
+ 
+ /* Store environment at top of flash */
+-#define CONFIG_ENV_IS_IN_FLASH		1
+-#define CONFIG_ENV_OFFSET		(PHYS_FLASH_SIZE - \
+-					(2 * CONFIG_ENV_SECT_SIZE))
+-#define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE1 + \
+-					 CONFIG_ENV_OFFSET)
++#define CONFIG_ENV_IS_IN_MMC		1
++
+ #define CONFIG_SYS_FLASH_PROTECTION	/* The devices have real protection */
+ #define CONFIG_SYS_FLASH_EMPTY_INFO	/* flinfo indicates empty blocks */
+ #define CONFIG_SYS_FLASH_BANKS_LIST	{ CONFIG_SYS_FLASH_BASE0, \
+-- 
+2.7.4
+

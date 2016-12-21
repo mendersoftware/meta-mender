@@ -1,0 +1,40 @@
+From eb40f711ee831be664d0bd4f7c4dbce7c2521cba Mon Sep 17 00:00:00 2001
+From: Mirza Krak <mirza.krak@gmail.com>
+Date: Sun, 30 Oct 2016 21:28:43 +0100
+Subject: [PATCH 1/1] configs: rpi: enable mender requirements
+
+Which are CONFIG_BOOTCOUNT_ENV and CONFIG_BOOTCOUNT_LIMIT.
+
+Mender also requires that the environment is on MMC
+(CONFIG_ENV_IS_IN_MMC)
+
+Signed-off-by: Mirza Krak <mirza.krak@gmail.com>
+---
+ include/configs/rpi.h | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/include/configs/rpi.h b/include/configs/rpi.h
+index 4406366..5bf258b 100644
+--- a/include/configs/rpi.h
++++ b/include/configs/rpi.h
+@@ -118,14 +118,12 @@
+
+ /* Environment */
+ #define CONFIG_ENV_SIZE			SZ_16K
+-#define CONFIG_ENV_IS_IN_FAT
+-#define FAT_ENV_INTERFACE		"mmc"
+-#define FAT_ENV_DEVICE_AND_PART		"0:1"
+-#define FAT_ENV_FILE			"uboot.env"
+-#define CONFIG_FAT_WRITE
++#define CONFIG_ENV_IS_IN_MMC
+ #define CONFIG_ENV_VARS_UBOOT_CONFIG
+ #define CONFIG_SYS_LOAD_ADDR		0x1000000
+ #define CONFIG_PREBOOT			"usb start"
++#define CONFIG_BOOTCOUNT_ENV
++#define CONFIG_BOOTCOUNT_LIMIT
+
+ /* Shell */
+ #define CONFIG_SYS_MAXARGS		16
+--
+2.1.4
+
