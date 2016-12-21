@@ -124,10 +124,10 @@ IMAGE_CMD_sdimg() {
                           ${MENDER_DATA_PART_SIZE_MB} - \
                           ${MENDER_PARTITIONING_OVERHEAD_MB} - \
                           $boot_env_size_mb)
-    ROOTFS_SIZE=$(expr $REMAINING_SIZE / 2)
+    CALC_ROOTFS_SIZE=$(expr $REMAINING_SIZE / 2)
 
     # create rootfs
-    dd if=/dev/zero of=${WORKDIR}/rootfs.$FSTYPE count=0 seek=$ROOTFS_SIZE bs=1M
+    dd if=/dev/zero of=${WORKDIR}/rootfs.$FSTYPE count=0 seek=$CALC_ROOTFS_SIZE bs=1M
     mkfs.$FSTYPE -F -i 4096 ${WORKDIR}/rootfs.$FSTYPE -d ${IMAGE_ROOTFS}
     ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/active
     ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/inactive
