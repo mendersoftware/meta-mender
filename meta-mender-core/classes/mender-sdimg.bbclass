@@ -126,6 +126,12 @@ IMAGE_CMD_sdimg() {
                           $boot_env_size_mb)
     CALC_ROOTFS_SIZE=$(expr $REMAINING_SIZE / 2)
 
+    # create rootfs
+    dd if=/dev/zero of=${WORKDIR}/rootfs.$FSTYPE count=0 seek=$CALC_ROOTFS_SIZE bs=1M
+    mkfs.$FSTYPE -F -i 4096 ${WORKDIR}/rootfs.$FSTYPE -d ${IMAGE_ROOTFS}
+    ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/active
+    ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/inactive
+
     MENDER_PARTITION_ALIGNMENT_KB=$(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024)
 
     rm -rf "${WORKDIR}/data" || true
@@ -172,10 +178,10 @@ EOF
     fi
 
     cat >> "$wks" <<EOF
-part /boot   --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align $MENDER_PARTITION_ALIGNMENT_KB --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
-part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label primary --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size $CALC_ROOTFS_SIZE
-part         --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size $CALC_ROOTFS_SIZE
-part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size ${MENDER_DATA_PART_SIZE_MB}
+part /boot   --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align $MENDER_PARTITION_ALIGNMENT_KB --active --size ${MENDER_BOOT_PART_SIZE_MB}
+part /       --source fsimage --sourceparams=file="${WORKDIR}/active" --ondisk mmcblk0 --label primary --align $MENDER_PARTITION_ALIGNMENT_KB
+part         --source fsimage --sourceparams=file="${WORKDIR}/inactive" --ondisk mmcblk0 --label secondary --align $MENDER_PARTITION_ALIGNMENT_KB
+part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align $MENDER_PARTITION_ALIGNMENT_KB
 EOF
 
     # Call WIC
