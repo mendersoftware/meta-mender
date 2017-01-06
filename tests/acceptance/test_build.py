@@ -24,7 +24,7 @@ class TestBuild:
         """Test that the md5sum we have on record matches the server certificate.
         This makes sure the warning about this certificate is correct."""
 
-        output = subprocess.check_output(["md5sum", "../../meta-mender-core/recipes-mender/mender/files/server.crt"])
+        output = subprocess.check_output(["md5sum", "../../meta-mender-demo/recipes-mender/mender/files/server.crt"])
 
         # Crude check, just make sure it occurs in the build file.
         subprocess.check_call("fgrep %s ../../meta-mender-core/recipes-mender/mender/mender_*.bb >/dev/null 2>&1"
