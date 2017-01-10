@@ -18,7 +18,6 @@ inherit go
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https \
            file://mender.service \
            file://mender.conf \
-           file://server.crt \
           "
 
 SRCREV = "${AUTOREV}"
@@ -56,6 +55,10 @@ do_compile() {
   export PATH
 
   DEFAULT_CERT_MD5="e034532805e44b9125b443c32bbde581"
+
+  if [ ! -f ${WORKDIR}/server.crt ]; then
+    bbfatal "You have not provided a public server certificate. Please add the desired server certificate to the SRC_URI list, under the name 'server.crt'."
+  fi
 
   if [ "$(md5sum ${WORKDIR}/server.crt | awk '{ print $1 }')" = $DEFAULT_CERT_MD5 ]; then
     bbwarn "You are building with the default server certificate, which is not intended for production use"
