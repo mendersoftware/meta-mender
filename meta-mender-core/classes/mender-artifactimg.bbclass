@@ -6,7 +6,7 @@ IMAGE_CMD_mender () {
     set -x
 
     if [ -z "${MENDER_ARTIFACT_NAME}" ]; then
-        bberror "Need to define MENDER_ARTIFACT_NAME variable."
+        bbfatal "Need to define MENDER_ARTIFACT_NAME variable."
     fi
 
     # Trim leading/trailing spaces, and replace spaces with commas for
