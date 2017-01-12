@@ -62,6 +62,11 @@ MENDER_BOOT_PART_SIZE_MB ?= "16"
 # erase block is smaller.
 MENDER_PARTITION_ALIGNMENT_MB ?= "8"
 
+# The reserved space between the partition table and the first partition.
+# Most people don't need to set this, and it will be automatically overridden
+# in mender-uboot.bbclass.
+MENDER_STORAGE_RESERVED_RAW_SPACE ??= "0"
+
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 
