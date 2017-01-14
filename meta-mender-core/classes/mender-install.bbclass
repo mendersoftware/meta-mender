@@ -16,6 +16,11 @@ MENDER_BOOT_PART ??= "${MENDER_STORAGE_DEVICE_BASE}1"
 MENDER_ROOTFS_PART_A ??= "${MENDER_STORAGE_DEVICE_BASE}2"
 MENDER_ROOTFS_PART_B ??= "${MENDER_STORAGE_DEVICE_BASE}3"
 
+# The names of the two rootfs partitions in the A/B partition layout. By default
+# it is the same name as MENDER_ROOTFS_PART_A and MENDER_ROOTFS_B
+MENDER_ROOTFS_PART_A_NAME ??= "${MENDER_ROOTFS_PART_A}"
+MENDER_ROOTFS_PART_B_NAME ??= "${MENDER_ROOTFS_PART_B}"
+
 # The partition number holding the data partition.
 MENDER_DATA_PART ??= "${MENDER_STORAGE_DEVICE_BASE}5"
 
