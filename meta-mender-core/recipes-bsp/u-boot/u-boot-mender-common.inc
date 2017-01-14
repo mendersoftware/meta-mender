@@ -26,7 +26,10 @@ do_provide_mender_defines() {
         bbfatal "BOOTENV_SIZE (${BOOTENV_SIZE}) is too big to fit two copies inside MENDER_STORAGE_RESERVED_RAW_SPACE (${MENDER_STORAGE_RESERVED_RAW_SPACE}) with proper alignment. Please increase MENDER_STORAGE_RESERVED_RAW_SPACE manually and make sure it is an *even* multiple of MENDER_PARTITION_ALIGNMENT_KB (in bytes)."
     fi
 
-    MENDER_BOOT_PART_NUMBER=`get_part_number_from_device ${MENDER_BOOT_PART}`
+    if [ -n "${MENDER_BOOT_PART}" ]; then
+        MENDER_BOOT_PART_NUMBER=`get_part_number_from_device ${MENDER_BOOT_PART}`
+    fi
+
     MENDER_ROOTFS_PART_A_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_A}`
     MENDER_ROOTFS_PART_B_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_B}`
 
