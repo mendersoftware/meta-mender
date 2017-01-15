@@ -1,0 +1,48 @@
+From 6fa5abeec3ae1fd163b3e53be637d87c619cbd0e Mon Sep 17 00:00:00 2001
+From: Mirza Krak <mirza.krak@gmail.com>
+Date: Sun, 29 Jan 2017 22:19:13 +0100
+Subject: [PATCH 1/1] colibri_vf: disable FIT image, enable UBIFS
+
+FIT image support was added to support the Toradex Easy Installer. But
+enabling UBIFS support bloats the bootloader over the "maximum" edge
+when FIT is enabled.
+
+We do not require FIT image support for Mender but we do require UBIFS
+support, hence we disable FIT.
+
+Signed-off-by: Mirza Krak <mirza.krak@gmail.com>
+---
+ configs/colibri_vf_defconfig | 1 -
+ include/configs/colibri_vf.h | 4 ++++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/configs/colibri_vf_defconfig b/configs/colibri_vf_defconfig
+index cf2d87a..205b860 100644
+--- a/configs/colibri_vf_defconfig
++++ b/configs/colibri_vf_defconfig
+@@ -2,7 +2,6 @@ CONFIG_ARM=y
+ CONFIG_TARGET_COLIBRI_VF=y
+ CONFIG_DM_SERIAL=y
+ CONFIG_DEFAULT_DEVICE_TREE="vf610-colibri"
+-CONFIG_FIT=y
+ CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/toradex/colibri_vf/imximage.cfg,ENV_IS_IN_NAND,IMX_NAND"
+ CONFIG_BOOTDELAY=1
+ CONFIG_VERSION_VARIABLE=y
+diff --git a/include/configs/colibri_vf.h b/include/configs/colibri_vf.h
+index 9fc65a5..1940de4 100644
+--- a/include/configs/colibri_vf.h
++++ b/include/configs/colibri_vf.h
+@@ -65,6 +65,10 @@
+ #define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
+ #define CONFIG_BAUDRATE			115200
+ 
++/* UBIFS support */
++#define CONFIG_LZO
++#define CONFIG_CMD_UBIFS	/* increases size by almost 60 KB */
++
+ /* NAND support */
+ #define CONFIG_CMD_NAND
+ #define CONFIG_CMD_WRITEBCB
+-- 
+2.1.4
+
