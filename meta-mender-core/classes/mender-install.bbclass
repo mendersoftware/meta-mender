@@ -61,7 +61,7 @@ MENDER_BOOT_PART_SIZE_MB ?= "16"
 #
 # 8MB alignment is a safe setting that might waste some space if the
 # erase block is smaller.
-MENDER_PARTITION_ALIGNMENT_MB ?= "8"
+MENDER_PARTITION_ALIGNMENT_KB ?= "8192"
 
 # The reserved space between the partition table and the first partition.
 # Most people don't need to set this, and it will be automatically overridden
@@ -70,6 +70,10 @@ MENDER_STORAGE_RESERVED_RAW_SPACE ??= "0"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
+python() {
+    if d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True):
+        bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
+}
 
 PREFERRED_VERSION_go_cross = "1.6%"
 
@@ -82,14 +86,13 @@ IMAGE_INSTALL_append = " \
 # Estimate how much space may be lost due to partitioning alignment. Use a
 # simple heuristic for now - 4 partitions * alignment
 def mender_get_part_overhead(d):
-    align = d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True)
+    align = d.getVar('MENDER_PARTITION_ALIGNMENT_KB', True)
     if align:
-        return 4 * int(align)
+        return 4 * (int(align) / 1024)
     return 0
 
 # Overhead lost due to partitioning.
 MENDER_PARTITIONING_OVERHEAD_MB ?= "${@mender_get_part_overhead(d)}"
-
 
 def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, overhead_mb, reserved_space_size):
     return int(((total_mb - boot_mb - data_mb - overhead_mb) * 1048576 - reserved_space_size) / 2 / 1024)

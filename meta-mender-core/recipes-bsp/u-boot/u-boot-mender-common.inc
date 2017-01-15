@@ -18,12 +18,12 @@ SRC_URI_append = " file://0002-Integration-of-Mender-boot-code-into-U-Boot.patch
 # Generic tasks.
 ################################################################################
 do_provide_mender_defines() {
-    if [ $(expr ${MENDER_STORAGE_RESERVED_RAW_SPACE} % \( ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024 \* 1024 \* 2 \)) -ne 0 ]; then
-        bbfatal "MENDER_STORAGE_RESERVED_RAW_SPACE is not an even multiple of MENDER_PARTITION_ALIGNMENT_MB."
+    if [ $(expr ${MENDER_STORAGE_RESERVED_RAW_SPACE} % \( ${MENDER_PARTITION_ALIGNMENT_KB} \* 1024 \* 2 \)) -ne 0 ]; then
+        bbfatal "MENDER_STORAGE_RESERVED_RAW_SPACE is not an even multiple of MENDER_PARTITION_ALIGNMENT_KB."
     fi
 
     if [ ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} -gt ${MENDER_STORAGE_RESERVED_RAW_SPACE} ]; then
-        bbfatal "BOOTENV_SIZE (${BOOTENV_SIZE}) is too big to fit two copies inside MENDER_STORAGE_RESERVED_RAW_SPACE (${MENDER_STORAGE_RESERVED_RAW_SPACE}) with proper alignment. Please increase MENDER_STORAGE_RESERVED_RAW_SPACE manually and make sure it is an *even* multiple of MENDER_PARTITION_ALIGNMENT_MB (in bytes)."
+        bbfatal "BOOTENV_SIZE (${BOOTENV_SIZE}) is too big to fit two copies inside MENDER_STORAGE_RESERVED_RAW_SPACE (${MENDER_STORAGE_RESERVED_RAW_SPACE}) with proper alignment. Please increase MENDER_STORAGE_RESERVED_RAW_SPACE manually and make sure it is an *even* multiple of MENDER_PARTITION_ALIGNMENT_KB (in bytes)."
     fi
 
     MENDER_BOOT_PART_NUMBER=`get_part_number_from_device ${MENDER_BOOT_PART}`
@@ -73,7 +73,7 @@ addtask do_provide_mender_defines after do_patch before do_configure
 # The only reason it's not evaluated the same way is that we don't have the
 # necessary information (BOOTENV_SIZE) when evaluating
 # MENDER_STORAGE_RESERVED_RAW_SPACE.
-MENDER_BOOTENV_TOTAL_ALIGNED_SIZE = "${@mender_get_env_total_aligned_size(${BOOTENV_SIZE}, ${MENDER_PARTITION_ALIGNMENT_MB})}"
+MENDER_BOOTENV_TOTAL_ALIGNED_SIZE = "${@mender_get_env_total_aligned_size(${BOOTENV_SIZE}, ${MENDER_PARTITION_ALIGNMENT_KB})}"
 
 def mender_get_env_offset(start_offset, index, total_aligned_size):
     if index == 1:
