@@ -40,8 +40,8 @@ index 0000000..043f97d
 +
 +#include <config_mender_defines.h>
 +
-+#ifndef CONFIG_ENV_IS_IN_MMC
-+# error CONFIG_ENV_IS_IN_MMC is required for Mender to work
++#if !defined(CONFIG_ENV_IS_IN_MMC) && !defined(CONFIG_ENV_IS_IN_NAND)
++# error CONFIG_ENV_IS_IN_MMC or CONFIG_ENV_IS_IN_NAND is required for Mender to work
 +#endif
 +
 +#ifndef CONFIG_BOOTCOUNT_LIMIT
