@@ -6,7 +6,13 @@ IMAGE_CMD_mender () {
     set -x
 
     if [ -z "${MENDER_ARTIFACT_NAME}" ]; then
-        bberror "Need to define MENDER_ARTIFACT_NAME variable."
+        bbfatal "Need to define MENDER_ARTIFACT_NAME variable."
+    fi
+
+    rootfs_size=$(stat -Lc %s ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE})
+    calc_rootfs_size=$(expr ${MENDER_CALC_ROOTFS_SIZE} \* 1024)
+    if [ $rootfs_size -gt $calc_rootfs_size ]; then
+        bbwarn "Size of rootfs is greater than the calculated partition space ($rootfs_size > $calc_rootfs_size). This image won't fit on a device with the current storage configuration. Make sure IMAGE_ROOTFS_EXTRA_SPACE is set to 0, and try reducing IMAGE_OVERHEAD_FACTOR if it is higher than 1.0."
     fi
 
     # Trim leading/trailing spaces, and replace spaces with commas for

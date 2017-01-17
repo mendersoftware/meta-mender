@@ -144,3 +144,16 @@ class TestMenderArtifact:
         """Test that the mender-artifact tool validates the update successfully."""
 
         subprocess.check_call(["mender-artifact", "validate", latest_mender_image])
+
+
+    def test_artifacts_rootfs_size(self, latest_mender_image, bitbake_path, bitbake_variables):
+        """Test that the rootfs has the expected size. This relies on
+        IMAGE_ROOTFS_SIZE *not* being overridden in the build."""
+
+        output = subprocess.check_output(["mender-artifact", "read", latest_mender_image])
+
+        match = re.search("^ *size: *([0-9]+) *$", output, flags=re.MULTILINE)
+        assert(match is not None)
+        size_from_artifact = int(match.group(1))
+        size_from_build = int(bitbake_variables["MENDER_CALC_ROOTFS_SIZE"]) * 1024
+        assert(size_from_artifact == size_from_build)

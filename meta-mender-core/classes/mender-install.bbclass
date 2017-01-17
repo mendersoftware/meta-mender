@@ -62,6 +62,11 @@ MENDER_BOOT_PART_SIZE_MB ?= "16"
 # erase block is smaller.
 MENDER_PARTITION_ALIGNMENT_MB ?= "8"
 
+# The reserved space between the partition table and the first partition.
+# Most people don't need to set this, and it will be automatically overridden
+# in mender-uboot.bbclass.
+MENDER_STORAGE_RESERVED_RAW_SPACE ??= "0"
+
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 
@@ -72,3 +77,27 @@ IMAGE_INSTALL_append = " \
     ca-certificates \
     mender-artifact-info \
     "
+
+# Estimate how much space may be lost due to partitioning alignment. Use a
+# simple heuristic for now - 4 partitions * alignment
+def mender_get_part_overhead(d):
+    align = d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True)
+    if align:
+        return 4 * int(align)
+    return 0
+
+# Overhead lost due to partitioning.
+MENDER_PARTITIONING_OVERHEAD_MB ?= "${@mender_get_part_overhead(d)}"
+
+
+def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, overhead_mb, reserved_space_size):
+    return int(((total_mb - boot_mb - data_mb - overhead_mb) * 1048576 - reserved_space_size) / 2 / 1024)
+
+# Auto detect image size from other settings.
+MENDER_CALC_ROOTFS_SIZE = "${@mender_calculate_rootfs_size_kb(${MENDER_STORAGE_TOTAL_SIZE_MB}, \
+                                                              ${MENDER_BOOT_PART_SIZE_MB}, \
+                                                              ${MENDER_DATA_PART_SIZE_MB}, \
+                                                              ${MENDER_PARTITIONING_OVERHEAD_MB}, \
+                                                              ${MENDER_STORAGE_RESERVED_RAW_SPACE})}"
+# Gently apply this as the default image size.
+IMAGE_ROOTFS_SIZE ?= "${MENDER_CALC_ROOTFS_SIZE}"
