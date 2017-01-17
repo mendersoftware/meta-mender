@@ -2,6 +2,20 @@
 
 inherit mender-install
 
+# ------------------------------ CONFIGURATION ---------------------------------
+
+# The interface to load partitions from. This is normally empty, in which case
+# it is deduced from MENDER_STORAGE_DEVICE. Only use this if the interface
+# cannot be deduced from MENDER_STORAGE_DEVICE.
+MENDER_UBOOT_STORAGE_INTERFACE ?= ""
+
+# The device number of the interface to load partitions from. This is normally
+# empty, in which case it is deduced from MENDER_STORAGE_DEVICE. Only use this
+# if the indexing of devices is different in U-Boot and in the Linux kernel.
+MENDER_UBOOT_STORAGE_DEVICE ?= ""
+
+# --------------------------- END OF CONFIGURATION -----------------------------
+
 EXTRA_IMAGEDEPENDS += "u-boot"
 PACKAGECONFIG_append_pn-mender = " u-boot"
 
