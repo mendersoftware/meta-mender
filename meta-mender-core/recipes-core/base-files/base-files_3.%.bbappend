@@ -14,7 +14,10 @@ do_patch_device_menderimage() {
     fi
 
     sed -i -e 's,@MENDER_BOOT_PART@,${MENDER_BOOT_PART},g' ${S}/fstab
+    sed -i -e 's,@MENDER_BOOT_FSTYPE@,${MENDER_BOOT_FSTYPE},g' ${S}/fstab
+
     sed -i -e 's,@MENDER_DATA_PART@,${MENDER_DATA_PART},g' ${S}/fstab
+    sed -i -e 's,@MENDER_DATA_FSTYPE@,${MENDER_DATA_FSTYPE},g' ${S}/fstab
 }
 addtask do_patch_device after do_patch before do_install
 

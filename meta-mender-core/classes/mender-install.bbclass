@@ -19,6 +19,12 @@ MENDER_ROOTFS_PART_B ??= "${MENDER_STORAGE_DEVICE_BASE}3"
 # The partition number holding the data partition.
 MENDER_DATA_PART ??= "${MENDER_STORAGE_DEVICE_BASE}5"
 
+# Filesystem type of data partition. This configuration is used in fstab. Most
+# filesystems can be auto detected, but some can not and hence we allow the
+# user to override this.
+MENDER_DATA_FSTYPE ??= "auto"
+MENDER_BOOT_FSTYPE ??= "auto"
+
 # Device type of device when making an initial partitioned image.
 MENDER_DEVICE_TYPE ?= "${MACHINE}"
 
