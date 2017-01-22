@@ -3,21 +3,21 @@
 # ------------------------------ CONFIGURATION ---------------------------------
 
 # The storage device that holds the device partitions.
-MENDER_STORAGE_DEVICE ?= "/dev/mmcblk0"
+MENDER_STORAGE_DEVICE ??= "/dev/mmcblk0"
 
 # The base name of the devices that hold individual partitions.
 # This is often MENDER_STORAGE_DEVICE + "p".
-MENDER_STORAGE_DEVICE_BASE ?= "${MENDER_STORAGE_DEVICE}p"
+MENDER_STORAGE_DEVICE_BASE ??= "${MENDER_STORAGE_DEVICE}p"
 
 # The partition number holding the boot partition.
-MENDER_BOOT_PART ?= "${MENDER_STORAGE_DEVICE_BASE}1"
+MENDER_BOOT_PART ??= "${MENDER_STORAGE_DEVICE_BASE}1"
 
 # The numbers of the two rootfs partitions in the A/B partition layout.
-MENDER_ROOTFS_PART_A ?= "${MENDER_STORAGE_DEVICE_BASE}2"
-MENDER_ROOTFS_PART_B ?= "${MENDER_STORAGE_DEVICE_BASE}3"
+MENDER_ROOTFS_PART_A ??= "${MENDER_STORAGE_DEVICE_BASE}2"
+MENDER_ROOTFS_PART_B ??= "${MENDER_STORAGE_DEVICE_BASE}3"
 
 # The partition number holding the data partition.
-MENDER_DATA_PART ?= "${MENDER_STORAGE_DEVICE_BASE}5"
+MENDER_DATA_PART ??= "${MENDER_STORAGE_DEVICE_BASE}5"
 
 # Device type of device when making an initial partitioned image.
 MENDER_DEVICE_TYPE ?= "${MACHINE}"

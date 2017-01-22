@@ -1,7 +1,7 @@
 
 IMAGE_DEPENDS_mender = "mender-artifact-native"
 
-ARTIFACTIMG_FSTYPE  ?= "ext4"
+ARTIFACTIMG_FSTYPE  ??= "ext4"
 IMAGE_CMD_mender () {
     set -x
 
