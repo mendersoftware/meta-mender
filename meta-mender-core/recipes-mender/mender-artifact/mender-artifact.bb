@@ -2,11 +2,6 @@ DESCRIPTION = "Mender image artifact library"
 GO_IMPORT = "github.com/mendersoftware/mender-artifact"
 
 inherit go
-# these are fixed in oe-meta-go
-GOBIN_FINAL_class-native = "${GOROOT_FINAL}/bin"
-GOROOT_class-native = "${STAGING_LIBDIR_NATIVE}/go"
-export GOROOT
-export GOBIN_FINAL
 
 SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https"
 
