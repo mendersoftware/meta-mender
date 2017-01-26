@@ -50,6 +50,8 @@ inherit image_types
 
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
 
+IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} wic-tools"
+
 python() {
     fslist = d.getVar('IMAGE_FSTYPES', None).split()
     for fs in fslist:
