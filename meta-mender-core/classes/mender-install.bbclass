@@ -60,7 +60,8 @@ MENDER_STORAGE_RESERVED_RAW_SPACE ??= "0"
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 
-PREFERRED_VERSION_go_cross = "1.6%"
+PREFERRED_VERSION_go-cross-arm ?= "1.7.%"
+PREFERRED_VERSION_go-native ?= "1.7.%"
 
 IMAGE_INSTALL_append = " \
     mender \
