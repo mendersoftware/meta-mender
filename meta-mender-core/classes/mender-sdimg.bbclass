@@ -50,6 +50,8 @@ inherit image_types
 
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
 
+IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} wic-tools"
+
 python() {
     fslist = d.getVar('IMAGE_FSTYPES', None).split()
     for fs in fslist:
@@ -169,7 +171,7 @@ EOF
     # Call WIC
     outimgname="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-sdimg"
-    BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR_TARGET}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
+    BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/build/$(basename "${wks%.wks}")"*.direct "$outimgname"
     rm -rf "$wicout/"
 
