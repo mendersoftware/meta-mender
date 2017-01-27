@@ -24,6 +24,9 @@ MENDER_ROOTFS_PART_B_NAME ??= "${MENDER_ROOTFS_PART_B}"
 # The partition number holding the data partition.
 MENDER_DATA_PART ??= "${MENDER_STORAGE_DEVICE_BASE}5"
 
+# The name of of the MTD part holding your UBI volumes.
+MENDER_MTD_UBI_DEVICE_NAME ??= ""
+
 # Filesystem type of data partition. This configuration is used in fstab. Most
 # filesystems can be auto detected, but some can not and hence we allow the
 # user to override this.
