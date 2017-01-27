@@ -147,21 +147,19 @@ class TestSdimg:
         # Subsequent partitions should start where previous one left off.
         assert(parts_start[1] == parts_end[0])
         assert(parts_start[2] == parts_end[1])
-        # Except data partition, which is an extended partition, and starts one
-        # full alignment higher.
-        assert(parts_start[4] == parts_end[2] + alignment)
+        assert(parts_start[3] == parts_end[2])
 
         # Partitions should extend for their size rounded up to alignment.
         # No set size for Rootfs partitions, so cannot check them.
         # Boot partition.
         assert(parts_end[0] == parts_start[0] + align_up(boot_part_size, alignment))
         # Data partition.
-        assert(parts_end[4] == parts_start[4] + align_up(data_part_size, alignment))
+        assert(parts_end[3] == parts_start[3] + align_up(data_part_size, alignment))
 
         # End of the last partition can be smaller than total image size, but
         # not by more than the calculated overhead..
-        assert(parts_end[4] <= total_size)
-        assert(parts_end[4] >= total_size - part_overhead)
+        assert(parts_end[3] <= total_size)
+        assert(parts_end[3] >= total_size - part_overhead)
 
 
     @pytest.mark.skipif(not e2cp_installed, reason="Needs e2tools to be installed")
@@ -169,9 +167,9 @@ class TestSdimg:
         """Test that device type file is correctly embedded."""
 
         try:
-            extract_partition(latest_sdimg, 5)
+            extract_partition(latest_sdimg, 4)
 
-            subprocess.check_call(["e2cp", "-p", "sdimg5.fs:mender/device_type", "."])
+            subprocess.check_call(["e2cp", "-p", "sdimg4.fs:mender/device_type", "."])
 
             assert(os.stat("device_type").st_mode & 0777 == 0444)
 
@@ -192,7 +190,7 @@ class TestSdimg:
 
         finally:
             try:
-                os.remove("sdimg5.fs")
+                os.remove("sdimg4.fs")
                 os.remove("device_type")
             except:
                 pass
@@ -202,10 +200,10 @@ class TestSdimg:
         """Test that the owner of files on the data partition is root."""
 
         try:
-            extract_partition(latest_sdimg, 5)
+            extract_partition(latest_sdimg, 4)
 
             def check_dir(dir):
-                e2ls = subprocess.Popen(["e2ls", "-l", "sdimg5.fs:%s" % dir], stdout=subprocess.PIPE)
+                e2ls = subprocess.Popen(["e2ls", "-l", "sdimg4.fs:%s" % dir], stdout=subprocess.PIPE)
                 entries = e2ls.stdout.readlines()
                 e2ls.wait()
 
@@ -229,6 +227,6 @@ class TestSdimg:
 
         finally:
             try:
-                os.remove("sdimg5.fs")
+                os.remove("sdimg4.fs")
             except:
                 pass

@@ -17,7 +17,7 @@ MENDER_ROOTFS_PART_A ?= "${MENDER_STORAGE_DEVICE_BASE}2"
 MENDER_ROOTFS_PART_B ?= "${MENDER_STORAGE_DEVICE_BASE}3"
 
 # The partition number holding the data partition.
-MENDER_DATA_PART ?= "${MENDER_STORAGE_DEVICE_BASE}5"
+MENDER_DATA_PART ?= "${MENDER_STORAGE_DEVICE_BASE}4"
 
 # Device type of device when making an initial partitioned image.
 MENDER_DEVICE_TYPE ?= "${MACHINE}"
