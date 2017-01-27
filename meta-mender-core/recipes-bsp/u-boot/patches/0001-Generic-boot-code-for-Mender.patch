@@ -82,7 +82,7 @@ new file mode 100644
 index 0000000..2c43fd3
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,76 @@
 +/*
 +  Copyright (C) 2016  Mender Software
 +
@@ -119,6 +119,8 @@ index 0000000..2c43fd3
 +    "bootcount=0\0"                                                     \
 +                                                                        \
 +    "upgrade_available=0\0"                                             \
++                                                                        \
++    "mender_mtd_ubi_dev_name=" MENDER_MTD_UBI_DEVICE_NAME "\0"          \
 +                                                                        \
 +    "mender_boot_part=" __stringify(MENDER_ROOTFS_PART_A_NUMBER) "\0"   \
 +    "mender_boot_part_name=" MENDER_ROOTFS_PART_A_NAME "\0"             \
@@ -157,6 +159,5 @@ index 0000000..2c43fd3
 +    "fi\0"
 +
 +#endif /* HEADER_ENV_MENDER_H */
--- 
 2.7.4
 
