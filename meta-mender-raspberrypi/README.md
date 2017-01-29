@@ -28,7 +28,7 @@ in addition to `meta-mender` dependencies.
 
         KERNEL_IMAGETYPE = "uImage"
 
-        MENDER_PARTITION_ALIGNMENT_MB = "4"
+        MENDER_PARTITION_ALIGNMENT_KB = "4096"
         MENDER_BOOT_PART_SIZE_MB = "40"
 
         IMAGE_DEPENDS_sdimg += " bcm2835-bootfiles"

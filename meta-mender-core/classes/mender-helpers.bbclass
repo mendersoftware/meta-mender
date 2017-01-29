@@ -31,6 +31,9 @@ get_part_number_from_device() {
         /dev/mmcblk[0-9]p[1-9])
             echo ${1##*[0-9]p}
             ;;
+        ubi[0-9]_[0-9])
+            echo ${1##*[0-9]_}
+            ;;
         *)
             bberror "Could not determine partition number from $1"
             exit 1

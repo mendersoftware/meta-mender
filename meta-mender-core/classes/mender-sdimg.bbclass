@@ -116,8 +116,6 @@ IMAGE_CMD_sdimg() {
                           $boot_env_size_mb)
     CALC_ROOTFS_SIZE=$(expr $REMAINING_SIZE / 2)
 
-    MENDER_PARTITION_ALIGNMENT_KB=$(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024)
-
     rm -rf "${WORKDIR}/data" || true
     mkdir -p "${WORKDIR}/data"
 
@@ -162,10 +160,10 @@ EOF
     fi
 
     cat >> "$wks" <<EOF
-part /boot   --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align $MENDER_PARTITION_ALIGNMENT_KB --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
-part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label primary --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size $CALC_ROOTFS_SIZE
-part         --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size $CALC_ROOTFS_SIZE
-part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size ${MENDER_DATA_PART_SIZE_MB}
+part /boot   --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
+part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size $CALC_ROOTFS_SIZE
+part         --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size $CALC_ROOTFS_SIZE
+part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 EOF
 
     # Call WIC

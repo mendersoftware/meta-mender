@@ -8,13 +8,21 @@ do_patch_device() {
     true
 }
 do_patch_device_menderimage() {
-    if [ -z "${MENDER_BOOT_PART}" ] || [ -z "${MENDER_DATA_PART}" ]; then
-        bberror "MENDER_BOOT_PART or MENDER_DATA_PART not set."
+    if [ -z "${MENDER_DATA_PART}" ]; then
+        bberror "MENDER_DATA_PART not set."
         exit 1
     fi
 
-    sed -i -e 's,@MENDER_BOOT_PART@,${MENDER_BOOT_PART},g' ${S}/fstab
+    if [ -n "${MENDER_BOOT_PART}" ]; then
+        sed -i -e 's,@MENDER_BOOT_PART@,${MENDER_BOOT_PART},g' ${S}/fstab
+        sed -i -e 's,@MENDER_BOOT_FSTYPE@,${MENDER_BOOT_FSTYPE},g' ${S}/fstab
+    else
+        bbdebug 2 "MENDER_BOOT_PART not set. Removing from fstab..."
+        sed -i '/^@MENDER_BOOT_PART@/ d' ${S}/fstab
+    fi
+
     sed -i -e 's,@MENDER_DATA_PART@,${MENDER_DATA_PART},g' ${S}/fstab
+    sed -i -e 's,@MENDER_DATA_FSTYPE@,${MENDER_DATA_FSTYPE},g' ${S}/fstab
 }
 addtask do_patch_device after do_patch before do_install
 
