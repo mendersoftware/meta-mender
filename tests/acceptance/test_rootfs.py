@@ -23,15 +23,12 @@ import re
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
-e2cp_installed = subprocess.call(["which", "e2cp"]) == 0
-
 class TestRootfs:
-    @pytest.mark.skipif(not e2cp_installed, reason="Needs e2tools to be installed")
-    def test_artifact_info(self, latest_rootfs, bitbake_variables):
+    def test_artifact_info(self, latest_rootfs, bitbake_variables, bitbake_path):
         """Test that artifact_info file is correctly embedded."""
 
         try:
-            subprocess.check_call(["e2cp", "-p", "%s:/etc/mender/artifact_info" % latest_rootfs, "."])
+            subprocess.check_call(["debugfs", "-R", "dump -p /etc/mender/artifact_info artifact_info", latest_rootfs])
             fd = open("artifact_info")
             lines = fd.readlines()
             assert(len(lines) == 1)
