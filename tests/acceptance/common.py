@@ -297,13 +297,16 @@ def successful_image_update_mender(request, latest_mender_image):
 
     return "successful_image_update.mender"
 
-def get_bitbake_variables(target):
+@pytest.fixture(scope="session")
+def bitbake_variables():
+    """Returns a map of all bitbake variables active for the build."""
+
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     current_dir = os.open(".", os.O_RDONLY)
     os.chdir(os.environ['BUILDDIR'])
 
-    output = subprocess.Popen(["bitbake", "-e", target], stdout=subprocess.PIPE)
+    output = subprocess.Popen(["bitbake", "-e", "core-image-minimal"], stdout=subprocess.PIPE)
     matcher = re.compile('^(?:export )?([A-Za-z][^=]*)="(.*)"$')
     ret = {}
     for line in output.stdout:
@@ -317,35 +320,14 @@ def get_bitbake_variables(target):
 
     return ret
 
-@pytest.fixture(scope="session")
-def bitbake_variables():
-    """Returns a map of all bitbake variables active for the build."""
-
-    return get_bitbake_variables("core-image-minimal")
-
-@pytest.fixture(scope="session")
-def bitbake_path_string():
-    """Fixture that returns the PATH we need for our testing tools"""
-
-    current_dir = os.open(".", os.O_RDONLY)
-    os.chdir(os.environ['BUILDDIR'])
-
-    # See the recipe for details about this call.
-    subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot", "mender-test-dependencies"])
-
-    os.fchdir(current_dir)
-
-    bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
-
-    return bb_testing_variables['PATH']
-
 @pytest.fixture(scope="function")
-def bitbake_path(request, bitbake_path_string):
-    """Fixture that enables the PATH we need for our testing tools."""
+def bitbake_path(request, bitbake_variables):
+    """Fixture that enables the same PATH as bitbake does when it builds for the
+    test that invokes it."""
 
     old_path = os.environ['PATH']
 
-    os.environ['PATH'] = bitbake_path_string
+    os.environ['PATH'] = bitbake_variables['PATH']
 
     def path_restore():
         os.environ['PATH'] = old_path
