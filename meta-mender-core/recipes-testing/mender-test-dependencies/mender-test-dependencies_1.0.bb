@@ -1,7 +1,7 @@
 # This is a dummy recipe, only meant to populate a sysroot that the tests can
 # use, and not meant for real building.
 
-DEPENDS = "mender-artifact-native e2fsprogs-native util-linux-native"
+DEPENDS = "mender-artifact-native"
 
 inherit native
 
