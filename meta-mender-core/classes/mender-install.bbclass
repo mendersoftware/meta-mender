@@ -5,16 +5,6 @@
 # The storage device that holds the device partitions.
 MENDER_STORAGE_DEVICE ?= "/dev/mmcblk0"
 
-# The interface to load partitions from. This is normally empty, in which case
-# it is deduced from MENDER_STORAGE_DEVICE. Only use this if the interface
-# cannot be deduced from MENDER_STORAGE_DEVICE.
-MENDER_UBOOT_STORAGE_INTERFACE ?= ""
-
-# The device number of the interface to load partitions from. This is normally
-# empty, in which case it is deduced from MENDER_STORAGE_DEVICE. Only use this
-# if the indexing of devices is different in U-Boot and in the Linux kernel.
-MENDER_UBOOT_STORAGE_DEVICE ?= ""
-
 # The base name of the devices that hold individual partitions.
 # This is often MENDER_STORAGE_DEVICE + "p".
 MENDER_STORAGE_DEVICE_BASE ?= "${MENDER_STORAGE_DEVICE}p"
@@ -27,7 +17,7 @@ MENDER_ROOTFS_PART_A ?= "${MENDER_STORAGE_DEVICE_BASE}2"
 MENDER_ROOTFS_PART_B ?= "${MENDER_STORAGE_DEVICE_BASE}3"
 
 # The partition number holding the data partition.
-MENDER_DATA_PART ?= "${MENDER_STORAGE_DEVICE_BASE}5"
+MENDER_DATA_PART ?= "${MENDER_STORAGE_DEVICE_BASE}4"
 
 # Device type of device when making an initial partitioned image.
 MENDER_DEVICE_TYPE ?= "${MACHINE}"
@@ -62,13 +52,43 @@ MENDER_BOOT_PART_SIZE_MB ?= "16"
 # erase block is smaller.
 MENDER_PARTITION_ALIGNMENT_MB ?= "8"
 
+# The reserved space between the partition table and the first partition.
+# Most people don't need to set this, and it will be automatically overridden
+# in mender-uboot.bbclass.
+MENDER_STORAGE_RESERVED_RAW_SPACE ??= "0"
+
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 
-PREFERRED_VERSION_go_cross = "1.6%"
+PREFERRED_VERSION_go-cross-arm ?= "1.7.%"
+PREFERRED_VERSION_go-native ?= "1.7.%"
 
 IMAGE_INSTALL_append = " \
     mender \
     ca-certificates \
     mender-artifact-info \
     "
+
+# Estimate how much space may be lost due to partitioning alignment. Use a
+# simple heuristic for now - 4 partitions * alignment
+def mender_get_part_overhead(d):
+    align = d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True)
+    if align:
+        return 4 * int(align)
+    return 0
+
+# Overhead lost due to partitioning.
+MENDER_PARTITIONING_OVERHEAD_MB ?= "${@mender_get_part_overhead(d)}"
+
+
+def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, overhead_mb, reserved_space_size):
+    return int(((total_mb - boot_mb - data_mb - overhead_mb) * 1048576 - reserved_space_size) / 2 / 1024)
+
+# Auto detect image size from other settings.
+MENDER_CALC_ROOTFS_SIZE = "${@mender_calculate_rootfs_size_kb(${MENDER_STORAGE_TOTAL_SIZE_MB}, \
+                                                              ${MENDER_BOOT_PART_SIZE_MB}, \
+                                                              ${MENDER_DATA_PART_SIZE_MB}, \
+                                                              ${MENDER_PARTITIONING_OVERHEAD_MB}, \
+                                                              ${MENDER_STORAGE_RESERVED_RAW_SPACE})}"
+# Gently apply this as the default image size.
+IMAGE_ROOTFS_SIZE ?= "${MENDER_CALC_ROOTFS_SIZE}"

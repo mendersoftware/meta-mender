@@ -16,17 +16,6 @@ inherit mender-install
 ########## CONFIGURATION START - you can override these default
 ##########                       values in your local.conf
 
-# Estimate how much space may be lost due to partitioning alignment. Use a
-# simple heuristic for now - 4 partitions * alignment
-def get_overhead(d):
-    align = d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True)
-    if align:
-        return 4 * int(align)
-    return 0
-
-# Overhead lost due to partitioning.
-MENDER_PARTITIONING_OVERHEAD_MB ?= "${@get_overhead(d)}"
-
 python() {
     deprecated_vars = ['SDIMG_DATA_PART_DIR', 'SDIMG_DATA_PART_SIZE_MB',
                        'SDIMG_BOOT_PART_SIZE_MB', 'SDIMG_PARTITION_ALIGNMENT_MB']
@@ -60,6 +49,8 @@ inherit image
 inherit image_types
 
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
+
+IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} wic-tools"
 
 python() {
     fslist = d.getVar('IMAGE_FSTYPES', None).split()
@@ -115,9 +106,8 @@ IMAGE_CMD_sdimg() {
     # exist.
     mkdir -p "${IMAGE_ROOTFS}"
 
-    boot_env_size=$(stat -c '%s' "${DEPLOY_DIR_IMAGE}/uboot.env")
     # Round up to nearest MB.
-    boot_env_size_mb=$(expr \( $boot_env_size + 1048575 \) / 1048576)
+    boot_env_size_mb=$(expr \( ${MENDER_STORAGE_RESERVED_RAW_SPACE} + 1048575 \) / 1048576)
 
     REMAINING_SIZE=$(expr ${MENDER_STORAGE_TOTAL_SIZE_MB} - \
                           ${MENDER_BOOT_PART_SIZE_MB} - \
@@ -187,7 +177,7 @@ EOF
     # Call WIC
     outimgname="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-sdimg"
-    BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR_TARGET}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
+    BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/build/$(basename "${wks%.wks}")"*.direct "$outimgname"
     rm -rf "$wicout/"
 
