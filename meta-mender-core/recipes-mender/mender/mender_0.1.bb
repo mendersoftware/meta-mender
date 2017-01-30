@@ -40,6 +40,10 @@ FILES_${PN} += "${systemd_unitdir}/system/mender.service \
 # like. We disable those checks here.
 INSANE_SKIP_${PN} = "ldflags"
 
+# Patch submitted upstream to Go layer to remove this defaulting to "1". This
+# can be removed once that has been merged.
+INHIBIT_PACKAGE_STRIP = "0"
+
 GO_IMPORT = "github.com/mendersoftware/mender"
 
 PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
