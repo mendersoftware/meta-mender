@@ -44,10 +44,11 @@ class Helpers:
 
         alignment = int(bitbake_variables["MENDER_PARTITION_ALIGNMENT_MB"]) * 1024 * 1024
         env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
-        # Environment size, rounded up to nearest alignment.
-        env_aligned_size = int((env_size + alignment - 1) / alignment * alignment)
         offsets[0] = int(bitbake_variables["MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET"])
-        offsets[1] = offsets[0] + env_aligned_size
+        offsets[1] = offsets[0] + int(env_size / 2)
+
+        assert(offsets[0] % alignment == 0)
+        assert(offsets[1] % alignment == 0)
 
         return offsets
 
@@ -91,7 +92,7 @@ class TestUpdates:
 
         try:
             # Make a dummy/broken update
-            subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
+            subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
             subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
             run("mender -rootfs /var/tmp/image.mender")

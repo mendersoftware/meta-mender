@@ -34,8 +34,21 @@ def if_not_bbb(func):
 
 
 # Return Popen object
-@if_not_bbb
-def start_qemu():
+def start_qemu(latest_sdimg):
+    if pytest.config.getoption("bbb"):
+        return
+
+    # Make a disposable image.
+    try:
+        qemu_img = os.environ["QEMU_SYSTEM_ARM"]
+    except:
+        qemu_img = "qemu-system-arm"
+    qemu_img = re.sub("-system-arm$", "-img", qemu_img)
+    subprocess.check_call([qemu_img, "create", "-f", "qcow2", "-o",
+                           "backing_file=%s" % latest_sdimg,
+                           "test-image.qcow2"])
+
+    os.environ["VEXPRESS_SDIMG"] = "test-image.qcow2"
     proc = subprocess.Popen("../../meta-mender-qemu/scripts/mender-qemu")
     # Make sure we are connected.
     execute(run_after_connect, "true", hosts = conftest.current_hosts())
@@ -46,6 +59,10 @@ def start_qemu():
 def kill_qemu():
     os.system("pkill qemu-system-arm")
     time.sleep(1)
+    try:
+        os.remove("test-image.qcow2")
+    except:
+        pass
 
 @if_not_bbb
 def is_qemu_running():
@@ -215,7 +232,7 @@ def setup_bbb(request):
         request.addfinalizer(bbb_finalizer)
 
 @pytest.fixture(scope="module")
-def qemu_running(request):
+def qemu_running(request, latest_sdimg):
     if pytest.config.getoption("--bbb"):
         return
 
@@ -240,7 +257,7 @@ def qemu_running(request):
 
     request.addfinalizer(qemu_finalizer)
 
-    start_qemu()
+    start_qemu(latest_sdimg)
     execute(qemu_prep_fresh_host, hosts=conftest.current_hosts())
 
 
