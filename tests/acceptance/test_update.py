@@ -44,10 +44,11 @@ class Helpers:
 
         alignment = int(bitbake_variables["MENDER_PARTITION_ALIGNMENT_MB"]) * 1024 * 1024
         env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
-        # Environment size, rounded up to nearest alignment.
-        env_aligned_size = int((env_size + alignment - 1) / alignment * alignment)
         offsets[0] = int(bitbake_variables["MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET"])
-        offsets[1] = offsets[0] + env_aligned_size
+        offsets[1] = offsets[0] + int(env_size / 2)
+
+        assert(offsets[0] % alignment == 0)
+        assert(offsets[1] % alignment == 0)
 
         return offsets
 
