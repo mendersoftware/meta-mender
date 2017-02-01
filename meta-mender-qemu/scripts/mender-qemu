@@ -47,7 +47,7 @@ QEMU_AUDIO_DRV=none \
     -M vexpress-a9 \
     -m 64M \
     -kernel "$UBOOT_ELF" \
-    -drive file="$VEXPRESS_SDIMG",if=sd,format=raw \
+    -drive file="$VEXPRESS_SDIMG",if=sd \
     -net nic,macaddr="$RANDOM_MAC" \
     -net user,hostfwd=tcp::8822-:22 \
     -display vnc=:23 \
