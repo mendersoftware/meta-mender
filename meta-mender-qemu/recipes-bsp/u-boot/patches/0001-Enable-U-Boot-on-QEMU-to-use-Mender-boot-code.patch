@@ -32,9 +32,9 @@ index a8eba31..1a234eb 100644
 +    "run qemu_boot"
 +
 +#define MENDER_QEMU_ENV_SETTINGS                                        \
-+    "qemu_kernel_addr=0x70000000\0"                                     \
++    "qemu_kernel_addr=0x60100000\0"                                     \
 +                                                                        \
-+    "qemu_dtb_addr=0x6fc00000\0"                                        \
++    "qemu_dtb_addr=0x60000000\0"                                        \
 +                                                                        \
 +    "qemu_boot=load ${mender_uboot_root} ${qemu_kernel_addr} /boot/zImage; " \
 +    "load ${mender_uboot_root} ${qemu_dtb_addr} /boot/vexpress-v2p-ca9.dtb; " \

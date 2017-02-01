@@ -23,8 +23,6 @@ import re
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
-e2cp_installed = subprocess.call(["which", "e2cp"]) == 0
-
 class EmbeddedBootloader:
     loader = None
     offset = 0
@@ -164,14 +162,13 @@ class TestSdimg:
         assert(parts_end[4] >= total_size - part_overhead)
 
 
-    @pytest.mark.skipif(not e2cp_installed, reason="Needs e2tools to be installed")
     def test_device_type(self, latest_sdimg, bitbake_variables, bitbake_path):
         """Test that device type file is correctly embedded."""
 
         try:
             extract_partition(latest_sdimg, 5)
 
-            subprocess.check_call(["e2cp", "-p", "sdimg5.fs:mender/device_type", "."])
+            subprocess.check_call(["debugfs", "-R", "dump -p /mender/device_type device_type", "sdimg5.fs"])
 
             assert(os.stat("device_type").st_mode & 0777 == 0444)
 
@@ -197,7 +194,6 @@ class TestSdimg:
             except:
                 pass
 
-    @pytest.mark.skipif(not e2cp_installed, reason="Needs e2tools to be installed")
     def test_data_ownership(self, latest_sdimg, bitbake_variables, bitbake_path):
         """Test that the owner of files on the data partition is root."""
 
@@ -205,27 +201,32 @@ class TestSdimg:
             extract_partition(latest_sdimg, 5)
 
             def check_dir(dir):
-                e2ls = subprocess.Popen(["e2ls", "-l", "sdimg5.fs:%s" % dir], stdout=subprocess.PIPE)
-                entries = e2ls.stdout.readlines()
-                e2ls.wait()
+                ls = subprocess.Popen(["debugfs", "-R" "ls -l -p %s" % dir, "sdimg5.fs"], stdout=subprocess.PIPE)
+                entries = ls.stdout.readlines()
+                ls.wait()
 
                 for entry in entries:
-                    columns = entry.split()
+                    entry = entry.strip()
 
-                    if len(columns) == 0:
-                        # e2ls might output empty lines too.
+                    if len(entry) == 0:
+                        # debugfs might output empty lines too.
                         continue
 
-                    assert(columns[2] == "0")
+                    columns = entry.split('/')
+
+                    if columns[1] == "0":
+                        # Inode 0 is some weird file inside lost+found, skip it.
+                        continue
+
                     assert(columns[3] == "0")
+                    assert(columns[4] == "0")
 
-                    mode = int(columns[1], 8)
-                    # Recurse into directories, but skip lost+found, which has
-                    # some weird issues with e2ls.
-                    if mode & 040000 and columns[7] != "lost+found":
-                        check_dir(os.path.join(dir, columns[7]))
+                    mode = int(columns[2], 8)
+                    # Recurse into directories.
+                    if mode & 040000 != 0 and columns[5] != "." and columns[5] != "..":
+                        check_dir(os.path.join(dir, columns[5]))
 
-            check_dir(".")
+            check_dir("/")
 
         finally:
             try:
