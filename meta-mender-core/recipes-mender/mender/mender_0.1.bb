@@ -27,7 +27,7 @@ PV = "${PVBASE}+git${SRCPV}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
-LIC_FILES_CHKSUM = "file://LIC_FILES_CHKSUM.sha256;md5=ec8e15a3ea20289732cca4a7ef643ef8"
+LIC_FILES_CHKSUM = "file://LIC_FILES_CHKSUM.sha256;md5=fcaad712adad937b3f989eb7a3d57278"
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & MIT & OLDAP-2.8"
 
 inherit systemd
