@@ -104,10 +104,8 @@ IMAGE_CMD_sdimg() {
     # exist.
     mkdir -p "${IMAGE_ROOTFS}"
 
-    MENDER_CALC_ROOTFS_SIZE_KB=$(expr ${MENDER_CALC_ROOTFS_SIZE} / 1024)
-
     # create rootfs
-    dd if=/dev/zero of=${WORKDIR}/rootfs.$FSTYPE count=0 seek=$MENDER_CALC_ROOTFS_SIZE_KB bs=1K
+    dd if=/dev/zero of=${WORKDIR}/rootfs.$FSTYPE count=0 seek=${MENDER_CALC_ROOTFS_SIZE} bs=1K
     mkfs.$FSTYPE -F -i 4096 ${WORKDIR}/rootfs.$FSTYPE -d ${IMAGE_ROOTFS}
     ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/active
     ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/inactive
