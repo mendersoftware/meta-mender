@@ -54,7 +54,7 @@ do_compile() {
   PATH="${B}/bin:$PATH"
   export PATH
 
-  DEFAULT_CERT_MD5="77d32e89a3730968b87f91903983be3f"
+  DEFAULT_CERT_MD5="1fba17436027eb1f5ceff4af9a63c9c2"
 
   if [ ! -f ${WORKDIR}/server.crt ]; then
     bbfatal "You have not provided a public server certificate. Please add the desired server certificate to the SRC_URI list, under the name 'server.crt'."
