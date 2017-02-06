@@ -106,15 +106,7 @@ IMAGE_CMD_sdimg() {
     # exist.
     mkdir -p "${IMAGE_ROOTFS}"
 
-    # Round up to nearest MB.
-    boot_env_size_mb=$(expr \( ${MENDER_STORAGE_RESERVED_RAW_SPACE} + 1048575 \) / 1048576)
-
-    REMAINING_SIZE=$(expr ${MENDER_STORAGE_TOTAL_SIZE_MB} - \
-                          ${MENDER_BOOT_PART_SIZE_MB} - \
-                          ${MENDER_DATA_PART_SIZE_MB} - \
-                          ${MENDER_PARTITIONING_OVERHEAD_MB} - \
-                          $boot_env_size_mb)
-    CALC_ROOTFS_SIZE=$(expr $REMAINING_SIZE / 2)
+    MENDER_CALC_ROOTFS_SIZE_KB=$(expr ${MENDER_CALC_ROOTFS_SIZE} / 1024)
 
     MENDER_PARTITION_ALIGNMENT_KB=$(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024)
 
@@ -163,8 +155,8 @@ EOF
 
     cat >> "$wks" <<EOF
 part /boot   --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align $MENDER_PARTITION_ALIGNMENT_KB --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
-part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label primary --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size $CALC_ROOTFS_SIZE
-part         --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size $CALC_ROOTFS_SIZE
+part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label primary --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size $MENDER_CALC_ROOTFS_SIZE_KB
+part         --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size $MENDER_CALC_ROOTFS_SIZE_KB
 part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 EOF
 
