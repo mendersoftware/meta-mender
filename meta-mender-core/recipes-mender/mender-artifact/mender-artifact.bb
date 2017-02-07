@@ -3,7 +3,7 @@ GO_IMPORT = "github.com/mendersoftware/mender-artifact"
 
 inherit go
 
-SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https"
+SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=1.0.x"
 
 SRCREV = "${AUTOREV}"
 PVBASE := "${PV}"
