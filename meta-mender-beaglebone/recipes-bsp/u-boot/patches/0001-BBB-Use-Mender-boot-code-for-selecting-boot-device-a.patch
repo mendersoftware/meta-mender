@@ -1,20 +1,20 @@
-From 8986470842c52823160c96a7d3c09a62fd386158 Mon Sep 17 00:00:00 2001
+From d4517eb51b62cf1a2c7948862de94fdaea085756 Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@mender.io>
-Date: Fri, 12 Aug 2016 10:13:46 +0200
+Date: Tue, 7 Feb 2017 13:00:10 +0100
 Subject: [PATCH] BBB: Use Mender boot code for selecting boot device and
  partition.
 
 Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
 ---
- include/configs/am335x_evm.h      | 30 ++++++++++--------------------
- include/configs/ti_armv7_common.h | 14 +++++++-------
- 2 files changed, 17 insertions(+), 27 deletions(-)
+ include/configs/am335x_evm.h      | 22 ++++++----------------
+ include/configs/ti_armv7_common.h | 24 ++++++++++++------------
+ 2 files changed, 18 insertions(+), 28 deletions(-)
 
 diff --git a/include/configs/am335x_evm.h b/include/configs/am335x_evm.h
-index ec70b72..a4b0eb4 100644
+index 49c14df..8f0917d 100644
 --- a/include/configs/am335x_evm.h
 +++ b/include/configs/am335x_evm.h
-@@ -66,9 +66,8 @@
+@@ -67,9 +67,8 @@
  
  #define BOOTENV_DEV_LEGACY_MMC(devtypeu, devtypel, instance) \
  	"bootcmd_" #devtypel #instance "=" \
@@ -26,48 +26,32 @@ index ec70b72..a4b0eb4 100644
  
  #define BOOTENV_DEV_NAME_LEGACY_MMC(devtypeu, devtypel, instance) \
  	#devtypel #instance " "
-@@ -90,6 +89,7 @@
+@@ -91,6 +90,7 @@
  	func(DHCP, dhcp, na)
  
  #define CONFIG_BOOTCOMMAND \
 +	"run mender_setup; " \
- 	"run findfdt; " \
- 	"run init_console; " \
- 	"run envboot; " \
-@@ -102,7 +102,6 @@
+ 	"if test ${boot_fit} -eq 1; then "	\
+ 		"run update_to_fit;"	\
+ 	"fi;"	\
+@@ -106,7 +106,6 @@
  	DEFAULT_LINUX_BOOT_ENV \
  	DEFAULT_MMC_TI_ARGS \
- 	"boot_fdt=try\0" \
+ 	DEFAULT_FIT_TI_ARGS \
 -	"bootpart=0:2\0" \
  	"bootdir=/boot\0" \
  	"bootfile=zImage\0" \
  	"fdtfile=undefined\0" \
-@@ -126,9 +125,9 @@
+@@ -130,7 +129,7 @@
  		"${optargs} " \
  		"root=${ramroot} " \
  		"rootfstype=${ramrootfstype}\0" \
 -	"loadramdisk=load mmc ${mmcdev} ${rdaddr} ramdisk.gz\0" \
--	"loadimage=load mmc ${bootpart} ${loadaddr} ${bootdir}/${bootfile}\0" \
--	"loadfdt=load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
 +	"loadramdisk=load ${mender_uboot_root} ${rdaddr} ramdisk.gz\0" \
-+	"loadimage=load ${mender_uboot_root} ${loadaddr} ${bootdir}/${bootfile}\0" \
-+	"loadfdt=load ${mender_uboot_root} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
- 	"mmcloados=run args_mmc; " \
- 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
- 			"if run loadfdt; then " \
-@@ -143,9 +142,9 @@
- 		"else " \
- 			"bootz; " \
- 		"fi;\0" \
--	"mmcboot=mmc dev ${mmcdev}; " \
-+	"mmcboot=mmc dev ${mender_uboot_dev}; " \
- 		"if mmc rescan; then " \
--			"echo SD/MMC found on device ${mmcdev};" \
-+			"echo SD/MMC found on device ${mender_uboot_dev};" \
- 			"run envboot; " \
- 			"if run loadimage; then " \
- 				"run mmcloados;" \
-@@ -208,7 +207,7 @@
+ 	"spiboot=echo Booting from spi ...; " \
+ 		"run spiargs; " \
+ 		"sf probe ${spibusno}:0; " \
+@@ -188,7 +187,7 @@
  #ifndef CONFIG_NOR_BOOT
  /* Bootcount using the RTC block */
  #define CONFIG_BOOTCOUNT_LIMIT
@@ -76,7 +60,7 @@ index ec70b72..a4b0eb4 100644
  #define CONFIG_SYS_BOOTCOUNT_BE
  
  /* USB gadget RNDIS */
-@@ -396,11 +395,6 @@
+@@ -345,11 +344,6 @@
  					"-(rootfs)"
  #elif defined(CONFIG_EMMC_BOOT)
  #define CONFIG_ENV_IS_IN_MMC
@@ -88,7 +72,7 @@ index ec70b72..a4b0eb4 100644
  #elif defined(CONFIG_NOR_BOOT)
  #define CONFIG_ENV_IS_IN_FLASH
  #define CONFIG_ENV_SECT_SIZE		(128 << 10)	/* 128 KiB */
-@@ -417,11 +411,7 @@
+@@ -366,11 +360,7 @@
  #define CONFIG_ENV_OFFSET_REDUND	0x001e0000
  #define CONFIG_SYS_ENV_SECT_SIZE	CONFIG_SYS_NAND_BLOCK_SIZE
  #elif !defined(CONFIG_ENV_IS_NOWHERE)
@@ -102,10 +86,10 @@ index ec70b72..a4b0eb4 100644
  
  /* SPI flash. */
 diff --git a/include/configs/ti_armv7_common.h b/include/configs/ti_armv7_common.h
-index 0d74c50..0fd0359 100644
+index dbe494a..2bd9e91 100644
 --- a/include/configs/ti_armv7_common.h
 +++ b/include/configs/ti_armv7_common.h
-@@ -59,21 +59,21 @@
+@@ -60,23 +60,23 @@
  #define DEFAULT_MMC_TI_ARGS \
  	"mmcdev=0\0" \
  	"mmcrootfstype=ext4 rootwait\0" \
@@ -125,8 +109,12 @@ index 0d74c50..0fd0359 100644
 +	"importbootenv=echo Importing environment from ${mender_uboot_boot} ...; " \
  		"env import -t ${loadaddr} ${filesize}\0" \
 -	"loadbootenv=fatload mmc ${mmcdev} ${loadaddr} ${bootenvfile}\0" \
+-	"loadimage=load ${devtype} ${bootpart} ${loadaddr} ${bootdir}/${bootfile}\0" \
+-	"loadfdt=load ${devtype} ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
 -	"envboot=mmc dev ${mmcdev}; " \
 +	"loadbootenv=fatload ${mender_uboot_boot} ${loadaddr} ${bootenvfile}\0" \
++	"loadimage=load ${mender_uboot_root} ${loadaddr} ${bootdir}/${bootfile}\0" \
++	"loadfdt=load ${mender_uboot_root} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
 +	"envboot=mmc dev ${mender_uboot_dev}; " \
  		"if mmc rescan; then " \
 -			"echo SD/MMC found on device ${mmcdev};" \
@@ -134,6 +122,21 @@ index 0d74c50..0fd0359 100644
  			"if run loadbootscript; then " \
  				"run bootscript;" \
  			"else " \
+@@ -104,11 +104,11 @@
+ 		"else " \
+ 			"bootz; " \
+ 		"fi;\0" \
+-	"mmcboot=mmc dev ${mmcdev}; " \
+-		"setenv devnum ${mmcdev}; " \
++	"mmcboot=mmc dev ${mender_uboot_dev}; " \
++		"setenv devnum ${mender_uboot_dev}; " \
+ 		"setenv devtype mmc; " \
+ 		"if mmc rescan; then " \
+-			"echo SD/MMC found on device ${mmcdev};" \
++			"echo SD/MMC found on device ${mender_uboot_dev};" \
+ 			"if run loadimage; then " \
+ 				"if test ${boot_fit} -eq 1; then " \
+ 					"run loadfit; " \
 -- 
 2.7.4
 
