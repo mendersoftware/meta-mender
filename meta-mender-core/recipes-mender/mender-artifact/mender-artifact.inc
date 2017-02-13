@@ -3,16 +3,6 @@ GO_IMPORT = "github.com/mendersoftware/mender-artifact"
 
 inherit go
 
-SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=1.0.x"
-
-SRCREV = "${AUTOREV}"
-PVBASE := "${PV}"
-PV = "${PVBASE}+git${SRCPV}"
-
-LICENSE = "Apache-2.0"
-LIC_FILES_CHKSUM = " \
-                    file://LIC_FILES_CHKSUM.sha256;md5=f4a3edb2a8fe8e2ecde8062ba20b1c86 \
-                    "
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
