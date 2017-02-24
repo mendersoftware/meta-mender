@@ -1,23 +1,8 @@
 DESCRIPTION = "Mender image artifact library"
-GO_IMPORT = "github.com/mendersoftware/artifacts"
+GO_IMPORT = "github.com/mendersoftware/mender-artifact"
 
 inherit go
-# these are fixed in oe-meta-go
-GOBIN_FINAL_class-native = "${GOROOT_FINAL}/bin"
-GOROOT_class-native = "${STAGING_LIBDIR_NATIVE}/go"
-export GOROOT
-export GOBIN_FINAL
 
-SRC_URI = "git://github.com/mendersoftware/artifacts.git;protocol=https"
-
-SRCREV = "${AUTOREV}"
-PVBASE := "${PV}"
-PV = "${PVBASE}+git${SRCPV}"
-
-LICENSE = "Apache-2.0"
-LIC_FILES_CHKSUM = " \
-                    file://LIC_FILES_CHKSUM.sha256;md5=907fcd0a30c237408413d6b347270f4f \
-                    "
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
@@ -33,11 +18,11 @@ do_compile() {
     install -d ${GOPATHDIR}
     # we could also try symlinking ${S} into our fake GOPATH, however `go build...`
     # ignores symlinks in GOPATH
-    rsync -av --exclude '.git' --delete ${S}/ ${GOPATHDIR}/
+    rsync -av --delete ${S}/ ${GOPATHDIR}/
 
     GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go go env
     if test -n "${GO_INSTALL}" ; then
-       GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go go install -v ${GO_INSTALL}
+       GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go make -C ${GOPATHDIR} V=1 install
     fi
 }
 

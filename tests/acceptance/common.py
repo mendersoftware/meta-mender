@@ -34,8 +34,21 @@ def if_not_bbb(func):
 
 
 # Return Popen object
-@if_not_bbb
-def start_qemu():
+def start_qemu(latest_sdimg):
+    if pytest.config.getoption("bbb"):
+        return
+
+    # Make a disposable image.
+    try:
+        qemu_img = os.environ["QEMU_SYSTEM_ARM"]
+    except:
+        qemu_img = "qemu-system-arm"
+    qemu_img = re.sub("-system-arm$", "-img", qemu_img)
+    subprocess.check_call([qemu_img, "create", "-f", "qcow2", "-o",
+                           "backing_file=%s" % latest_sdimg,
+                           "test-image.qcow2"])
+
+    os.environ["VEXPRESS_SDIMG"] = "test-image.qcow2"
     proc = subprocess.Popen("../../meta-mender-qemu/scripts/mender-qemu")
     # Make sure we are connected.
     execute(run_after_connect, "true", hosts = conftest.current_hosts())
@@ -46,6 +59,10 @@ def start_qemu():
 def kill_qemu():
     os.system("pkill qemu-system-arm")
     time.sleep(1)
+    try:
+        os.remove("test-image.qcow2")
+    except:
+        pass
 
 @if_not_bbb
 def is_qemu_running():
@@ -129,22 +146,21 @@ def ssh_prep_args_impl(tool):
     return (cmd, host, port)
 
 
-def determine_active_passive_part(mount_output):
+def determine_active_passive_part(bitbake_variables):
     """Given the output from mount, determine the currently active and passive
-    partition numbers, returning them as a pair in that order."""
-    if mount_output.find("/dev/mmcblk0p2") >= 0:
-        return ("2", "3")
-    elif mount_output.find("/dev/mmcblk0p3") >= 0:
-        return ("3", "2")
+    partitions, returning them as a pair in that order."""
+
+    mount_output = run("mount")
+    a = bitbake_variables["MENDER_ROOTFS_PART_A"]
+    b = bitbake_variables["MENDER_ROOTFS_PART_B"]
+
+    if mount_output.find(a) >= 0:
+        return (a, b)
+    elif mount_output.find(b) >= 0:
+        return (b, a)
     else:
         raise Exception("Could not determine active partition. Mount output: %s"
                         % mount_output)
-
-
-def part_device(part_number):
-    """Given partition number (but string type), return the device for that
-    partition."""
-    return "/dev/mmcblk0p" + part_number
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
@@ -173,9 +189,8 @@ def qemu_prep_fresh_host():
     pass
 
 
-def set_first_root_part():
+def manual_uboot_commit():
     sudo("fw_setenv upgrade_available 0")
-    sudo("fw_setenv mender_boot_part 2")
     sudo("fw_setenv bootcount 0")
 
 
@@ -217,7 +232,7 @@ def setup_bbb(request):
         request.addfinalizer(bbb_finalizer)
 
 @pytest.fixture(scope="module")
-def qemu_running(request):
+def qemu_running(request, latest_sdimg):
     if pytest.config.getoption("--bbb"):
         return
 
@@ -228,7 +243,7 @@ def qemu_running(request):
     def qemu_finalizer():
         def qemu_finalizer_impl():
             try:
-                set_first_root_part()
+                manual_uboot_commit()
                 sudo("halt")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
@@ -242,7 +257,7 @@ def qemu_running(request):
 
     request.addfinalizer(qemu_finalizer)
 
-    start_qemu()
+    start_qemu(latest_sdimg)
     execute(qemu_prep_fresh_host, hosts=conftest.current_hosts())
 
 

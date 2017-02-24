@@ -16,44 +16,6 @@ inherit mender-install
 ########## CONFIGURATION START - you can override these default
 ##########                       values in your local.conf
 
-# Total size of the medium that mender sdimg will be written to. The size of
-# rootfs partition will be calculated automatically by subtracting the size of
-# boot and data partitions along with some predefined overhead (see
-# MENDER_PARTITIONING_OVERHEAD_MB).
-MENDER_STORAGE_TOTAL_SIZE_MB ?= "1024"
-
-# Optional location where a directory can be specified with content that should
-# be included on the data partition. Some of Mender's own files will be added to
-# this (e.g. OpenSSL certificates).
-MENDER_DATA_PART_DIR ?= ""
-
-# Size of the data partition, which is preserved across updates.
-MENDER_DATA_PART_SIZE_MB ?= "128"
-
-# Size of the first (FAT) partition, that contains the bootloader
-MENDER_BOOT_PART_SIZE_MB ?= "16"
-
-# For performance reasons, we try to align the partitions to the SD
-# card's erase block. It is impossible to know this information with
-# certainty, but one way to find out is to run the "flashbench" tool on
-# your SD card and study the results. If you do, feel free to override
-# this default.
-#
-# 8MB alignment is a safe setting that might waste some space if the
-# erase block is smaller.
-MENDER_PARTITION_ALIGNMENT_MB ?= "8"
-
-# Estimate how much space may be lost due to partitioning alignment. Use a
-# simple heuristic for now - 4 partitions * alignment
-def get_overhead(d):
-    align = d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True)
-    if align:
-        return 4 * int(align)
-    return 0
-
-# Overhead lost due to partitioning.
-MENDER_PARTITIONING_OVERHEAD_MB ?= "${@get_overhead(d)}"
-
 python() {
     deprecated_vars = ['SDIMG_DATA_PART_DIR', 'SDIMG_DATA_PART_SIZE_MB',
                        'SDIMG_BOOT_PART_SIZE_MB', 'SDIMG_PARTITION_ALIGNMENT_MB']
@@ -101,12 +63,12 @@ python() {
             d.setVar('IMAGE_TYPEDEP_sdimg_append', " " + fs)
 }
 
-IMAGE_DEPENDS_sdimg = "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native"
+IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native"
 
 IMAGE_INSTALL_append_beaglebone = " kernel-devicetree"
 
 IMAGE_CMD_sdimg() {
-    set -e
+    set -ex
 
     # For some reason, logging is not working correctly inside IMAGE_CMD bodies,
     # so wrap all logging in these functions that also have an echo. This won't
@@ -148,30 +110,28 @@ IMAGE_CMD_sdimg() {
     # exist.
     mkdir -p "${IMAGE_ROOTFS}"
 
-    REMAINING_SIZE=$(expr ${MENDER_STORAGE_TOTAL_SIZE_MB} - \
-                          ${MENDER_BOOT_PART_SIZE_MB} - \
-                          ${MENDER_DATA_PART_SIZE_MB} - \
-                          ${MENDER_PARTITIONING_OVERHEAD_MB})
-    ROOTFS_SIZE=$(expr $REMAINING_SIZE / 2)
-
     # create rootfs
-    dd if=/dev/zero of=${WORKDIR}/rootfs.$FSTYPE count=0 seek=$ROOTFS_SIZE bs=1M
+    dd if=/dev/zero of=${WORKDIR}/rootfs.$FSTYPE count=0 seek=${MENDER_CALC_ROOTFS_SIZE} bs=1K
     mkfs.$FSTYPE -F -i 4096 ${WORKDIR}/rootfs.$FSTYPE -d ${IMAGE_ROOTFS}
-    stat ${WORKDIR}/rootfs.$FSTYPE
     ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/active
     ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/inactive
 
     MENDER_PARTITION_ALIGNMENT_KB=$(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024)
 
     rm -rf "${WORKDIR}/data" || true
+    mkdir -p "${WORKDIR}/data"
+
     if [ -n "${MENDER_DATA_PART_DIR}" ]; then
-        cp -a "${MENDER_DATA_PART_DIR}" "${WORKDIR}/data"
-    else
-        mkdir -p "${WORKDIR}/data"
+        find "${MENDER_DATA_PART_DIR}" -not -name . -exec cp -a '{}' "${WORKDIR}/data" \;
     fi
 
-    # The OpenSSL certificates should go here:
-    echo "dummy certificate" > "${WORKDIR}/data/mender.cert"
+    if [ -f "${DEPLOY_DIR_IMAGE}/data.tar" ]; then
+        ( cd "${WORKDIR}" && tar xf "${DEPLOY_DIR_IMAGE}/data.tar" )
+    fi
+
+    mkdir -p "${WORKDIR}/data/mender"
+    echo "device_type=${MENDER_DEVICE_TYPE}" > "${WORKDIR}/data/mender/device_type"
+    chmod 0444 "${WORKDIR}/data/mender/device_type"
 
     dd if=/dev/zero of="${WORKDIR}/data.$FSTYPE" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
     mkfs.$FSTYPE -F "${WORKDIR}/data.$FSTYPE" -d "${WORKDIR}/data"
@@ -180,9 +140,24 @@ IMAGE_CMD_sdimg() {
     rm -f "$wks"
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
         bootloader_align_kb=$(expr $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
+        bootloader_size=$(stat -c '%s' "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}")
+        bootloader_end=$(expr $bootloader_align_kb \* 1024 + $bootloader_size)
+        if [ $bootloader_end -gt ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} ]; then
+            bberror "Size of bootloader specified in IMAGE_BOOTLOADER_FILE" \
+                    "exceeds MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET, which is" \
+                    "reserved for U-Boot environment storage. Please raise it" \
+                    "manually."
+        fi
         cat >> "$wks" <<EOF
 # embed bootloader
 part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" --ondisk mmcblk0 --align $bootloader_align_kb --no-table
+EOF
+    fi
+
+    if [ -n "${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}" ]; then
+        boot_env_align_kb=$(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} / 1024)
+        cat >> "$wks" <<EOF
+part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/uboot.env" --ondisk mmcblk0 --align $boot_env_align_kb --no-table
 EOF
     fi
 
