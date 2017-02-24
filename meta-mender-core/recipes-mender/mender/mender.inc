@@ -5,27 +5,19 @@ MENDER_SERVER_URL ?= "https://docker.mender.io"
 MENDER_CERT_LOCATION ?= "${sysconfdir}/mender/server.crt"
 # Tenant token
 MENDER_TENANT_TOKEN ?= "dummy"
-SYSTEMD_AUTO_ENABLE ?= "disable"
+SYSTEMD_AUTO_ENABLE ?= "enable"
+MENDER_UPDATE_POLL_INTERVAL_SECONDS ?= "1800"
+MENDER_INVENTORY_POLL_INTERVAL_SECONDS ?= "1800"
+MENDER_RETRY_POLL_INTERVAL_SECONDS ?= "300"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 inherit go
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https \
-           file://mender.service \
-           file://mender.conf \
-           file://server.crt \
-          "
-
-SRCREV = "${AUTOREV}"
-PVBASE := "${PV}"
-PV = "${PVBASE}+git${SRCPV}"
-
-# DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below.
-LIC_FILES_CHKSUM = "file://LIC_FILES_CHKSUM.sha256;md5=5d7dda2920f25253c9a3af5c28b10fb2"
-LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & MIT & OLDAP-2.8"
+SRC_URI_append = " file://mender.service \
+                   file://mender.conf \
+                 "
 
 inherit systemd
 
@@ -43,7 +35,7 @@ GO_IMPORT = "github.com/mendersoftware/mender"
 PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
 
 RDEPENDS_${PN} += " \
-    mender-artifact \
+    mender-artifact-info \
     "
 
 do_compile() {
@@ -52,7 +44,11 @@ do_compile() {
   PATH="${B}/bin:$PATH"
   export PATH
 
-  DEFAULT_CERT_MD5="e034532805e44b9125b443c32bbde581"
+  DEFAULT_CERT_MD5="1fba17436027eb1f5ceff4af9a63c9c2"
+
+  if [ ! -f ${WORKDIR}/server.crt ]; then
+    bbfatal "You have not provided a public server certificate. Please add the desired server certificate to the SRC_URI list, under the name 'server.crt'."
+  fi
 
   if [ "$(md5sum ${WORKDIR}/server.crt | awk '{ print $1 }')" = $DEFAULT_CERT_MD5 ]; then
     bbwarn "You are building with the default server certificate, which is not intended for production use"
@@ -75,6 +71,9 @@ do_compile() {
   cp ${WORKDIR}/mender.conf ${B}
   sed -i -e 's#[@]MENDER_SERVER_URL[@]#${MENDER_SERVER_URL}#' ${B}/mender.conf
   sed -i -e 's#[@]MENDER_CERT_LOCATION[@]#${MENDER_CERT_LOCATION}#' ${B}/mender.conf
+  sed -i -e 's#[@]MENDER_UPDATE_POLL_INTERVAL_SECONDS[@]#${MENDER_UPDATE_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
+  sed -i -e 's#[@]MENDER_INVENTORY_POLL_INTERVAL_SECONDS[@]#${MENDER_INVENTORY_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
+  sed -i -e 's#[@]MENDER_RETRY_POLL_INTERVAL_SECONDS[@]#${MENDER_RETRY_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
 
   if [ -n "${MENDER_ROOTFS_PART_A}" ] && [ -n "${MENDER_ROOTFS_PART_B}" ]; then
     sed -i -e 's#[@]MENDER_ROOTFS_PART_A[@]#${MENDER_ROOTFS_PART_A}#' ${B}/mender.conf

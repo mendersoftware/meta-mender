@@ -1,21 +1,23 @@
-# This file used to be included by both u-boot and u-boot-fw-utils, but not
-# anymore. Do this check in order to help those who already are using it in
-# their build. This can probably be removed after enough time has passed.
-python() {
-    in_pn = (d.getVar('PN', True) == 'u-boot-fw-utils')
-    in_provides = ('u-boot-fw-utils' in d.getVar('PROVIDES', True).split())
-    in_rprovides = ('u-boot-fw-utils' in d.getVar('RPROVIDES', True).split())
-    if in_pn or in_provides or in_rprovides:
-        bb.fatal("u-boot-mender.inc should not be included from a u-boot-fw-utils recipe anymore. Include u-boot-fw-utils-mender.inc instead!")
-}
-
 require u-boot-mender-common.inc
 
-# Copy script to the deploy area with u-boot, uImage, and rootfs
-do_deploy_uenv () {
+inherit deploy
+
+do_deploy_append() {
+    # Copy script to the deploy area with u-boot, uImage, and rootfs
     if [ -e ${WORKDIR}/uEnv.txt ] ; then
-        install -d ${DEPLOY_DIR_IMAGE}
-        install -m 0444 ${WORKDIR}/uEnv.txt ${DEPLOY_DIR_IMAGE}
+        install -d ${DEPLOYDIR}
+        install -m 0444 ${WORKDIR}/uEnv.txt ${DEPLOYDIR}
     fi
+
+    # Creates the blob that will be the U-Boot environment, with proper
+    # alignment. This will be used later by the image creation recipe. The file
+    # is filled with null right now, although it could be filled with the actual
+    # environment. For now we're primarily interested in the size.
+    # Note: We cannot use a sparse file here, even though it's filled with
+    # zeros, because the build process uses "du" to determine the size of this
+    # file.
+    MENDER_BOOTENV_TOTAL_ALIGNED_SIZE_SECTORS=$(expr ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} / 512)
+    dd if=/dev/zero of=${WORKDIR}/uboot.env count=$MENDER_BOOTENV_TOTAL_ALIGNED_SIZE_SECTORS
+    install -m 644 ${WORKDIR}/uboot.env ${DEPLOYDIR}/uboot.env
 }
-addtask deploy_uenv before do_package after do_install
+addtask deploy after do_compile

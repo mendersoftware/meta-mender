@@ -13,16 +13,21 @@ inherit allarch
 PV = "0.1"
 
 do_compile() {
-    echo "# populate this file with build info" > ${B}/artifact-info
+    if [ -z "${MENDER_ARTIFACT_NAME}" ]; then
+        bberror "Need to define MENDER_ARTIFACT_NAME variable."
+        exit 1
+    fi
+
+    cat > ${B}/artifact_info << END
+artifact_name=${MENDER_ARTIFACT_NAME}
+END
 }
 
 do_install() {
     install -d ${D}${sysconfdir}/mender
-    install -t ${D}${sysconfdir}/mender ${B}/artifact-info
-    ln -s artifact-info ${D}${sysconfdir}/mender/build_mender
+    install -m 0644 -t ${D}${sysconfdir}/mender ${B}/artifact_info
 }
 
 FILES_${PN} += " \
-    ${sysconfdir}/mender/artifact-info \
-    ${sysconfdir}/mender/build_mender \
+    ${sysconfdir}/mender/artifact_info \
 "

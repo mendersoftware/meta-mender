@@ -4,9 +4,6 @@ inherit mender-install
 
 OVERRIDES_append = ":menderimage"
 
-#Add meta information to the created image
-inherit mender-image-buildinfo
-
 #Make sure we are creating sdimg with all needed partitioning.
 IMAGE_CLASSES += "mender-sdimg mender-artifactimg"
 IMAGE_FSTYPES_append = " sdimg mender"

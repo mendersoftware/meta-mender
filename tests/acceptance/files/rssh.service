@@ -7,7 +7,7 @@ After=network-online.target
 Type=simple
 User=root
 Group=root
-ExecStart=/usr/bin/ssh -NTC -o ServerAliveInterval=60 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -R 12345:localhost:22 bbb@wmd.no
+ExecStart=/usr/bin/ssh -NTC -o ServerAliveInterval=60 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -R 12345:localhost:22 bbb@108.61.103.174
 RestartSec=10
 Restart=always
 

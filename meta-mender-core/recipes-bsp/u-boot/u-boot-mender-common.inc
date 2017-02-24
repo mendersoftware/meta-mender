@@ -1,5 +1,4 @@
 inherit mender-helpers
-inherit deploy
 
 BOOTENV_SIZE ??= "0x20000"
 
@@ -19,6 +18,14 @@ SRC_URI_append = " file://0002-Integration-of-Mender-boot-code-into-U-Boot.patch
 # Generic tasks.
 ################################################################################
 do_provide_mender_defines() {
+    if [ $(expr ${MENDER_STORAGE_RESERVED_RAW_SPACE} % \( ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024 \* 1024 \* 2 \)) -ne 0 ]; then
+        bbfatal "MENDER_STORAGE_RESERVED_RAW_SPACE is not an even multiple of MENDER_PARTITION_ALIGNMENT_MB."
+    fi
+
+    if [ ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} -gt ${MENDER_STORAGE_RESERVED_RAW_SPACE} ]; then
+        bbfatal "BOOTENV_SIZE (${BOOTENV_SIZE}) is too big to fit two copies inside MENDER_STORAGE_RESERVED_RAW_SPACE (${MENDER_STORAGE_RESERVED_RAW_SPACE}) with proper alignment. Please increase MENDER_STORAGE_RESERVED_RAW_SPACE manually and make sure it is an *even* multiple of MENDER_PARTITION_ALIGNMENT_MB (in bytes)."
+    fi
+
     MENDER_BOOT_PART_NUMBER=`get_part_number_from_device ${MENDER_BOOT_PART}`
     MENDER_ROOTFS_PART_A_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_A}`
     MENDER_ROOTFS_PART_B_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_B}`
@@ -47,6 +54,8 @@ do_provide_mender_defines() {
 
 /* BB variables. */
 #define MENDER_STORAGE_DEVICE_BASE "${MENDER_STORAGE_DEVICE_BASE}"
+#define MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1 ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1}
+#define MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2 ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2}
 
 /* For sanity checks. */
 #define MENDER_BOOTENV_SIZE ${BOOTENV_SIZE}
@@ -54,8 +63,25 @@ EOF
 }
 addtask do_provide_mender_defines after do_patch before do_configure
 
-do_deploy_prepend() {
-    # Create empty environment. Just so that the file is available.
-    mkdir -p ${DEPLOYDIR}
-    dd if=/dev/zero of="${DEPLOYDIR}/${IMAGE_BOOT_ENV_FILE}" count=0 bs=1 seek=`printf %d ${BOOTENV_SIZE}`
-}
+################################################################################
+# Helpers and internal variables.
+################################################################################
+
+# This should evaluate to the same as MENDER_STORAGE_RESERVED_RAW_SPACE.
+# The only reason it's not evaluated the same way is that we don't have the
+# necessary information (BOOTENV_SIZE) when evaluating
+# MENDER_STORAGE_RESERVED_RAW_SPACE.
+MENDER_BOOTENV_TOTAL_ALIGNED_SIZE = "${@mender_get_env_total_aligned_size(${BOOTENV_SIZE}, ${MENDER_PARTITION_ALIGNMENT_MB})}"
+
+def mender_get_env_offset(start_offset, index, total_aligned_size):
+    if index == 1:
+        return "0x%x" % int(start_offset)
+    elif index == 2:
+        return "0x%x" % int(start_offset + total_aligned_size / 2)
+    else:
+        raise Exception("env index out of range in mender_get_env_offset: Should not happen")
+
+MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1 = "${@mender_get_env_offset(${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}, 1, \
+                                                                     ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE})}"
+MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2 = "${@mender_get_env_offset(${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}, 2, \
+                                                                     ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE})}"

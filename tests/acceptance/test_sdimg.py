@@ -49,6 +49,23 @@ def align_up(bytes, alignment):
     return (int(bytes) + int(alignment) - 1) / int(alignment) * int(alignment)
 
 
+def extract_partition(sdimg, number):
+    output = subprocess.Popen(["fdisk", "-l", "-o", "device,start,end", sdimg],
+                              stdout=subprocess.PIPE)
+    for line in output.stdout:
+        if re.search("sdimg%d" % number, line) is None:
+            continue
+
+        match = re.match("\s*\S+\s+(\S+)\s+(\S+)", line)
+        assert(match is not None)
+        start = int(match.group(1))
+        end = (int(match.group(2)) + 1)
+    output.wait()
+
+    subprocess.check_call(["dd", "if=" + sdimg, "of=sdimg%d.fs" % number,
+                           "skip=%d" % start, "count=%d" % (end - start)])
+
+
 class TestSdimg:
     def test_bootloader_embed(self, embedded_bootloader, latest_sdimg):
         """Test that IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
@@ -112,13 +129,18 @@ class TestSdimg:
         fdisk.wait()
 
         alignment = int(bitbake_variables['MENDER_PARTITION_ALIGNMENT_MB']) * 1024 * 1024
+        uboot_env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
         total_size = int(bitbake_variables['MENDER_STORAGE_TOTAL_SIZE_MB']) * 1024 * 1024
         part_overhead = int(bitbake_variables['MENDER_PARTITIONING_OVERHEAD_MB']) * 1024 * 1024
         boot_part_size = int(bitbake_variables['MENDER_BOOT_PART_SIZE_MB']) * 1024 * 1024
         data_part_size = int(bitbake_variables['MENDER_DATA_PART_SIZE_MB']) * 1024 * 1024
 
-        # First partition should be at the first alignment boundary.
-        assert(parts_start[0] == alignment)
+        # Uboot environment should be aligned.
+        assert(uboot_env_size % alignment == 0)
+
+        # First partition should start after exactly one alignment, plus the
+        # U-Boot environment.
+        assert(parts_start[0] == alignment + uboot_env_size)
 
         # Subsequent partitions should start where previous one left off.
         assert(parts_start[1] == parts_end[0])
@@ -138,3 +160,76 @@ class TestSdimg:
         # not by more than the calculated overhead..
         assert(parts_end[4] <= total_size)
         assert(parts_end[4] >= total_size - part_overhead)
+
+
+    def test_device_type(self, latest_sdimg, bitbake_variables, bitbake_path):
+        """Test that device type file is correctly embedded."""
+
+        try:
+            extract_partition(latest_sdimg, 5)
+
+            subprocess.check_call(["debugfs", "-R", "dump -p /mender/device_type device_type", "sdimg5.fs"])
+
+            assert(os.stat("device_type").st_mode & 0777 == 0444)
+
+            fd = open("device_type")
+
+            lines = fd.readlines()
+            assert(len(lines) == 1)
+            lines[0] = lines[0].rstrip('\n\r')
+            assert(lines[0] == "device_type=%s" % bitbake_variables["MENDER_DEVICE_TYPE"])
+
+            fd.close()
+
+        except:
+            subprocess.call(["ls", "-l", "device_type"])
+            print("Contents of artifact_info:")
+            subprocess.call(["cat", "device_type"])
+            raise
+
+        finally:
+            try:
+                os.remove("sdimg5.fs")
+                os.remove("device_type")
+            except:
+                pass
+
+    def test_data_ownership(self, latest_sdimg, bitbake_variables, bitbake_path):
+        """Test that the owner of files on the data partition is root."""
+
+        try:
+            extract_partition(latest_sdimg, 5)
+
+            def check_dir(dir):
+                ls = subprocess.Popen(["debugfs", "-R" "ls -l -p %s" % dir, "sdimg5.fs"], stdout=subprocess.PIPE)
+                entries = ls.stdout.readlines()
+                ls.wait()
+
+                for entry in entries:
+                    entry = entry.strip()
+
+                    if len(entry) == 0:
+                        # debugfs might output empty lines too.
+                        continue
+
+                    columns = entry.split('/')
+
+                    if columns[1] == "0":
+                        # Inode 0 is some weird file inside lost+found, skip it.
+                        continue
+
+                    assert(columns[3] == "0")
+                    assert(columns[4] == "0")
+
+                    mode = int(columns[2], 8)
+                    # Recurse into directories.
+                    if mode & 040000 != 0 and columns[5] != "." and columns[5] != "..":
+                        check_dir(os.path.join(dir, columns[5]))
+
+            check_dir("/")
+
+        finally:
+            try:
+                os.remove("sdimg5.fs")
+            except:
+                pass
