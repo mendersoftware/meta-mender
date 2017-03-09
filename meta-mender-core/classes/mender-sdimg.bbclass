@@ -158,6 +158,10 @@ part         --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary
 part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 EOF
 
+    echo "### Contents of wks file ###"
+    cat "$wks"
+    echo "### End of contents of wks file ###"
+
     # Call WIC
     outimgname="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-sdimg"
