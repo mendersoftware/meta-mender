@@ -129,6 +129,10 @@ IMAGE_CMD_sdimg() {
     wks="${WORKDIR}/mender-sdimg.wks"
     rm -f "$wks"
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
+        if [ $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
+            bbfatal "IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET must be aligned to kB" \
+                    "boundary (an even number)."
+        fi
         bootloader_align_kb=$(expr $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
         bootloader_size=$(stat -c '%s' "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}")
         bootloader_end=$(expr $bootloader_align_kb \* 1024 + $bootloader_size)
@@ -157,6 +161,10 @@ part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label primary -
 part         --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
 part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align $MENDER_PARTITION_ALIGNMENT_KB --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 EOF
+
+    echo "### Contents of wks file ###"
+    cat "$wks"
+    echo "### End of contents of wks file ###"
 
     # Call WIC
     outimgname="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
