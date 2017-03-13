@@ -8,6 +8,8 @@ B = "${WORKDIR}/build"
 
 GOPATHDIR = "${B}/src/${GO_IMPORT}"
 
+DEPENDS_append += " rsync-native"
+
 BBCLASSEXTEND = "native"
 
 do_compile() {
