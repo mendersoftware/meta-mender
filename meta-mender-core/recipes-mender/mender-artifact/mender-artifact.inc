@@ -8,6 +8,8 @@ B = "${WORKDIR}/build"
 
 GOPATHDIR = "${B}/src/${GO_IMPORT}"
 
+DEPENDS_append += " rsync-native"
+
 BBCLASSEXTEND = "native"
 
 do_compile() {
@@ -27,16 +29,6 @@ do_compile() {
 }
 
 do_install() {
-    install -d ${D}${GOROOT_FINAL}
-    rsync -av \
-          --exclude '*/vendor/github.com/mendersoftware/mendertesting/*.sh' \
-          ${B}/ ${D}${GOROOT_FINAL}
-
-    if test -e ${D}${GOBIN_FINAL} ; then
-        install -d ${D}${bindir}
-        find ${D}${GOBIN_FINAL} ! -type d -print0 | xargs -r0 mv --target-directory="${D}${bindir}"
-        rmdir -p ${D}${GOBIN_FINAL} || true
-        chown -R root:root ${D}${bindir}
-    fi
-    chown -R root:root ${D}${GOROOT_FINAL}
+    install -d ${D}${bindir}
+    install ${B}/bin/mender-artifact -m 0755 ${D}${bindir}
 }
