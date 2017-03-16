@@ -63,7 +63,7 @@ def prepared_test_build_base(request, bitbake_variables, latest_sdimg):
     run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
     local_conf = os.path.join(build_dir, "conf", "local.conf")
     fd = open(local_conf, "a")
-    fd.write('SSTATE_MIRRORS_append = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
+    fd.write('SSTATE_MIRRORS = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
     # The idea here is to append customizations, and then reset the file by
     # deleting everything below this line.
     fd.write('### TEST CUSTOMIZATIONS BELOW HERE ###\n')
