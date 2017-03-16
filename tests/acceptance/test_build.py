@@ -63,7 +63,7 @@ def prepared_test_build_base(request, bitbake_variables, latest_sdimg):
     run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
     local_conf = os.path.join(build_dir, "conf", "local.conf")
     fd = open(local_conf, "a")
-    fd.write('SSTATE_MIRRORS_append = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
+    fd.write('SSTATE_MIRRORS = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
     # The idea here is to append customizations, and then reset the file by
     # deleting everything below this line.
     fd.write('### TEST CUSTOMIZATIONS BELOW HERE ###\n')
@@ -111,6 +111,15 @@ def prepared_test_build(prepared_test_build_base):
     return prepared_test_build_base
 
 
+def add_to_local_conf(prepared_test_build, string):
+    """Add given string to local.conf before the build. Newline is added
+    automatically."""
+
+    fd = open(prepared_test_build['local_conf'], "a")
+    fd.write("%s\n" % string)
+    fd.close()
+
+
 class TestBuild:
     def test_default_server_certificate(self):
         """Test that the md5sum we have on record matches the server certificate.
@@ -127,12 +136,10 @@ class TestBuild:
         """Test that IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
         correctly in the resulting sdimg."""
 
-        fd = open(prepared_test_build['local_conf'], "a")
         loader_file = "bootloader.bin"
         loader_offset = 4
-        fd.write('IMAGE_BOOTLOADER_FILE = "%s"\n' % loader_file)
-        fd.write('IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET = "%d"\n' % loader_offset)
-        fd.close()
+        add_to_local_conf(prepared_test_build, 'IMAGE_BOOTLOADER_FILE = "%s"' % loader_file)
+        add_to_local_conf(prepared_test_build, 'IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET = "%d"' % loader_offset)
 
         new_bb_vars = get_bitbake_variables("core-image-minimal", prepared_test_build['env_setup'])
 
@@ -164,3 +171,16 @@ class TestBuild:
 
         os.close(original)
         os.close(embedded)
+
+
+    def test_image_rootfs_extra_space(self, prepared_test_build, bitbake_variables):
+        """Test that setting IMAGE_ROOTFS_EXTRA_SPACE to arbitrary values does
+        not break the build."""
+
+        add_to_local_conf(prepared_test_build, 'IMAGE_EXTRA_ROOTFS_SPACE_append = " + 640 - 222 + 900"')
+
+        run_bitbake(prepared_test_build)
+
+        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext4")
+
+        assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
