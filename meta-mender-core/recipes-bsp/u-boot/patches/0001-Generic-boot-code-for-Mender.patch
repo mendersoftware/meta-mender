@@ -40,8 +40,8 @@ index 0000000..043f97d
 +
 +#include <config_mender_defines.h>
 +
-+#ifndef CONFIG_ENV_IS_IN_MMC
-+# error CONFIG_ENV_IS_IN_MMC is required for Mender to work
++#if !defined(CONFIG_ENV_IS_IN_MMC) && !defined(CONFIG_ENV_IS_IN_NAND)
++# error CONFIG_ENV_IS_IN_MMC or CONFIG_ENV_IS_IN_NAND is required for Mender to work
 +#endif
 +
 +#ifndef CONFIG_BOOTCOUNT_LIMIT
@@ -82,7 +82,7 @@ new file mode 100644
 index 0000000..2c43fd3
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,67 @@
+@@ -0,0 +1,76 @@
 +/*
 +  Copyright (C) 2016  Mender Software
 +
@@ -120,7 +120,10 @@ index 0000000..2c43fd3
 +                                                                        \
 +    "upgrade_available=0\0"                                             \
 +                                                                        \
++    "mender_mtd_ubi_dev_name=" MENDER_MTD_UBI_DEVICE_NAME "\0"          \
++                                                                        \
 +    "mender_boot_part=" __stringify(MENDER_ROOTFS_PART_A_NUMBER) "\0"   \
++    "mender_boot_part_name=" MENDER_ROOTFS_PART_A_NAME "\0"             \
 +                                                                        \
 +    "mender_uboot_boot=" MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":" __stringify(MENDER_BOOT_PART_NUMBER) "\0" \
 +                                                                        \
@@ -130,15 +133,21 @@ index 0000000..2c43fd3
 +                                                                        \
 +    "mender_setup="                                                     \
 +    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; " \
++    "setenv mender_kernel_root_name ${mender_boot_part_name}; "         \
 +    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}; " \
++    "setenv mender_uboot_root_name ${mender_boot_part_name}; "          \
 +    "setenv expand_bootargs setenv bootargs ${bootargs}; "              \
 +    "run expand_bootargs; "                                             \
 +    "setenv expand_bootargs\0"                                          \
 +                                                                        \
 +    "mender_altbootcmd="                                                \
-+    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "  \
-+    "then setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_B_NUMBER) "; "   \
-+    "else setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "   \
++    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "     \
++    "then "                                                                            \
++    "setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_B_NUMBER) "; "           \
++    "setenv mender_boot_part_name " MENDER_ROOTFS_PART_B_NAME "; "                     \
++    "else "                                                                            \
++    "setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "           \
++    "setenv mender_boot_part_name " MENDER_ROOTFS_PART_A_NAME "; "      \
 +    "fi; "                                                              \
 +    "setenv upgrade_available 0; "                                      \
 +    "saveenv; "                                                         \
@@ -150,6 +159,5 @@ index 0000000..2c43fd3
 +    "fi\0"
 +
 +#endif /* HEADER_ENV_MENDER_H */
--- 
 2.7.4
 

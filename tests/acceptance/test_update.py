@@ -42,7 +42,7 @@ class Helpers:
     def get_env_offsets(bitbake_variables):
         offsets = [0, 0]
 
-        alignment = int(bitbake_variables["MENDER_PARTITION_ALIGNMENT_MB"]) * 1024 * 1024
+        alignment = int(bitbake_variables["MENDER_PARTITION_ALIGNMENT_KB"]) * 1024
         env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
         offsets[0] = int(bitbake_variables["MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET"])
         offsets[1] = offsets[0] + int(env_size / 2)

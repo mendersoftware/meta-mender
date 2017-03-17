@@ -1,0 +1,75 @@
+From bade39c66106b6f110b1bab3a6245362a06f856e Mon Sep 17 00:00:00 2001
+From: Mirza Krak <mirza.krak@gmail.com>
+Date: Sun, 29 Jan 2017 19:40:09 +0100
+Subject: [PATCH 1/1] configs: colibri_vf: adjust for Mender requirements
+
+Signed-off-by: Mirza Krak <mirza.krak@gmail.com>
+---
+ include/configs/colibri_vf.h | 29 +++++++++++++++++------------
+ 1 file changed, 17 insertions(+), 12 deletions(-)
+
+diff --git a/include/configs/colibri_vf.h b/include/configs/colibri_vf.h
+index 9fc65a5..f31999c 100644
+--- a/include/configs/colibri_vf.h
++++ b/include/configs/colibri_vf.h
+@@ -80,7 +80,7 @@
+ #define MTDPARTS_DEFAULT	"mtdparts=vf610_nfc:"		\
+ 				"128k(vf-bcb)ro,"		\
+ 				"1408k(u-boot)ro,"		\
+-				"512k(u-boot-env),"		\
++				"1m(u-boot-env),"		\
+ 				"-(ubi)"
+ 
+ #define CONFIG_MMC
+@@ -146,17 +146,20 @@
+ 		"run fdt_fixup && bootz ${kernel_addr_r} - ${fdt_addr_r}\0" \
+ 
+ #define UBI_BOOTCMD	\
+-	"ubiargs=ubi.mtd=ubi root=ubi0:rootfs rootfstype=ubifs " \
+-		"ubi.fm_autoconvert=1\0" \
++	"ubiargs=ubi.mtd=${mender_mtd_ubi_dev_name} root=${mender_kernel_root} rootfstype=ubifs " \
++	"ubi.fm_autoconvert=1\0" \
+ 	"ubiboot=run setup; " \
+-		"setenv bootargs ${defargs} ${ubiargs} " \
+-		"${setupargs} ${vidargs}; echo Booting from NAND...; " \
+-		"ubi part ubi && " \
+-		"ubi read ${kernel_addr_r} kernel && " \
+-		"ubi read ${fdt_addr_r} dtb && " \
+-		"run fdt_fixup && bootz ${kernel_addr_r} - ${fdt_addr_r}\0" \
+-
+-#define CONFIG_BOOTCOMMAND "run ubiboot; " \
++	"setenv fdtfile ${soc}-colibri-${fdt_board}.dtb; " \
++	"setenv bootargs ${defargs} ${ubiargs} ${mtdparts} " \
++	"${setupargs} ${vidargs}; echo Booting from NAND...; " \
++	"run mender_setup; " \
++	"ubi part ${mender_mtd_ubi_dev_name} && " \
++	"ubifsmount ${mender_uboot_root_name} && " \
++	"ubifsload ${kernel_addr_r} /boot/zImage && " \
++	"ubifsload ${fdt_addr_r} /boot/${fdtfile} && " \
++	"bootz ${kernel_addr_r} - ${fdt_addr_r}\0" \
++
++#define CONFIG_BOOTCOMMAND "run ubiboot; run mender_try_to_recover; " \
+ 	"setenv fdtfile ${soc}-colibri-${fdt_board}.dtb && run distro_bootcmd;"
+ 
+ #define BOOTENV_RUN_NET_USB_START ""
+@@ -214,6 +217,9 @@
+ #define CONFIG_SYS_HZ			1000
+ #define CONFIG_CMDLINE_EDITING
+ 
++#define CONFIG_BOOTCOUNT_LIMIT
++#define CONFIG_BOOTCOUNT_ENV
++
+ /*
+  * Stack sizes
+  * The stack sizes are set up in start.S using the settings below
+@@ -246,7 +252,6 @@
+ #ifdef CONFIG_ENV_IS_IN_NAND
+ #define CONFIG_ENV_SIZE			(64 * 2048)
+ #define CONFIG_ENV_RANGE		(4 * 64 * 2048)
+-#define CONFIG_ENV_OFFSET		(12 * 64 * 2048)
+ #endif
+ 
+ /* USB Host Support */
+-- 
+2.1.4
+
