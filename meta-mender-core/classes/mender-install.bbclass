@@ -42,7 +42,7 @@ MENDER_DEVICE_TYPES_COMPATIBLE ?= "${MACHINE}"
 # Total size of the medium that mender sdimg will be written to. The size of
 # rootfs partition will be calculated automatically by subtracting the size of
 # boot and data partitions along with some predefined overhead (see
-# MENDER_PARTITIONING_OVERHEAD_MB).
+# MENDER_PARTITIONING_OVERHEAD_KB).
 MENDER_STORAGE_TOTAL_SIZE_MB ?= "1024"
 
 # Optional location where a directory can be specified with content that should
@@ -96,15 +96,15 @@ IMAGE_INSTALL_append = " \
 def mender_get_part_overhead(d):
     align = d.getVar('MENDER_PARTITION_ALIGNMENT_KB', True)
     if align:
-        return 4 * (int(align) / 1024)
+        return 4 * int(align)
     return 0
 
 # Overhead lost due to partitioning.
-MENDER_PARTITIONING_OVERHEAD_MB ?= "${@mender_get_part_overhead(d)}"
+MENDER_PARTITIONING_OVERHEAD_KB ?= "${@mender_get_part_overhead(d)}"
 
-def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, overhead_mb, reserved_space_size):
+def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, overhead_kb, reserved_space_size):
     # Space left in raw device.
-    calc_space = (total_mb - boot_mb - data_mb - overhead_mb) * 1048576
+    calc_space = (total_mb - boot_mb - data_mb) * 1048576 - overhead_kb * 1024
 
     # Subtract reserved raw space.
     calc_space = calc_space - reserved_space_size
@@ -121,7 +121,7 @@ def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, overhead_mb, res
 MENDER_CALC_ROOTFS_SIZE = "${@mender_calculate_rootfs_size_kb(${MENDER_STORAGE_TOTAL_SIZE_MB}, \
                                                               ${MENDER_BOOT_PART_SIZE_MB}, \
                                                               ${MENDER_DATA_PART_SIZE_MB}, \
-                                                              ${MENDER_PARTITIONING_OVERHEAD_MB}, \
+                                                              ${MENDER_PARTITIONING_OVERHEAD_KB}, \
                                                               ${MENDER_STORAGE_RESERVED_RAW_SPACE})}"
 # Gently apply this as the default image size.
 # But subtract IMAGE_ROOTFS_EXTRA_SPACE, since it will be added automatically
