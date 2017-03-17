@@ -21,7 +21,7 @@ MENDER_ROOTFS_PART_B ?= "${MENDER_STORAGE_DEVICE_BASE}1"
 
 # The partition number holding the data partition.
 MENDER_DATA_PART ?= "${MENDER_STORAGE_DEVICE_BASE}2"
-MENDER_DATA_FSTYPE ?= "ubifs"
+MENDER_DATA_PART_FSTYPE ?= "ubifs"
 
 # u-boot command ubifsmount requires volume name as the only argument
 # and hence we need to keep track of that since we load kernel/dtb from

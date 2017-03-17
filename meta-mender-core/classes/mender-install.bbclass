@@ -30,8 +30,8 @@ MENDER_MTD_UBI_DEVICE_NAME ??= ""
 # Filesystem type of data partition. This configuration is used in fstab. Most
 # filesystems can be auto detected, but some can not and hence we allow the
 # user to override this.
-MENDER_DATA_FSTYPE ??= "auto"
-MENDER_BOOT_FSTYPE ??= "auto"
+MENDER_DATA_PART_FSTYPE ??= "auto"
+MENDER_BOOT_PART_FSTYPE ??= "auto"
 
 # Device type of device when making an initial partitioned image.
 MENDER_DEVICE_TYPE ?= "${MACHINE}"
