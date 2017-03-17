@@ -33,6 +33,13 @@ do
     COMMIT_MSG="$(git show -s --format=%B "$i")"
     COMMIT_USER_EMAIL="$(git show -s --format="%an <%ae>" "$i")"
 
+    # Ignore commits that have git-subtree tags in them. They are a PITA both
+    # to sign and add changelogs to, and signing should anyway be present in the
+    # original repository.
+    if echo "$COMMIT_MSG" | egrep "^git-subtree-[^:]+:" >/dev/null; then
+        continue
+    fi
+
     # Check that Signed-off-by tags are present.
     if ! echo "$COMMIT_MSG" | grep -F "Signed-off-by: ${COMMIT_USER_EMAIL}" >/dev/null; then
         echo >&2 "Commit ${i} is not signed off! Use --signoff with your commit."
