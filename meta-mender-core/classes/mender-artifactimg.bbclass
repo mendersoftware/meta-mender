@@ -12,7 +12,7 @@ IMAGE_CMD_mender () {
     rootfs_size=$(stat -Lc %s ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE})
     calc_rootfs_size=$(expr ${MENDER_CALC_ROOTFS_SIZE} \* 1024)
     if [ $rootfs_size -gt $calc_rootfs_size ]; then
-        bbwarn "Size of rootfs is greater than the calculated partition space ($rootfs_size > $calc_rootfs_size). This image won't fit on a device with the current storage configuration. Make sure IMAGE_ROOTFS_EXTRA_SPACE is set to 0, and try reducing IMAGE_OVERHEAD_FACTOR if it is higher than 1.0."
+        bbfatal "Size of rootfs is greater than the calculated partition space ($rootfs_size > $calc_rootfs_size). This image won't fit on a device with the current storage configuration. Try reducing IMAGE_OVERHEAD_FACTOR if it is higher than 1.0, or raise MENDER_STORAGE_TOTAL_SIZE_MB if the device in fact has more storage."
     fi
 
     # Trim leading/trailing spaces, and replace spaces with commas for
