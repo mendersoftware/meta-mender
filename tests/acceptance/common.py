@@ -372,7 +372,7 @@ def bitbake_path_string():
 
     bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
 
-    return bb_testing_variables['PATH']
+    return bb_testing_variables['PATH'] + ":" + os.environ['PATH']
 
 @pytest.fixture(scope="function")
 def bitbake_path(request, bitbake_path_string):
