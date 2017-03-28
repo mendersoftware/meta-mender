@@ -8,7 +8,7 @@ SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;br
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the
 # SHA.
-SRCREV ?= '${@oe.utils.ifelse("git" in d.getVar("PREFERRED_VERSION_${PN}"), "${AUTOREV}", "77326b288c70cd713e7ad15d2a084b6ee797e8ff")}'
+SRCREV ?= '${@oe.utils.ifelse("git" in d.getVar("PREFERRED_VERSION_${PN}",True), "${AUTOREV}", "77326b288c70cd713e7ad15d2a084b6ee797e8ff")}'
 PV = "${MENDER_ARTIFACT_BRANCH}-git${SRCPV}"
 
 LICENSE = "Apache-2.0"
