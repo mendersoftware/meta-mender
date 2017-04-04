@@ -18,6 +18,8 @@ SRCREV ?= '${@mender_artifact_is_git_version(d)}'
 
 PV = "${MENDER_ARTIFACT_BRANCH}-git${SRCPV}"
 
+# DO NOT change the checksum here without make sure that ALL licenses (including
+# dependencies) are included in the LICENSE variable below.
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LIC_FILES_CHKSUM.sha256;md5=f4a3edb2a8fe8e2ecde8062ba20b1c86"
 
