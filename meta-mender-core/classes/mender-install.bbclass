@@ -78,10 +78,6 @@ python() {
         bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
 }
 
-PREFERRED_VERSION_mender ?= "1.0.%"
-PREFERRED_VERSION_mender-artifact ?= "1.0.%"
-PREFERRED_VERSION_mender-artifact-native ?= "1.0.%"
-
 IMAGE_INSTALL_append = " \
     mender \
     ca-certificates \
