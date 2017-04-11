@@ -184,3 +184,28 @@ class TestBuild:
         built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext4")
 
         assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
+
+
+    def test_artifact_signing_key(self, prepared_test_build, bitbake_variables, bitbake_path):
+        """Test that MENDER_ARTIFACT_SIGNING_KEY works correctly."""
+
+        try:
+            subprocess.check_call(["openssl", "genrsa", "-out", "private.pem", "2048"])
+            subprocess.check_call(["openssl", "rsa", "-in", "private.pem", "-outform", "PEM",
+                                   "-pubout", "-out", "public.pem"])
+
+            add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
+                              % os.path.join(os.getcwd(), "private.pem"))
+
+            run_bitbake(prepared_test_build)
+
+            built_artifact = latest_build_artifact(prepared_test_build['build_dir'], ".mender")
+
+            output = subprocess.check_output(["mender-artifact", "read", "-k",
+                                              os.path.join(os.getcwd(), "public.pem"),
+                                              built_artifact])
+            assert(output.find("Signature: signed and verified correctly") >= 0)
+
+        finally:
+            # Easiest way to make sure that stuff is cleaned up.
+            subprocess.check_call(["rm", "-f", "private.pem", "public.pem"])
