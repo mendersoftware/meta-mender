@@ -16,7 +16,6 @@ B = "${WORKDIR}/build"
 inherit go
 
 SRC_URI_append = " file://mender.service \
-                   file://mender.conf \
                  "
 
 inherit systemd
@@ -67,21 +66,46 @@ do_compile() {
   # run verbose build, we should see which dependencies are pulled in
   oe_runmake V=1 install
 
-  #prepare Mender configuration file
-  cp ${WORKDIR}/mender.conf ${B}
-  sed -i -e 's#[@]MENDER_SERVER_URL[@]#${MENDER_SERVER_URL}#' ${B}/mender.conf
-  sed -i -e 's#[@]MENDER_CERT_LOCATION[@]#${MENDER_CERT_LOCATION}#' ${B}/mender.conf
-  sed -i -e 's#[@]MENDER_UPDATE_POLL_INTERVAL_SECONDS[@]#${MENDER_UPDATE_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
-  sed -i -e 's#[@]MENDER_INVENTORY_POLL_INTERVAL_SECONDS[@]#${MENDER_INVENTORY_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
-  sed -i -e 's#[@]MENDER_RETRY_POLL_INTERVAL_SECONDS[@]#${MENDER_RETRY_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
-
-  if [ -n "${MENDER_ROOTFS_PART_A}" ] && [ -n "${MENDER_ROOTFS_PART_B}" ]; then
-    sed -i -e 's#[@]MENDER_ROOTFS_PART_A[@]#${MENDER_ROOTFS_PART_A}#' ${B}/mender.conf
-    sed -i -e 's#[@]MENDER_ROOTFS_PART_B[@]#${MENDER_ROOTFS_PART_B}#' ${B}/mender.conf
-  fi
-
   echo "${MENDER_TENANT_TOKEN}" > ${B}/tenant.conf
 }
+
+python do_prepare_mender_conf() {
+    import json
+
+    # If a mender.conf has been provided in SRC_URI, merge this with the
+    # settings we generate. The settings specified by variables take precedence.
+    src_conf = os.path.join(d.getVar("WORKDIR", True), "mender.conf")
+    if os.path.exists(src_conf):
+        bb.debug(1, "mender.conf already present in ${WORKDIR}, merging with generated settings.")
+        fd = open(src_conf)
+        conf = json.load(fd)
+        fd.close()
+    else:
+        bb.debug(1, "mender.conf not present in ${WORKDIR}, generating a new one.")
+        conf = {}
+
+    def conf_maybe_add(key, value, integer):
+        if value is not None and value != "":
+            if integer:
+                conf[key] = int(value)
+            else:
+                conf[key] = value
+
+    # Add new variable -> config assignments here.
+    conf_maybe_add("InventoryPollIntervalSeconds", d.getVar("MENDER_INVENTORY_POLL_INTERVAL_SECONDS", True), integer=True)
+    conf_maybe_add("RetryPollIntervalSeconds", d.getVar("MENDER_RETRY_POLL_INTERVAL_SECONDS", True), integer=True)
+    conf_maybe_add("RootfsPartA", d.getVar("MENDER_ROOTFS_PART_A", True), integer=False)
+    conf_maybe_add("RootfsPartB", d.getVar("MENDER_ROOTFS_PART_B", True), integer=False)
+    conf_maybe_add("ServerCertificate", d.getVar("MENDER_CERT_LOCATION", True), integer=False)
+    conf_maybe_add("ServerURL", d.getVar("MENDER_SERVER_URL", True), integer=False)
+    conf_maybe_add("UpdatePollIntervalSeconds", d.getVar("MENDER_UPDATE_POLL_INTERVAL_SECONDS", True), integer=True)
+
+    dst_conf = os.path.join(d.getVar("B", True), "mender.conf")
+    fd = open(dst_conf, "w")
+    json.dump(conf, fd, indent=4, sort_keys=True)
+    fd.close()
+}
+addtask do_prepare_mender_conf after do_compile before do_install
 
 do_install() {
   install -d ${D}/${bindir}
