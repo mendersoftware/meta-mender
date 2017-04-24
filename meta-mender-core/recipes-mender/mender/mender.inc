@@ -91,7 +91,12 @@ python do_prepare_mender_conf() {
             else:
                 conf[key] = value
 
+    key_in_src_uri = os.path.exists(os.path.join(d.getVar("WORKDIR"), "artifact-verify-key.pem"))
+    key_in_var = d.getVar("MENDER_ARTIFACT_VERIFY_KEY") not in [None, ""]
+
     # Add new variable -> config assignments here.
+    if key_in_src_uri or key_in_var:
+        conf_maybe_add("ArtifactVerifyKey", "%s/mender/artifact-verify-key.pem" % d.getVar("sysconfdir"), integer=False)
     conf_maybe_add("InventoryPollIntervalSeconds", d.getVar("MENDER_INVENTORY_POLL_INTERVAL_SECONDS"), integer=True)
     conf_maybe_add("RetryPollIntervalSeconds", d.getVar("MENDER_RETRY_POLL_INTERVAL_SECONDS"), integer=True)
     conf_maybe_add("RootfsPartA", d.getVar("MENDER_ROOTFS_PART_A"), integer=False)
@@ -140,6 +145,16 @@ do_install() {
     install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
 
     install -d ${D}/${localstatedir}/lib/mender
+
+    # install artifact verification key, if any.
+    if [ -e ${WORKDIR}/artifact-verify-key.pem ]; then
+        if [ -n "${MENDER_ARTIFACT_VERIFY_KEY}" ]; then
+            bbfatal "You can not specify both MENDER_ARTIFACT_VERIFY_KEY and have artifact-verify-key.pem in SRC_URI."
+        fi
+        install -m 0444 ${WORKDIR}/artifact-verify-key.pem ${D}${sysconfdir}/mender
+    elif [ -n "${MENDER_ARTIFACT_VERIFY_KEY}" ]; then
+        install -m 0444 "${MENDER_ARTIFACT_VERIFY_KEY}" ${D}${sysconfdir}/mender/artifact-verify-key.pem
+    fi
 }
 
 do_install_append_menderimage() {
