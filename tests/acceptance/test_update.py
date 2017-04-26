@@ -259,7 +259,7 @@ class TestUpdates:
 
         try:
             # Make a dummy/broken update
-            subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
+            subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=32", shell=True)
             subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
             run("mender -rootfs /var/tmp/image.mender")
