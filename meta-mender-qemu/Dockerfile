@@ -1,10 +1,9 @@
-FROM ubuntu:trusty
+FROM alpine:3.4
 
-# Install QEMU/KVM
-RUN apt-get -y update && \
-    apt-get -y upgrade && \
-    apt-get -y install qemu-kvm qemu-system-arm && \
-    rm -rf /var/lib/apt/lists/*
+# Install QEMU
+RUN apk update && apk upgrade && \
+    apk add qemu-system-arm bash && \
+    rm -rf /var/cache/apk/*
 
 # Use: --build-arg VEXPRESS_IMAGE=core-image-full-cmdline-vexpress-qemu.sdimg
 # --build-arg UBOOT_ELF=u-boot.elf when building
