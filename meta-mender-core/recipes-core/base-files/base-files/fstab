@@ -5,5 +5,5 @@ tmpfs                /run                 tmpfs      mode=0755,nodev,nosuid,stri
 tmpfs                /var/volatile        tmpfs      defaults              0  0
 
 # Where the U-Boot environment resides; for devices with SD card support ONLY!
-@MENDER_BOOT_PART@   /uboot               auto       defaults,sync,auto    0  0
-@MENDER_DATA_PART@   /data                auto       defaults,auto         0  0
+@MENDER_BOOT_PART@   /uboot               auto       defaults,sync    0  0
+@MENDER_DATA_PART@   /data                auto       defaults         0  0
