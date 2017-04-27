@@ -270,7 +270,7 @@ def no_image_file(qemu_running):
 def no_image_file_impl():
     run("rm -f image.dat")
 
-def latest_build_artifact(builddir, extension):
+def latest_build_artifact(extension, builddir=os.environ['BUILDDIR']):
     output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | head -n 1" % (builddir, extension)])
     output = output.rstrip('\r\n')
     print("Found latest image of type '%s' to be: %s" % (extension, output))
@@ -281,21 +281,21 @@ def latest_rootfs():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    return latest_build_artifact(os.environ['BUILDDIR'], ".ext[234]")
+    return latest_build_artifact(".ext[234]")
 
 @pytest.fixture(scope="session")
 def latest_sdimg():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    return latest_build_artifact(os.environ['BUILDDIR'], ".sdimg")
+    return latest_build_artifact(".sdimg")
 
 @pytest.fixture(scope="session")
 def latest_mender_image():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    return latest_build_artifact(os.environ['BUILDDIR'], ".mender")
+    return latest_build_artifact(".mender")
 
 @pytest.fixture(scope="function")
 def successful_image_update_mender(request, latest_mender_image):
