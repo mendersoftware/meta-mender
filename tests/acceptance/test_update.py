@@ -118,8 +118,11 @@ class TestUpdates:
 
         finally:
             # Cleanup.
-            os.remove("image.mender")
-            os.remove(broken_image)
+            try:
+                os.remove("image.mender")
+                os.remove(broken_image)
+            except:
+                pass
 
     def test_too_big_image_update(self):
         if not env.host_string:
@@ -139,8 +142,11 @@ class TestUpdates:
 
         finally:
             # Cleanup.
-            os.remove("image-too-big.mender")
-            os.remove("image.dat")
+            try:
+                os.remove("image-too-big.mender")
+                os.remove("image.dat")
+            except:
+                pass
 
     def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables):
         http_server_location = pytest.config.getoption("--http-server")
@@ -310,5 +316,8 @@ class TestUpdates:
 
         finally:
             # Cleanup.
-            os.remove("image.mender")
-            os.remove("image.dat")
+            try:
+                os.remove("image.mender")
+                os.remove(broken_image)
+            except:
+                pass
