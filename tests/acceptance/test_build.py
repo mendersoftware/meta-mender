@@ -151,7 +151,7 @@ class TestBuild:
 
         run_bitbake(prepared_test_build)
 
-        built_sdimg = latest_build_artifact(prepared_test_build['build_dir'], ".sdimg")
+        built_sdimg = latest_build_artifact(".sdimg", builddir=prepared_test_build['build_dir'])
 
         original = os.open(loader_path, os.O_RDONLY)
         embedded = os.open(built_sdimg, os.O_RDONLY)
@@ -181,7 +181,7 @@ class TestBuild:
 
         run_bitbake(prepared_test_build)
 
-        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext4")
+        built_rootfs = latest_build_artifact(".ext4", builddir=prepared_test_build['build_dir'])
 
         assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
 
@@ -199,7 +199,7 @@ class TestBuild:
 
             run_bitbake(prepared_test_build)
 
-            built_artifact = latest_build_artifact(prepared_test_build['build_dir'], ".mender")
+            built_artifact = latest_build_artifact(".mender", builddir=prepared_test_build['build_dir'])
 
             output = subprocess.check_output(["mender-artifact", "read", "-k",
                                               os.path.join(os.getcwd(), "public.pem"),
