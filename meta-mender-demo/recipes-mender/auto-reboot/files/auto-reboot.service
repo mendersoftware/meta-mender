@@ -1,0 +1,12 @@
+[Unit]
+Description=Mender OTA update forced reboot
+Before=mender.service
+
+[Service]
+Type=idle
+User=root
+Group=root
+ExecStart=/sbin/shutdown -r now
+
+[Install]
+WantedBy=multi-user.target
