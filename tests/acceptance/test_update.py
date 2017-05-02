@@ -14,7 +14,6 @@
 #    limitations under the License.
 
 from fabric.api import *
-
 import pytest
 import subprocess
 
@@ -78,8 +77,16 @@ class Helpers:
 
         return checksums
 
+
 @pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "bitbake_path")
 class TestUpdates:
+
+    def create_broken_image(self):
+        broken_image = "image.dat"
+        latest_ext4 = latest_build_artifact("ext4")
+        latest_ext4_size = os.stat(latest_ext4).st_size
+        subprocess.call("dd if=/dev/zero of=%s bs=%s count=1" % (broken_image, latest_ext4_size), shell=True)
+        return broken_image
 
     def test_broken_image_update(self, bitbake_variables):
 
@@ -92,8 +99,8 @@ class TestUpdates:
 
         try:
             # Make a dummy/broken update
-            subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
-            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
+            broken_image = self.create_broken_image()
+            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u %s -o image.mender" % (image_type, broken_image), shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
             run("mender -rootfs /var/tmp/image.mender")
             reboot()
@@ -112,7 +119,7 @@ class TestUpdates:
         finally:
             # Cleanup.
             os.remove("image.mender")
-            os.remove("image.dat")
+            os.remove(broken_image)
 
     def test_too_big_image_update(self):
         if not env.host_string:
@@ -259,8 +266,8 @@ class TestUpdates:
 
         try:
             # Make a dummy/broken update
-            subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
-            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
+            broken_image = self.create_broken_image()
+            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u %s -o image.mender" % (image_type, broken_image), shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
             run("mender -rootfs /var/tmp/image.mender")
 
