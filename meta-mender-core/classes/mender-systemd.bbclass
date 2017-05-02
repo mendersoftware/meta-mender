@@ -16,6 +16,8 @@ VIRTUAL-RUNTIME_initscripts_vexpress-qemu = ""
 # kernel feature CONFIG_FHANDLE is not enabled.
 
 python() {
+    if bb.data.inherits_class('nativesdk', d) or bb.data.inherits_class('native', d):
+        return
     if d.getVar('MACHINE', False) != 'vexpress-qemu' and not bb.utils.contains('DISTRO_FEATURES', 'systemd', True, False, d):
         raise Exception("systemd is required in DISTRO_FEATURES when using mender-full or mender-systemd classes. See mender-systemd.bbclass for an example of how to enable.")
 }
