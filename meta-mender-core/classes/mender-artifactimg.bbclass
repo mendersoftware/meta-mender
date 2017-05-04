@@ -1,5 +1,8 @@
 # ------------------------------ CONFIGURATION ---------------------------------
 
+# Extra arguments that should be passed to mender-artifact.
+MENDER_ARTIFACT_EXTRA_ARGS ?= ""
+
 # The key used to sign the mender update.
 MENDER_ARTIFACT_SIGNING_KEY ?= ""
 
@@ -44,6 +47,7 @@ IMAGE_CMD_mender () {
         -n ${MENDER_ARTIFACT_NAME} -t "$devs_compatible" \
         $signing_args \
         -u ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
+        ${MENDER_ARTIFACT_EXTRA_ARGS} \
         -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender
     # The mender-artifact tool version 1.0 does not return an error code
     # If it fails, bitbake will silently ignore it.  Test for the existence
