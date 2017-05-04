@@ -25,9 +25,8 @@ def run_verbose(cmd):
     return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
 
 def run_bitbake(prepared_test_build):
-    # Use "nice" so that the UI of the machine is still responsive.
-    run_verbose("%s && nice -n 20 bitbake %s" % (prepared_test_build['env_setup'],
-                                                 prepared_test_build['image_name']))
+    run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'],
+                                      prepared_test_build['image_name']))
 
 class EmbeddedBootloader:
     loader = None
