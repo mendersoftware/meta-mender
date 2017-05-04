@@ -20,15 +20,6 @@ import subprocess
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
-def run_verbose(cmd):
-    print(cmd)
-    return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
-
-def run_bitbake(prepared_test_build):
-    # Use "nice" so that the UI of the machine is still responsive.
-    run_verbose("%s && nice -n 20 bitbake %s" % (prepared_test_build['env_setup'],
-                                                 prepared_test_build['image_name']))
-
 class EmbeddedBootloader:
     loader = None
     offset = 0
@@ -42,73 +33,6 @@ class EmbeddedBootloader:
 
         self.loader = loader
         self.offset = offset
-
-
-@pytest.fixture(scope="module")
-def prepared_test_build_base(request, bitbake_variables, latest_sdimg):
-    """Base fixture for prepared_test_build. Returns the same as that one."""
-
-    build_dir = os.path.join(os.environ['BUILDDIR'], "test-build-tmp")
-
-    def cleanup_test_build():
-        run_verbose("rm -rf %s" % build_dir)
-
-    cleanup_test_build()
-    request.addfinalizer(cleanup_test_build)
-
-    env_setup = "cd %s && . oe-init-build-env %s" % (bitbake_variables['COREBASE'], build_dir)
-
-    run_verbose(env_setup)
-
-    run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
-    local_conf = os.path.join(build_dir, "conf", "local.conf")
-    fd = open(local_conf, "a")
-    fd.write('SSTATE_MIRRORS_append = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
-    # The idea here is to append customizations, and then reset the file by
-    # deleting everything below this line.
-    fd.write('### TEST CUSTOMIZATIONS BELOW HERE ###\n')
-    fd.close()
-
-    os.symlink(os.path.join(os.environ['BUILDDIR'], "downloads"), os.path.join(build_dir, "downloads"))
-
-    sdimg_base = os.path.basename(latest_sdimg)
-    # Remove machine, date and suffix.
-    image_name = re.sub("-%s(-[0-9]+)?\.sdimg$" % bitbake_variables['MACHINE'], "", sdimg_base)
-
-    return {'build_dir': build_dir,
-            'image_name': image_name,
-            'env_setup': env_setup,
-            'local_conf': local_conf
-    }
-
-
-@pytest.fixture(scope="function")
-def prepared_test_build(prepared_test_build_base):
-    """Prepares a separate test build directory where a custom build can be
-    made, which reuses the sstate-cache. Returns a dictionary with:
-    - build_path
-    - image_name
-    - env_setup (passed to some functions)
-    - local_conf
-    """
-
-    old_file = prepared_test_build_base['local_conf']
-    new_file = old_file + ".tmp"
-
-    old = open(old_file)
-    new = open(new_file, "w")
-
-    # Reset "local.conf" by removing everything below the special line.
-    for line in old:
-        new.write(line)
-        if line == "### TEST CUSTOMIZATIONS BELOW HERE ###\n":
-            break
-
-    old.close()
-    new.close()
-    os.rename(new_file, old_file)
-
-    return prepared_test_build_base
 
 
 class TestBuild:
