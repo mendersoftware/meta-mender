@@ -388,3 +388,26 @@ def bitbake_path(request, bitbake_path_string):
     request.addfinalizer(path_restore)
 
     return os.environ['PATH']
+
+@pytest.fixture(scope="session")
+def signing_key(request):
+    subprocess.check_call(["openssl", "genrsa", "-out", "private.pem", "2048"])
+    subprocess.check_call(["openssl", "rsa", "-in", "private.pem", "-outform", "PEM",
+                           "-pubout", "-out", "public.pem"])
+
+    class KeyPair:
+        private = "private.pem"
+        public = "public.pem"
+
+    key_pair = KeyPair()
+
+    def cleanup_signing_key():
+        try:
+            os.remove(key_pair.private)
+            os.remove(key_pair.public)
+        except:
+            pass
+
+    request.addfinalizer(cleanup_signing_key)
+
+    return key_pair
