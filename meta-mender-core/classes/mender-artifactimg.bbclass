@@ -1,3 +1,5 @@
+# Extra arguments that should be passed to mender-artifact.
+MENDER_ARTIFACT_EXTRA_ARGS ?= ""
 
 IMAGE_DEPENDS_mender = "mender-artifact-native"
 
@@ -31,6 +33,7 @@ IMAGE_CMD_mender () {
     mender-artifact write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} -t "$devs_compatible" \
         -u ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
+        ${MENDER_ARTIFACT_EXTRA_ARGS} \
         -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender \
 }
 
