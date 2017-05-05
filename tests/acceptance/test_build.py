@@ -25,9 +25,8 @@ def run_verbose(cmd):
     return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
 
 def run_bitbake(prepared_test_build):
-    # Use "nice" so that the UI of the machine is still responsive.
-    run_verbose("%s && nice -n 20 bitbake %s" % (prepared_test_build['env_setup'],
-                                                 prepared_test_build['image_name']))
+    run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'],
+                                      prepared_test_build['image_name']))
 
 class EmbeddedBootloader:
     loader = None
@@ -186,28 +185,24 @@ class TestBuild:
         assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
 
 
-    def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path):
+    def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path, signing_key):
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
 
+        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
+                          % os.path.join(os.getcwd(), signing_key.private))
+        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
+                          % os.path.join(os.getcwd(), signing_key.public))
+
+        run_bitbake(prepared_test_build)
+
+        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
+        # Copy out the key we just added from the image and use that to
+        # verify instead of the original, just to be sure.
+        subprocess.check_call(["debugfs", "-R",
+                               "dump -p /etc/mender/artifact-verify-key.pem artifact-verify-key.pem",
+                               built_rootfs])
         try:
-            subprocess.check_call(["openssl", "genrsa", "-out", "private.pem", "2048"])
-            subprocess.check_call(["openssl", "rsa", "-in", "private.pem", "-outform", "PEM",
-                                   "-pubout", "-out", "public.pem"])
-
-            add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
-                              % os.path.join(os.getcwd(), "private.pem"))
-            add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
-                              % os.path.join(os.getcwd(), "public.pem"))
-
-            run_bitbake(prepared_test_build)
-
-            built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
-            # Copy out the key we just added from the image and use that to
-            # verify instead of the original, just to be sure.
-            subprocess.check_call(["debugfs", "-R",
-                                   "dump -p /etc/mender/artifact-verify-key.pem artifact-verify-key.pem",
-                                   built_rootfs])
             built_artifact = latest_build_artifact(prepared_test_build['build_dir'], ".mender")
             output = subprocess.check_output(["mender-artifact", "read", "-k",
                                               os.path.join(os.getcwd(), "artifact-verify-key.pem"),
@@ -215,5 +210,4 @@ class TestBuild:
             assert(output.find("Signature: signed and verified correctly") >= 0)
 
         finally:
-            # Easiest way to make sure that stuff is cleaned up.
-            subprocess.check_call(["rm", "-f", "private.pem", "public.pem", "artifact-verify-key.pem"])
+            os.remove("artifact-verify-key.pem")
