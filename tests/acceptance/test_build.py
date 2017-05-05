@@ -189,10 +189,15 @@ class TestBuild:
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
 
-        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
-                          % os.path.join(os.getcwd(), signing_key.private))
-        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
-                          % os.path.join(os.getcwd(), signing_key.public))
+        # Either of the two keys may be specified already if we're using the
+        # demo layer.
+        if bitbake_variables.get('MENDER_ARTIFACT_SIGNING_KEY') is None:
+            add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
+                              % os.path.join(os.getcwd(), signing_key.private))
+        if (bitbake_variables.get('MENDER_ARTIFACT_VERIFY_KEY') is None
+            and "artifact-verify-key.pem" not in get_bitbake_variables('mender').get('SRC_URI')):
+            add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
+                              % os.path.join(os.getcwd(), signing_key.public))
 
         run_bitbake(prepared_test_build)
 
