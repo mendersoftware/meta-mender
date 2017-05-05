@@ -364,12 +364,12 @@ class TestUpdates:
             with open("mender.conf") as fd:
                 config = json.load(fd)
             if sig_case.key:
-                config['ArtifactVerifyKey'] = "/etc/mender/%s" % signing_key.public
+                config['ArtifactVerifyKey'] = "/etc/mender/%s" % os.path.basename(signing_key.public)
                 put(signing_key.public, remote_path="/etc/mender")
             else:
                 if config.get('ArtifactVerifyKey'):
                     del config['ArtifactVerifyKey']
-                run("rm -f /etc/mender/%s" % signing_key.public)
+                run("rm -f /etc/mender/%s" % os.path.basename(signing_key.public))
             with open("mender.conf", "w") as fd:
                 json.dump(config, fd)
             put("mender.conf", remote_path="/etc/mender")
