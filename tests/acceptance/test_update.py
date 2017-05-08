@@ -266,8 +266,7 @@ class TestUpdates:
                                             signature_ok=False,
                                             key=True,
                                             checksum_ok=True,
-                                            # update_written should be False, see MEN-1198.
-                                            update_written=True,
+                                            update_written=False,
                                             success=False),
                               SignatureCase(label="Not signed, key not present",
                                             signature=False,
