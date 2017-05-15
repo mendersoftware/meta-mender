@@ -102,13 +102,22 @@ class SignatureCase:
     update_written = False
     success = True
 
-    def __init__(self, label, signature, signature_ok, key, checksum_ok, update_written, success):
+    def __init__(self,
+                 label,
+                 signature,
+                 signature_ok,
+                 key,
+                 checksum_ok,
+                 update_written,
+                 artifact_version,
+                 success):
         self.label = label
         self.signature = signature
         self.signature_ok = signature_ok
         self.key = key
         self.checksum_ok = checksum_ok
         self.update_written = update_written
+        self.artifact_version = artifact_version
         self.success = success
 
 @pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "bitbake_path")
@@ -246,6 +255,7 @@ class TestUpdates:
                                             key=True,
                                             checksum_ok=True,
                                             update_written=True,
+                                            artifact_version=None,
                                             success=True),
                               SignatureCase(label="Incorrectly signed, key present",
                                             signature=True,
@@ -253,6 +263,7 @@ class TestUpdates:
                                             key=True,
                                             checksum_ok=True,
                                             update_written=False,
+                                            artifact_version=None,
                                             success=False),
                               SignatureCase(label="Correctly signed, key not present",
                                             signature=True,
@@ -260,6 +271,7 @@ class TestUpdates:
                                             key=False,
                                             checksum_ok=True,
                                             update_written=True,
+                                            artifact_version=None,
                                             success=True),
                               SignatureCase(label="Not signed, key present",
                                             signature=False,
@@ -267,6 +279,7 @@ class TestUpdates:
                                             key=True,
                                             checksum_ok=True,
                                             update_written=False,
+                                            artifact_version=None,
                                             success=False),
                               SignatureCase(label="Not signed, key not present",
                                             signature=False,
@@ -274,6 +287,23 @@ class TestUpdates:
                                             key=False,
                                             checksum_ok=True,
                                             update_written=True,
+                                            artifact_version=None,
+                                            success=True),
+                              SignatureCase(label="Not signed, key present, version 1",
+                                            signature=False,
+                                            signature_ok=False,
+                                            key=True,
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=1,
+                                            success=False),
+                              SignatureCase(label="Not signed, key not present, version 1",
+                                            signature=False,
+                                            signature_ok=False,
+                                            key=False,
+                                            checksum_ok=True,
+                                            update_written=True,
+                                            artifact_version=1,
                                             success=True),
                               SignatureCase(label="Correctly signed, but checksum wrong, key present",
                                             signature=True,
@@ -281,6 +311,7 @@ class TestUpdates:
                                             key=True,
                                             checksum_ok=False,
                                             update_written=True,
+                                            artifact_version=None,
                                             success=False),
                              ])
     def test_signed_updates(self, sig_case, bitbake_path, bitbake_variables, signing_key):
@@ -301,13 +332,18 @@ class TestUpdates:
         with open("image.dat", "w") as fd:
             fd.write(new_content)
 
+        artifact_args = ""
+
         # Generate artifact with or without signature.
         if sig_case.signature:
-            sign_args = "-k %s" % signing_key.private
-        else:
-            sign_args = ""
+            artifact_args += " -k %s" % signing_key.private
+
+        # Generate artifact with specific version. None means default.
+        if sig_case.artifact_version is not None:
+            artifact_args += " -v %d" % sig_case.artifact_version
+
         subprocess.check_call("mender-artifact write rootfs-image %s -t %s -n test-update -u image.dat -o image.mender"
-                              % (sign_args, image_type), shell=True)
+                              % (artifact_args, image_type), shell=True)
 
         # If instructed to, corrupt the signature and/or checksum.
         if (sig_case.signature and not sig_case.signature_ok) or not sig_case.checksum_ok:
