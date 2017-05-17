@@ -66,6 +66,10 @@ index 0000000..043f97d
 +# error CONFIG_ENV_OFFSET_REDUND should not be defined explicitly (will be auto-configured).
 +#endif
 +
++#if CONFIG_ENV_SIZE_REDUND != CONFIG_ENV_SIZE
++# error CONFIG_ENV_SIZE_REDUND must be explicitly set and must be equal to CONFIG_ENV_SIZE.
++#endif
++
 +#if MENDER_BOOTENV_SIZE != CONFIG_ENV_SIZE
 +# error 'CONFIG_ENV_SIZE' define must be equal to bitbake variable 'BOOTENV_SIZE' set in U-Boot build recipe.
 +#endif
