@@ -28,7 +28,7 @@ from common import *
 # The format of the artifact file which is tested here is documented at:
 # https://github.com/mendersoftware/mender-artifact/blob/master/Documentation/artifact-format.md
 
-last_build_version = None
+LAST_BUILD_VERSION = None
 
 # params is the versions we will test.
 @pytest.fixture(scope="function", params=[1, 2])
@@ -37,7 +37,7 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image):
     build by default, or one we have to produce ourselves.
     Returns a tuple of version and built image."""
 
-    global last_build_version
+    global LAST_BUILD_VERSION
 
     version = request.param
 
@@ -45,10 +45,13 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image):
         # It's default, so skip the extra build.
         return (version, latest_mender_image)
 
-    if last_build_version != version:
+    if LAST_BUILD_VERSION != version:
+        # Run a separate build for this artifact. This doesn't conflict with the
+        # above version because the non-default version ends up in a different
+        # directory.
         add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version)
         run_bitbake(prepared_test_build)
-        last_build_version = version
+        LAST_BUILD_VERSION = version
     return (version, latest_build_artifact(prepared_test_build['build_dir'], ".mender"))
 
 class TestMenderArtifact:
