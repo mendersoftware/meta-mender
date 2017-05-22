@@ -337,14 +337,18 @@ def get_bitbake_variables(target, env_setup="true"):
     os.fchdir(current_dir)
 
     # For some unknown reason, 'MACHINE' is not included in the above list. Add
-    # it automagically by looking in local.conf if it doesn't exist already.
+    # it automagically by looking in environment and local.conf, in that order,
+    # if it doesn't exist already.
     if ret.get('MACHINE') is None:
-        local_fd = open(os.path.join(os.environ['BUILDDIR'], "conf", "local.conf"))
-        for line in local_fd:
-            match = re.match('^ *MACHINE *\?*= *"([^"]*)" *$', line)
-            if match is not None:
-                ret['MACHINE'] = match.group(1)
-        local_fd.close()
+        if os.environ.get('MACHINE'):
+            ret['MACHINE'] = os.environ.get('MACHINE')
+        else:
+            local_fd = open(os.path.join(os.environ['BUILDDIR'], "conf", "local.conf"))
+            for line in local_fd:
+                match = re.match('^ *MACHINE *\?*= *"([^"]*)" *$', line)
+                if match is not None:
+                    ret['MACHINE'] = match.group(1)
+            local_fd.close()
 
     return ret
 
