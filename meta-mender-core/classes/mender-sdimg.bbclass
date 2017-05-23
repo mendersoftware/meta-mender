@@ -59,7 +59,7 @@ python() {
             d.setVar('IMAGE_TYPEDEP_sdimg_append', " " + fs)
 }
 
-IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native"
+IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native rsync-native"
 
 IMAGE_CMD_sdimg() {
     set -ex
@@ -116,7 +116,7 @@ IMAGE_CMD_sdimg() {
     mkdir -p "${WORKDIR}/data"
 
     if [ -n "${MENDER_DATA_PART_DIR}" ]; then
-        find "${MENDER_DATA_PART_DIR}" -not -name . -exec cp -a '{}' "${WORKDIR}/data" \;
+        rsync -a ${MENDER_DATA_PART_DIR}/* "${WORKDIR}/data"
     fi
 
     if [ -f "${DEPLOY_DIR_IMAGE}/data.tar" ]; then
