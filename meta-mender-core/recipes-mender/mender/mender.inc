@@ -39,83 +39,83 @@ RDEPENDS_${PN} += " \
     "
 
 do_compile() {
-  GOPATH="${B}:${S}"
-  export GOPATH
-  PATH="${B}/bin:$PATH"
-  export PATH
+    GOPATH="${B}:${S}"
+    export GOPATH
+    PATH="${B}/bin:$PATH"
+    export PATH
 
-  DEFAULT_CERT_MD5="1fba17436027eb1f5ceff4af9a63c9c2"
+    DEFAULT_CERT_MD5="1fba17436027eb1f5ceff4af9a63c9c2"
 
-  if [ ! -f ${WORKDIR}/server.crt ]; then
-    bbfatal "You have not provided a public server certificate. Please add the desired server certificate to the SRC_URI list, under the name 'server.crt'."
-  fi
+    if [ ! -f ${WORKDIR}/server.crt ]; then
+        bbfatal "You have not provided a public server certificate. Please add the desired server certificate to the SRC_URI list, under the name 'server.crt'."
+    fi
 
-  if [ "$(md5sum ${WORKDIR}/server.crt | awk '{ print $1 }')" = $DEFAULT_CERT_MD5 ]; then
-    bbwarn "You are building with the default server certificate, which is not intended for production use"
-  fi
+    if [ "$(md5sum ${WORKDIR}/server.crt | awk '{ print $1 }')" = $DEFAULT_CERT_MD5 ]; then
+        bbwarn "You are building with the default server certificate, which is not intended for production use"
+    fi
 
-  # mender is using vendored dependencies, any 3rd party libraries go to into
-  # /vendor directory inside mender source tree. In order for `go build` to pick
-  # up vendored deps from our source tree, the mender source tree itself must be
-  # located inside $GOPATH/src/${GO_IMPORT}
-  #
-  # recreate temporary $GOPATH/src/${GO_IMPORT} structure and link our source tree
-  mkdir -p ${B}/src/$(dirname ${GO_IMPORT})
-  test -e ${B}/src/${GO_IMPORT} || ln -s ${S} ${B}/src/${GO_IMPORT}
-  cd ${B}/src/${GO_IMPORT}
+    # mender is using vendored dependencies, any 3rd party libraries go to into
+    # /vendor directory inside mender source tree. In order for `go build` to pick
+    # up vendored deps from our source tree, the mender source tree itself must be
+    # located inside $GOPATH/src/${GO_IMPORT}
+    #
+    # recreate temporary $GOPATH/src/${GO_IMPORT} structure and link our source tree
+    mkdir -p ${B}/src/$(dirname ${GO_IMPORT})
+    test -e ${B}/src/${GO_IMPORT} || ln -s ${S} ${B}/src/${GO_IMPORT}
+    cd ${B}/src/${GO_IMPORT}
 
-  # run verbose build, we should see which dependencies are pulled in
-  oe_runmake V=1 install
+    # run verbose build, we should see which dependencies are pulled in
+    oe_runmake V=1 install
 
-  #prepare Mender configuration file
-  cp ${WORKDIR}/mender.conf ${B}
-  sed -i -e 's#[@]MENDER_SERVER_URL[@]#${MENDER_SERVER_URL}#' ${B}/mender.conf
-  sed -i -e 's#[@]MENDER_CERT_LOCATION[@]#${MENDER_CERT_LOCATION}#' ${B}/mender.conf
-  sed -i -e 's#[@]MENDER_UPDATE_POLL_INTERVAL_SECONDS[@]#${MENDER_UPDATE_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
-  sed -i -e 's#[@]MENDER_INVENTORY_POLL_INTERVAL_SECONDS[@]#${MENDER_INVENTORY_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
-  sed -i -e 's#[@]MENDER_RETRY_POLL_INTERVAL_SECONDS[@]#${MENDER_RETRY_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
+    #prepare Mender configuration file
+    cp ${WORKDIR}/mender.conf ${B}
+    sed -i -e 's#[@]MENDER_SERVER_URL[@]#${MENDER_SERVER_URL}#' ${B}/mender.conf
+    sed -i -e 's#[@]MENDER_CERT_LOCATION[@]#${MENDER_CERT_LOCATION}#' ${B}/mender.conf
+    sed -i -e 's#[@]MENDER_UPDATE_POLL_INTERVAL_SECONDS[@]#${MENDER_UPDATE_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
+    sed -i -e 's#[@]MENDER_INVENTORY_POLL_INTERVAL_SECONDS[@]#${MENDER_INVENTORY_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
+    sed -i -e 's#[@]MENDER_RETRY_POLL_INTERVAL_SECONDS[@]#${MENDER_RETRY_POLL_INTERVAL_SECONDS}#' ${B}/mender.conf
 
-  if [ -n "${MENDER_ROOTFS_PART_A}" ] && [ -n "${MENDER_ROOTFS_PART_B}" ]; then
-    sed -i -e 's#[@]MENDER_ROOTFS_PART_A[@]#${MENDER_ROOTFS_PART_A}#' ${B}/mender.conf
-    sed -i -e 's#[@]MENDER_ROOTFS_PART_B[@]#${MENDER_ROOTFS_PART_B}#' ${B}/mender.conf
-  fi
+    if [ -n "${MENDER_ROOTFS_PART_A}" ] && [ -n "${MENDER_ROOTFS_PART_B}" ]; then
+        sed -i -e 's#[@]MENDER_ROOTFS_PART_A[@]#${MENDER_ROOTFS_PART_A}#' ${B}/mender.conf
+        sed -i -e 's#[@]MENDER_ROOTFS_PART_B[@]#${MENDER_ROOTFS_PART_B}#' ${B}/mender.conf
+    fi
 
-  echo "${MENDER_TENANT_TOKEN}" > ${B}/tenant.conf
+    echo "${MENDER_TENANT_TOKEN}" > ${B}/tenant.conf
 }
 
 do_install() {
-  install -d ${D}/${bindir}
+    install -d ${D}/${bindir}
 
-  GOOS=$(eval $(go env) && echo $GOOS)
-  GOARCH=$(eval $(go env) && echo $GOARCH)
-  # mender is picked up from our fake GOPATH=${B}/bin; because go build is so
-  # consistent, if it's a cross compilation build, binaries will be in
-  # ${GOPATH}/bin/${GOOS}_${GOARCH}, howver if it's not, the binaries are in
-  # ${GOPATH}/bin; handle cross compiled case only
-  install -t ${D}/${bindir} -m 0755 \
-          ${B}/bin/${GOOS}_${GOARCH}/mender
+    GOOS=$(eval $(go env) && echo $GOOS)
+    GOARCH=$(eval $(go env) && echo $GOARCH)
+    # mender is picked up from our fake GOPATH=${B}/bin; because go build is so
+    # consistent, if it's a cross compilation build, binaries will be in
+    # ${GOPATH}/bin/${GOOS}_${GOARCH}, howver if it's not, the binaries are in
+    # ${GOPATH}/bin; handle cross compiled case only
+    install -t ${D}/${bindir} -m 0755 \
+            ${B}/bin/${GOOS}_${GOARCH}/mender
 
-  install -d ${D}/${datadir}/mender/identity
-  install -t ${D}/${datadir}/mender/identity -m 0755 \
-          ${S}/support/mender-device-identity
+    install -d ${D}/${datadir}/mender/identity
+    install -t ${D}/${datadir}/mender/identity -m 0755 \
+            ${S}/support/mender-device-identity
 
-  # install example inventory tools
-  install -d ${D}/${datadir}/mender/inventory
-  install -t ${D}/${datadir}/mender/inventory -m 0755 \
-          ${S}/support/mender-inventory-*
+    # install example inventory tools
+    install -d ${D}/${datadir}/mender/inventory
+    install -t ${D}/${datadir}/mender/inventory -m 0755 \
+            ${S}/support/mender-inventory-*
 
-  install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
+    install -d ${D}/${systemd_unitdir}/system
+    install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
 
-  #install configuration
-  install -d ${D}/${sysconfdir}/mender
-  install -m 0644 ${B}/mender.conf ${D}/${sysconfdir}/mender
-  install -m 0600 ${B}/tenant.conf ${D}/${sysconfdir}/mender
+    #install configuration
+    install -d ${D}/${sysconfdir}/mender
+    install -m 0644 ${B}/mender.conf ${D}/${sysconfdir}/mender
+    install -m 0600 ${B}/tenant.conf ${D}/${sysconfdir}/mender
 
-  #install server certificate
-  install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
+    #install server certificate
+    install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
 
-  install -d ${D}/${localstatedir}/lib/mender
+    install -d ${D}/${localstatedir}/lib/mender
 }
 
 do_install_append_menderimage() {
