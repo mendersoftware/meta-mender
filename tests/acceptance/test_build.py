@@ -36,15 +36,23 @@ class EmbeddedBootloader:
 
 
 class TestBuild:
-    def test_default_server_certificate(self):
-        """Test that the md5sum we have on record matches the server certificate.
-        This makes sure the warning about this certificate is correct."""
+    # List of pairs consisting of file that should be checksummed, and file that
+    # should contain that checksum.
+    @pytest.mark.parametrize("file_sums", [("../../meta-mender-demo/recipes-mender/mender/files/server.crt",
+                                            "../../meta-mender-core/recipes-mender/mender/mender.inc"),
+                                           ("../../meta-mender-demo/recipes-mender/mender/files/artifact-verify-key.pem",
+                                            "../../meta-mender-core/recipes-mender/mender/mender.inc"),
+    ])
+    def test_hardcoded_md5sums(self, file_sums):
+        """Test that the md5sums we have on record matches the ones we have hardcoded in
+        the layer. This makes sure the warnings about these are correct.
 
-        output = subprocess.check_output(["md5sum", "../../meta-mender-demo/recipes-mender/mender/files/server.crt"])
+        """
+
+        output = subprocess.check_output(["md5sum", file_sums[0]])
 
         # Crude check, just make sure it occurs in the build file.
-        subprocess.check_call("fgrep %s ../../meta-mender-core/recipes-mender/mender/mender.inc >/dev/null 2>&1"
-                              % output.split()[0], shell=True)
+        subprocess.check_call(["fgrep", "-q", output.split()[0], file_sums[1]])
 
 
     def test_bootloader_embed(self, prepared_test_build):
@@ -105,10 +113,15 @@ class TestBuild:
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
 
-        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
-                          % os.path.join(os.getcwd(), signing_key.private))
-        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
-                          % os.path.join(os.getcwd(), signing_key.public))
+        # Either of the two keys may be specified already if we're using the
+        # demo layer.
+        if bitbake_variables.get('MENDER_ARTIFACT_SIGNING_KEY') is None:
+            add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
+                              % os.path.join(os.getcwd(), signing_key.private))
+        if (bitbake_variables.get('MENDER_ARTIFACT_VERIFY_KEY') is None
+            and "artifact-verify-key.pem" not in get_bitbake_variables('mender').get('SRC_URI')):
+            add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
+                              % os.path.join(os.getcwd(), signing_key.public))
 
         run_bitbake(prepared_test_build)
 

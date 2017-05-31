@@ -401,8 +401,8 @@ def signing_key(request):
     #                        "-pubout", "-out", "files/test-public.pem"])
 
     class KeyPair:
-        private = "files/test-private.pem"
-        public = "files/test-public.pem"
+        private = "../../meta-mender-demo/files/artifact-signing-key.pem"
+        public = "../../meta-mender-demo/recipes-mender/mender/files/artifact-verify-key.pem"
 
     return KeyPair()
 

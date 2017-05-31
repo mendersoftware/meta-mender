@@ -113,6 +113,8 @@ python do_prepare_mender_conf() {
 addtask do_prepare_mender_conf after do_compile before do_install
 
 do_install() {
+    DEFAULT_VERIFY_KEY_MD5="53ea112a985164970551f83ff76e9333"
+
     install -d ${D}/${bindir}
 
     GOOS=$(eval $(go env) && echo $GOOS)
@@ -154,6 +156,9 @@ do_install() {
         install -m 0444 ${WORKDIR}/artifact-verify-key.pem ${D}${sysconfdir}/mender
     elif [ -n "${MENDER_ARTIFACT_VERIFY_KEY}" ]; then
         install -m 0444 "${MENDER_ARTIFACT_VERIFY_KEY}" ${D}${sysconfdir}/mender/artifact-verify-key.pem
+    fi
+    if [ "$(md5sum ${D}${sysconfdir}/mender/artifact-verify-key.pem | awk '{ print $1 }')" = $DEFAULT_VERIFY_KEY_MD5 ]; then
+        bbwarn "You are building with the default signature verification key, which is not intended for production use"
     fi
 }
 
