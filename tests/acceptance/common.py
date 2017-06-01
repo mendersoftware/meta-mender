@@ -393,16 +393,23 @@ def bitbake_path(request, bitbake_path_string):
 
     return os.environ['PATH']
 
-@pytest.fixture(scope="session")
-def signing_key(request):
-    # Pregenerated using these.
-    # subprocess.check_call(["openssl", "genrsa", "-out", "files/test-private.pem", "2048"])
-    # subprocess.check_call(["openssl", "rsa", "-in", "files/test-private.pem", "-outform", "PEM",
-    #                        "-pubout", "-out", "files/test-public.pem"])
+def signing_key(key_type):
+    # RSA pregenerated using these.
+    #   openssl genrsa -out files/test-private-RSA.pem 2048
+    #   openssl rsa -in files/test-private-RSA.pem -outform PEM -pubout -out files/test-public-RSA.pem
+
+    # EC pregenerated using these.
+    #   openssl ecparam -genkey -name prime256v1 -out /tmp/private-and-params.pem
+    #   openssl ec -in /tmp/private-and-params.pem -out files/test-private-EC.pem
+    #   openssl ec -in files/test-private-EC.pem -pubout -out files/test-public-EC.pem
 
     class KeyPair:
-        private = "files/test-private.pem"
-        public = "files/test-public.pem"
+        if key_type == "EC":
+            private = "files/test-private-EC.pem"
+            public = "files/test-public-EC.pem"
+        else:
+            private = "files/test-private-RSA.pem"
+            public = "files/test-public-RSA.pem"
 
     return KeyPair()
 
