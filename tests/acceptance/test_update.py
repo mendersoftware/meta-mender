@@ -97,6 +97,7 @@ class SignatureCase:
     signature = False
     signature_ok = False
     key = False
+    key_type = ""
     checksum_ok = True
 
     update_written = False
@@ -107,6 +108,7 @@ class SignatureCase:
                  signature,
                  signature_ok,
                  key,
+                 key_type,
                  checksum_ok,
                  update_written,
                  artifact_version,
@@ -115,6 +117,7 @@ class SignatureCase:
         self.signature = signature
         self.signature_ok = signature_ok
         self.key = key
+        self.key_type = key_type
         self.checksum_ok = checksum_ok
         self.update_written = update_written
         self.artifact_version = artifact_version
@@ -249,78 +252,140 @@ class TestUpdates:
         assert(passive_after == passive_before)
 
     @pytest.mark.parametrize("sig_case",
-                             [SignatureCase(label="Correctly signed, key present",
-                                            signature=True,
-                                            signature_ok=True,
-                                            key=True,
-                                            checksum_ok=True,
-                                            update_written=True,
-                                            artifact_version=None,
-                                            success=True),
-                              SignatureCase(label="Incorrectly signed, key present",
-                                            signature=True,
-                                            signature_ok=False,
-                                            key=True,
-                                            checksum_ok=True,
-                                            update_written=False,
-                                            artifact_version=None,
-                                            success=False),
-                              SignatureCase(label="Correctly signed, key not present",
-                                            signature=True,
-                                            signature_ok=True,
-                                            key=False,
-                                            checksum_ok=True,
-                                            update_written=True,
-                                            artifact_version=None,
-                                            success=True),
-                              SignatureCase(label="Not signed, key present",
+                             [SignatureCase(label="Not signed, key not present, version 1",
                                             signature=False,
                                             signature_ok=False,
-                                            key=True,
+                                            key=False,
+                                            key_type=None,
                                             checksum_ok=True,
-                                            update_written=False,
-                                            artifact_version=None,
-                                            success=False),
+                                            update_written=True,
+                                            artifact_version=1,
+                                            success=True),
                               SignatureCase(label="Not signed, key not present",
                                             signature=False,
                                             signature_ok=False,
                                             key=False,
+                                            key_type=None,
                                             checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=True),
-                              SignatureCase(label="Not signed, key present, version 1",
+                              SignatureCase(label="RSA, Correctly signed, key present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=True,
+                                            key_type="RSA",
+                                            checksum_ok=True,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=True),
+                              SignatureCase(label="RSA, Incorrectly signed, key present",
+                                            signature=True,
+                                            signature_ok=False,
+                                            key=True,
+                                            key_type="RSA",
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="RSA, Correctly signed, key not present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=False,
+                                            key_type="RSA",
+                                            checksum_ok=True,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=True),
+                              SignatureCase(label="RSA, Not signed, key present",
                                             signature=False,
                                             signature_ok=False,
                                             key=True,
+                                            key_type="RSA",
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="RSA, Not signed, key present, version 1",
+                                            signature=False,
+                                            signature_ok=False,
+                                            key=True,
+                                            key_type="RSA",
                                             checksum_ok=True,
                                             update_written=False,
                                             artifact_version=1,
                                             success=False),
-                              SignatureCase(label="Not signed, key not present, version 1",
-                                            signature=False,
-                                            signature_ok=False,
-                                            key=False,
-                                            checksum_ok=True,
-                                            update_written=True,
-                                            artifact_version=1,
-                                            success=True),
-                              SignatureCase(label="Correctly signed, but checksum wrong, key present",
+                              SignatureCase(label="RSA, Correctly signed, but checksum wrong, key present",
                                             signature=True,
                                             signature_ok=True,
                                             key=True,
+                                            key_type="RSA",
+                                            checksum_ok=False,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="EC, Correctly signed, key present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=True,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=True),
+                              SignatureCase(label="EC, Incorrectly signed, key present",
+                                            signature=True,
+                                            signature_ok=False,
+                                            key=True,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="EC, Correctly signed, key not present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=False,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=True),
+                              SignatureCase(label="EC, Not signed, key present",
+                                            signature=False,
+                                            signature_ok=False,
+                                            key=True,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="EC, Not signed, key present, version 1",
+                                            signature=False,
+                                            signature_ok=False,
+                                            key=True,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=1,
+                                            success=False),
+                              SignatureCase(label="EC, Correctly signed, but checksum wrong, key present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=True,
+                                            key_type="EC",
                                             checksum_ok=False,
                                             update_written=True,
                                             artifact_version=None,
                                             success=False),
                              ])
-    def test_signed_updates(self, sig_case, bitbake_path, bitbake_variables, signing_key):
+    def test_signed_updates(self, sig_case, bitbake_path, bitbake_variables):
         """Test various combinations of signed and unsigned, present and non-
         present verification keys."""
 
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
-            execute(self.test_signed_updates, sig_case, bitbake_path, bitbake_variables, signing_key)
+            execute(self.test_signed_updates, sig_case, bitbake_path, bitbake_variables)
             return
 
         (active, passive) = determine_active_passive_part(bitbake_variables)
@@ -336,11 +401,16 @@ class TestUpdates:
 
         # Generate artifact with or without signature.
         if sig_case.signature:
-            artifact_args += " -k %s" % signing_key.private
+            artifact_args += " -k %s" % signing_key(sig_case.key_type).private
 
         # Generate artifact with specific version. None means default.
         if sig_case.artifact_version is not None:
             artifact_args += " -v %d" % sig_case.artifact_version
+
+        if sig_case.key_type:
+            sig_key = signing_key(sig_case.key_type)
+        else:
+            sig_key = None
 
         subprocess.check_call("mender-artifact write rootfs-image %s -t %s -n test-update -u image.dat -o image.mender"
                               % (artifact_args, image_type), shell=True)
@@ -399,12 +469,11 @@ class TestUpdates:
             with open("mender.conf") as fd:
                 config = json.load(fd)
             if sig_case.key:
-                config['ArtifactVerifyKey'] = "/etc/mender/%s" % os.path.basename(signing_key.public)
-                put(signing_key.public, remote_path="/etc/mender")
+                config['ArtifactVerifyKey'] = "/etc/mender/%s" % os.path.basename(sig_key.public)
+                put(sig_key.public, remote_path="/etc/mender")
             else:
                 if config.get('ArtifactVerifyKey'):
                     del config['ArtifactVerifyKey']
-                run("rm -f /etc/mender/%s" % os.path.basename(signing_key.public))
             with open("mender.conf", "w") as fd:
                 json.dump(config, fd)
             put("mender.conf", remote_path="/etc/mender")
@@ -438,6 +507,8 @@ class TestUpdates:
             run("fw_setenv mender_boot_part %s" % active[-1:])
             run("fw_setenv update_available 0")
             run("mv /etc/mender/mender.conf.bak /etc/mender/mender.conf")
+            if sig_key:
+                run("rm -f /etc/mender/%s" % os.path.basename(sig_key.public))
 
 
     def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables):
