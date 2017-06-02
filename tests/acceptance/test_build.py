@@ -101,14 +101,14 @@ class TestBuild:
         assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
 
 
-    def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path, signing_key):
+    def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path):
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
 
         add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
-                          % os.path.join(os.getcwd(), signing_key.private))
+                          % os.path.join(os.getcwd(), signing_key("RSA").private))
         add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
-                          % os.path.join(os.getcwd(), signing_key.public))
+                          % os.path.join(os.getcwd(), signing_key("RSA").public))
 
         run_bitbake(prepared_test_build)
 
