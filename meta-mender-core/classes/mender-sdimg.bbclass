@@ -111,6 +111,7 @@ IMAGE_CMD_sdimg() {
 
     if [ -n "${MENDER_DATA_PART_DIR}" ]; then
         rsync -a ${MENDER_DATA_PART_DIR}/* "${WORKDIR}/data"
+        chown -R root:root "${WORKDIR}/data"
     fi
 
     if [ -f "${DEPLOY_DIR_IMAGE}/data.tar" ]; then
