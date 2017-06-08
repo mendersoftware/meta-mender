@@ -8,13 +8,13 @@ SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;br
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the
 # SHA.
-def mender_artifact_is_git_version(d):
-    version = d.getVar("PREFERRED_VERSION_${PN}")
+def mender_artifact_autorev_if_git_version(d):
+    version = d.getVar("PREFERRED_VERSION")
     if version is not None and "git" in version:
         return d.getVar("AUTOREV")
     else:
         return "77326b288c70cd713e7ad15d2a084b6ee797e8ff"
-SRCREV ?= '${@mender_artifact_is_git_version(d)}'
+SRCREV ?= '${@mender_artifact_autorev_if_git_version(d)}'
 
 PV = "${MENDER_ARTIFACT_BRANCH}-git${SRCPV}"
 
