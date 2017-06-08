@@ -27,8 +27,19 @@ PV = "${MENDER_BRANCH}-git${SRCPV}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
-LIC_FILES_CHKSUM = "file://LIC_FILES_CHKSUM.sha256;md5=ab273c82f23a11ee5ac246ad04db8b9e"
-LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & MIT & OLDAP-2.8"
+def mender_license(branch):
+    if branch == "1.0.x" or branch == "1.1.x":
+        return {
+                   "md5": "ec8e15a3ea20289732cca4a7ef643ef8",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+        }
+    else:
+        return {
+                   "md5": "a3dc9721e9e3088f375b677b8af6527a",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+        }
+LIC_FILES_CHKSUM = "file://LIC_FILES_CHKSUM.sha256;md5=${@mender_license(d.getVar('MENDER_BRANCH'))['md5']}"
+LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.
 DEFAULT_PREFERENCE = "-1"
