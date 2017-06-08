@@ -1,6 +1,13 @@
 require mender-artifact.inc
 
-MENDER_ARTIFACT_BRANCH ?= "master"
+def mender_branch_from_preferred_version(pref_version):
+    if not pref_version:
+        return "master"
+    else:
+        # Return part before "-git", which should be branch name.
+        return pref_version[0:pref_version.index("-git")]
+
+MENDER_ARTIFACT_BRANCH = "${@mender_branch_from_preferred_version(d.getVar('PREFERRED_VERSION'))}"
 
 SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=${MENDER_ARTIFACT_BRANCH}"
 
