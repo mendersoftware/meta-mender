@@ -171,7 +171,7 @@ EOF
     echo "### End of contents of wks file ###"
 
     # Call WIC
-    outimgname="${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.sdimg"
+    outimgname="${IMGDEPLOYDIR}/${IMAGE_NAME}.sdimg"
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-sdimg"
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR_TARGET}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/build/$(basename "${wks%.wks}")"*.direct "$outimgname"
