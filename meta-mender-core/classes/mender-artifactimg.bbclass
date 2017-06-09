@@ -30,11 +30,18 @@ IMAGE_CMD_mender () {
         bberror "MENDER_DEVICE_TYPES_COMPATIBLE variable cannot be empty."
     fi
 
+    extra_args=
+
+    if [ -d "${DEPLOY_DIR_IMAGE}/mender-state-scripts" ]; then
+        extra_args="$extra_args -s ${DEPLOY_DIR_IMAGE}/mender-state-scripts"
+    fi
+
     mender-artifact write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} -t "$devs_compatible" \
+        $extra_args \
         -u ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
         ${MENDER_ARTIFACT_EXTRA_ARGS} \
-        -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender \
+        -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender
 }
 
 IMAGE_CMD_mender[vardepsexclude] += "IMAGE_ID"
