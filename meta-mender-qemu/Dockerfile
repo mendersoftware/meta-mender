@@ -10,7 +10,7 @@
 # -v $BUILDDIR:/mnt/build:ro
 #       Use BUILDDIR from a poky build as image input.
 # -v <config-dir>:/mnt/config:ro
-#       Use server.crt from config-dir, if it exists.
+#       Use server.crt and/or artifact-verify-key.pem from config-dir, if it exists.
 # -e SERVER_URL=https://whatever.mender.io
 #       Use SERVER_URL as server address for client.
 # -e TENANT_TOKEN=<token>
