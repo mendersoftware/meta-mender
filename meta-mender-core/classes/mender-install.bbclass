@@ -37,7 +37,7 @@ MENDER_BOOT_PART_FSTYPE ??= "auto"
 MENDER_DEVICE_TYPE ?= "${MACHINE}"
 
 # Space separated list of device types compatible with the built update.
-MENDER_DEVICE_TYPES_COMPATIBLE ?= "${MACHINE}"
+MENDER_DEVICE_TYPES_COMPATIBLE ?= "${MENDER_DEVICE_TYPE}"
 
 # Total size of the medium that mender sdimg will be written to. The size of
 # rootfs partition will be calculated automatically by subtracting the size of
