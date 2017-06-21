@@ -1,0 +1,31 @@
+From 39d913b9638c21376dc881487aaaccca3c99cbb0 Mon Sep 17 00:00:00 2001
+From: Mirza Krak <mirza.krak@gmail.com>
+Date: Sat, 21 Jan 2017 19:55:55 +0100
+Subject: [PATCH 2/2] configs: colibri_vf: increase SYS_MALLOC_LEN to 8 MB
+
+Mounting ubifs volumes can be very memory intensive especially if the
+volume needs recovery. To avoid running in to out-of-memory problems we
+increase the malloc pool. 8 MB is just a guesstimate, and hopefully
+should be enough since we have fairly small volumes.
+
+Signed-off-by: Mirza Krak <mirza.krak@gmail.com>
+---
+ include/configs/colibri_vf.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/configs/colibri_vf.h b/include/configs/colibri_vf.h
+index 02e1ff5..9b52a79 100644
+--- a/include/configs/colibri_vf.h
++++ b/include/configs/colibri_vf.h
+@@ -55,7 +55,7 @@
+ #endif
+ 
+ /* Size of malloc() pool */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 4 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 8 * 1024 * 1024)
+ 
+ #define CONFIG_BOARD_EARLY_INIT_F
+ 
+-- 
+2.1.4
+

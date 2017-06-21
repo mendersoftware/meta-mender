@@ -2,8 +2,6 @@
 
 inherit mender-install
 
-OVERRIDES_append = ":menderimage"
-
 #Make sure we are creating sdimg with all needed partitioning.
-IMAGE_CLASSES += " mender-artifactimg"
-IMAGE_FSTYPES_append = " mender"
+IMAGE_CLASSES += "mender-sdimg"
+IMAGE_FSTYPES_append = " sdimg"

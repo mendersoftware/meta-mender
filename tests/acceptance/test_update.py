@@ -14,8 +14,13 @@
 #    limitations under the License.
 
 from fabric.api import *
+
+import json
+import os
 import pytest
+import shutil
 import subprocess
+import tempfile
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
@@ -41,7 +46,7 @@ class Helpers:
     def get_env_offsets(bitbake_variables):
         offsets = [0, 0]
 
-        alignment = int(bitbake_variables["MENDER_PARTITION_ALIGNMENT_MB"]) * 1024 * 1024
+        alignment = int(bitbake_variables["MENDER_PARTITION_ALIGNMENT_KB"]) * 1024
         env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
         offsets[0] = int(bitbake_variables["MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET"])
         offsets[1] = offsets[0] + int(env_size / 2)
@@ -77,6 +82,46 @@ class Helpers:
 
         return checksums
 
+    @staticmethod
+    def corrupt_middle_byte(fd):
+        # Corrupt the middle byte in the contents.
+        middle = int(os.fstat(fd.fileno()).st_size / 2)
+        fd.seek(middle)
+        middle_byte = int(fd.read(1).encode("hex"), base=16)
+        fd.seek(middle)
+        # Flip lowest bit.
+        fd.write("%c" % (middle_byte ^ 0x1))
+
+class SignatureCase:
+    label = ""
+    signature = False
+    signature_ok = False
+    key = False
+    key_type = ""
+    checksum_ok = True
+
+    update_written = False
+    success = True
+
+    def __init__(self,
+                 label,
+                 signature,
+                 signature_ok,
+                 key,
+                 key_type,
+                 checksum_ok,
+                 update_written,
+                 artifact_version,
+                 success):
+        self.label = label
+        self.signature = signature
+        self.signature_ok = signature_ok
+        self.key = key
+        self.key_type = key_type
+        self.checksum_ok = checksum_ok
+        self.update_written = update_written
+        self.artifact_version = artifact_version
+        self.success = success
 
 @pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "bitbake_path")
 class TestUpdates:
@@ -212,6 +257,266 @@ class TestUpdates:
         # The OS should have stayed on the same partition, since we committed.
         assert(active_after == active_before)
         assert(passive_after == passive_before)
+
+    @pytest.mark.parametrize("sig_case",
+                             [SignatureCase(label="Not signed, key not present, version 1",
+                                            signature=False,
+                                            signature_ok=False,
+                                            key=False,
+                                            key_type=None,
+                                            checksum_ok=True,
+                                            update_written=True,
+                                            artifact_version=1,
+                                            success=True),
+                              SignatureCase(label="Not signed, key not present",
+                                            signature=False,
+                                            signature_ok=False,
+                                            key=False,
+                                            key_type=None,
+                                            checksum_ok=True,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=True),
+                              SignatureCase(label="RSA, Correctly signed, key present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=True,
+                                            key_type="RSA",
+                                            checksum_ok=True,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=True),
+                              SignatureCase(label="RSA, Incorrectly signed, key present",
+                                            signature=True,
+                                            signature_ok=False,
+                                            key=True,
+                                            key_type="RSA",
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="RSA, Correctly signed, key not present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=False,
+                                            key_type="RSA",
+                                            checksum_ok=True,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=True),
+                              SignatureCase(label="RSA, Not signed, key present",
+                                            signature=False,
+                                            signature_ok=False,
+                                            key=True,
+                                            key_type="RSA",
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="RSA, Not signed, key present, version 1",
+                                            signature=False,
+                                            signature_ok=False,
+                                            key=True,
+                                            key_type="RSA",
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=1,
+                                            success=False),
+                              SignatureCase(label="RSA, Correctly signed, but checksum wrong, key present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=True,
+                                            key_type="RSA",
+                                            checksum_ok=False,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="EC, Correctly signed, key present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=True,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=True),
+                              SignatureCase(label="EC, Incorrectly signed, key present",
+                                            signature=True,
+                                            signature_ok=False,
+                                            key=True,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="EC, Correctly signed, key not present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=False,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=True),
+                              SignatureCase(label="EC, Not signed, key present",
+                                            signature=False,
+                                            signature_ok=False,
+                                            key=True,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="EC, Not signed, key present, version 1",
+                                            signature=False,
+                                            signature_ok=False,
+                                            key=True,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            update_written=False,
+                                            artifact_version=1,
+                                            success=False),
+                              SignatureCase(label="EC, Correctly signed, but checksum wrong, key present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=True,
+                                            key_type="EC",
+                                            checksum_ok=False,
+                                            update_written=True,
+                                            artifact_version=None,
+                                            success=False),
+                             ])
+    def test_signed_updates(self, sig_case, bitbake_path, bitbake_variables):
+        """Test various combinations of signed and unsigned, present and non-
+        present verification keys."""
+
+        if not env.host_string:
+            # This means we are not inside execute(). Recurse into it!
+            execute(self.test_signed_updates, sig_case, bitbake_path, bitbake_variables)
+            return
+
+        (active, passive) = determine_active_passive_part(bitbake_variables)
+
+        # Generate "update" appropriate for this test case.
+        # Cheat a little. Instead of spending a lot of time on a lot of reboots,
+        # just verify that the contents of the update are correct.
+        new_content = sig_case.label
+        with open("image.dat", "w") as fd:
+            fd.write(new_content)
+
+        artifact_args = ""
+
+        # Generate artifact with or without signature.
+        if sig_case.signature:
+            artifact_args += " -k %s" % signing_key(sig_case.key_type).private
+
+        # Generate artifact with specific version. None means default.
+        if sig_case.artifact_version is not None:
+            artifact_args += " -v %d" % sig_case.artifact_version
+
+        if sig_case.key_type:
+            sig_key = signing_key(sig_case.key_type)
+        else:
+            sig_key = None
+
+        subprocess.check_call("mender-artifact write rootfs-image %s -t %s -n test-update -u image.dat -o image.mender"
+                              % (artifact_args, image_type), shell=True)
+
+        # If instructed to, corrupt the signature and/or checksum.
+        if (sig_case.signature and not sig_case.signature_ok) or not sig_case.checksum_ok:
+            tar = subprocess.check_output(["tar", "tf", "image.mender"])
+            tar_list = tar.split()
+            tmpdir = tempfile.mkdtemp()
+            try:
+                shutil.copy("image.mender", os.path.join(tmpdir, "image.mender"))
+                cwd = os.open(".", os.O_RDONLY)
+                os.chdir(tmpdir)
+                try:
+                    tar = subprocess.check_output(["tar", "xf", "image.mender"])
+                    if not sig_case.signature_ok:
+                        # Corrupt signature.
+                        with open("manifest.sig", "r+") as fd:
+                            Helpers.corrupt_middle_byte(fd)
+                    if not sig_case.checksum_ok:
+                        os.chdir("data")
+                        try:
+                            data_list = subprocess.check_output(["tar", "tzf", "0000.tar.gz"])
+                            data_list = data_list.split()
+                            subprocess.check_call(["tar", "xzf", "0000.tar.gz"])
+                            # Corrupt checksum by changing file slightly.
+                            with open("image.dat", "r+") as fd:
+                                Helpers.corrupt_middle_byte(fd)
+                                # Need to update the expected content in this case.
+                                fd.seek(0)
+                                new_content = fd.read()
+                            # Pack it up again in same order.
+                            os.remove("0000.tar.gz")
+                            subprocess.check_call(["tar", "czf", "0000.tar.gz"] + data_list)
+                            for data_file in data_list:
+                                os.remove(data_file)
+                        finally:
+                            os.chdir("..")
+                    # Make sure we put it back in the same order.
+                    os.remove("image.mender")
+                    subprocess.check_call(["tar", "cf", "image.mender"] + tar_list)
+                finally:
+                    os.fchdir(cwd)
+                    os.close(cwd)
+
+                shutil.move(os.path.join(tmpdir, "image.mender"), "image.mender")
+
+            finally:
+                shutil.rmtree(tmpdir, ignore_errors=True)
+
+        put("image.mender")
+        try:
+            # Update key configuration on device.
+            run("cp /etc/mender/mender.conf /etc/mender/mender.conf.bak")
+            get("mender.conf", remote_path="/etc/mender")
+            with open("mender.conf") as fd:
+                config = json.load(fd)
+            if sig_case.key:
+                config['ArtifactVerifyKey'] = "/etc/mender/%s" % os.path.basename(sig_key.public)
+                put(sig_key.public, remote_path="/etc/mender")
+            else:
+                if config.get('ArtifactVerifyKey'):
+                    del config['ArtifactVerifyKey']
+            with open("mender.conf", "w") as fd:
+                json.dump(config, fd)
+            put("mender.conf", remote_path="/etc/mender")
+            os.remove("mender.conf")
+
+            # Start by writing known "old" content in the partition.
+            old_content = "Preexisting partition content"
+            run('echo "%s" | dd of=%s' % (old_content, passive))
+
+            with settings(warn_only=True):
+                result = run("mender -rootfs image.mender")
+
+            if sig_case.success:
+                if result.return_code != 0:
+                    pytest.fail("Update failed when it should have succeeded: %s, Output: %s" % (sig_case.label, result))
+            else:
+                if result.return_code == 0:
+                    pytest.fail("Update succeeded when it should not have: %s, Output: %s" % (sig_case.label, result))
+
+            if sig_case.update_written:
+                expected_content = new_content
+            else:
+                expected_content = old_content
+
+            content = run("dd if=%s bs=%d count=1"
+                          % (passive, len(expected_content)))
+            assert content == expected_content, "Case: %s" % sig_case.label
+
+        finally:
+            # Reset environment to what it was.
+            run("fw_setenv mender_boot_part %s" % active[-1:])
+            run("fw_setenv update_available 0")
+            run("mv /etc/mender/mender.conf.bak /etc/mender/mender.conf")
+            if sig_key:
+                run("rm -f /etc/mender/%s" % os.path.basename(sig_key.public))
+
 
     def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables):
         """This tests a very specific scenario: Consider the following production
