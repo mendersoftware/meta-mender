@@ -39,7 +39,7 @@ fi
 
 UBOOT_ELF=${UBOOT_ELF:-"${BUILDTMP}/deploy/images/vexpress-qemu/u-boot.elf"}
 VEXPRESS_SDIMG=${VEXPRESS_SDIMG:-"${BUILDTMP}/deploy/images/vexpress-qemu/${IMAGE_NAME}-vexpress-qemu.sdimg"}
-QEMU_SYSTEM_ARM=${QEMU_SYSTEM_ARM:-"${BUILDTMP}/sysroots/x86_64-linux/usr/bin/qemu-system-arm"}
+QEMU_SYSTEM_ARM=${QEMU_SYSTEM_ARM:-"qemu-system-arm"}
 RANDOM_MAC="52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"
 
 QEMU_AUDIO_DRV=none \

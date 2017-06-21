@@ -110,13 +110,12 @@ IMAGE_CMD_sdimg() {
     ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/active
     ln -sf ${WORKDIR}/rootfs.$FSTYPE ${WORKDIR}/inactive
 
-    MENDER_PARTITION_ALIGNMENT_KB=$(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024)
-
     rm -rf "${WORKDIR}/data" || true
     mkdir -p "${WORKDIR}/data"
 
     if [ -n "${MENDER_DATA_PART_DIR}" ]; then
         rsync -a ${MENDER_DATA_PART_DIR}/* "${WORKDIR}/data"
+        chown -R root:root "${WORKDIR}/data"
     fi
 
     if [ -f "${DEPLOY_DIR_IMAGE}/data.tar" ]; then
@@ -160,10 +159,10 @@ EOF
     fi
 
     cat >> "$wks" <<EOF
-part /boot   --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align $MENDER_PARTITION_ALIGNMENT_KB --active --size ${MENDER_BOOT_PART_SIZE_MB}
-part /       --source fsimage --sourceparams=file="${WORKDIR}/active" --ondisk mmcblk0 --label primary --align $MENDER_PARTITION_ALIGNMENT_KB
-part         --source fsimage --sourceparams=file="${WORKDIR}/inactive" --ondisk mmcblk0 --label secondary --align $MENDER_PARTITION_ALIGNMENT_KB
-part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align $MENDER_PARTITION_ALIGNMENT_KB
+part /boot   --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --size ${MENDER_BOOT_PART_SIZE_MB}
+part /       --source fsimage --sourceparams=file="${WORKDIR}/active" --ondisk mmcblk0 --label primary --align {$MENDER_PARTITION_ALIGNMENT_KB}
+part         --source fsimage --sourceparams=file="${WORKDIR}/inactive" --ondisk mmcblk0 --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB}
+part /data   --source fsimage --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align ${MENDER_PARTITION_ALIGNMENT_KB}
 EOF
 
     echo "### Contents of wks file ###"

@@ -5,10 +5,10 @@ inherit deploy
 DEPENDS_append = " u-boot"
 
 do_compile_append() {
-    alignment_bytes=$(expr ${MENDER_PARTITION_ALIGNMENT_MB} \* 1024 \* 1024)
+    alignment_bytes=$(expr ${MENDER_PARTITION_ALIGNMENT_KB} \* 1024)
     if [ $(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} % $alignment_bytes) -ne 0 ]; then
         bberror "MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET must be aligned to" \
-                "MENDER_PARTITION_ALIGNMENT_MB"
+                "MENDER_PARTITION_ALIGNMENT_KB"
     fi
 
     # fw-utils seem to only be able to handle hex values.

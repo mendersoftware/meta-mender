@@ -270,29 +270,32 @@ def no_image_file(qemu_running):
 def no_image_file_impl():
     run("rm -f image.dat")
 
-def latest_build_artifact(extension):
-    if not os.environ.get('BUILDDIR', False):
-        raise Exception("BUILDDIR needs to be defined")
-
-    output = subprocess.check_output(["sh", "-c", "ls -t $BUILDDIR/tmp*/deploy/images/*/*%s | head -n 1" % extension])
+def latest_build_artifact(builddir, extension):
+    output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | head -n 1" % (builddir, extension)])
     output = output.rstrip('\r\n')
     print("Found latest image of type '%s' to be: %s" % (extension, output))
     return output
 
 @pytest.fixture(scope="session")
 def latest_rootfs():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
     # Find latest built rootfs.
-    return latest_build_artifact(".ext[234]")
+    return latest_build_artifact(os.environ['BUILDDIR'], ".ext[234]")
 
 @pytest.fixture(scope="session")
 def latest_sdimg():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
     # Find latest built rootfs.
-    return latest_build_artifact(".sdimg")
+    return latest_build_artifact(os.environ['BUILDDIR'], ".sdimg")
 
 @pytest.fixture(scope="session")
 def latest_mender_image():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
     # Find latest built rootfs.
-    return latest_build_artifact(".mender")
+    return latest_build_artifact(os.environ['BUILDDIR'], ".mender")
 
 @pytest.fixture(scope="function")
 def successful_image_update_mender(request, latest_mender_image):
@@ -314,16 +317,14 @@ def successful_image_update_mender(request, latest_mender_image):
 
     return "successful_image_update.mender"
 
-@pytest.fixture(scope="session")
-def bitbake_variables():
-    """Returns a map of all bitbake variables active for the build."""
-
-    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
-
+def get_bitbake_variables(target, env_setup="true"):
     current_dir = os.open(".", os.O_RDONLY)
     os.chdir(os.environ['BUILDDIR'])
 
-    output = subprocess.Popen(["bitbake", "-e", "core-image-minimal"], stdout=subprocess.PIPE)
+    output = subprocess.Popen("%s && bitbake -e %s" % (env_setup, target),
+                              stdout=subprocess.PIPE,
+                              shell=True,
+                              executable="/bin/bash")
     matcher = re.compile('^(?:export )?([A-Za-z][^=]*)="(.*)"$')
     ret = {}
     for line in output.stdout:
@@ -335,7 +336,47 @@ def bitbake_variables():
     output.wait()
     os.fchdir(current_dir)
 
+    # For some unknown reason, 'MACHINE' is not included in the above list. Add
+    # it automagically by looking in environment and local.conf, in that order,
+    # if it doesn't exist already.
+    if ret.get('MACHINE') is None:
+        if os.environ.get('MACHINE'):
+            ret['MACHINE'] = os.environ.get('MACHINE')
+        else:
+            local_fd = open(os.path.join(os.environ['BUILDDIR'], "conf", "local.conf"))
+            for line in local_fd:
+                match = re.match('^ *MACHINE *\?*= *"([^"]*)" *$', line)
+                if match is not None:
+                    ret['MACHINE'] = match.group(1)
+            local_fd.close()
+
     return ret
+
+@pytest.fixture(scope="session")
+def bitbake_variables():
+    """Returns a map of all bitbake variables active for the build."""
+
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    return get_bitbake_variables("core-image-minimal")
+
+@pytest.fixture(scope="session")
+def bitbake_path_string():
+    """Fixture that returns the PATH we need for our testing tools"""
+
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    current_dir = os.open(".", os.O_RDONLY)
+    os.chdir(os.environ['BUILDDIR'])
+
+    # See the recipe for details about this call.
+    subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot", "mender-test-dependencies"])
+
+    os.fchdir(current_dir)
+
+    bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
+
+    return bb_testing_variables['PATH'] + ":" + os.environ['PATH']
 
 @pytest.fixture(scope="function")
 def bitbake_path(request, bitbake_variables):
@@ -352,3 +393,106 @@ def bitbake_path(request, bitbake_variables):
     request.addfinalizer(path_restore)
 
     return os.environ['PATH']
+
+def signing_key(key_type):
+    # RSA pregenerated using these.
+    #   openssl genrsa -out files/test-private-RSA.pem 2048
+    #   openssl rsa -in files/test-private-RSA.pem -outform PEM -pubout -out files/test-public-RSA.pem
+
+    # EC pregenerated using these.
+    #   openssl ecparam -genkey -name prime256v1 -out /tmp/private-and-params.pem
+    #   openssl ec -in /tmp/private-and-params.pem -out files/test-private-EC.pem
+    #   openssl ec -in files/test-private-EC.pem -pubout -out files/test-public-EC.pem
+
+    class KeyPair:
+        if key_type == "EC":
+            private = "files/test-private-EC.pem"
+            public = "files/test-public-EC.pem"
+        else:
+            private = "files/test-private-RSA.pem"
+            public = "files/test-public-RSA.pem"
+
+    return KeyPair()
+
+def run_verbose(cmd):
+    print(cmd)
+    return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
+
+def run_bitbake(prepared_test_build):
+    run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'],
+                                      prepared_test_build['image_name']))
+
+@pytest.fixture(scope="session")
+def prepared_test_build_base(request, bitbake_variables, latest_sdimg):
+    """Base fixture for prepared_test_build. Returns the same as that one."""
+
+    build_dir = os.path.join(os.environ['BUILDDIR'], "test-build-tmp")
+
+    def cleanup_test_build():
+        run_verbose("rm -rf %s" % build_dir)
+
+    cleanup_test_build()
+    request.addfinalizer(cleanup_test_build)
+
+    env_setup = "cd %s && . oe-init-build-env %s" % (bitbake_variables['COREBASE'], build_dir)
+
+    run_verbose(env_setup)
+
+    run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
+    local_conf = os.path.join(build_dir, "conf", "local.conf")
+    fd = open(local_conf, "a")
+    fd.write('SSTATE_MIRRORS = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
+    # The idea here is to append customizations, and then reset the file by
+    # deleting everything below this line.
+    fd.write('### TEST CUSTOMIZATIONS BELOW HERE ###\n')
+    fd.close()
+
+    os.symlink(os.path.join(os.environ['BUILDDIR'], "downloads"), os.path.join(build_dir, "downloads"))
+
+    sdimg_base = os.path.basename(latest_sdimg)
+    # Remove machine, date and suffix.
+    image_name = re.sub("-%s(-[0-9]+)?\.sdimg$" % bitbake_variables['MACHINE'], "", sdimg_base)
+
+    return {'build_dir': build_dir,
+            'image_name': image_name,
+            'env_setup': env_setup,
+            'local_conf': local_conf
+    }
+
+
+@pytest.fixture(scope="function")
+def prepared_test_build(prepared_test_build_base):
+    """Prepares a separate test build directory where a custom build can be
+    made, which reuses the sstate-cache. Returns a dictionary with:
+    - build_dir
+    - image_name
+    - env_setup (passed to some functions)
+    - local_conf
+    """
+
+    old_file = prepared_test_build_base['local_conf']
+    new_file = old_file + ".tmp"
+
+    old = open(old_file)
+    new = open(new_file, "w")
+
+    # Reset "local.conf" by removing everything below the special line.
+    for line in old:
+        new.write(line)
+        if line == "### TEST CUSTOMIZATIONS BELOW HERE ###\n":
+            break
+
+    old.close()
+    new.close()
+    os.rename(new_file, old_file)
+
+    return prepared_test_build_base
+
+
+def add_to_local_conf(prepared_test_build, string):
+    """Add given string to local.conf before the build. Newline is added
+    automatically."""
+
+    fd = open(prepared_test_build['local_conf'], "a")
+    fd.write("%s\n" % string)
+    fd.close()
