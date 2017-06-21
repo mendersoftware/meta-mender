@@ -20,7 +20,8 @@ FROM alpine:3.4
 
 # Install QEMU
 RUN apk update && apk upgrade && \
-    apk add qemu-system-arm bash e2fsprogs-extra python3 && \
+    apk add qemu-system-arm util-linux \
+            bash e2fsprogs-extra python3 && \
     rm -rf /var/cache/apk/*
 
 ARG VEXPRESS_IMAGE=scripts/docker/empty-file
