@@ -83,7 +83,7 @@ IMAGE_CMD_sdimg() {
     do
         case $fs in
         ext2|ext3|ext4)
-            if [ -n "$FSTYPE" ]
+            if [ -n "$FSTYPE" ] && [ "$FSTYPE" != "$fs" ]
             then
                 sdimg_warn "More than one filesystem candidate found in IMAGE_FSTYPES = '${IMAGE_FSTYPES}'. Using $FSTYPE and ignoring $fs."
             else
