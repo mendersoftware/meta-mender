@@ -37,18 +37,34 @@ else
     BUILDTMP=${BUILDDIR}/tmp-glibc
 fi
 
-UBOOT_ELF=${UBOOT_ELF:-"${BUILDTMP}/deploy/images/vexpress-qemu/u-boot.elf"}
-VEXPRESS_SDIMG=${VEXPRESS_SDIMG:-"${BUILDTMP}/deploy/images/vexpress-qemu/${IMAGE_NAME}-vexpress-qemu.sdimg"}
+MACHINE=${MACHINE:-"vexpress-qemu"}
+UBOOT_ELF=${UBOOT_ELF:-"${BUILDTMP}/deploy/images/${MACHINE}/u-boot.elf"}
+VEXPRESS_IMG=${VEXPRESS_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.sdimg"}
 QEMU_SYSTEM_ARM=${QEMU_SYSTEM_ARM:-"qemu-system-arm"}
 RANDOM_MAC="52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"
+
+QEMU_ARGS=""
+case $VEXPRESS_IMG in
+    *.sdimg)
+        QEMU_ARGS="$QEMU_ARGS -drive file=$VEXPRESS_IMG,if=sd "
+        ;;
+    *.vexpress-nor)
+        tar -C /tmp -xvf $VEXPRESS_IMG
+        QEMU_ARGS="$QEMU_ARGS -drive file=/tmp/nor0,if=pflash,format=raw -drive file=/tmp/nor1,if=pflash,format=raw "
+        ;;
+    *)
+        echo "unsupported image $VEXPRESS_IMG"
+        exit 1
+esac
 
 QEMU_AUDIO_DRV=none \
     $QEMU_SYSTEM_ARM \
     -M vexpress-a9 \
     -m 128M \
     -kernel "$UBOOT_ELF" \
-    -drive file="$VEXPRESS_SDIMG",if=sd \
     -net nic,macaddr="$RANDOM_MAC" \
     -net user,hostfwd=tcp::8822-:22 \
     -display vnc=:23 \
-    -nographic
+    -nographic \
+    $QEMU_ARGS \
+    "$@"

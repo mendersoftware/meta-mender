@@ -1,0 +1,3 @@
+# MTD device name	   Device offset     Env. size
+/dev/mtd1            0x00000000       0x40000
+/dev/mtd1            0x00040000       0x40000
