@@ -16,21 +16,12 @@
 # -e TENANT_TOKEN=<token>
 #       Use token as tenant token for client.
 
-FROM alpine:3.6
+FROM opensuse:tumbleweed
 
 # Install packages
-RUN apk update && apk upgrade && \
-    apk add util-linux \
-            bash e2fsprogs-extra python3 && \
-    rm -rf /var/cache/apk/*
-
-# Install qemu from edge repo as we need some fixes that made it into 2.9
-# (currently avaialble in edge).
-# NOTE: this will need fixing in the future
-RUN sed -i -e 's#v3.6#edge#' /etc/apk/repositories && \
-    apk update && apk add qemu-system-arm && \
-    sed -i -e 's#edge#v3.6#' /etc/apk/repositories && \
-    rm -rf /var/cache/apk/*
+RUN zypper up -y && \
+    zypper install -y e2fsprogs qemu-arm python3 && \
+    zypper clean -a
 
 ARG VEXPRESS_IMAGE=scripts/docker/empty-file
 ARG UBOOT_ELF=scripts/docker/empty-file
