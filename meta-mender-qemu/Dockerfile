@@ -24,12 +24,86 @@ RUN apk update && apk upgrade && \
             bash e2fsprogs-extra python3 && \
     rm -rf /var/cache/apk/*
 
-# Install qemu from edge repo as we need some fixes that made it into 2.9
-# (currently avaialble in edge).
-# NOTE: this will need fixing in the future
-RUN sed -i -e 's#v3.6#edge#' /etc/apk/repositories && \
-    apk update && apk add qemu-system-arm && \
-    sed -i -e 's#edge#v3.6#' /etc/apk/repositories && \
+# Install qemu from source
+RUN apk update && apk add --virtual build-dependencies \
+    alsa-lib-dev \
+    bison \
+    curl-dev \
+    flex \
+	  glib-dev \
+	  glib-static \
+	  gnutls-dev \
+	  gtk+3.0-dev \
+	  libaio-dev \
+	  libcap-dev \
+	  libcap-ng-dev \
+	  libjpeg-turbo-dev \
+	  libnfs-dev \
+	  libpng-dev \
+	  libssh2-dev \
+	  libusb-dev \
+	  linux-headers \
+	  lzo-dev \
+	  ncurses-dev \
+	  paxmark \
+	  snappy-dev \
+	  spice-dev \
+	  texinfo \
+	  usbredir-dev \
+	  util-linux-dev \
+	  vde2-dev \
+	  xfsprogs-dev \
+	  zlib-dev \
+    git \
+    alpine-sdk \
+    && \
+    git clone --progress git://git.qemu.org/qemu.git && \
+    cd qemu && git checkout b187e2b53055007fa08ccb9fb120578bae0d02f3 && \
+    git submodule update --init dtc && \
+    ./configure --target-list=arm-softmmu \
+                --disable-werror \
+                --prefix=/usr \
+                --localstatedir=/var \
+		            --sysconfdir=/etc \
+		            --libexecdir=/usr/lib/qemu \
+		            --disable-glusterfs \
+		            --disable-debug-info \
+		            --disable-bsd-user \
+		            --disable-werror \
+		            --disable-sdl \
+		            --disable-xen \
+                --disable-attr \
+                --disable-gtk \
+                && \
+    make install -j4 && \
+    cd .. && \
+    rm -rf qemu && \
+    apk del build-dependencies && \
+    apk add so:libaio.so.1 \
+            so:libasound.so.2 \
+            so:libbz2.so.1 \
+            so:libc.musl-x86_64.so.1 \
+            so:libcurl.so.4 \
+            so:libepoxy.so.0 \
+            so:libgbm.so.1 \
+            so:libgcc_s.so.1 \
+            so:libglib-2.0.so.0 \
+            so:libgnutls.so.30 \
+            so:libjpeg.so.8 \
+            so:liblzo2.so.2 \
+            so:libncursesw.so.6 \
+            so:libnettle.so.6 \
+            so:libnfs.so.8 \
+            so:libpixman-1.so.0 \
+            so:libpng16.so.16 \
+            so:libsnappy.so.1 \
+            so:libspice-server.so.1 \
+            so:libssh2.so.1 \
+            so:libstdc++.so.6 \
+            so:libusb-1.0.so.0 \
+            so:libusbredirparser.so.1 \
+            so:libvdeplug.so.3 \
+            so:libz.so.1 \
     rm -rf /var/cache/apk/*
 
 ARG VEXPRESS_IMAGE=scripts/docker/empty-file
