@@ -46,7 +46,7 @@ RANDOM_MAC="52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"
 QEMU_ARGS=""
 case $VEXPRESS_IMG in
     *.sdimg)
-        QEMU_ARGS="$QEMU_ARGS -drive file=$VEXPRESS_IMG,if=sd,format=raw "
+        QEMU_ARGS="$QEMU_ARGS -drive file=$VEXPRESS_IMG,if=sd,format=raw,aio=native,cache=none "
         ;;
     *.vexpress-nor)
         tar -C /tmp -xvf $VEXPRESS_IMG
