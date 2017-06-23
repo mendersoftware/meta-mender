@@ -50,8 +50,6 @@ inherit image_types
 
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
 
-IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} wic-tools"
-
 python() {
     fslist = d.getVar('IMAGE_FSTYPES', None).split()
     for fs in fslist:
@@ -61,7 +59,7 @@ python() {
             d.setVar('IMAGE_TYPEDEP_sdimg_append', " " + fs)
 }
 
-IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} dosfstools-native mtools-native rsync-native"
+IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} wic-tools dosfstools-native mtools-native rsync-native"
 
 IMAGE_CMD_sdimg() {
     set -ex
