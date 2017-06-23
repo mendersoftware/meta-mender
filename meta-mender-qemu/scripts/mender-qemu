@@ -43,7 +43,7 @@ VEXPRESS_IMG=${VEXPRESS_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}
 QEMU_SYSTEM_ARM=${QEMU_SYSTEM_ARM:-"qemu-system-arm"}
 RANDOM_MAC="52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"
 
-QEMU_ARGS=""
+QEMU_ARGS="-d guest_errors "
 case $VEXPRESS_IMG in
     *.sdimg)
         QEMU_ARGS="$QEMU_ARGS -drive file=$VEXPRESS_IMG,if=sd,format=raw,aio=native,cache=none "
