@@ -75,7 +75,7 @@ RUN apk update && apk add --virtual build-dependencies \
                 --disable-attr \
                 --disable-gtk \
                 && \
-    make install -j4 && \
+    make install -j4 V=1 && \
     cd .. && \
     rm -rf qemu && \
     apk del build-dependencies && \
