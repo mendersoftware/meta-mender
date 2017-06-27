@@ -541,3 +541,24 @@ def add_to_local_conf(prepared_test_build, string):
     fd = open(prepared_test_build['local_conf'], "a")
     fd.write("%s\n" % string)
     fd.close()
+
+
+@pytest.fixture(autouse=True)
+def only_with_image(request, bitbake_variables):
+    """Fixture that enables use of `only_with_image(img1, img2)` mark.
+    Example::
+
+       @pytest.mark.only_with_image('ext4')
+       def test_foo():
+           # executes only if ext4 image is enabled
+           pass
+
+    """
+    mark = request.node.get_marker('only_with_image')
+    if mark is not None:
+        images = mark.args
+        current = bitbake_variables.get('IMAGE_FSTYPES', '').strip().split(' ')
+        if not any([img in current for img in images]):
+            pytest.skip('no supported filesystem in {} ' \
+                        '(supports {})'.format(', '.join(current),
+                                               ', '.join(images)))

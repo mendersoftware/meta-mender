@@ -54,6 +54,8 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image):
         LAST_BUILD_VERSION = version
     return (version, latest_build_artifact(prepared_test_build['build_dir'], ".mender"))
 
+
+@pytest.mark.only_with_image('mender')
 class TestMenderArtifact:
     def test_order(self, versioned_mender_image):
         """Test that order of components inside update is correct."""

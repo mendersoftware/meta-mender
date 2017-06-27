@@ -47,6 +47,7 @@ class TestBuild:
                               % output.split()[0], shell=True)
 
 
+    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     def test_bootloader_embed(self, prepared_test_build):
         """Test that IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
         correctly in the resulting sdimg."""
@@ -88,6 +89,7 @@ class TestBuild:
         os.close(embedded)
 
 
+    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     def test_image_rootfs_extra_space(self, prepared_test_build, bitbake_variables):
         """Test that setting IMAGE_ROOTFS_EXTRA_SPACE to arbitrary values does
         not break the build."""
@@ -101,6 +103,7 @@ class TestBuild:
         assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
 
 
+    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path):
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
@@ -128,6 +131,7 @@ class TestBuild:
         finally:
             os.remove("artifact-verify-key.pem")
 
+    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     def test_state_scripts(self, prepared_test_build, bitbake_variables, bitbake_path, latest_rootfs, latest_mender_image):
         """Test that state scripts that are specified in the build are included
         correctly."""
