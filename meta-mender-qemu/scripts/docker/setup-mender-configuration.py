@@ -27,23 +27,29 @@ def insert_ext4(sdimg, rootfs):
     return manipulate_ext4(sdimg=sdimg, rootfs=rootfs, write=True)
 
 def manipulate_ext4(sdimg, rootfs, write):
-    output = subprocess.check_output(["fdisk", "-ul", sdimg])
+    # calls partx with --show --bytes --noheadings, sample output:
+    #
+    # $ partx -sbg core-image-full-cmdline-vexpress-qemu.sdimg
+    # NR  START    END SECTORS      SIZE NAME UUID  <-- NOTE: this is not shown
+    # 1  49152  81919   32768  16777216      a38e337d-01
+    # 2  81920 294911  212992 109051904      a38e337d-02
+    # 3 294912 507903  212992 109051904      a38e337d-03
+    # 4 507904 770047  262144 134217728      a38e337d-04
+    output = subprocess.check_output(["partx", "-sbg", sdimg])
     for line in output.decode().split('\n'):
         columns = line.split()
-        if len(columns) < 3:
-            continue
         # This blindly assumes that rootfs is on partition 2.
-        if columns[0] == ("%s2" % sdimg):
+        if columns[0] == "2":
             if write:
                 subprocess.check_call(["dd", "if=%s" % rootfs, "of=%s" % sdimg,
                                        "seek=%s" % columns[1],
-                                       "count=%d" % (int(columns[2]) - int(columns[1]) + 1),
+                                       "count=%d" % (int(columns[3])),
                                        "conv=notrunc"],
                                       stderr=subprocess.STDOUT)
             else:
                 subprocess.check_call(["dd", "if=%s" % sdimg, "of=%s" % rootfs,
                                        "skip=%s" % columns[1],
-                                       "count=%d" % (int(columns[2]) - int(columns[1]) + 1)],
+                                       "count=%d" % (int(columns[3]))],
                                       stderr=subprocess.STDOUT)
             break
     else:

@@ -11,14 +11,18 @@ do_compile_append() {
                 "MENDER_PARTITION_ALIGNMENT_KB"
     fi
 
-    # fw-utils seem to only be able to handle hex values.
-    HEX_BOOTENV_SIZE="$(printf 0x%x "${BOOTENV_SIZE}")"
+    if [ ! -e ${WORKDIR}/fw_env.config.default ]; then
+        # fw-utils seem to only be able to handle hex values.
+        HEX_BOOTENV_SIZE="$(printf 0x%x "${BOOTENV_SIZE}")"
 
-    # create fw_env.config file
-    cat > ${WORKDIR}/fw_env.config <<EOF
+        # create fw_env.config file
+        cat > ${WORKDIR}/fw_env.config <<EOF
 ${MENDER_STORAGE_DEVICE} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1} $HEX_BOOTENV_SIZE
 ${MENDER_STORAGE_DEVICE} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2} $HEX_BOOTENV_SIZE
 EOF
+    else
+        cp ${WORKDIR}/fw_env.config.default ${WORKDIR}/fw_env.config
+    fi
 }
 
 do_install_append() {
