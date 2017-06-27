@@ -328,6 +328,21 @@ def latest_sdimg():
     return latest_build_artifact(os.environ['BUILDDIR'], ".sdimg")
 
 @pytest.fixture(scope="session")
+def latest_ubimg():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    # Find latest built ubimg.
+    return latest_build_artifact(os.environ['BUILDDIR'], ".ubimg")
+
+@pytest.fixture(scope="session")
+def latest_ubifs():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    # Find latest built ubifs. NOTE: need to include *core-image* otherwise
+    # we'll likely match data partition file - data.ubifs
+    return latest_build_artifact(os.environ['BUILDDIR'], "*core-image*.ubifs")
+
+@pytest.fixture(scope="session")
 def latest_mender_image():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
