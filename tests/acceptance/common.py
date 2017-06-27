@@ -22,6 +22,8 @@ import os
 import re
 import subprocess
 import time
+import tempfile
+
 import conftest
 
 def if_not_bbb(func):
@@ -437,7 +439,7 @@ def run_bitbake(prepared_test_build):
 def prepared_test_build_base(request, bitbake_variables, latest_sdimg):
     """Base fixture for prepared_test_build. Returns the same as that one."""
 
-    build_dir = os.path.join(os.environ['BUILDDIR'], "test-build-tmp")
+    build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
 
     def cleanup_test_build():
         run_verbose("rm -rf %s" % build_dir)
