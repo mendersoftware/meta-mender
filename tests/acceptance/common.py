@@ -468,7 +468,7 @@ def clean_image(request, prepared_test_build_base):
 
 
 @pytest.fixture(scope="session")
-def prepared_test_build_base(request, bitbake_variables, latest_sdimg):
+def prepared_test_build_base(request, bitbake_variables):
     """Base fixture for prepared_test_build. Returns the same as that one."""
 
     build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
@@ -494,9 +494,7 @@ def prepared_test_build_base(request, bitbake_variables, latest_sdimg):
 
     os.symlink(os.path.join(os.environ['BUILDDIR'], "downloads"), os.path.join(build_dir, "downloads"))
 
-    sdimg_base = os.path.basename(latest_sdimg)
-    # Remove machine, date and suffix.
-    image_name = re.sub("-%s(-[0-9]+)?\.sdimg$" % bitbake_variables['MACHINE'], "", sdimg_base)
+    image_name = pytest.config.getoption("--bitbake-image")
 
     return {'build_dir': build_dir,
             'image_name': image_name,
