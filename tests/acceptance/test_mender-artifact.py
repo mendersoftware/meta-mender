@@ -234,7 +234,6 @@ class TestMenderArtifact:
 
         subprocess.check_call(["mender-artifact", "validate", mender_image])
 
-
     def test_artifacts_rootfs_size(self, versioned_mender_image, bitbake_path, bitbake_variables):
         """Test that the rootfs has the expected size. This relies on
         IMAGE_ROOTFS_SIZE *not* being overridden in the build."""
@@ -243,8 +242,26 @@ class TestMenderArtifact:
 
         output = subprocess.check_output(["mender-artifact", "read", mender_image])
 
-        match = re.search("^ *size: *([0-9]+) *$", output, flags=re.MULTILINE)
-        assert(match is not None)
-        size_from_artifact = int(match.group(1))
+        match = re.search('.*name:\s+(?P<image>[a-z-.0-9]+).*\n.*size:\s+(?P<size>[0-9]+)',
+                          output, flags=re.MULTILINE)
+        assert match
+
+        gd = match.groupdict()
+        assert 'image' in gd and 'size' in gd
+
+        size_from_artifact = int(gd['size'])
         size_from_build = int(bitbake_variables["MENDER_CALC_ROOTFS_SIZE"]) * 1024
-        assert(size_from_artifact == size_from_build)
+
+        print('matched:', gd)
+        if re.match('.*\.ubifs', gd['image']):
+            # some filesystems (eg. ubifs) may use compression or empty space may
+            # not be a part of the image, in which case the image will be smaller
+            # or equal to MENDER_CALC_ROOTFS_SIZE
+            assert size_from_artifact <= size_from_build
+            # assume that the difference will not be more than 30% of calculated
+            # size
+            assert size_from_artifact >= 0.7 * size_from_build
+        elif re.match('.*\.ext[234]', gd['image']):
+            assert size_from_artifact == size_from_build
+        else:
+            pytest.skip('unsupported image artifact {}'.format(gd['image']))
