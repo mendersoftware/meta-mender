@@ -554,9 +554,9 @@ def add_to_local_conf(prepared_test_build, string):
     """Add given string to local.conf before the build. Newline is added
     automatically."""
 
-    fd = open(prepared_test_build['local_conf'], "a")
-    fd.write("%s\n" % string)
-    fd.close()
+    with open(prepared_test_build['local_conf'], "a") as fd:
+        fd.write('\n## ADDED BY TEST\n')
+        fd.write("%s\n" % string)
 
 
 @pytest.fixture(autouse=True)
