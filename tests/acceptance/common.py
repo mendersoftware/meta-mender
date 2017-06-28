@@ -491,7 +491,8 @@ def prepared_test_build_base(request, bitbake_variables):
     build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
 
     def cleanup_test_build():
-        run_verbose("rm -rf %s" % build_dir)
+        if not pytest.config.getoption('--keep-build-dir'):
+            run_verbose("rm -rf %s" % build_dir)
 
     cleanup_test_build()
     request.addfinalizer(cleanup_test_build)
