@@ -58,7 +58,7 @@ case $VEXPRESS_IMG in
 esac
 
 QEMU_AUDIO_DRV=none \
-    $QEMU_SYSTEM_ARM \
+    exec $QEMU_SYSTEM_ARM \
     -M vexpress-a9 \
     -m 128M \
     -kernel "$UBOOT_ELF" \
