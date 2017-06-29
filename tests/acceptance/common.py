@@ -38,6 +38,10 @@ def start_qemu(latest_sdimg):
     if pytest.config.getoption("bbb"):
         return
 
+    fh, img_path = tempfile.mkstemp(suffix=".qcow2", prefix="test-image")
+    # don't need an open fd to temp file
+    os.close(fh)
+
     # Make a disposable image.
     try:
         qemu_img = os.environ["QEMU_SYSTEM_ARM"]
@@ -46,14 +50,17 @@ def start_qemu(latest_sdimg):
     qemu_img = re.sub("-system-arm$", "-img", qemu_img)
     subprocess.check_call([qemu_img, "create", "-f", "qcow2", "-o",
                            "backing_file=%s" % latest_sdimg,
-                           "test-image.qcow2"])
+                           img_path])
 
-    os.environ["VEXPRESS_SDIMG"] = "test-image.qcow2"
-    proc = subprocess.Popen("../../meta-mender-qemu/scripts/mender-qemu")
+    env = dict(os.environ)
+    # pass QEMU drive directly
+    env["QEMU_DRIVE"] = "-drive file={},if=sd,format=qcow2".format(img_path)
+    env["VEXPRESS_IMG"] = img_path
+    proc = subprocess.Popen("../../meta-mender-qemu/scripts/mender-qemu", env=env)
     # Make sure we are connected.
     execute(run_after_connect, "true", hosts = conftest.current_hosts())
     execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
-    return proc
+    return proc, img_path
 
 @if_not_bbb
 def kill_qemu():
@@ -236,7 +243,8 @@ def qemu_running(request, latest_sdimg):
     if pytest.config.getoption("--bbb"):
         return
 
-    kill_qemu()
+    qemu, img_path = start_qemu(latest_sdimg)
+    print("qemu stated with pid %s, image %s".format(qemu.pid, img_path))
 
     # Make sure we revert to the first root partition on next reboot, makes test
     # cases more predictable.
@@ -247,17 +255,21 @@ def qemu_running(request, latest_sdimg):
                 sudo("halt")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
-                while halt_time + 30 > time.time() and is_qemu_running():
+                while halt_time + 30 > time.time() and qemu.poll() is None:
                     time.sleep(1)
             except:
                 # Nothing we can do about that.
                 pass
-            kill_qemu()
+
+            # kill qemu
+            qemu.kill()
+            qemu.wait()
+            os.remove(img_path)
+
         execute(qemu_finalizer_impl, hosts=conftest.current_hosts())
 
     request.addfinalizer(qemu_finalizer)
 
-    start_qemu(latest_sdimg)
     execute(qemu_prep_fresh_host, hosts=conftest.current_hosts())
 
 
