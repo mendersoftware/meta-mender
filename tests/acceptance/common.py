@@ -26,6 +26,8 @@ import tempfile
 import errno
 import shutil
 
+from contextlib import contextmanager
+
 import conftest
 
 def if_not_bbb(func):
@@ -578,3 +580,15 @@ def only_with_image(request, bitbake_variables):
             pytest.skip('no supported filesystem in {} ' \
                         '(supports {})'.format(', '.join(current),
                                                ', '.join(images)))
+
+
+@contextmanager
+def make_tempdir(delete=True):
+    """context manager for temporary directories"""
+    tdir = tempfile.mkdtemp(prefix='meta-mender-acceptance.')
+    print('created dir', tdir)
+    try:
+        yield tdir
+    finally:
+        if delete:
+            shutil.rmtree(tdir)

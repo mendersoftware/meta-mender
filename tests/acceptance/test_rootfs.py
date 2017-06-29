@@ -19,10 +19,7 @@ import pytest
 import subprocess
 import os
 import tempfile
-import shutil
 import stat
-
-from contextlib import contextmanager
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
@@ -85,13 +82,3 @@ class TestRootfs:
                 data = fd.read()
 
             TestRootfs.verify_artifact_info_data(data, bitbake_variables["MENDER_ARTIFACT_NAME"])
-
-
-@contextmanager
-def make_tempdir():
-    tdir = tempfile.mkdtemp(prefix='meta-mender-acceptance.')
-    print('created dir', tdir)
-    try:
-        yield tdir
-    finally:
-        shutil.rmtree(tdir)
