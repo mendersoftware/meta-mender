@@ -25,10 +25,6 @@ import tempfile
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
-if pytest.config.getoption("--bbb"):
-    image_type = "beaglebone"
-else:
-    image_type = "vexpress-qemu"
 
 class Helpers:
     @staticmethod
@@ -135,6 +131,8 @@ class TestUpdates:
 
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
+        image_type = bitbake_variables["MACHINE"]
+
         try:
             # Make a dummy/broken update
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
@@ -159,11 +157,13 @@ class TestUpdates:
             os.remove("image.mender")
             os.remove("image.dat")
 
-    def test_too_big_image_update(self):
+    def test_too_big_image_update(self, bitbake_variables):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
-            execute(self.test_too_big_image_update)
+            execute(self.test_too_big_image_update, bitbake_variables)
             return
+
+        image_type = bitbake_variables["MACHINE"]
 
         try:
             # Make a too big update
@@ -412,6 +412,8 @@ class TestUpdates:
         else:
             sig_key = None
 
+        image_type = bitbake_variables["MACHINE"]
+
         subprocess.check_call("mender-artifact write rootfs-image %s -t %s -n test-update -u image.dat -o image.mender"
                               % (artifact_args, image_type), shell=True)
 
@@ -561,6 +563,8 @@ class TestUpdates:
         old_checksums = Helpers.get_env_checksums(bitbake_variables)
 
         orig_env = run("fw_printenv")
+
+        image_type = bitbake_variables["MACHINE"]
 
         try:
             # Make a dummy/broken update
