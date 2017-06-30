@@ -38,24 +38,25 @@ def if_not_bbb(func):
             func()
     return func_wrapper
 
+def start_qemu(qenv=None):
+    """Start qemu and return a subprocess.Popen object corresponding to a running
+    qemu process. `qenv` is a dict of environment variables that will be added
+    to `subprocess.Popen(..,env=)`.
 
-# Return Popen object
-def start_qemu(latest_sdimg):
-    if pytest.config.getoption("bbb"):
-        return
+    Once qemu is stated, a connection over ssh will attempted, so the returned
+    process is actually a qemu instance with fully booted guest os.
 
-    fh, img_path = tempfile.mkstemp(suffix=".sdimg", prefix="test-image")
-    # don't need an open fd to temp file
-    os.close(fh)
+    The helper uses `meta-mender-qemu/scripts/mender-qemu` to start qemu, thus
+    you can use `VEXPRESS_IMG`, `QEMU_DRIVE` and other environment variables to
+    override the default behavior.
 
-    # Make a disposable image.
-    shutil.copy(latest_sdimg, img_path)
-
+    """
     env = dict(os.environ)
-    # *.sdimg is supported by mender-qemu and needs no special handling
-    env["VEXPRESS_IMG"] = img_path
-    # use snapshot mode
-    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"], env=env)
+    if qenv:
+        env.update(qenv)
+
+    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+                            env=env)
 
     try:
         # make sure we are connected.
@@ -72,11 +73,67 @@ def start_qemu(latest_sdimg):
 
         proc.wait()
 
-        os.remove(img_path)
-
         raise
 
-    return proc, img_path
+    return proc
+
+
+def start_qemu_sdimg(latest_sdimg):
+    """Start qemu instance running *.sdimg"""
+    if pytest.config.getoption("bbb"):
+        return
+
+    fh, img_path = tempfile.mkstemp(suffix=".sdimg", prefix="test-image")
+    # don't need an open fd to temp file
+    os.close(fh)
+
+    # Make a disposable image.
+    shutil.copy(latest_sdimg, img_path)
+
+    # pass QEMU drive directly
+    qenv = {}
+    qenv["VEXPRESS_IMG"] = img_path
+    qenv["MACHNE"] = "vexpress-qemu"
+
+    try:
+        qemu = start_qemu(qenv)
+    except:
+        os.remove(img_path)
+        raise
+
+    return qemu, img_path
+
+
+def start_qemu_flash(latest_vexpress_nor):
+    """Start qemu instance running *.vexpress-nor image"""
+
+    print("qemu raw flash with image {}".format(latest_vexpress_nor))
+
+    # make a temp file, make sure that it has .vexpress-nor suffix, so that
+    # mender-qemu will know how to handle it
+    fh, img_path = tempfile.mkstemp(suffix=".vexpress-nor", prefix="test-image")
+    # don't need an open fd to temp file
+    os.close(fh)
+
+    # vexpress-nor is more complex than sdimg, inside it's compose of 2 raw
+    # files that represent 2 separate flash banks (and each file is a 'drive'
+    # passed to qemu). Because of this, we cannot directly apply qemu-img and
+    # create a qcow2 image with backing file. Instead make a disposable copy of
+    # flash image file.
+    shutil.copyfile(latest_vexpress_nor, img_path)
+
+    qenv = {}
+    # pass QEMU drive directly
+    qenv["VEXPRESS_IMG"] = img_path
+    qenv["MACHINE"] = "vexpress-qemu-flash"
+
+    try:
+        qemu = start_qemu(qenv)
+    except:
+        os.remove(img_path)
+        raise
+
+    return qemu, img_path
 
 
 @if_not_bbb
@@ -261,8 +318,15 @@ def qemu_running(request, clean_image):
         return
 
     latest_sdimg = latest_build_artifact(clean_image['build_dir'], ".sdimg")
+    latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], ".vexpress-nor")
 
-    qemu, img_path = start_qemu(latest_sdimg)
+    print("sdimg: {} vexpress-nor: {}".format(latest_sdimg, latest_vexpress_nor))
+
+    if latest_sdimg:
+        qemu, img_path = start_qemu_sdimg(latest_sdimg)
+    elif latest_vexpress_nor:
+        qemu, img_path = start_qemu_flash(latest_vexpress_nor)
+
     print("qemu started with pid {}, image {}".format(qemu.pid, img_path))
 
     # Make sure we revert to the first root partition on next reboot, makes test
@@ -343,6 +407,14 @@ def latest_ubifs():
     # Find latest built ubifs. NOTE: need to include *core-image* otherwise
     # we'll likely match data partition file - data.ubifs
     return latest_build_artifact(os.environ['BUILDDIR'], "*core-image*.ubifs")
+
+@pytest.fixture(scope="session")
+def latest_vexpress_nor():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    # Find latest built ubifs. NOTE: need to include *core-image* otherwise
+    # we'll likely match data partition file - data.ubifs
+    return latest_build_artifact(os.environ['BUILDDIR'], ".vexpress-nor")
 
 @pytest.fixture(scope="session")
 def latest_mender_image():
