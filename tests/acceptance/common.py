@@ -23,6 +23,7 @@ import re
 import subprocess
 import time
 import tempfile
+import errno
 
 import conftest
 
@@ -246,7 +247,7 @@ def qemu_running(request, latest_sdimg):
         return
 
     qemu, img_path = start_qemu(latest_sdimg)
-    print("qemu stated with pid %s, image %s".format(qemu.pid, img_path))
+    print("qemu started with pid {}, image {}".format(qemu.pid, img_path))
 
     # Make sure we revert to the first root partition on next reboot, makes test
     # cases more predictable.
@@ -264,7 +265,15 @@ def qemu_running(request, latest_sdimg):
                 pass
 
             # kill qemu
-            qemu.kill()
+            try:
+                qemu.kill()
+            except OSError as oserr:
+                # qemu might have exited before we reached this place
+                if oserr.errno == errno.ESRCH:
+                    pass
+                else:
+                    raise
+
             qemu.wait()
             os.remove(img_path)
 
