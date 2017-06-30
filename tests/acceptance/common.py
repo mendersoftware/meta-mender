@@ -240,8 +240,8 @@ def determine_active_passive_part(bitbake_variables):
     elif mount_output.find(b) >= 0:
         return (b, a)
     else:
-        raise Exception("Could not determine active partition. Mount output: %s"
-                        % mount_output)
+        raise Exception("Could not determine active partition. Mount output:\n {}" \
+                        "\nwas looking for {}".format(mount_output, (a, b)))
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
