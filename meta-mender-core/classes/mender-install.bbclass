@@ -120,3 +120,8 @@ MENDER_CALC_ROOTFS_SIZE = "${@mender_calculate_rootfs_size_kb(${MENDER_STORAGE_T
 # But subtract IMAGE_ROOTFS_EXTRA_SPACE, since it will be added automatically
 # in later bitbake calculations.
 IMAGE_ROOTFS_SIZE ?= "${@eval('${MENDER_CALC_ROOTFS_SIZE} - (${IMAGE_ROOTFS_EXTRA_SPACE})')}"
+
+# Set hard limit on maximum rootfs size. Calculated rootfs size is used when
+# partitioning the disk image (be it SD card or UBI image), and defines an upper
+# bound of the space allocated for rootfs partition/volume.
+IMAGE_ROOTFS_MAXSIZE ?= "${MENDER_CALC_ROOTFS_SIZE}"
