@@ -634,6 +634,27 @@ def add_to_local_conf(prepared_test_build, string):
 
 
 @pytest.fixture(autouse=True)
+def only_for_machine(request, bitbake_variables):
+    """Fixture that enables use of `only_for_machine(machine-name)` mark.
+    Example::
+
+       @pytest.mark.only_for_machine('vexpress-qemu')
+       def test_foo():
+           # executes only if building for vexpress-qemu
+           pass
+
+    """
+    mach_mark = request.node.get_marker('only_for_machine')
+    if mach_mark is not None:
+        machines = mach_mark.args
+        current = bitbake_variables.get('MACHINE', None)
+        if  current not in machines:
+            pytest.skip('incompatible machine {} ' \
+                        '(required {})'.format(current if not None else '(none)',
+                                               ', '.join(machines)))
+
+
+@pytest.fixture(autouse=True)
 def only_with_image(request, bitbake_variables):
     """Fixture that enables use of `only_with_image(img1, img2)` mark.
     Example::
