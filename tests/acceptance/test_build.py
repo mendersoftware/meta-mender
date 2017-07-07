@@ -47,7 +47,7 @@ class TestBuild:
                               % output.split()[0], shell=True)
 
 
-    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    @pytest.mark.only_with_image('sdimg')
     def test_bootloader_embed(self, prepared_test_build):
         """Test that IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
         correctly in the resulting sdimg."""
