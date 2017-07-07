@@ -513,6 +513,7 @@ class TestUpdates:
                 run("rm -f /etc/mender/%s" % os.path.basename(sig_key.public))
 
 
+    @pytest.mark.only_for_machine('vexpress-qemu')
     def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables):
         """This tests a very specific scenario: Consider the following production
         scenario: You are currently running an update on rootfs partition
