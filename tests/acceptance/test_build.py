@@ -94,7 +94,7 @@ class TestBuild:
         """Test that setting IMAGE_ROOTFS_EXTRA_SPACE to arbitrary values does
         not break the build."""
 
-        add_to_local_conf(prepared_test_build, 'IMAGE_EXTRA_ROOTFS_SPACE_append = " + 640 - 222 + 900"')
+        add_to_local_conf(prepared_test_build, 'IMAGE_ROOTFS_EXTRA_SPACE_append = " + 640 - 222 + 900"')
 
         run_bitbake(prepared_test_build)
 
