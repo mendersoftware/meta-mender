@@ -54,7 +54,7 @@ MENDER_DATA_PART_DIR ?= ""
 MENDER_DATA_PART_SIZE_MB ?= "128"
 
 # Size of the first (FAT) partition, that contains the bootloader
-MENDER_BOOT_PART_SIZE_MB ?= "16"
+MENDER_BOOT_PART_SIZE_MB ??= "16"
 
 # For performance reasons, we try to align the partitions to the SD
 # card's erase block. It is impossible to know this information with
