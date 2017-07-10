@@ -16,6 +16,7 @@
 import os
 import pytest
 import subprocess
+import json
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
@@ -101,6 +102,30 @@ class TestBuild:
         built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext4")
 
         assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
+
+
+    @pytest.mark.only_for_image('sdimg')
+    def test_tenant_token(self, prepared_test_build):
+        """Test setting a custom tenant-token"""
+
+        add_to_local_conf(prepared_test_build, 'MENDER_TENANT_TOKEN = "%s"'
+                          %  "authtentoken")
+
+        run_bitbake(prepared_test_build)
+
+        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
+
+        subprocess.check_call(["debugfs", "-R",
+                                   "dump -p /etc/mender/mender.conf mender.conf", built_rootfs])
+
+        try:
+            with open("mender.conf") as fd:
+                data = json.load(fd)
+            assert data['TenantToken'] == "authtentoken"
+
+        finally:
+            os.remove("mender.conf")
+
 
 
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
