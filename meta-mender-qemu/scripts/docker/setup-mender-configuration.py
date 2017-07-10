@@ -73,12 +73,18 @@ def main():
     extract_ext4(sdimg=args.sdimg, rootfs=rootfs)
 
     if args.tenant_token:
-        with open("tenant.conf", "w") as fd:
-            fd.write("%s\n" % args.tenant_token)
-        put(local_path="tenant.conf",
-            remote_path="/etc/mender/tenant.conf",
+        get(local_path="mender.conf",
+            remote_path="/etc/mender/mender.conf",
             rootfs=rootfs)
-        os.unlink("tenant.conf")
+        with open("mender.conf") as fd:
+            conf = json.load(fd)
+        conf['TenantToken'] = args.tenant_token
+        with open("mender.conf", "w") as fd:
+            json.dump(conf, fd, indent=4, sort_keys=True)
+        put(local_path="mender.conf",
+            remote_path="/etc/mender/mender.conf",
+            rootfs=rootfs)
+        os.unlink("mender.conf")
 
     if args.server_crt:
         put(local_path=args.server_crt,
