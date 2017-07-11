@@ -60,10 +60,28 @@ def start_qemu(latest_sdimg):
     env["QEMU_DRIVE"] = "-drive file={},if=sd,format=qcow2".format(img_path)
     env["VEXPRESS_IMG"] = img_path
     proc = subprocess.Popen("../../meta-mender-qemu/scripts/mender-qemu", env=env)
-    # Make sure we are connected.
-    execute(run_after_connect, "true", hosts = conftest.current_hosts())
-    execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
+
+    try:
+        # make sure we are connected.
+        execute(run_after_connect, "true", hosts = conftest.current_hosts())
+        execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
+    except:
+        # or do the necessary cleanup if we're not
+        try:
+            # qemu might have exited and this would raise an exception
+            print('cleaning up qemu instance with pid {}'.format(proc.pid))
+            proc.kill()
+        except:
+            pass
+
+        proc.wait()
+
+        os.remove(img_path)
+
+        raise
+
     return proc, img_path
+
 
 @if_not_bbb
 def kill_qemu():
