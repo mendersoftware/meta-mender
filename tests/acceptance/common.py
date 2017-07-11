@@ -260,9 +260,11 @@ def setup_bbb(request):
         request.addfinalizer(bbb_finalizer)
 
 @pytest.fixture(scope="module")
-def qemu_running(request, latest_sdimg):
+def qemu_running(request, clean_image):
     if pytest.config.getoption("--bbb"):
         return
+
+    latest_sdimg = latest_build_artifact(clean_image['build_dir'], ".sdimg")
 
     qemu, img_path = start_qemu(latest_sdimg)
     print("qemu started with pid {}, image {}".format(qemu.pid, img_path))
@@ -461,6 +463,13 @@ def run_verbose(cmd):
 def run_bitbake(prepared_test_build):
     run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'],
                                       prepared_test_build['image_name']))
+
+
+@pytest.fixture(scope="module")
+def clean_image(request, prepared_test_build_base):
+    run_bitbake(prepared_test_build_base)
+    return prepared_test_build_base
+
 
 @pytest.fixture(scope="session")
 def prepared_test_build_base(request, bitbake_variables, latest_sdimg):
