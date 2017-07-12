@@ -120,11 +120,11 @@ def reboot(wait = 120):
     qemu_prep_after_boot()
 
 
-def run_after_connect(cmd, wait = 120):
+def run_after_connect(cmd, wait=360):
     output = ""
     start_time = time.time()
     # Use shorter timeout to get a faster cycle.
-    with settings(timeout = 5, abort_exception = Exception):
+    with settings(timeout=5, abort_exception=Exception):
         while True:
             attempt_time = time.time()
             try:
