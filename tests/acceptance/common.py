@@ -24,6 +24,7 @@ import subprocess
 import time
 import tempfile
 import errno
+import shutil
 
 import conftest
 
@@ -41,25 +42,18 @@ def start_qemu(latest_sdimg):
     if pytest.config.getoption("bbb"):
         return
 
-    fh, img_path = tempfile.mkstemp(suffix=".qcow2", prefix="test-image")
+    fh, img_path = tempfile.mkstemp(suffix=".sdimg", prefix="test-image")
     # don't need an open fd to temp file
     os.close(fh)
 
     # Make a disposable image.
-    try:
-        qemu_img = os.environ["QEMU_SYSTEM_ARM"]
-    except:
-        qemu_img = "qemu-system-arm"
-    qemu_img = re.sub("-system-arm$", "-img", qemu_img)
-    subprocess.check_call([qemu_img, "create", "-f", "qcow2", "-o",
-                           "backing_file=%s" % latest_sdimg,
-                           img_path])
+    shutil.copy(latest_sdimg, img_path)
 
     env = dict(os.environ)
-    # pass QEMU drive directly
-    env["QEMU_DRIVE"] = "-drive file={},if=sd,format=qcow2".format(img_path)
+    # *.sdimg is supported by mender-qemu and needs no special handling
     env["VEXPRESS_IMG"] = img_path
-    proc = subprocess.Popen("../../meta-mender-qemu/scripts/mender-qemu", env=env)
+    # use snapshot mode
+    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"], env=env)
 
     try:
         # make sure we are connected.
