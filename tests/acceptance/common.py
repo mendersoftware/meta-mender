@@ -117,8 +117,8 @@ def reboot(wait = 120):
 def run_after_connect(cmd, wait=360):
     output = ""
     start_time = time.time()
-    # Use shorter timeout to get a faster cycle.
-    with settings(timeout=5, abort_exception=Exception):
+
+    with settings(timeout=30, abort_exception=Exception):
         while True:
             attempt_time = time.time()
             try:
@@ -130,7 +130,7 @@ def run_after_connect(cmd, wait=360):
                     raise Exception("Could not reconnect to QEMU")
                 now = time.time()
                 if now - attempt_time < 5:
-                    time.sleep(5 - (now - attempt_time))
+                    time.sleep(60)
                 continue
     return output
 
