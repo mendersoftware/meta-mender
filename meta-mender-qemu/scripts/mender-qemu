@@ -42,6 +42,8 @@ UBOOT_ELF=${UBOOT_ELF:-"${BUILDTMP}/deploy/images/${MACHINE}/u-boot.elf"}
 VEXPRESS_IMG=${VEXPRESS_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.sdimg"}
 QEMU_SYSTEM_ARM=${QEMU_SYSTEM_ARM:-"qemu-system-arm"}
 RANDOM_MAC="52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"
+# use to pass -drive .. parameters directly
+QEMU_DRIVE=${QEMU_DRIVE:-""}
 
 QEMU_ARGS=""
 case $VEXPRESS_IMG in
@@ -53,12 +55,16 @@ case $VEXPRESS_IMG in
         QEMU_ARGS="$QEMU_ARGS -drive file=/tmp/nor0,if=pflash,format=raw -drive file=/tmp/nor1,if=pflash,format=raw "
         ;;
     *)
-        echo "unsupported image $VEXPRESS_IMG"
-        exit 1
+        if [ -n "$QEMU_DRIVE" ]; then
+            QEMU_ARGS="$QEMU_ARGS $QEMU_DRIVE "
+        else
+            echo "unsupported image $VEXPRESS_IMG"
+            exit 1
+        fi
 esac
 
 QEMU_AUDIO_DRV=none \
-    $QEMU_SYSTEM_ARM \
+    exec $QEMU_SYSTEM_ARM \
     -M vexpress-a9 \
     -m 128M \
     -kernel "$UBOOT_ELF" \

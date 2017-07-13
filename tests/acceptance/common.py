@@ -22,6 +22,10 @@ import os
 import re
 import subprocess
 import time
+import tempfile
+import errno
+import shutil
+
 import conftest
 
 def if_not_bbb(func):
@@ -38,22 +42,40 @@ def start_qemu(latest_sdimg):
     if pytest.config.getoption("bbb"):
         return
 
-    # Make a disposable image.
-    try:
-        qemu_img = os.environ["QEMU_SYSTEM_ARM"]
-    except:
-        qemu_img = "qemu-system-arm"
-    qemu_img = re.sub("-system-arm$", "-img", qemu_img)
-    subprocess.check_call([qemu_img, "create", "-f", "qcow2", "-o",
-                           "backing_file=%s" % latest_sdimg,
-                           "test-image.qcow2"])
+    fh, img_path = tempfile.mkstemp(suffix=".sdimg", prefix="test-image")
+    # don't need an open fd to temp file
+    os.close(fh)
 
-    os.environ["VEXPRESS_SDIMG"] = "test-image.qcow2"
-    proc = subprocess.Popen("../../meta-mender-qemu/scripts/mender-qemu")
-    # Make sure we are connected.
-    execute(run_after_connect, "true", hosts = conftest.current_hosts())
-    execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
-    return proc
+    # Make a disposable image.
+    shutil.copy(latest_sdimg, img_path)
+
+    env = dict(os.environ)
+    # *.sdimg is supported by mender-qemu and needs no special handling
+    env["VEXPRESS_IMG"] = img_path
+    # use snapshot mode
+    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"], env=env)
+
+    try:
+        # make sure we are connected.
+        execute(run_after_connect, "true", hosts = conftest.current_hosts())
+        execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
+    except:
+        # or do the necessary cleanup if we're not
+        try:
+            # qemu might have exited and this would raise an exception
+            print('cleaning up qemu instance with pid {}'.format(proc.pid))
+            proc.kill()
+        except:
+            pass
+
+        proc.wait()
+
+        os.remove(img_path)
+
+        raise
+
+    return proc, img_path
+
 
 @if_not_bbb
 def kill_qemu():
@@ -92,11 +114,11 @@ def reboot(wait = 120):
     qemu_prep_after_boot()
 
 
-def run_after_connect(cmd, wait = 120):
+def run_after_connect(cmd, wait=360):
     output = ""
     start_time = time.time()
-    # Use shorter timeout to get a faster cycle.
-    with settings(timeout = 5, abort_exception = Exception):
+
+    with settings(timeout=30, abort_exception=Exception):
         while True:
             attempt_time = time.time()
             try:
@@ -108,7 +130,7 @@ def run_after_connect(cmd, wait = 120):
                     raise Exception("Could not reconnect to QEMU")
                 now = time.time()
                 if now - attempt_time < 5:
-                    time.sleep(5 - (now - attempt_time))
+                    time.sleep(60)
                 continue
     return output
 
@@ -232,11 +254,14 @@ def setup_bbb(request):
         request.addfinalizer(bbb_finalizer)
 
 @pytest.fixture(scope="module")
-def qemu_running(request, latest_sdimg):
+def qemu_running(request, clean_image):
     if pytest.config.getoption("--bbb"):
         return
 
-    kill_qemu()
+    latest_sdimg = latest_build_artifact(clean_image['build_dir'], ".sdimg")
+
+    qemu, img_path = start_qemu(latest_sdimg)
+    print("qemu started with pid {}, image {}".format(qemu.pid, img_path))
 
     # Make sure we revert to the first root partition on next reboot, makes test
     # cases more predictable.
@@ -247,17 +272,29 @@ def qemu_running(request, latest_sdimg):
                 sudo("halt")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
-                while halt_time + 30 > time.time() and is_qemu_running():
+                while halt_time + 30 > time.time() and qemu.poll() is None:
                     time.sleep(1)
             except:
                 # Nothing we can do about that.
                 pass
-            kill_qemu()
+
+            # kill qemu
+            try:
+                qemu.kill()
+            except OSError as oserr:
+                # qemu might have exited before we reached this place
+                if oserr.errno == errno.ESRCH:
+                    pass
+                else:
+                    raise
+
+            qemu.wait()
+            os.remove(img_path)
+
         execute(qemu_finalizer_impl, hosts=conftest.current_hosts())
 
     request.addfinalizer(qemu_finalizer)
 
-    start_qemu(latest_sdimg)
     execute(qemu_prep_fresh_host, hosts=conftest.current_hosts())
 
 
@@ -421,11 +458,20 @@ def run_bitbake(prepared_test_build):
     run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'],
                                       prepared_test_build['image_name']))
 
+
+@pytest.fixture(scope="module")
+def clean_image(request, prepared_test_build_base):
+    add_to_local_conf(prepared_test_build_base,
+                      'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
+    run_bitbake(prepared_test_build_base)
+    return prepared_test_build_base
+
+
 @pytest.fixture(scope="session")
 def prepared_test_build_base(request, bitbake_variables, latest_sdimg):
     """Base fixture for prepared_test_build. Returns the same as that one."""
 
-    build_dir = os.path.join(os.environ['BUILDDIR'], "test-build-tmp")
+    build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
 
     def cleanup_test_build():
         run_verbose("rm -rf %s" % build_dir)
