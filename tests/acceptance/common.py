@@ -463,6 +463,8 @@ def run_bitbake(prepared_test_build):
 def clean_image(request, prepared_test_build_base):
     add_to_local_conf(prepared_test_build_base,
                       'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
+    add_to_local_conf(prepared_test_build_base,
+                      'EXTRA_IMAGE_FEATURES_append = " ssh-server-openssh"')
     run_bitbake(prepared_test_build_base)
     return prepared_test_build_base
 
