@@ -461,6 +461,8 @@ def run_bitbake(prepared_test_build):
 
 @pytest.fixture(scope="module")
 def clean_image(request, prepared_test_build_base):
+    add_to_local_conf(prepared_test_build_base,
+                      'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
     run_bitbake(prepared_test_build_base)
     return prepared_test_build_base
 
