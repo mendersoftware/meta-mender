@@ -102,7 +102,7 @@ def is_qemu_running():
 
 def reboot(wait = 120):
     with settings(warn_only = True):
-        sudo("reboot")
+        run("reboot")
 
     # Make sure reboot has had time to take effect.
     time.sleep(5)
@@ -212,8 +212,8 @@ def qemu_prep_fresh_host():
 
 
 def manual_uboot_commit():
-    sudo("fw_setenv upgrade_available 0")
-    sudo("fw_setenv bootcount 0")
+    run("fw_setenv upgrade_available 0")
+    run("fw_setenv bootcount 0")
 
 
 def setup_bbb_sdcard():
@@ -221,10 +221,10 @@ def setup_bbb_sdcard():
     put("core-image-base-beaglebone-modified-testing.sdimg",
         local_path=local_sdimg,
         remote_path="/opt/")
-    sudo("chmod +x /root/install-new-image.sh")
+    run("chmod +x /root/install-new-image.sh")
 
     #easier to keep the followinf in a bash script
-    sudo("/root/install-new-image.sh")
+    run("/root/install-new-image.sh")
     reboot()
 
 
@@ -234,9 +234,9 @@ def boot_from_internal():
                   setenv bootargs console=tty0 console=${console} root=/dev/mmcblk1p1; \
                   bootz ${loadaddr} - ${fdtaddr}"""
 
-    if "yocto" in sudo("uname -a"):
+    if "yocto" in run("uname -a"):
         with settings(warn_only=True):
-            sudo("sed '/uenvcmd/d' -i /uboot/uEnv.txt")
+            run("sed '/uenvcmd/d' -i /uboot/uEnv.txt")
         append("/uboot/uEnv.txt", bootline)
         reboot()
 
@@ -269,7 +269,7 @@ def qemu_running(request, clean_image):
         def qemu_finalizer_impl():
             try:
                 manual_uboot_commit()
-                sudo("halt")
+                run("halt")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
                 while halt_time + 30 > time.time() and qemu.poll() is None:
