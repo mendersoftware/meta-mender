@@ -18,7 +18,7 @@ index 0000000..043f97d
 +++ b/include/config_mender.h
 @@ -0,0 +1,60 @@
 +/*
-+  Copyright (C) 2016  Mender Software
++  Copyright 2017 Northern.tech AS
 +
 +  This program is free software; you can redistribute it and/or
 +  modify it under the terms of the GNU General Public License
@@ -84,7 +84,7 @@ index 0000000..2c43fd3
 +++ b/include/env_mender.h
 @@ -0,0 +1,76 @@
 +/*
-+  Copyright (C) 2016  Mender Software
++  Copyright 2017 Northern.tech AS
 +
 +  This program is free software; you can redistribute it and/or
 +  modify it under the terms of the GNU General Public License
