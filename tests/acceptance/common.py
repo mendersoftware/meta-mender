@@ -424,9 +424,11 @@ def latest_mender_image():
     return latest_build_artifact(os.environ['BUILDDIR'], ".mender")
 
 @pytest.fixture(scope="function")
-def successful_image_update_mender(request, latest_mender_image):
+def successful_image_update_mender(request, clean_image):
     """Provide a 'successful_image_update.mender' file in the current directory that
     contains the latest built update."""
+
+    latest_mender_image = latest_build_artifact(clean_image['build_dir'], ".mender")
 
     if os.path.lexists("successful_image_update.mender"):
         print("Using existing 'successful_image_update.mender' in current directory")
