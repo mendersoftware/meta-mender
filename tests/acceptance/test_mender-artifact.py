@@ -152,7 +152,7 @@ class TestMenderArtifact:
         else:
             # By now we know this is present, and superfluous files are tested
             # for elsewhere.
-            tar_list = ["header.tar.gz"]
+            tar_list = ["version", "header.tar.gz"]
         output = subprocess.Popen(["tar xOf " + mender_image + " data/0000.tar.gz | tar tz"],
                                   stdout=subprocess.PIPE, shell=True)
         for line in output.stdout:
