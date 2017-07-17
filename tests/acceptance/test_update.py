@@ -388,7 +388,11 @@ class TestUpdates:
             execute(self.test_signed_updates, sig_case, bitbake_path, bitbake_variables)
             return
 
+        # mmc mount points are named: /dev/mmcblk0p1
+        # ubi volumes are named: ubi0_1
         (active, passive) = determine_active_passive_part(bitbake_variables)
+        if passive.startswith('ubi'):
+            passive = '/dev/' + passive
 
         # Generate "update" appropriate for this test case.
         # Cheat a little. Instead of spending a lot of time on a lot of reboots,
@@ -483,7 +487,14 @@ class TestUpdates:
 
             # Start by writing known "old" content in the partition.
             old_content = "Preexisting partition content"
-            run('echo "%s" | dd of=%s' % (old_content, passive))
+            if 'ubi' in passive:
+                # ubi volumes cannot be directly written to, we have to use
+                # ubiupdatevol
+                run('echo "%s" | dd of=/tmp/update.tmp && ' \
+                    'ubiupdatevol %s /tmp/update.tmp; ' \
+                    'rm -f /tmp/update.tmp' % (old_content, passive))
+            else:
+                run('echo "%s" | dd of=%s' % (old_content, passive))
 
             with settings(warn_only=True):
                 result = run("mender -rootfs image.mender")
