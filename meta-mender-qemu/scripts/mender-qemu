@@ -48,7 +48,7 @@ QEMU_DRIVE=${QEMU_DRIVE:-""}
 QEMU_ARGS=""
 case $VEXPRESS_IMG in
     *.sdimg)
-        QEMU_ARGS="$QEMU_ARGS -drive file=$VEXPRESS_IMG,if=sd "
+        QEMU_ARGS="$QEMU_ARGS -drive file=$VEXPRESS_IMG,if=sd,format=raw "
         ;;
     *.vexpress-nor)
         tar -C /tmp -xvf $VEXPRESS_IMG
