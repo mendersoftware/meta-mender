@@ -16,7 +16,7 @@
 # -e TENANT_TOKEN=<token>
 #       Use token as tenant token for client.
 
-FROM alpine:3.4
+FROM alpine:3.6
 
 # Install QEMU
 RUN apk update && apk upgrade && \
