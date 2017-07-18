@@ -63,6 +63,9 @@ case $VEXPRESS_IMG in
         fi
 esac
 
+echo "--- qemu version"
+$QEMU_SYSTEM_ARM --version
+
 QEMU_AUDIO_DRV=none \
     exec $QEMU_SYSTEM_ARM \
     -M vexpress-a9 \
