@@ -258,9 +258,9 @@ class TestMenderArtifact:
             # not be a part of the image, in which case the image will be smaller
             # or equal to MENDER_CALC_ROOTFS_SIZE
             assert size_from_artifact <= size_from_build
-            # assume that the difference will not be more than 30% of calculated
-            # size
-            assert size_from_artifact >= 0.7 * size_from_build
+            # assume that the compressed image will be not less than 30% of
+            # allocated rootfs size size
+            assert size_from_artifact >= 0.3 * size_from_build
         elif re.match('.*\.ext[234]', gd['image']):
             assert size_from_artifact == size_from_build
         else:
