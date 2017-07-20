@@ -25,10 +25,6 @@ import tempfile
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
-if pytest.config.getoption("--bbb"):
-    image_type = "beaglebone"
-else:
-    image_type = "vexpress-qemu"
 
 class Helpers:
     @staticmethod
@@ -135,6 +131,8 @@ class TestUpdates:
 
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
+        image_type = bitbake_variables["MACHINE"]
+
         try:
             # Make a dummy/broken update
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
@@ -159,11 +157,13 @@ class TestUpdates:
             os.remove("image.mender")
             os.remove("image.dat")
 
-    def test_too_big_image_update(self):
+    def test_too_big_image_update(self, bitbake_variables):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
-            execute(self.test_too_big_image_update)
+            execute(self.test_too_big_image_update, bitbake_variables)
             return
+
+        image_type = bitbake_variables["MACHINE"]
 
         try:
             # Make a too big update
@@ -388,7 +388,11 @@ class TestUpdates:
             execute(self.test_signed_updates, sig_case, bitbake_path, bitbake_variables)
             return
 
+        # mmc mount points are named: /dev/mmcblk0p1
+        # ubi volumes are named: ubi0_1
         (active, passive) = determine_active_passive_part(bitbake_variables)
+        if passive.startswith('ubi'):
+            passive = '/dev/' + passive
 
         # Generate "update" appropriate for this test case.
         # Cheat a little. Instead of spending a lot of time on a lot of reboots,
@@ -411,6 +415,8 @@ class TestUpdates:
             sig_key = signing_key(sig_case.key_type)
         else:
             sig_key = None
+
+        image_type = bitbake_variables["MACHINE"]
 
         subprocess.check_call("mender-artifact write rootfs-image %s -t %s -n test-update -u image.dat -o image.mender"
                               % (artifact_args, image_type), shell=True)
@@ -481,7 +487,14 @@ class TestUpdates:
 
             # Start by writing known "old" content in the partition.
             old_content = "Preexisting partition content"
-            run('echo "%s" | dd of=%s' % (old_content, passive))
+            if 'ubi' in passive:
+                # ubi volumes cannot be directly written to, we have to use
+                # ubiupdatevol
+                run('echo "%s" | dd of=/tmp/update.tmp && ' \
+                    'ubiupdatevol %s /tmp/update.tmp; ' \
+                    'rm -f /tmp/update.tmp' % (old_content, passive))
+            else:
+                run('echo "%s" | dd of=%s' % (old_content, passive))
 
             with settings(warn_only=True):
                 result = run("mender -rootfs image.mender")
@@ -511,6 +524,7 @@ class TestUpdates:
                 run("rm -f /etc/mender/%s" % os.path.basename(sig_key.public))
 
 
+    @pytest.mark.only_for_machine('vexpress-qemu')
     def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables):
         """This tests a very specific scenario: Consider the following production
         scenario: You are currently running an update on rootfs partition
@@ -561,6 +575,8 @@ class TestUpdates:
         old_checksums = Helpers.get_env_checksums(bitbake_variables)
 
         orig_env = run("fw_printenv")
+
+        image_type = bitbake_variables["MACHINE"]
 
         try:
             # Make a dummy/broken update

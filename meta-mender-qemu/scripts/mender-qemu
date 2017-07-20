@@ -48,7 +48,7 @@ QEMU_DRIVE=${QEMU_DRIVE:-""}
 QEMU_ARGS=""
 case $VEXPRESS_IMG in
     *.sdimg)
-        QEMU_ARGS="$QEMU_ARGS -drive file=$VEXPRESS_IMG,if=sd "
+        QEMU_ARGS="$QEMU_ARGS -drive file=$VEXPRESS_IMG,if=sd,format=raw "
         ;;
     *.vexpress-nor)
         tar -C /tmp -xvf $VEXPRESS_IMG
@@ -62,6 +62,9 @@ case $VEXPRESS_IMG in
             exit 1
         fi
 esac
+
+echo "--- qemu version"
+$QEMU_SYSTEM_ARM --version
 
 QEMU_AUDIO_DRV=none \
     exec $QEMU_SYSTEM_ARM \
