@@ -59,7 +59,7 @@ python() {
             d.setVar('IMAGE_TYPEDEP_sdimg_append', " " + fs)
 }
 
-IMAGE_DEPENDS_sdimg += "${IMAGE_DEPENDS_wic} wic-tools dosfstools-native mtools-native rsync-native"
+do_image_sdimg[depends] += "${@d.getVarFlag('do_image_wic', 'depends', False)} wic-tools:do_populate_sysroot dosfstools-native:do_populate_sysroot mtools-native:do_populate_sysroot rsync-native:do_populate_sysroot"
 
 IMAGE_CMD_sdimg() {
     set -ex
