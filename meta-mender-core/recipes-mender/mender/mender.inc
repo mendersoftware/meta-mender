@@ -66,7 +66,6 @@ do_compile() {
     # run verbose build, we should see which dependencies are pulled in
     oe_runmake V=1 install
 
-    echo "${MENDER_TENANT_TOKEN}" > ${B}/tenant.conf
 }
 
 python do_prepare_mender_conf() {
@@ -98,12 +97,16 @@ python do_prepare_mender_conf() {
     if key_in_src_uri or key_in_var:
         conf_maybe_add("ArtifactVerifyKey", "%s/mender/artifact-verify-key.pem" % d.getVar("sysconfdir"), integer=False)
     conf_maybe_add("InventoryPollIntervalSeconds", d.getVar("MENDER_INVENTORY_POLL_INTERVAL_SECONDS"), integer=True)
+    # Mandatory variables - will always exist
     conf_maybe_add("RetryPollIntervalSeconds", d.getVar("MENDER_RETRY_POLL_INTERVAL_SECONDS"), integer=True)
     conf_maybe_add("RootfsPartA", d.getVar("MENDER_ROOTFS_PART_A"), integer=False)
     conf_maybe_add("RootfsPartB", d.getVar("MENDER_ROOTFS_PART_B"), integer=False)
     conf_maybe_add("ServerCertificate", d.getVar("MENDER_CERT_LOCATION"), integer=False)
     conf_maybe_add("ServerURL", d.getVar("MENDER_SERVER_URL"), integer=False)
     conf_maybe_add("UpdatePollIntervalSeconds", d.getVar("MENDER_UPDATE_POLL_INTERVAL_SECONDS"), integer=True)
+
+    # Tenant-token is optional, but falls back to a default-value set in config.go
+    conf_maybe_add("TenantToken", d.getVar("MENDER_TENANT_TOKEN"), integer=False)
 
     dst_conf = os.path.join(d.getVar("B"), "mender.conf")
     fd = open(dst_conf, "w")
@@ -139,7 +142,6 @@ do_install() {
     #install configuration
     install -d ${D}/${sysconfdir}/mender
     install -m 0644 ${B}/mender.conf ${D}/${sysconfdir}/mender
-    install -m 0600 ${B}/tenant.conf ${D}/${sysconfdir}/mender
 
     #install server certificate
     install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
