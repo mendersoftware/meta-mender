@@ -36,5 +36,6 @@ in addition to `meta-mender` dependencies.
         # raspberrypi files aligned with mender layout requirements
         IMAGE_BOOT_FILES_append = " boot.scr u-boot.bin;${SDIMG_KERNELIMAGE}"
         IMAGE_INSTALL_append = " kernel-image kernel-devicetree"
+        IMAGE_FSTYPES_remove += " rpi-sdimg"
 
 - Run `bitbake <image name>`
