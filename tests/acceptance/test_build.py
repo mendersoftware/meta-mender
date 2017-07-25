@@ -195,6 +195,7 @@ class TestBuild:
         run_bitbake(prepared_test_build)
 
         found_rootfs_scripts = {
+            "version": False,
             "Idle_Enter_00": False,
             "Sync_Enter_10": False,
             "Sync_Leave_90": False,
