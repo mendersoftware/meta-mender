@@ -2,12 +2,6 @@
 # TO WORK IF YOU INCLUDE THIS CLASS. THIS IS ONLY FOR PEOPLE THAT WANT TO HELP
 # AND DEVELOP UBIFS SUPPORT IN MENDER.
 
-python() {
-    # Yes, this is extremely verbose and ugly, but that's the point. We'll
-    # remove this once UBIFS support matures.
-    bb.warn("UBIFS support is HIGHLY experimental and completely UNSUPPORTED. You've been warned!")
-}
-
 ARTIFACTIMG_FSTYPE ?= "ubifs"
 
 MENDER_STORAGE_DEVICE ?= "ubi0"
