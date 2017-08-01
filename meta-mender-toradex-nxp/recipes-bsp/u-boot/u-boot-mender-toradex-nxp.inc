@@ -15,3 +15,4 @@ SRC_URI_append_vf = " file://0003-colibri_vf-disable-FIT-image-enable-UBIFS.patc
 BOOTENV_SIZE_colibri-imx7 ?= "0x20000"
 
 SRC_URI_append_colibri-imx7 = " file://0001-colibri-imx7-mender-integration-primer-enable-BOOTCO.patch"
+SRC_URI_append_colibri-imx7 = " file://0002-colibri-imx7-mender-integration-override-ubiboot-and.patch"
