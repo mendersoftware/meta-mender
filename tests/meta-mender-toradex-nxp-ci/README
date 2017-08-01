@@ -16,49 +16,19 @@ This layer depends on:
   layers: meta
   branch: master
 
-  URI: git://git.yoctoproject.org/xxxx
-  layers: xxxx
+  URI: git://git.toradex.com/meta-toradex-bsp-common.git
+  branch: master
+
+  URI: git://git.toradex.com/meta-toradex-nxp
+  branch: master
+
+  URI: git://github.com/mendersoftware/meta-mender
+  layers: meta-mender-core, meta-mender-toradex-nxp
   branch: master
 
 
-Patches
+General
 =======
 
-Please submit any patches against the meta-mender-toradex-ci layer to the
-xxxx mailing list (xxxx@zzzz.org) and cc: the maintainer:
-
-Maintainer: XXX YYYYYY <xxx.yyyyyy@zzzzz.com>
-
-
-Table of Contents
-=================
-
-  I. Adding the meta-mender-toradex-ci layer to your build
- II. Misc
-
-
-I. Adding the meta-mender-toradex-ci layer to your build
-=================================================
-
---- replace with specific instructions for the meta-mender-toradex-ci layer ---
-
-In order to use this layer, you need to make the build system aware of
-it.
-
-Assuming the meta-mender-toradex-ci layer exists at the top-level of your
-yocto build tree, you can add it to the build system by adding the
-location of the meta-mender-toradex-ci layer to bblayers.conf, along with any
-other layers needed. e.g.:
-
-  BBLAYERS ?= " \
-    /path/to/yocto/meta \
-    /path/to/yocto/meta-poky \
-    /path/to/yocto/meta-yocto-bsp \
-    /path/to/yocto/meta-meta-mender-toradex-ci \
-    "
-
-
-II. Misc
-========
-
---- replace with specific information about the meta-mender-toradex-ci layer ---
+This is a Mender QA specific layer. The layer contains the necessary bits and
+pieces for use with Mender CI pipeline.
