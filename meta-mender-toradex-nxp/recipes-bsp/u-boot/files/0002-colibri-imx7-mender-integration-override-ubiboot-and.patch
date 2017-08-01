@@ -1,0 +1,51 @@
+From 57d9de82ec060fb58594c57ebf8bb669ea527bb0 Mon Sep 17 00:00:00 2001
+Message-Id: <57d9de82ec060fb58594c57ebf8bb669ea527bb0.1501569428.git.maciej.borzecki@rndity.com>
+In-Reply-To: <cover.1501569428.git.maciej.borzecki@rndity.com>
+References: <cover.1501569428.git.maciej.borzecki@rndity.com>
+From: Maciej Borzecki <maciej.borzecki@rndity.com>
+Date: Tue, 1 Aug 2017 08:11:53 +0200
+Subject: [PATCH 3/3] colibri-imx7: mender integration, override ubiboot and
+ bootcmd
+
+Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
+---
+ include/configs/colibri_imx7.h | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
+
+diff --git a/include/configs/colibri_imx7.h b/include/configs/colibri_imx7.h
+index cf7a968be7a8d669cf530d522b4e240658a9ad32..638e85238787281f35cc1cd68b738da0f5c9c827 100644
+--- a/include/configs/colibri_imx7.h
++++ b/include/configs/colibri_imx7.h
+@@ -94,17 +94,20 @@
+ 		"run fdt_fixup && bootz ${kernel_addr_r} - ${fdt_addr_r}\0" \
+ 
+ #define UBI_BOOTCMD	\
+-	"ubiargs=ubi.mtd=ubi root=ubi0:rootfs rootfstype=ubifs " \
++	"ubiargs=ubi.mtd=${mender_mtd_ubi_dev_name} root=${mender_kernel_root} rootfstype=ubifs " \
+ 		"ubi.fm_autoconvert=1\0" \
+-	"ubiboot=run setup; " \
+-		"setenv bootargs ${defargs} ${ubiargs} " \
++		"ubiboot=run setup; " \
++		"setenv fdtfile ${soc}-colibri-${fdt_board}.dtb; "  \
++		"setenv bootargs ${defargs} ${ubiargs} ${mtdparts} " \
+ 		"${setupargs} ${vidargs}; echo Booting from NAND...; " \
+-		"ubi part ubi && run m4boot && " \
+-		"ubi read ${kernel_addr_r} kernel && " \
+-		"ubi read ${fdt_addr_r} dtb && " \
+-		"run fdt_fixup && bootz ${kernel_addr_r} - ${fdt_addr_r}\0" \
+-
+-#define CONFIG_BOOTCOMMAND "run ubiboot; " \
++		"run mender_setup; "                                   \
++		"ubi part ${mender_mtd_ubi_dev_name} && "              \
++  	"ubifsmount ${mender_uboot_root_name} && "             \
++  	"ubifsload ${kernel_addr_r} /boot/zImage && "          \
++  	"ubifsload ${fdt_addr_r} /boot/${fdtfile} && "         \
++  	"bootz ${kernel_addr_r} - ${fdt_addr_r}\0"             \
++
++#define CONFIG_BOOTCOMMAND "run ubiboot; run mender_try_to_recover; " \
+ 	"setenv fdtfile ${soc}-colibri-${fdt_board}.dtb && run distro_bootcmd;"
+ 
+ #define BOOTENV_RUN_NET_USB_START ""
+-- 
+2.9.4
+
