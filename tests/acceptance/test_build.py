@@ -16,6 +16,7 @@
 import os
 import pytest
 import subprocess
+import json
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
@@ -47,6 +48,7 @@ class TestBuild:
                               % output.split()[0], shell=True)
 
 
+    @pytest.mark.only_with_image('sdimg')
     def test_bootloader_embed(self, prepared_test_build):
         """Test that IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
         correctly in the resulting sdimg."""
@@ -88,11 +90,12 @@ class TestBuild:
         os.close(embedded)
 
 
+    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     def test_image_rootfs_extra_space(self, prepared_test_build, bitbake_variables):
         """Test that setting IMAGE_ROOTFS_EXTRA_SPACE to arbitrary values does
         not break the build."""
 
-        add_to_local_conf(prepared_test_build, 'IMAGE_EXTRA_ROOTFS_SPACE_append = " + 640 - 222 + 900"')
+        add_to_local_conf(prepared_test_build, 'IMAGE_ROOTFS_EXTRA_SPACE_append = " + 640 - 222 + 900"')
 
         run_bitbake(prepared_test_build)
 
@@ -101,6 +104,31 @@ class TestBuild:
         assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
 
 
+    @pytest.mark.only_for_image('sdimg')
+    def test_tenant_token(self, prepared_test_build):
+        """Test setting a custom tenant-token"""
+
+        add_to_local_conf(prepared_test_build, 'MENDER_TENANT_TOKEN = "%s"'
+                          %  "authtentoken")
+
+        run_bitbake(prepared_test_build)
+
+        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
+
+        subprocess.check_call(["debugfs", "-R",
+                                   "dump -p /etc/mender/mender.conf mender.conf", built_rootfs])
+
+        try:
+            with open("mender.conf") as fd:
+                data = json.load(fd)
+            assert data['TenantToken'] == "authtentoken"
+
+        finally:
+            os.remove("mender.conf")
+
+
+
+    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path):
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
@@ -128,6 +156,7 @@ class TestBuild:
         finally:
             os.remove("artifact-verify-key.pem")
 
+    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     def test_state_scripts(self, prepared_test_build, bitbake_variables, bitbake_path, latest_rootfs, latest_mender_image):
         """Test that state scripts that are specified in the build are included
         correctly."""

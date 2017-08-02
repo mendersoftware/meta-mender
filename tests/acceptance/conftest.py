@@ -37,6 +37,11 @@ def pytest_addoption(parser):
     parser.addoption("--sdimg-location", action="store",
                      default=os.getcwd(),
                      help="location to the sdimg you want to install on the bbb")
+    parser.addoption("--bitbake-image", action="store",
+                     default='core-image-full-cmdline',
+                     help="image to build during the tests")
+    parser.addoption("--keep-build-dir", action="store_true", default=False,
+                     help="do not remove Yocto build directory after each test")
 
 
 def pytest_configure(config):

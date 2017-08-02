@@ -18,31 +18,40 @@ from fabric.api import *
 import pytest
 import subprocess
 import os
-import re
+import tempfile
+import stat
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
+
 class TestRootfs:
-    def test_artifact_info(self, latest_rootfs, bitbake_variables, bitbake_path):
+
+    @staticmethod
+    def verify_artifact_info_data(data, artifact_name):
+        lines = data.split()
+        assert(len(lines) == 1)
+        line = lines[0]
+        line = line.rstrip('\n\r')
+        var = line.split('=', 2)
+        assert(len(var) == 2)
+
+        var = [entry.strip() for entry in var]
+
+        assert(var[0] == "artifact_name")
+        assert(var[1] == artifact_name)
+
+    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    def test_artifact_info_ext234(self, latest_rootfs, bitbake_variables, bitbake_path):
         """Test that artifact_info file is correctly embedded."""
 
         try:
-            subprocess.check_call(["debugfs", "-R", "dump -p /etc/mender/artifact_info artifact_info", latest_rootfs])
-            fd = open("artifact_info")
-            lines = fd.readlines()
-            assert(len(lines) == 1)
-            line = lines[0]
-            line = line.rstrip('\n\r')
-            var = line.split('=', 2)
-            assert(len(var) == 2)
+            subprocess.check_call(["debugfs", "-R", "dump -p /etc/mender/artifact_info artifact_info",
+                                   latest_rootfs])
+            with open("artifact_info") as fd:
+                data = fd.read()
 
-            var = [entry.strip() for entry in var]
-
-            assert(var[0] == "artifact_name")
-            assert(var[1] == bitbake_variables["MENDER_ARTIFACT_NAME"])
-
-            fd.close()
+            TestRootfs.verify_artifact_info_data(data, bitbake_variables["MENDER_ARTIFACT_NAME"])
 
             assert(os.stat("artifact_info").st_mode & 0777 == 0644)
 
@@ -57,3 +66,19 @@ class TestRootfs:
                 os.remove("artifact_info")
             except:
                 pass
+
+    @pytest.mark.only_with_image('ubifs')
+    def test_artifact_info_ubifs(self, latest_ubifs, bitbake_variables, bitbake_path):
+        """Test that artifact_info file is correctly embedded."""
+
+        with make_tempdir() as tmpdir:
+            # NOTE: ubireader_extract_files can keep permissions only if
+            # running as root, which we won't do
+            subprocess.check_call("ubireader_extract_files -o {outdir} {ubifs}".format(outdir=tmpdir,
+                                                                                       ubifs=latest_ubifs),
+                                  shell=True)
+            path = os.path.join(tmpdir, "etc/mender/artifact_info")
+            with open(path) as fd:
+                data = fd.read()
+
+            TestRootfs.verify_artifact_info_data(data, bitbake_variables["MENDER_ARTIFACT_NAME"])

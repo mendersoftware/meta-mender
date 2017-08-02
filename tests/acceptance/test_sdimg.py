@@ -45,6 +45,7 @@ def extract_partition(sdimg, number):
                            "skip=%d" % start, "count=%d" % (end - start)])
 
 
+@pytest.mark.only_with_image('sdimg')
 class TestSdimg:
     def test_total_size(self, bitbake_variables, latest_sdimg):
         """Test that the total size of the sdimg is correct."""

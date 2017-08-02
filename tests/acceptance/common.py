@@ -26,6 +26,8 @@ import tempfile
 import errno
 import shutil
 
+from contextlib import contextmanager
+
 import conftest
 
 def if_not_bbb(func):
@@ -36,24 +38,25 @@ def if_not_bbb(func):
             func()
     return func_wrapper
 
+def start_qemu(qenv=None):
+    """Start qemu and return a subprocess.Popen object corresponding to a running
+    qemu process. `qenv` is a dict of environment variables that will be added
+    to `subprocess.Popen(..,env=)`.
 
-# Return Popen object
-def start_qemu(latest_sdimg):
-    if pytest.config.getoption("bbb"):
-        return
+    Once qemu is stated, a connection over ssh will attempted, so the returned
+    process is actually a qemu instance with fully booted guest os.
 
-    fh, img_path = tempfile.mkstemp(suffix=".sdimg", prefix="test-image")
-    # don't need an open fd to temp file
-    os.close(fh)
+    The helper uses `meta-mender-qemu/scripts/mender-qemu` to start qemu, thus
+    you can use `VEXPRESS_IMG`, `QEMU_DRIVE` and other environment variables to
+    override the default behavior.
 
-    # Make a disposable image.
-    shutil.copy(latest_sdimg, img_path)
-
+    """
     env = dict(os.environ)
-    # *.sdimg is supported by mender-qemu and needs no special handling
-    env["VEXPRESS_IMG"] = img_path
-    # use snapshot mode
-    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"], env=env)
+    if qenv:
+        env.update(qenv)
+
+    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+                            env=env)
 
     try:
         # make sure we are connected.
@@ -70,11 +73,67 @@ def start_qemu(latest_sdimg):
 
         proc.wait()
 
-        os.remove(img_path)
-
         raise
 
-    return proc, img_path
+    return proc
+
+
+def start_qemu_sdimg(latest_sdimg):
+    """Start qemu instance running *.sdimg"""
+    if pytest.config.getoption("bbb"):
+        return
+
+    fh, img_path = tempfile.mkstemp(suffix=".sdimg", prefix="test-image")
+    # don't need an open fd to temp file
+    os.close(fh)
+
+    # Make a disposable image.
+    shutil.copy(latest_sdimg, img_path)
+
+    # pass QEMU drive directly
+    qenv = {}
+    qenv["VEXPRESS_IMG"] = img_path
+    qenv["MACHNE"] = "vexpress-qemu"
+
+    try:
+        qemu = start_qemu(qenv)
+    except:
+        os.remove(img_path)
+        raise
+
+    return qemu, img_path
+
+
+def start_qemu_flash(latest_vexpress_nor):
+    """Start qemu instance running *.vexpress-nor image"""
+
+    print("qemu raw flash with image {}".format(latest_vexpress_nor))
+
+    # make a temp file, make sure that it has .vexpress-nor suffix, so that
+    # mender-qemu will know how to handle it
+    fh, img_path = tempfile.mkstemp(suffix=".vexpress-nor", prefix="test-image")
+    # don't need an open fd to temp file
+    os.close(fh)
+
+    # vexpress-nor is more complex than sdimg, inside it's compose of 2 raw
+    # files that represent 2 separate flash banks (and each file is a 'drive'
+    # passed to qemu). Because of this, we cannot directly apply qemu-img and
+    # create a qcow2 image with backing file. Instead make a disposable copy of
+    # flash image file.
+    shutil.copyfile(latest_vexpress_nor, img_path)
+
+    qenv = {}
+    # pass QEMU drive directly
+    qenv["VEXPRESS_IMG"] = img_path
+    qenv["MACHINE"] = "vexpress-qemu-flash"
+
+    try:
+        qemu = start_qemu(qenv)
+    except:
+        os.remove(img_path)
+        raise
+
+    return qemu, img_path
 
 
 @if_not_bbb
@@ -102,7 +161,7 @@ def is_qemu_running():
 
 def reboot(wait = 120):
     with settings(warn_only = True):
-        sudo("reboot")
+        run("reboot")
 
     # Make sure reboot has had time to take effect.
     time.sleep(5)
@@ -181,8 +240,8 @@ def determine_active_passive_part(bitbake_variables):
     elif mount_output.find(b) >= 0:
         return (b, a)
     else:
-        raise Exception("Could not determine active partition. Mount output: %s"
-                        % mount_output)
+        raise Exception("Could not determine active partition. Mount output:\n {}" \
+                        "\nwas looking for {}".format(mount_output, (a, b)))
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
@@ -212,8 +271,8 @@ def qemu_prep_fresh_host():
 
 
 def manual_uboot_commit():
-    sudo("fw_setenv upgrade_available 0")
-    sudo("fw_setenv bootcount 0")
+    run("fw_setenv upgrade_available 0")
+    run("fw_setenv bootcount 0")
 
 
 def setup_bbb_sdcard():
@@ -221,10 +280,10 @@ def setup_bbb_sdcard():
     put("core-image-base-beaglebone-modified-testing.sdimg",
         local_path=local_sdimg,
         remote_path="/opt/")
-    sudo("chmod +x /root/install-new-image.sh")
+    run("chmod +x /root/install-new-image.sh")
 
     #easier to keep the followinf in a bash script
-    sudo("/root/install-new-image.sh")
+    run("/root/install-new-image.sh")
     reboot()
 
 
@@ -234,9 +293,9 @@ def boot_from_internal():
                   setenv bootargs console=tty0 console=${console} root=/dev/mmcblk1p1; \
                   bootz ${loadaddr} - ${fdtaddr}"""
 
-    if "yocto" in sudo("uname -a"):
+    if "yocto" in run("uname -a"):
         with settings(warn_only=True):
-            sudo("sed '/uenvcmd/d' -i /uboot/uEnv.txt")
+            run("sed '/uenvcmd/d' -i /uboot/uEnv.txt")
         append("/uboot/uEnv.txt", bootline)
         reboot()
 
@@ -259,8 +318,15 @@ def qemu_running(request, clean_image):
         return
 
     latest_sdimg = latest_build_artifact(clean_image['build_dir'], ".sdimg")
+    latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], ".vexpress-nor")
 
-    qemu, img_path = start_qemu(latest_sdimg)
+    print("sdimg: {} vexpress-nor: {}".format(latest_sdimg, latest_vexpress_nor))
+
+    if latest_sdimg:
+        qemu, img_path = start_qemu_sdimg(latest_sdimg)
+    elif latest_vexpress_nor:
+        qemu, img_path = start_qemu_flash(latest_vexpress_nor)
+
     print("qemu started with pid {}, image {}".format(qemu.pid, img_path))
 
     # Make sure we revert to the first root partition on next reboot, makes test
@@ -269,7 +335,7 @@ def qemu_running(request, clean_image):
         def qemu_finalizer_impl():
             try:
                 manual_uboot_commit()
-                sudo("halt")
+                run("halt")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
                 while halt_time + 30 > time.time() and qemu.poll() is None:
@@ -328,6 +394,29 @@ def latest_sdimg():
     return latest_build_artifact(os.environ['BUILDDIR'], ".sdimg")
 
 @pytest.fixture(scope="session")
+def latest_ubimg():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    # Find latest built ubimg.
+    return latest_build_artifact(os.environ['BUILDDIR'], ".ubimg")
+
+@pytest.fixture(scope="session")
+def latest_ubifs():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    # Find latest built ubifs. NOTE: need to include *core-image* otherwise
+    # we'll likely match data partition file - data.ubifs
+    return latest_build_artifact(os.environ['BUILDDIR'], "*core-image*.ubifs")
+
+@pytest.fixture(scope="session")
+def latest_vexpress_nor():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    # Find latest built ubifs. NOTE: need to include *core-image* otherwise
+    # we'll likely match data partition file - data.ubifs
+    return latest_build_artifact(os.environ['BUILDDIR'], ".vexpress-nor")
+
+@pytest.fixture(scope="session")
 def latest_mender_image():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
@@ -335,9 +424,11 @@ def latest_mender_image():
     return latest_build_artifact(os.environ['BUILDDIR'], ".mender")
 
 @pytest.fixture(scope="function")
-def successful_image_update_mender(request, latest_mender_image):
+def successful_image_update_mender(request, clean_image):
     """Provide a 'successful_image_update.mender' file in the current directory that
     contains the latest built update."""
+
+    latest_mender_image = latest_build_artifact(clean_image['build_dir'], ".mender")
 
     if os.path.lexists("successful_image_update.mender"):
         print("Using existing 'successful_image_update.mender' in current directory")
@@ -463,18 +554,21 @@ def run_bitbake(prepared_test_build):
 def clean_image(request, prepared_test_build_base):
     add_to_local_conf(prepared_test_build_base,
                       'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
+    add_to_local_conf(prepared_test_build_base,
+                      'EXTRA_IMAGE_FEATURES_append = " ssh-server-openssh"')
     run_bitbake(prepared_test_build_base)
     return prepared_test_build_base
 
 
 @pytest.fixture(scope="session")
-def prepared_test_build_base(request, bitbake_variables, latest_sdimg):
+def prepared_test_build_base(request, bitbake_variables):
     """Base fixture for prepared_test_build. Returns the same as that one."""
 
     build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
 
     def cleanup_test_build():
-        run_verbose("rm -rf %s" % build_dir)
+        if not pytest.config.getoption('--keep-build-dir'):
+            run_verbose("rm -rf %s" % build_dir)
 
     cleanup_test_build()
     request.addfinalizer(cleanup_test_build)
@@ -494,9 +588,7 @@ def prepared_test_build_base(request, bitbake_variables, latest_sdimg):
 
     os.symlink(os.path.join(os.environ['BUILDDIR'], "downloads"), os.path.join(build_dir, "downloads"))
 
-    sdimg_base = os.path.basename(latest_sdimg)
-    # Remove machine, date and suffix.
-    image_name = re.sub("-%s(-[0-9]+)?\.sdimg$" % bitbake_variables['MACHINE'], "", sdimg_base)
+    image_name = pytest.config.getoption("--bitbake-image")
 
     return {'build_dir': build_dir,
             'image_name': image_name,
@@ -538,6 +630,60 @@ def add_to_local_conf(prepared_test_build, string):
     """Add given string to local.conf before the build. Newline is added
     automatically."""
 
-    fd = open(prepared_test_build['local_conf'], "a")
-    fd.write("%s\n" % string)
-    fd.close()
+    with open(prepared_test_build['local_conf'], "a") as fd:
+        fd.write('\n## ADDED BY TEST\n')
+        fd.write("%s\n" % string)
+
+
+@pytest.fixture(autouse=True)
+def only_for_machine(request, bitbake_variables):
+    """Fixture that enables use of `only_for_machine(machine-name)` mark.
+    Example::
+
+       @pytest.mark.only_for_machine('vexpress-qemu')
+       def test_foo():
+           # executes only if building for vexpress-qemu
+           pass
+
+    """
+    mach_mark = request.node.get_marker('only_for_machine')
+    if mach_mark is not None:
+        machines = mach_mark.args
+        current = bitbake_variables.get('MACHINE', None)
+        if  current not in machines:
+            pytest.skip('incompatible machine {} ' \
+                        '(required {})'.format(current if not None else '(none)',
+                                               ', '.join(machines)))
+
+
+@pytest.fixture(autouse=True)
+def only_with_image(request, bitbake_variables):
+    """Fixture that enables use of `only_with_image(img1, img2)` mark.
+    Example::
+
+       @pytest.mark.only_with_image('ext4')
+       def test_foo():
+           # executes only if ext4 image is enabled
+           pass
+
+    """
+    mark = request.node.get_marker('only_with_image')
+    if mark is not None:
+        images = mark.args
+        current = bitbake_variables.get('IMAGE_FSTYPES', '').strip().split(' ')
+        if not any([img in current for img in images]):
+            pytest.skip('no supported filesystem in {} ' \
+                        '(supports {})'.format(', '.join(current),
+                                               ', '.join(images)))
+
+
+@contextmanager
+def make_tempdir(delete=True):
+    """context manager for temporary directories"""
+    tdir = tempfile.mkdtemp(prefix='meta-mender-acceptance.')
+    print('created dir', tdir)
+    try:
+        yield tdir
+    finally:
+        if delete:
+            shutil.rmtree(tdir)

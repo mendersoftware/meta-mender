@@ -28,9 +28,14 @@ PV = "${MENDER_BRANCH}-git${SRCPV}"
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
 def mender_license(branch):
-    if branch == "1.0.x" or branch == "1.1.x":
+    if branch == "1.0.x":
         return {
                    "md5": "ec8e15a3ea20289732cca4a7ef643ef8",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+        }
+    elif branch == "1.1.x":
+        return {
+                   "md5": "76c423d4ae33f8df4070f6f58187eeed",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
     else:
