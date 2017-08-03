@@ -28,10 +28,16 @@ PV = "${MENDER_ARTIFACT_BRANCH}-git${SRCPV}"
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
 def mender_license(branch):
-    return {
-               "md5": "1baf9ba39aca12f99a87a99b18440e84",
-               "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
-    }
+    if branch == "2.0.x":
+        return {
+                   "md5": "70480461e7f35d34bbc0b27e02b87311",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
+        }
+    else:
+        return {
+                   "md5": "1baf9ba39aca12f99a87a99b18440e84",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
+        }
 LIC_FILES_CHKSUM = "file://LIC_FILES_CHKSUM.sha256;md5=${@mender_license(d.getVar('MENDER_ARTIFACT_BRANCH'))['md5']}"
 LICENSE = "${@mender_license(d.getVar('MENDER_ARTIFACT_BRANCH'))['license']}"
 
