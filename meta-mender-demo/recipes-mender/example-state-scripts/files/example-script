@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "$(cat /etc/mender/artifact_info): $(basename "$0") was called!" >> /data/mender-state-script-debug.txt
+echo "$(basename "$0") was called!"
