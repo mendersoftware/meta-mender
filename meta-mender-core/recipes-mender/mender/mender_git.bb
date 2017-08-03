@@ -1,16 +1,5 @@
 require mender.inc
 
-def mender_branch_from_preferred_version(pref_version):
-    if not pref_version:
-        return "master"
-    else:
-        # Return part before "-git", which should be branch name.
-        return pref_version[0:pref_version.index("-git")]
-
-MENDER_BRANCH = "${@mender_branch_from_preferred_version(d.getVar('PREFERRED_VERSION'))}"
-
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=${MENDER_BRANCH}"
-
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the
@@ -23,7 +12,34 @@ def mender_autorev_if_git_version(d):
         return "f6ffa190892202263fdb75975059fbb201adab6a"
 SRCREV ?= '${@mender_autorev_if_git_version(d)}'
 
-PV = "${MENDER_BRANCH}-git${SRCPV}"
+def mender_branch_from_preferred_version(pref_version):
+    import re
+    match = re.match(r"^[0-9]+\.[0-9]+\.", pref_version)
+    if match is not None:
+        # If the preferred version is some kind of version, use the branch name
+        # for that one (1.0.x style).
+        return match.group(0) + "x"
+    else:
+        # Else return master as branch.
+        return "master"
+MENDER_BRANCH = "${@mender_branch_from_preferred_version('${PREFERRED_VERSION}')}"
+
+def mender_version_from_preferred_version(pref_version, srcpv):
+    if pref_version.find("-git") >= 0:
+        # If "-git" is in the version, remove it along with any suffix it has,
+        # and then readd it with commit SHA.
+        return "%s-git%s" % (pref_version[0:pref_version.index("-git")], srcpv)
+    elif pref_version.find("-build") >= 0:
+        # If "-build" is in the version, use the version as is. This means that
+        # we can build tags with "-build" in them from this recipe, but not
+        # final tags, which will need their own recipe.
+        return pref_version
+    else:
+        # Else return the default "master-git".
+        return "master-git%s" % srcpv
+PV = "${@mender_version_from_preferred_version('${PREFERRED_VERSION}', '${SRCPV}')}"
+
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=${MENDER_BRANCH}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
