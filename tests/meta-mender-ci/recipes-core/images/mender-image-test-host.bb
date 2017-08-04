@@ -25,3 +25,6 @@ IMAGE_INSTALL += "\
               "
 # we may need to access/modify u-boot environment
 IMAGE_INSTALL += "u-boot-fw-utils"
+
+# we don't really need mender nor mender-artifact-info
+IMAGE_INSTALL_remove = "mender mender-artifact-info"
