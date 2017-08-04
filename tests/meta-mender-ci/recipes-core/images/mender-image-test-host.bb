@@ -28,3 +28,6 @@ IMAGE_INSTALL += "u-boot-fw-utils"
 
 # we don't really need mender nor mender-artifact-info
 IMAGE_INSTALL_remove = "mender mender-artifact-info"
+
+# install QA tools
+IMAGE_INSTALL += "mender-qa"
