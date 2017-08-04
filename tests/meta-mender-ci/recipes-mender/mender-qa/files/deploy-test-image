@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -e
+
+. ${DATADIR}/common
+
+log "dummy deploy test image implementation"
+
+exit 1
