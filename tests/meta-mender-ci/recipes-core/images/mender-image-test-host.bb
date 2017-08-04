@@ -23,3 +23,5 @@ IMAGE_INSTALL += "\
               mtd-utils \
               mtd-utils-ubifs \
               "
+# we may need to access/modify u-boot environment
+IMAGE_INSTALL += "u-boot-fw-utils"
