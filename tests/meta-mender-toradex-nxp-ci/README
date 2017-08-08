@@ -23,7 +23,7 @@ This layer depends on:
   branch: master
 
   URI: git://github.com/mendersoftware/meta-mender
-  layers: meta-mender-core, meta-mender-toradex-nxp
+  layers: meta-mender-core, meta-mender-toradex-nxp, tests/meta-mender-ci
   branch: master
 
 
