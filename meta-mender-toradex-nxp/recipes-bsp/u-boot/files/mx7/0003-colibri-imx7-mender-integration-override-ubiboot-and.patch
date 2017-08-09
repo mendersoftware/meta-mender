@@ -1,11 +1,11 @@
-From 57d9de82ec060fb58594c57ebf8bb669ea527bb0 Mon Sep 17 00:00:00 2001
-Message-Id: <57d9de82ec060fb58594c57ebf8bb669ea527bb0.1501569428.git.maciej.borzecki@rndity.com>
-In-Reply-To: <cover.1501569428.git.maciej.borzecki@rndity.com>
-References: <cover.1501569428.git.maciej.borzecki@rndity.com>
+From ff3328d0c1eca266aac9fbebd0ce7317589cbb99 Mon Sep 17 00:00:00 2001
+Message-Id: <ff3328d0c1eca266aac9fbebd0ce7317589cbb99.1502270128.git.maciej.borzecki@rndity.com>
 From: Maciej Borzecki <maciej.borzecki@rndity.com>
 Date: Tue, 1 Aug 2017 08:11:53 +0200
-Subject: [PATCH 3/3] colibri-imx7: mender integration, override ubiboot and
+Subject: [PATCH] colibri-imx7: mender integration, override ubiboot and
  bootcmd
+
+Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
 
 Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
 ---
@@ -13,7 +13,7 @@ Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
  1 file changed, 12 insertions(+), 9 deletions(-)
 
 diff --git a/include/configs/colibri_imx7.h b/include/configs/colibri_imx7.h
-index cf7a968be7a8d669cf530d522b4e240658a9ad32..638e85238787281f35cc1cd68b738da0f5c9c827 100644
+index d06d74bcfaaf0630f7f012ae3edf1de9109a6e67..d09a514bb80f2a43f342766ef19cd298c0c37cee 100644
 --- a/include/configs/colibri_imx7.h
 +++ b/include/configs/colibri_imx7.h
 @@ -94,17 +94,20 @@
