@@ -87,7 +87,7 @@ def mender_get_env_offset(start_offset, index, total_aligned_size):
     else:
         raise Exception("env index out of range in mender_get_env_offset: Should not happen")
 
-MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1 = "${@mender_get_env_offset(${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}, 1, \
+MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1 ?= "${@mender_get_env_offset(${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}, 1, \
                                                                      ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE})}"
-MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2 = "${@mender_get_env_offset(${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}, 2, \
+MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2 ?= "${@mender_get_env_offset(${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}, 2, \
                                                                      ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE})}"
