@@ -327,6 +327,8 @@ def qemu_running(request, clean_image):
         qemu, img_path = start_qemu_sdimg(latest_sdimg)
     elif latest_vexpress_nor:
         qemu, img_path = start_qemu_flash(latest_vexpress_nor)
+    else:
+        pytest.fail("cannot find a suitable image type")
 
     print("qemu started with pid {}, image {}".format(qemu.pid, img_path))
 
