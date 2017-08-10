@@ -42,6 +42,8 @@ def pytest_addoption(parser):
                      help="image to build during the tests")
     parser.addoption("--keep-build-dir", action="store_true", default=False,
                      help="do not remove Yocto build directory after each test")
+    parser.addoption("--board-type", action="store", default='qemu',
+                     help="type of board to use in testing, supported types: qemu, bbb, colibri-imx7")
 
 
 def pytest_configure(config):
