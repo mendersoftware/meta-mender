@@ -119,7 +119,7 @@ class SignatureCase:
         self.artifact_version = artifact_version
         self.success = success
 
-@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "bitbake_path")
+@pytest.mark.usefixtures("no_image_file", "setup_board", "bitbake_path")
 class TestUpdates:
 
     @pytest.mark.min_mender_version('1.0.0')

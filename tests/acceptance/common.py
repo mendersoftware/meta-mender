@@ -300,7 +300,76 @@ def boot_from_internal():
         append("/uboot/uEnv.txt", bootline)
         reboot()
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
+def setup_board(request, clean_image, bitbake_variables):
+    bt = pytest.config.getoption("--board-type")
+
+    print('board type:', bt)
+    if bt == "qemu":
+        return qemu_running(request, clean_image)
+    elif bt == "bbb":
+        return setup_bbb(request)
+    elif bt == "colibri-imx7":
+        return setup_colibri_imx7(request, clean_image)
+    else:
+        pytest.skip('board type not configured')
+
+
+def common_board_setup(files=None, remote_path='/tmp', image_file=None):
+    """
+    Deploy and activate an image to a board that usese mender-qa tools.
+
+    :param image_file: IMAGE_FILE as passed to deploy-test-image, can be None
+    :param remote_path: where files will be stored in the remote system
+    :param files: list of files to deploy
+    """
+    for f in files:
+        put(os.path.basename(f), local_path=os.path.dirname(f),
+            remote_path=remote_path)
+
+    env_overrides = {}
+    if image_file:
+        env_overrides['IMAGE_FILE'] = image_file
+
+    run("{} mender-qa deploy-test-image".format(' '.join(
+        ['{}={}'.format(k, v) for k, v in env_overrides.items()])))
+
+    run("mender-qa activate-test-image")
+
+    reboot()
+
+def common_board_cleanup():
+    run("mender-qa activate-test-image off")
+    reboot()
+
+
+@pytest.fixture(scope='module')
+def setup_colibri_imx7(request, clean_image):
+    latest_uboot = latest_build_artifact(clean_image['build_dir'], "u-boot-nand.imx")
+    latest_ubimg = latest_build_artifact(clean_image['build_dir'], ".ubimg")
+
+    if not latest_uboot:
+        pytest.fail('failed to find U-Boot binary')
+
+    if not latest_ubimg:
+        pytest.failed('failed to find latest ubimg for the board')
+
+    def board_setup():
+        common_board_setup(files=[latest_ubimg, latest_uboot],
+                           remote_path='/tmp',
+                           image_file=os.path.basename(latest_ubimg))
+
+    execute(board_setup, hosts=conftest.current_hosts())
+
+    def board_cleanup():
+        def board_cleanup_impl():
+            common_board_cleanup()
+        execute(board_cleanup_impl, hosts=conftest.current_hosts())
+
+    request.addfinalizer(board_cleanup)
+
+
+@pytest.fixture(scope="module")
 def setup_bbb(request):
     if pytest.config.getoption("--bbb"):
         execute(boot_from_internal)
@@ -368,7 +437,7 @@ def qemu_running(request, clean_image):
 
 
 @pytest.fixture(scope="function")
-def no_image_file(qemu_running):
+def no_image_file(setup_board):
     """Make sure 'image.dat' is not present on the device."""
     execute(no_image_file_impl, hosts=conftest.current_hosts())
 
