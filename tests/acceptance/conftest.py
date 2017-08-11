@@ -44,6 +44,10 @@ def pytest_addoption(parser):
                      help="do not remove Yocto build directory after each test")
     parser.addoption("--board-type", action="store", default='qemu',
                      help="type of board to use in testing, supported types: qemu, bbb, colibri-imx7")
+    parser.addoption("--use-s3", action="store_true", default=False,
+                     help="use S3 for transferring images under test to target boards")
+    parser.addoption("--s3-address", action="store", default="s3.amazonaws.com",
+                     help="address of S3 server, defaults to AWS, override when using minio")
 
 
 def pytest_configure(config):
