@@ -45,27 +45,22 @@ class TestRootfs:
     def test_artifact_info_ext234(self, latest_rootfs, bitbake_variables, bitbake_path):
         """Test that artifact_info file is correctly embedded."""
 
-        try:
-            subprocess.check_call(["debugfs", "-R", "dump -p /etc/mender/artifact_info artifact_info",
-                                   latest_rootfs])
-            with open("artifact_info") as fd:
-                data = fd.read()
-
-            TestRootfs.verify_artifact_info_data(data, bitbake_variables["MENDER_ARTIFACT_NAME"])
-
-            assert(os.stat("artifact_info").st_mode & 0777 == 0644)
-
-        except:
-            subprocess.call(["ls", "-l", "artifact_info"])
-            print("Contents of artifact_info:")
-            subprocess.call(["cat", "artifact_info"])
-            raise
-
-        finally:
+        with make_tempdir() as tmpdir:
             try:
-                os.remove("artifact_info")
+                subprocess.check_call(["debugfs", "-R", "dump -p /etc/mender/artifact_info artifact_info",
+                                       latest_rootfs], cwd=tmpdir)
+                with open(os.path.join(tmpdir, "artifact_info")) as fd:
+                    data = fd.read()
+
+                TestRootfs.verify_artifact_info_data(data, bitbake_variables["MENDER_ARTIFACT_NAME"])
+
+                assert(os.stat(os.path.join(tmpdir, "artifact_info")).st_mode & 0777 == 0644)
+
             except:
-                pass
+                subprocess.call(["ls", "-l", "artifact_info"])
+                print("Contents of artifact_info:")
+                subprocess.call(["cat", "artifact_info"])
+                raise
 
     @pytest.mark.only_with_image('ubifs')
     def test_artifact_info_ubifs(self, latest_ubifs, bitbake_variables, bitbake_path):
