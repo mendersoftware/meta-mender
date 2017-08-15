@@ -50,15 +50,6 @@ inherit image_types
 
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
 
-python() {
-    fslist = d.getVar('IMAGE_FSTYPES', None).split()
-    for fs in fslist:
-        if fs in ["ext2", "ext3", "ext4"]:
-            # We need to have the filesystem image generated already. Make it
-            # dependent on all image types we support.
-            d.setVar('IMAGE_TYPEDEP_sdimg_append', " " + fs)
-}
-
 do_image_sdimg[depends] += "${@d.getVarFlag('do_image_wic', 'depends', False)} wic-tools:do_populate_sysroot dosfstools-native:do_populate_sysroot mtools-native:do_populate_sysroot rsync-native:do_populate_sysroot"
 
 IMAGE_CMD_sdimg() {
@@ -153,10 +144,10 @@ EOF
     fi
 
     cat >> "$wks" <<EOF
-part /boot   --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
-part /       --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part         --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part /data   --source rawcopy --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
+part --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
+part --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
+part --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
+part --source rawcopy --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 EOF
 
     echo "### Contents of wks file ###"

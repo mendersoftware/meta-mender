@@ -41,34 +41,47 @@ class TestRootfs:
         assert(var[0] == "artifact_name")
         assert(var[1] == artifact_name)
 
+    @staticmethod
+    def verify_fstab(data):
+        lines = data.split('\n')
+
+        occurred = {}
+
+        # No entry should occur twice.
+        for line in lines:
+            cols = line.split()
+            if len(line) == 0 or line[0] == '#' or len(cols) < 2:
+                continue
+            assert occurred.get(cols[1]) is None, "%s appeared twice in fstab:\n%s" % (cols[1], data)
+            occurred[cols[1]] = True
+
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
-    def test_artifact_info_ext234(self, latest_rootfs, bitbake_variables, bitbake_path):
+    def test_expected_files_ext234(self, latest_rootfs, bitbake_variables, bitbake_path):
         """Test that artifact_info file is correctly embedded."""
 
-        try:
-            subprocess.check_call(["debugfs", "-R", "dump -p /etc/mender/artifact_info artifact_info",
-                                   latest_rootfs])
-            with open("artifact_info") as fd:
-                data = fd.read()
-
-            TestRootfs.verify_artifact_info_data(data, bitbake_variables["MENDER_ARTIFACT_NAME"])
-
-            assert(os.stat("artifact_info").st_mode & 0777 == 0644)
-
-        except:
-            subprocess.call(["ls", "-l", "artifact_info"])
-            print("Contents of artifact_info:")
-            subprocess.call(["cat", "artifact_info"])
-            raise
-
-        finally:
+        with make_tempdir() as tmpdir:
             try:
-                os.remove("artifact_info")
+                subprocess.check_call(["debugfs", "-R", "dump -p /etc/mender/artifact_info artifact_info",
+                                       latest_rootfs], cwd=tmpdir)
+                with open(os.path.join(tmpdir, "artifact_info")) as fd:
+                    data = fd.read()
+                TestRootfs.verify_artifact_info_data(data, bitbake_variables["MENDER_ARTIFACT_NAME"])
+                assert(os.stat(os.path.join(tmpdir, "artifact_info")).st_mode & 0777 == 0644)
+
+                subprocess.check_call(["debugfs", "-R", "dump -p /etc/fstab fstab",
+                                       latest_rootfs], cwd=tmpdir)
+                with open(os.path.join(tmpdir, "fstab")) as fd:
+                    data = fd.read()
+                TestRootfs.verify_fstab(data)
+
             except:
-                pass
+                subprocess.call(["ls", "-l", "artifact_info"])
+                print("Contents of artifact_info:")
+                subprocess.call(["cat", "artifact_info"])
+                raise
 
     @pytest.mark.only_with_image('ubifs')
-    def test_artifact_info_ubifs(self, latest_ubifs, bitbake_variables, bitbake_path):
+    def test_expected_files_ubifs(self, latest_ubifs, bitbake_variables, bitbake_path):
         """Test that artifact_info file is correctly embedded."""
 
         with make_tempdir() as tmpdir:
@@ -77,8 +90,13 @@ class TestRootfs:
             subprocess.check_call("ubireader_extract_files -o {outdir} {ubifs}".format(outdir=tmpdir,
                                                                                        ubifs=latest_ubifs),
                                   shell=True)
+
             path = os.path.join(tmpdir, "etc/mender/artifact_info")
             with open(path) as fd:
                 data = fd.read()
-
             TestRootfs.verify_artifact_info_data(data, bitbake_variables["MENDER_ARTIFACT_NAME"])
+
+            path = os.path.join(tmpdir, "etc/fstab")
+            with open(path) as fd:
+                data = fd.read()
+            TestRootfs.verify_fstab(data)
