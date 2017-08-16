@@ -8,7 +8,7 @@ MENDER_ARTIFACT_SIGNING_KEY ?= ""
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
-IMAGE_DEPENDS_mender = "mender-artifact-native"
+do_image_mender[depends] += "mender-artifact-native:do_populate_sysroot"
 
 ARTIFACTIMG_FSTYPE  ??= "ext4"
 IMAGE_CMD_mender () {

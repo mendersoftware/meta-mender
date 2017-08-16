@@ -31,10 +31,11 @@ in addition to `meta-mender` dependencies.
         MENDER_PARTITION_ALIGNMENT_KB = "4096"
         MENDER_BOOT_PART_SIZE_MB = "40"
 
-        IMAGE_DEPENDS_sdimg += " bcm2835-bootfiles"
+        do_image_sdimg[depends] += " bcm2835-bootfiles:do_populate_sysroot"
 
         # raspberrypi files aligned with mender layout requirements
         IMAGE_BOOT_FILES_append = " boot.scr u-boot.bin;${SDIMG_KERNELIMAGE}"
         IMAGE_INSTALL_append = " kernel-image kernel-devicetree"
+        IMAGE_FSTYPES_remove += " rpi-sdimg"
 
 - Run `bitbake <image name>`

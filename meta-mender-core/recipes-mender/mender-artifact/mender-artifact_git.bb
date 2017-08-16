@@ -24,12 +24,13 @@ def mender_branch_from_preferred_version(pref_version):
         return "master"
 MENDER_ARTIFACT_BRANCH = "${@mender_branch_from_preferred_version('${PREFERRED_VERSION}')}"
 
-def mender_version_from_preferred_version(pref_version, srcpv):
-    if pref_version.find("-git") >= 0:
+def mender_version_from_preferred_version(d, srcpv):
+    pref_version = d.getVar("PREFERRED_VERSION")
+    if pref_version is not None and pref_version.find("-git") >= 0:
         # If "-git" is in the version, remove it along with any suffix it has,
         # and then readd it with commit SHA.
         return "%s-git%s" % (pref_version[0:pref_version.index("-git")], srcpv)
-    elif pref_version.find("-build") >= 0:
+    elif pref_version is not None and pref_version.find("-build") >= 0:
         # If "-build" is in the version, use the version as is. This means that
         # we can build tags with "-build" in them from this recipe, but not
         # final tags, which will need their own recipe.
@@ -37,7 +38,7 @@ def mender_version_from_preferred_version(pref_version, srcpv):
     else:
         # Else return the default "master-git".
         return "master-git%s" % srcpv
-PV = "${@mender_version_from_preferred_version('${PREFERRED_VERSION}', '${SRCPV}')}"
+PV = "${@mender_version_from_preferred_version(d, '${SRCPV}')}"
 
 SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=${MENDER_ARTIFACT_BRANCH}"
 
