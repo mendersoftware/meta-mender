@@ -47,6 +47,7 @@ def extract_partition(sdimg, number):
 
 
 @pytest.mark.only_with_image('sdimg')
+@pytest.mark.min_mender_version("1.0.0")
 class TestSdimg:
 
     @staticmethod

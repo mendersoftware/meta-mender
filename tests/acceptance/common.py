@@ -17,6 +17,7 @@ from fabric.api import *
 from fabric.contrib.files import append
 import fabric.network
 
+from distutils.version import LooseVersion
 import pytest
 import os
 import re
@@ -634,6 +635,22 @@ def add_to_local_conf(prepared_test_build, string):
         fd.write('\n## ADDED BY TEST\n')
         fd.write("%s\n" % string)
 
+
+@pytest.fixture(autouse=True)
+def min_mender_version(request, bitbake_variables):
+    version_mark = request.node.get_marker("min_mender_version")
+    if version_mark is None:
+        pytest.fail(('%s must be marked with @pytest.mark.min_mender_version("<VERSION>") to '
+                     + 'indicate lowest Mender version for which the test will work.')
+                    % str(request.node))
+
+    test_version = version_mark.args[0]
+    mender_version = bitbake_variables.get('PREFERRED_VERSION')
+    if mender_version is None:
+        mender_version = "master"
+    if LooseVersion(test_version) > LooseVersion(mender_version):
+        pytest.skip("Test for Mender client %s and newer cannot run with Mender client %s"
+                    % (test_version, MENDER_VERSION))
 
 @pytest.fixture(autouse=True)
 def only_for_machine(request, bitbake_variables):

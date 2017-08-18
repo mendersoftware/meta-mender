@@ -56,6 +56,7 @@ class TestRootfs:
             occurred[cols[1]] = True
 
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    @pytest.mark.min_mender_version("1.0.0")
     def test_expected_files_ext234(self, latest_rootfs, bitbake_variables, bitbake_path):
         """Test that artifact_info file is correctly embedded."""
 
@@ -81,6 +82,7 @@ class TestRootfs:
                 raise
 
     @pytest.mark.only_with_image('ubifs')
+    @pytest.mark.min_mender_version("1.2.0")
     def test_expected_files_ubifs(self, latest_ubifs, bitbake_variables, bitbake_path):
         """Test that artifact_info file is correctly embedded."""
 

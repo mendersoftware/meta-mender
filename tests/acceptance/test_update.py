@@ -122,6 +122,7 @@ class SignatureCase:
 @pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "bitbake_path")
 class TestUpdates:
 
+    @pytest.mark.min_mender_version('1.0.0')
     def test_broken_image_update(self, bitbake_variables):
 
         if not env.host_string:
@@ -157,6 +158,7 @@ class TestUpdates:
             os.remove("image.mender")
             os.remove("image.dat")
 
+    @pytest.mark.min_mender_version('1.0.0')
     def test_too_big_image_update(self, bitbake_variables):
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
@@ -180,6 +182,7 @@ class TestUpdates:
             os.remove("image-too-big.mender")
             os.remove("image.dat")
 
+    @pytest.mark.min_mender_version('1.0.0')
     def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables):
         http_server_location = pytest.config.getoption("--http-server")
         bbb = pytest.config.getoption("--bbb")
@@ -379,6 +382,7 @@ class TestUpdates:
                                             artifact_version=None,
                                             success=False),
                              ])
+    @pytest.mark.min_mender_version('1.1.0')
     def test_signed_updates(self, sig_case, bitbake_path, bitbake_variables):
         """Test various combinations of signed and unsigned, present and non-
         present verification keys."""
@@ -525,6 +529,7 @@ class TestUpdates:
 
 
     @pytest.mark.only_for_machine('vexpress-qemu')
+    @pytest.mark.min_mender_version('1.0.0')
     def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables):
         """This tests a very specific scenario: Consider the following production
         scenario: You are currently running an update on rootfs partition

@@ -71,10 +71,6 @@ def pytest_configure(config):
     env.combine_stderr = False
 
 
-def pytest_unconfigure(config):
-    pass
-
-
 def current_hosts():
     # Workaround for being inside/outside execute().
     if env.host_string:
