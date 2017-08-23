@@ -645,12 +645,14 @@ def min_mender_version(request, bitbake_variables):
                     % str(request.node))
 
     test_version = version_mark.args[0]
-    mender_version = bitbake_variables.get('PREFERRED_VERSION')
+    mender_version = bitbake_variables.get('PREFERRED_VERSION_pn-mender')
+    if mender_version is None:
+        mender_version = bitbake_variables.get('PREFERRED_VERSION_mender')
     if mender_version is None:
         mender_version = "master"
     if LooseVersion(test_version) > LooseVersion(mender_version):
         pytest.skip("Test for Mender client %s and newer cannot run with Mender client %s"
-                    % (test_version, MENDER_VERSION))
+                    % (test_version, mender_version))
 
 @pytest.fixture(autouse=True)
 def only_for_machine(request, bitbake_variables):
