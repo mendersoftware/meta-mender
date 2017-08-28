@@ -17,6 +17,7 @@ import pytest
 import re
 import subprocess
 
+@pytest.mark.min_mender_version("1.0.0")
 class TestCommits:
     def test_commits(self):
         # First find which range to check. Include HEAD and exclude all known

@@ -132,6 +132,7 @@ def extract_ubimg_info(path):
 
 
 @pytest.mark.only_with_image('ubimg')
+@pytest.mark.min_mender_version('1.2.0')
 class TestUbimg:
     def test_total_size(self, bitbake_variables, latest_ubimg):
         """Test that the size of the ubimg and its volumes are correct."""

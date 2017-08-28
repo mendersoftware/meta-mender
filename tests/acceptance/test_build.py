@@ -37,6 +37,7 @@ class EmbeddedBootloader:
 
 
 class TestBuild:
+    @pytest.mark.min_mender_version("1.0.0")
     def test_default_server_certificate(self):
         """Test that the md5sum we have on record matches the server certificate.
         This makes sure the warning about this certificate is correct."""
@@ -49,6 +50,7 @@ class TestBuild:
 
 
     @pytest.mark.only_with_image('sdimg')
+    @pytest.mark.min_mender_version("1.0.0")
     def test_bootloader_embed(self, prepared_test_build):
         """Test that IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
         correctly in the resulting sdimg."""
@@ -91,6 +93,7 @@ class TestBuild:
 
 
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    @pytest.mark.min_mender_version("1.0.0")
     def test_image_rootfs_extra_space(self, prepared_test_build, bitbake_variables):
         """Test that setting IMAGE_ROOTFS_EXTRA_SPACE to arbitrary values does
         not break the build."""
@@ -105,6 +108,7 @@ class TestBuild:
 
 
     @pytest.mark.only_for_image('sdimg')
+    @pytest.mark.min_mender_version("1.0.0")
     def test_tenant_token(self, prepared_test_build):
         """Test setting a custom tenant-token"""
 
@@ -129,6 +133,7 @@ class TestBuild:
 
 
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    @pytest.mark.min_mender_version("1.1.0")
     def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path):
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
@@ -157,6 +162,7 @@ class TestBuild:
             os.remove("artifact-verify-key.pem")
 
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    @pytest.mark.min_mender_version("1.2.0")
     def test_state_scripts(self, prepared_test_build, bitbake_variables, bitbake_path, latest_rootfs, latest_mender_image):
         """Test that state scripts that are specified in the build are included
         correctly."""

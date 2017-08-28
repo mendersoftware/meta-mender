@@ -19,6 +19,7 @@ import pytest
 import subprocess
 import os
 import re
+import tempfile
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
@@ -46,7 +47,23 @@ def extract_partition(sdimg, number):
 
 
 @pytest.mark.only_with_image('sdimg')
+@pytest.mark.min_mender_version("1.0.0")
 class TestSdimg:
+
+    @staticmethod
+    def verify_fstab(data):
+        lines = data.split('\n')
+
+        occurred = {}
+
+        # No entry should occur twice.
+        for line in lines:
+            cols = line.split()
+            if len(line) == 0 or line[0] == '#' or len(cols) < 2:
+                continue
+            assert occurred.get(cols[1]) is None, "%s appeared twice in fstab:\n%s" % (cols[1], data)
+            occurred[cols[1]] = True
+
     def test_total_size(self, bitbake_variables, latest_sdimg):
         """Test that the total size of the sdimg is correct."""
 
@@ -184,3 +201,17 @@ class TestSdimg:
                 os.remove("sdimg4.fs")
             except:
                 pass
+
+    def test_fstab_correct(self, latest_sdimg):
+        with make_tempdir() as tmpdir:
+            old_cwd_fd = os.open(".", os.O_RDONLY)
+            os.chdir(tmpdir)
+            try:
+                extract_partition(latest_sdimg, 2)
+                subprocess.check_call(["debugfs", "-R", "dump -p /etc/fstab fstab", "sdimg2.fs"])
+                with open("fstab") as fd:
+                    data = fd.read()
+                TestSdimg.verify_fstab(data)
+            finally:
+                os.fchdir(old_cwd_fd)
+                os.close(old_cwd_fd)
