@@ -1,22 +1,23 @@
-From 8d4e298b76c4cfc78f7f5b8061cc86cf0cc39aec Mon Sep 17 00:00:00 2001
+From be67692d01e8cb535587e6b8ad1593363c2d055e Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@mender.io>
 Date: Mon, 22 Aug 2016 10:47:08 +0200
 Subject: [PATCH] Generic boot code for Mender.
 
 Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
+Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
 ---
  include/config_mender.h | 78 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/env_mender.h    | 67 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 145 insertions(+)
+ include/env_mender.h    | 76 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 154 insertions(+)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000..043f97d
+index 0000000000000000000000000000000000000000..116b87f7b52571fda45327d4ebcd1fa5ec40f143
 --- /dev/null
 +++ b/include/config_mender.h
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,78 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -70,6 +71,24 @@ index 0000000..043f97d
 +# error 'CONFIG_ENV_SIZE' define must be equal to bitbake variable 'BOOTENV_SIZE' set in U-Boot build recipe.
 +#endif
 +
++#ifdef MENDER_BOOTENV_RANGE
++
++#ifndef CONFIG_ENV_RANGE
++#error bitbake variable 'BOOTENV_RANGE' is set U-Boot recipe, but CONFIG_ENV_RANGE is not set in configuration
++#endif  /* CONFIG_ENV_RANGE */
++
++#if MENDER_BOOTENV_RANGE != CONFIG_ENV_RANGE
++#error 'CONFIG_ENV_RANGE' define must be equal to bitbake variable 'BOOTENV_RANGE' set in U-Boot build recipe.
++#endif
++
++#else
++
++#ifdef CONFIG_ENV_RANGE
++#error CONFIG_ENV_RANGE is set but BOOTENV_RANGE is not configured in U-Boot build recipe.
++#endif
++
++#endif  /* MENDER_BOOTENV_RANGE */
++
 +#define CONFIG_SYS_MMC_ENV_DEV   MENDER_UBOOT_STORAGE_DEVICE
 +/* Use MMC partition zero to select whole user area of memory card. */
 +#define CONFIG_SYS_MMC_ENV_PART  0
@@ -79,7 +98,7 @@ index 0000000..043f97d
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000..2c43fd3
+index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efcfc87d682
 --- /dev/null
 +++ b/include/env_mender.h
 @@ -0,0 +1,76 @@
@@ -159,5 +178,6 @@ index 0000000..2c43fd3
 +    "fi\0"
 +
 +#endif /* HEADER_ENV_MENDER_H */
-2.7.4
+-- 
+2.9.4
 

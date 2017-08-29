@@ -1,6 +1,10 @@
 inherit mender-helpers
 
 BOOTENV_SIZE ??= "0x20000"
+BOOTENV_SIZE[doc] = "Size of bootloader environment"
+
+BOOTENV_RANGE ??= ""
+BOOTENV_RANGE[doc] = "Range occupied by bootloader environment"
 
 DEPLOYDIR = "${WORKDIR}/deploy-${PN}"
 
@@ -65,7 +69,14 @@ do_provide_mender_defines() {
 
 /* For sanity checks. */
 #define MENDER_BOOTENV_SIZE ${BOOTENV_SIZE}
+#undef MENDER_BOOTENV_RANGE
 EOF
+
+    if [ -n "${BOOTENV_RANGE}" ]; then
+        cat >> ${S}/include/config_mender_defines.h <<EOF
+#define MENDER_BOOTENV_RANGE ${BOOTENV_RANGE}
+EOF
+    fi
 }
 addtask do_provide_mender_defines after do_patch before do_configure
 
@@ -75,9 +86,9 @@ addtask do_provide_mender_defines after do_patch before do_configure
 
 # This should evaluate to the same as MENDER_STORAGE_RESERVED_RAW_SPACE.
 # The only reason it's not evaluated the same way is that we don't have the
-# necessary information (BOOTENV_SIZE) when evaluating
+# necessary information (BOOTENV_SIZE and BOOTENV_RANGE) when evaluating
 # MENDER_STORAGE_RESERVED_RAW_SPACE.
-MENDER_BOOTENV_TOTAL_ALIGNED_SIZE = "${@mender_get_env_total_aligned_size(${BOOTENV_SIZE}, ${MENDER_PARTITION_ALIGNMENT_KB})}"
+MENDER_BOOTENV_TOTAL_ALIGNED_SIZE = "${@mender_get_env_total_aligned_size(${BOOTENV_SIZE}, d.getVar('BOOTENV_RANGE') or None, ${MENDER_PARTITION_ALIGNMENT_KB})}"
 
 def mender_get_env_offset(start_offset, index, total_aligned_size):
     if index == 1:
