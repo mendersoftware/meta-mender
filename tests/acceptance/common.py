@@ -300,7 +300,7 @@ def boot_from_internal():
         append("/uboot/uEnv.txt", bootline)
         reboot()
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def setup_board(request, clean_image, bitbake_variables):
     bt = pytest.config.getoption("--board-type")
 
@@ -343,7 +343,7 @@ def common_board_cleanup():
     reboot()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="session")
 def setup_colibri_imx7(request, clean_image):
     latest_uboot = latest_build_artifact(clean_image['build_dir'], "u-boot-nand.imx")
     latest_ubimg = latest_build_artifact(clean_image['build_dir'], ".ubimg")
@@ -369,7 +369,7 @@ def setup_colibri_imx7(request, clean_image):
     request.addfinalizer(board_cleanup)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def setup_bbb(request):
     if pytest.config.getoption("--bbb"):
         execute(boot_from_internal)
