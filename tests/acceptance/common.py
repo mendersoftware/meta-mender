@@ -312,7 +312,7 @@ def setup_board(request, clean_image, bitbake_variables):
     elif bt == "colibri-imx7":
         return setup_colibri_imx7(request, clean_image)
     else:
-        pytest.skip('board type not configured')
+        pytest.fail('unsupported board type {}'.format(bt))
 
 
 def common_board_setup(files=None, remote_path='/tmp', image_file=None):
