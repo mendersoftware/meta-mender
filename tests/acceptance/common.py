@@ -26,6 +26,7 @@ import time
 import tempfile
 import errno
 import shutil
+import signal
 
 from contextlib import contextmanager
 
@@ -39,6 +40,35 @@ def if_not_bbb(func):
             func()
     return func_wrapper
 
+
+class ProcessGroupPopen(subprocess.Popen):
+    """Wrapper for subprocess.Popen that starts the underlying process in a
+    separate process group. The wrapper overrides kill() and terminate() so
+    that the corresponding SIGKILL/SIGTERM are sent to the whole process group
+    and not just the forked process.
+
+    Note that ProcessGroupPopen() constructor hijacks preexec_fn parameter.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        def start_new_session():
+            os.setsid()
+        # for Python > 3.2 it's enough to set start_new_session=True
+        super(ProcessGroupPopen, self).__init__(*args,
+                                                preexec_fn=start_new_session,
+                                                **kwargs)
+
+    def __signal(self, sig):
+        os.killpg(self.pid, sig)
+
+    def terminate(self):
+        self.__signal(signal.SIGTERM)
+
+    def kill(self):
+        self.__signal(signal.SIGKILL)
+
+
 def start_qemu(qenv=None):
     """Start qemu and return a subprocess.Popen object corresponding to a running
     qemu process. `qenv` is a dict of environment variables that will be added
@@ -50,14 +80,13 @@ def start_qemu(qenv=None):
     The helper uses `meta-mender-qemu/scripts/mender-qemu` to start qemu, thus
     you can use `VEXPRESS_IMG`, `QEMU_DRIVE` and other environment variables to
     override the default behavior.
-
     """
     env = dict(os.environ)
     if qenv:
         env.update(qenv)
 
-    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
-                            env=env)
+    proc = ProcessGroupPopen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+                             env=env)
 
     try:
         # make sure we are connected.
@@ -68,7 +97,7 @@ def start_qemu(qenv=None):
         try:
             # qemu might have exited and this would raise an exception
             print('cleaning up qemu instance with pid {}'.format(proc.pid))
-            proc.kill()
+            proc.terminate()
         except:
             pass
 
@@ -418,7 +447,7 @@ def qemu_running(request, clean_image):
 
             # kill qemu
             try:
-                qemu.kill()
+                qemu.terminate()
             except OSError as oserr:
                 # qemu might have exited before we reached this place
                 if oserr.errno == errno.ESRCH:
