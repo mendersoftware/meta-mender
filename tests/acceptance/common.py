@@ -167,15 +167,6 @@ def start_qemu_flash(latest_vexpress_nor):
 
 
 @if_not_bbb
-def kill_qemu():
-    os.system("pkill qemu-system-arm")
-    time.sleep(1)
-    try:
-        os.remove("test-image.qcow2")
-    except:
-        pass
-
-@if_not_bbb
 def is_qemu_running():
     while True:
         proc = subprocess.Popen(["pgrep", "qemu"], stdout=subprocess.PIPE)
