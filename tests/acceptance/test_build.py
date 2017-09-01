@@ -107,7 +107,7 @@ class TestBuild:
         assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
 
 
-    @pytest.mark.only_for_image('sdimg')
+    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     @pytest.mark.min_mender_version("1.0.0")
     def test_tenant_token(self, prepared_test_build):
         """Test setting a custom tenant-token"""
