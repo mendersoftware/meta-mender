@@ -16,6 +16,15 @@
 set -e
 set -x
 
+TMPDIR=${TMPDIR:-$(mktemp -d /tmp/mender-qemu.XXXXXXXX)}
+trap cleanup 1 15
+
+cleanup() {
+    if [ -n "$TMPDIR" -a -e "$TMPDIR" ]; then
+        rm -rf $TMPDIR
+    fi
+}
+
 # if called under Yocto/OE shell, BUILDDIR will already be set correctly
 if [ -z "$BUILDDIR" ]; then
     # try to guess BUILDDIR
@@ -51,8 +60,8 @@ case $VEXPRESS_IMG in
         QEMU_ARGS="$QEMU_ARGS -drive file=$VEXPRESS_IMG,if=sd,format=raw "
         ;;
     *.vexpress-nor)
-        tar -C /tmp -xvf $VEXPRESS_IMG
-        QEMU_ARGS="$QEMU_ARGS -drive file=/tmp/nor0,if=pflash,format=raw -drive file=/tmp/nor1,if=pflash,format=raw "
+        tar -C $TMPDIR -xvf $VEXPRESS_IMG
+        QEMU_ARGS="$QEMU_ARGS -drive file=${TMPDIR}/nor0,if=pflash,format=raw -drive file=${TMPDIR}/nor1,if=pflash,format=raw "
         ;;
     *)
         if [ -n "$QEMU_DRIVE" ]; then
@@ -66,8 +75,10 @@ esac
 echo "--- qemu version"
 $QEMU_SYSTEM_ARM --version
 
+echo "--- starting qemu"
+
 QEMU_AUDIO_DRV=none \
-    exec $QEMU_SYSTEM_ARM \
+    $QEMU_SYSTEM_ARM \
     -M vexpress-a9 \
     -m 128M \
     -kernel "$UBOOT_ELF" \
@@ -77,3 +88,5 @@ QEMU_AUDIO_DRV=none \
     -nographic \
     $QEMU_ARGS \
     "$@"
+
+cleanup
