@@ -31,7 +31,11 @@ IMAGE_CMD_mender () {
     mender-artifact write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} -t "$devs_compatible" \
         -u ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
-        -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender \
+        -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender
+    # The mender-artifact tool version 1.0 does not return an error code
+    # If it fails, bitbake will silently ignore it.  Test for the existence
+    # of the output file as a workaround.
+    test -e ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender
 }
 
 IMAGE_CMD_mender[vardepsexclude] += "IMAGE_ID"
