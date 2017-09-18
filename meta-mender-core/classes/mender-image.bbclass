@@ -1,9 +1,3 @@
-# Class for those who want a Mender-ready device image.
-
-inherit mender-install
-
-OVERRIDES_append = ":menderimage"
-
-#Make sure we are creating sdimg with all needed partitioning.
-IMAGE_CLASSES += " mender-artifactimg"
-IMAGE_FSTYPES_append = " mender"
+# This class file is the legacy way of enabling features.
+# Do not use for new features.
+MENDER_FEATURES_ENABLE_append = " mender-image"

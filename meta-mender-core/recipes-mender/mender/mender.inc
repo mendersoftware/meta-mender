@@ -31,11 +31,11 @@ INSANE_SKIP_${PN} = "ldflags"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
 
-PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
+PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-install', ' mender-install', '', d)}"
+PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
 
-RDEPENDS_${PN} += " \
-    mender-artifact-info \
-    "
+PACKAGECONFIG[mender-install] = ",,,mender-artifact-info ca-certificates"
+PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
 
 do_compile() {
     GOPATH="${B}:${S}"
@@ -157,10 +157,10 @@ do_install() {
     elif [ -n "${MENDER_ARTIFACT_VERIFY_KEY}" ]; then
         install -m 0444 "${MENDER_ARTIFACT_VERIFY_KEY}" ${D}${sysconfdir}/mender/artifact-verify-key.pem
     fi
-}
 
-do_install_append_menderimage() {
-  # symlink /var/lib/mender to /data/mender
-  rm -rf ${D}/${localstatedir}/lib/mender
-  ln -s /data/mender ${D}/${localstatedir}/lib/mender
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', 'true', 'false', d)}; then
+        # symlink /var/lib/mender to /data/mender
+        rm -rf ${D}/${localstatedir}/lib/mender
+        ln -s /data/mender ${D}/${localstatedir}/lib/mender
+    fi
 }
