@@ -1,34 +1,39 @@
-ARTIFACTIMG_FSTYPE_mender-ubi ??= "ubifs"
+python() {
+    if bb.utils.contains('DISTRO_FEATURES', 'mender-ubi', True, False, d):
+        # Using "_defaultval" is the same as a '??=' assignment.
 
-MENDER_STORAGE_DEVICE_mender-ubi ??= "ubi0"
+        d.setVarFlag("ARTIFACTIMG_FSTYPE", "_defaultval", "ubifs")
 
-# The base name of the devices that hold individual volumes.
-MENDER_STORAGE_DEVICE_BASE_mender-ubi ??= "${MENDER_STORAGE_DEVICE}_"
+        d.setVarFlag("MENDER_STORAGE_DEVICE", "_defaultval", "ubi0")
 
-# The numbers of the two rootfs partitions in the A/B partition layout.
-MENDER_ROOTFS_PART_A_mender-ubi ??= "${MENDER_STORAGE_DEVICE_BASE}0"
-MENDER_ROOTFS_PART_B_mender-ubi ??= "${MENDER_STORAGE_DEVICE_BASE}1"
+        # The base name of the devices that hold individual volumes.
+        d.setVarFlag("MENDER_STORAGE_DEVICE_BASE", "_defaultval", "${MENDER_STORAGE_DEVICE}_")
 
-# The partition number holding the data partition.
-MENDER_DATA_PART_mender-ubi ??= "${MENDER_STORAGE_DEVICE_BASE}2"
-MENDER_DATA_PART_FSTYPE_mender-ubi ??= "ubifs"
+        # The numbers of the two rootfs partitions in the A/B partition layout.
+        d.setVarFlag("MENDER_ROOTFS_PART_A", "_defaultval", "${MENDER_STORAGE_DEVICE_BASE}0")
+        d.setVarFlag("MENDER_ROOTFS_PART_B", "_defaultval", "${MENDER_STORAGE_DEVICE_BASE}1")
 
-# u-boot command ubifsmount requires volume name as the only argument
-# and hence we need to keep track of that since we load kernel/dtb from
-# rootfs part
-#
-# It also needs the volume index e.g.
-# ubifsmount ubi0:rootfsa
-MENDER_ROOTFS_PART_A_NAME_mender-ubi ??= "${MENDER_STORAGE_DEVICE}:rootfsa"
-MENDER_ROOTFS_PART_B_NAME_mender-ubi ??= "${MENDER_STORAGE_DEVICE}:rootfsb"
+        # The partition number holding the data partition.
+        d.setVarFlag("MENDER_DATA_PART", "_defaultval", "${MENDER_STORAGE_DEVICE_BASE}2")
+        d.setVarFlag("MENDER_DATA_PART_FSTYPE", "_defaultval", "ubifs")
 
-# The name of of the MTD part holding your UBI volumes.
-MENDER_MTD_UBI_DEVICE_NAME_mender-ubi ??= "ubi"
+        # u-boot command ubifsmount requires volume name as the only argument
+        # and hence we need to keep track of that since we load kernel/dtb from
+        # rootfs part
+        #
+        # It also needs the volume index e.g.
+        # ubifsmount ubi0:rootfsa
+        d.setVarFlag("MENDER_ROOTFS_PART_A_NAME", "_defaultval", "${MENDER_STORAGE_DEVICE}:rootfsa")
+        d.setVarFlag("MENDER_ROOTFS_PART_B_NAME", "_defaultval", "${MENDER_STORAGE_DEVICE}:rootfsb")
 
-# Boot part is not used when building UBI image.
-MENDER_BOOT_PART_mender-ubi ??= ""
-MENDER_BOOT_PART_SIZE_MB_mender-ubi ??= "0"
+        # The name of of the MTD part holding your UBI volumes.
+        d.setVarFlag("MENDER_MTD_UBI_DEVICE_NAME", "_defaultval", "ubi")
 
-# These are not applicable when building UBI image.
-MENDER_UBOOT_STORAGE_DEVICE_mender-ubi ??= "dummy"
-MENDER_UBOOT_STORAGE_INTERFACE_mender-ubi ??= "dummy"
+        # Boot part is not used when building UBI image.
+        d.setVarFlag("MENDER_BOOT_PART", "_defaultval", "")
+        d.setVarFlag("MENDER_BOOT_PART_SIZE_MB", "_defaultval", "0")
+
+        # These are not applicable when building UBI image.
+        d.setVarFlag("MENDER_UBOOT_STORAGE_DEVICE", "_defaultval", "dummy")
+        d.setVarFlag("MENDER_UBOOT_STORAGE_INTERFACE", "_defaultval", "dummy")
+}
