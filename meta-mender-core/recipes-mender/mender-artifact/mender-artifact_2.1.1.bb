@@ -1,6 +1,6 @@
 require mender-artifact.inc
 
-SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=master"
+SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=2.1.x"
 
 # Tag: 2.1.1
 SRCREV = "51f7623a4c63bf052e70fa21430230862f396042"

@@ -1,6 +1,6 @@
 require mender.inc
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=master"
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=1.2.x"
 
 # Tag: 1.2.1
 SRCREV = "e8899d80f40c409297e15baabb671445286cb84e"

@@ -129,7 +129,7 @@ IMAGE_CMD_sdimg() {
     chmod 0444 "${WORKDIR}/data/mender/device_type"
 
     dd if=/dev/zero of="${WORKDIR}/data.$FSTYPE" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
-    mkfs.$FSTYPE -F "${WORKDIR}/data.$FSTYPE" -d "${WORKDIR}/data"
+    mkfs.$FSTYPE -F "${WORKDIR}/data.$FSTYPE" -d "${WORKDIR}/data" -L data
 
     wks="${WORKDIR}/mender-sdimg.wks"
     rm -f "$wks"
