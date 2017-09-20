@@ -95,6 +95,7 @@ class SignatureCase:
     key = False
     key_type = ""
     checksum_ok = True
+    header_checksum_ok = True
 
     update_written = False
     success = True
@@ -106,6 +107,7 @@ class SignatureCase:
                  key,
                  key_type,
                  checksum_ok,
+                 header_checksum_ok,
                  update_written,
                  artifact_version,
                  success):
@@ -115,6 +117,7 @@ class SignatureCase:
         self.key = key
         self.key_type = key_type
         self.checksum_ok = checksum_ok
+        self.header_checksum_ok = header_checksum_ok
         self.update_written = update_written
         self.artifact_version = artifact_version
         self.success = success
@@ -263,6 +266,7 @@ class TestUpdates:
                                             key=False,
                                             key_type=None,
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=1,
                                             success=True),
@@ -272,6 +276,7 @@ class TestUpdates:
                                             key=False,
                                             key_type=None,
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=True),
@@ -281,6 +286,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="RSA",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=True),
@@ -290,6 +296,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="RSA",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=None,
                                             success=False),
@@ -299,6 +306,7 @@ class TestUpdates:
                                             key=False,
                                             key_type="RSA",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=True),
@@ -308,6 +316,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="RSA",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=None,
                                             success=False),
@@ -317,6 +326,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="RSA",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=1,
                                             success=False),
@@ -326,6 +336,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="RSA",
                                             checksum_ok=False,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=False),
@@ -335,6 +346,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="EC",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=True),
@@ -344,6 +356,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="EC",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=None,
                                             success=False),
@@ -353,6 +366,7 @@ class TestUpdates:
                                             key=False,
                                             key_type="EC",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=True),
@@ -362,6 +376,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="EC",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=None,
                                             success=False),
@@ -371,6 +386,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="EC",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=1,
                                             success=False),
@@ -380,7 +396,18 @@ class TestUpdates:
                                             key=True,
                                             key_type="EC",
                                             checksum_ok=False,
+                                            header_checksum_ok=True,
                                             update_written=True,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="EC, Correctly signed, but header does not match checksum, key present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=True,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            header_checksum_ok=False,
+                                            update_written=False,
                                             artifact_version=None,
                                             success=False),
                              ])
@@ -428,7 +455,7 @@ class TestUpdates:
                               % (artifact_args, image_type), shell=True)
 
         # If instructed to, corrupt the signature and/or checksum.
-        if (sig_case.signature and not sig_case.signature_ok) or not sig_case.checksum_ok:
+        if (sig_case.signature and not sig_case.signature_ok) or not sig_case.checksum_ok or not sig_case.header_checksum_ok:
             tar = subprocess.check_output(["tar", "tf", "image.mender"])
             tar_list = tar.split()
             tmpdir = tempfile.mkdtemp()
@@ -461,6 +488,20 @@ class TestUpdates:
                                 os.remove(data_file)
                         finally:
                             os.chdir("..")
+
+                    if not sig_case.header_checksum_ok:
+                        data_list = subprocess.check_output(["tar", "tzf", "header.tar.gz"])
+                        data_list = data_list.split()
+                        subprocess.check_call(["tar", "xzf", "header.tar.gz"])
+                        # Corrupt checksum by changing file slightly.
+                        with open("headers/0000/meta-data", "r+") as fd:
+                            fd.write("some extra data to corrupt the header checksum")
+                        # Pack it up again in same order.
+                        os.remove("header.tar.gz")
+                        subprocess.check_call(["tar", "czf", "header.tar.gz"] + data_list)
+                        for data_file in data_list:
+                            os.remove(data_file)
+
                     # Make sure we put it back in the same order.
                     os.remove("image.mender")
                     subprocess.check_call(["tar", "cf", "image.mender"] + tar_list)
