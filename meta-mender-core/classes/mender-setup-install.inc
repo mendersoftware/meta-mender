@@ -36,8 +36,8 @@ python() {
         # Gently apply this as the default image size.  But subtract
         # IMAGE_ROOTFS_EXTRA_SPACE, since it will be added automatically in
         # later bitbake calculations.
-        d.setVar('IMAGE_ROOTFS_SIZE', eval("(%s) - (%s)" % (d.getVar('MENDER_CALC_ROOTFS_SIZE'),
-                                                            d.getVar('IMAGE_ROOTFS_EXTRA_SPACE'))))
+        d.setVar('IMAGE_ROOTFS_SIZE', str(eval("(%s) - (%s)" % (d.getVar('MENDER_CALC_ROOTFS_SIZE'),
+                                                                d.getVar('IMAGE_ROOTFS_EXTRA_SPACE')))))
 
         # Set hard limit on maximum rootfs size. Calculated rootfs size is used
         # when partitioning the disk image (be it SD card or UBI image), and
