@@ -100,10 +100,18 @@ MENDER_UBOOT_STORAGE_INTERFACE_DEFAULT = ""
 MENDER_UBOOT_STORAGE_DEVICE ??= "${MENDER_UBOOT_STORAGE_DEVICE_DEFAULT}"
 MENDER_UBOOT_STORAGE_DEVICE_DEFAULT = ""
 
+# This will be embedded into the boot sector, or close to the boot sector, where
+# exactly depends on the offset variable. Since it is a machine specific
+# setting, the default value is an empty string.
+IMAGE_BOOTLOADER_FILE ??= ""
+
+# Offset of bootloader, in sectors (512 bytes).
+IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "2"
+
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 IMAGE_INSTALL_append = " mender"
-IMAGE_CLASSES += "mender-sdimg mender-ubimg mender-artifactimg"
+IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg"
 
 # MENDER_FEATURES_ENABLE and MENDER_FEATURES_DISABLE map to
 # DISTRO_FEATURES_BACKFILL and DISTRO_FEATURES_BACKFILL_CONSIDERED,
