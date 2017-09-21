@@ -494,8 +494,10 @@ class TestUpdates:
                         data_list = data_list.split()
                         subprocess.check_call(["tar", "xzf", "header.tar.gz"])
                         # Corrupt checksum by changing file slightly.
-                        with open("headers/0000/meta-data", "r+") as fd:
-                            fd.write("some extra data to corrupt the header checksum")
+                        with open("headers/0000/files", "a") as fd:
+                            # Some extra data to corrupt the header checksum,
+                            # but still valid JSON.
+                            fd.write(" ")
                         # Pack it up again in same order.
                         os.remove("header.tar.gz")
                         subprocess.check_call(["tar", "czf", "header.tar.gz"] + data_list)
