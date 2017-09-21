@@ -1,5 +1,6 @@
 EXTRA_IMAGEDEPENDS_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
 
+
 def mender_get_env_total_aligned_size(bootenv_size, bootenv_range, alignment_kb):
     alignment_bytes = alignment_kb * 1024
 
@@ -35,3 +36,11 @@ MENDER_STORAGE_RESERVED_RAW_SPACE_DEFAULT_mender-uboot = \
     "${@mender_get_env_total_aligned_size(${MENDER_PARTITION_ALIGNMENT_KB}, \
                                           ${MENDER_PARTITION_ALIGNMENT_KB}, \
                                           ${MENDER_PARTITION_ALIGNMENT_KB})}"
+
+# u-boot environment file
+IMAGE_UENV_TXT_FILE ?= ""
+
+IMAGE_BOOT_FILES_append_mender-uboot = " ${IMAGE_UENV_TXT_FILE}"
+
+# make sure to provide a weak default
+UBOOT_SUFFIX ??= "bin"
