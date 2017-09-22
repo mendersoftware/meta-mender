@@ -68,26 +68,6 @@ IMAGE_CMD_sdimg() {
         bbfatal "$@"
     }
 
-    # Figure out which filesystem type to use.
-    FSTYPE=
-    for fs in ${IMAGE_FSTYPES}
-    do
-        case $fs in
-        ext2|ext3|ext4)
-            if [ -n "$FSTYPE" ] && [ "$FSTYPE" != "$fs" ]
-            then
-                sdimg_warn "More than one filesystem candidate found in IMAGE_FSTYPES = '${IMAGE_FSTYPES}'. Using $FSTYPE and ignoring $fs."
-            else
-                FSTYPE=$fs
-            fi
-            ;;
-        esac
-    done
-    if [ -z "$FSTYPE" ]
-    then
-        sdimg_fatal "No filesystem appropriate for sdimg was found in IMAGE_FSTYPES = '${IMAGE_FSTYPES}'."
-    fi
-
     mkdir -p "${WORKDIR}"
 
     # Workaround for the fact that the image builder requires this directory,
@@ -111,8 +91,8 @@ IMAGE_CMD_sdimg() {
     echo "device_type=${MENDER_DEVICE_TYPE}" > "${WORKDIR}/data/mender/device_type"
     chmod 0444 "${WORKDIR}/data/mender/device_type"
 
-    dd if=/dev/zero of="${WORKDIR}/data.$FSTYPE" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
-    mkfs.$FSTYPE -F "${WORKDIR}/data.$FSTYPE" -d "${WORKDIR}/data" -L data
+    dd if=/dev/zero of="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
+    mkfs.${ARTIFACTIMG_FSTYPE} -F "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" -d "${WORKDIR}/data" -L data
 
     wks="${WORKDIR}/mender-sdimg.wks"
     rm -f "$wks"
@@ -145,9 +125,9 @@ EOF
 
     cat >> "$wks" <<EOF
 part --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
-part --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rootfs --ondisk mmcblk0 --fstype=$FSTYPE --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rawcopy --sourceparams=file="${WORKDIR}/data.$FSTYPE" --ondisk mmcblk0 --fstype=$FSTYPE --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
+part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
+part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
+part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 EOF
 
     echo "### Contents of wks file ###"

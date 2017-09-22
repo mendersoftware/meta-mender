@@ -22,6 +22,10 @@ SRC_URI_append = " file://0003-Integration-of-Mender-boot-code-into-U-Boot.patch
 # Generic tasks.
 ################################################################################
 do_provide_mender_defines() {
+    if ! ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)}; then
+        bbfatal "To compile U-Boot with mender you have to add 'mender-uboot' to MENDER_FEATURES_ENABLE or DISTRO_FEATURES."
+    fi
+
     if [ $(expr ${MENDER_STORAGE_RESERVED_RAW_SPACE} % \( ${MENDER_PARTITION_ALIGNMENT_KB} \* 1024 \* 2 \)) -ne 0 ]; then
         bbfatal "MENDER_STORAGE_RESERVED_RAW_SPACE is not an even multiple of MENDER_PARTITION_ALIGNMENT_KB."
     fi

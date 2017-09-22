@@ -56,13 +56,5 @@ IMAGE_CMD_mender () {
 }
 
 IMAGE_CMD_mender[vardepsexclude] += "IMAGE_ID"
-
-python() {
-    fslist = d.getVar('IMAGE_FSTYPES', None).split()
-    for fs in fslist:
-        if fs in ["ext2", "ext3", "ext4", "ubifs"]:
-            # We need to have the filesystem image generated already. Make it
-            # dependent on all image types we support.
-            d.setVar('IMAGE_TYPEDEP_mender_append', " " + fs)
-            d.setVar('ARTIFACTIMG_FSTYPE', fs)
-}
+# We need to have the filesystem image generated already.
+IMAGE_TYPEDEP_mender_append = " ${ARTIFACTIMG_FSTYPE}"
