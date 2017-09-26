@@ -1,18 +1,35 @@
-From 9e08be63de49ce60a1c3f42781e5d212a65511b5 Mon Sep 17 00:00:00 2001
-From: Kristian Amlie <kristian.amlie@mender.io>
-Date: Thu, 16 Jun 2016 10:34:23 +0200
+From c2c6f210e21f9fcbed633a8e0a59fa2d954da827 Mon Sep 17 00:00:00 2001
+From: Drew Moseley <drew.moseley@northern.tech>
+Date: Tue, 26 Sep 2017 06:46:08 -0400
 Subject: [PATCH] Enable U-Boot on QEMU to use Mender boot code.
 
 Also make sure the U-Boot environment is on SD card.
----
- include/configs/vexpress_common.h | 27 ++++++++++++++++++++++-----
- 1 file changed, 22 insertions(+), 5 deletions(-)
 
+Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
+---
+ configs/vexpress_ca9x4_defconfig  |  3 ++-
+ include/configs/vexpress_common.h | 24 ++++++++++++++++++++----
+ 2 files changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/configs/vexpress_ca9x4_defconfig b/configs/vexpress_ca9x4_defconfig
+index 60af905..e4c1d30 100644
+--- a/configs/vexpress_ca9x4_defconfig
++++ b/configs/vexpress_ca9x4_defconfig
+@@ -17,7 +17,8 @@ CONFIG_CMD_MMC=y
+ # CONFIG_CMD_SETEXPR is not set
+ # CONFIG_CMD_NFS is not set
+ # CONFIG_CMD_MISC is not set
+-CONFIG_ENV_IS_IN_FLASH=y
++# CONFIG_ENV_IS_IN_FLASH is not set
+ CONFIG_MTD_NOR_FLASH=y
+ CONFIG_BAUDRATE=38400
+ CONFIG_OF_LIBFDT=y
++CONFIG_ENV_IS_IN_MMC=y
 diff --git a/include/configs/vexpress_common.h b/include/configs/vexpress_common.h
-index a8eba31..1a234eb 100644
+index bcaf5c9..df6616e 100644
 --- a/include/configs/vexpress_common.h
 +++ b/include/configs/vexpress_common.h
-@@ -167,6 +167,9 @@
+@@ -164,6 +164,9 @@
  #define CONFIG_SYS_LOAD_ADDR		(V2M_BASE + 0x8000)
  #define LINUX_BOOT_PARAM_ADDR		(V2M_BASE + 0x2000)
  
@@ -22,7 +39,7 @@ index a8eba31..1a234eb 100644
  /* Physical Memory Map */
  #define CONFIG_NR_DRAM_BANKS		2
  #define PHYS_SDRAM_1			(V2M_BASE)	/* SDRAM Bank #1 */
-@@ -197,6 +200,22 @@
+@@ -194,6 +197,22 @@
          func(DHCP, dhcp, na)
  #include <config_distro_bootcmd.h>
  
@@ -45,7 +62,7 @@ index a8eba31..1a234eb 100644
  #ifdef CONFIG_VEXPRESS_ORIGINAL_MEMORY_MAP
  #define CONFIG_PLATFORM_ENV_SETTINGS \
  		"loadaddr=0x80008000\0" \
-@@ -220,6 +239,7 @@
+@@ -217,6 +236,7 @@
  #endif
  #define CONFIG_EXTRA_ENV_SETTINGS \
  		CONFIG_PLATFORM_ENV_SETTINGS \
@@ -53,17 +70,14 @@ index a8eba31..1a234eb 100644
                  BOOTENV \
  		"console=ttyAMA0,38400n8\0" \
  		"dram=1024M\0" \
-@@ -265,11 +285,8 @@
+@@ -262,10 +282,6 @@
  #define CONFIG_ENV_OVERWRITE		1
  
  /* Store environment at top of flash */
--#define CONFIG_ENV_IS_IN_FLASH		1
 -#define CONFIG_ENV_OFFSET		(PHYS_FLASH_SIZE - \
 -					(2 * CONFIG_ENV_SECT_SIZE))
 -#define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE1 + \
 -					 CONFIG_ENV_OFFSET)
-+#define CONFIG_ENV_IS_IN_MMC		1
-+
  #define CONFIG_SYS_FLASH_PROTECTION	/* The devices have real protection */
  #define CONFIG_SYS_FLASH_EMPTY_INFO	/* flinfo indicates empty blocks */
  #define CONFIG_SYS_FLASH_BANKS_LIST	{ CONFIG_SYS_FLASH_BASE0, \
