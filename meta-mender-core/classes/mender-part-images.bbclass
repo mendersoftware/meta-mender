@@ -1,5 +1,3 @@
-inherit mender-install
-
 # Class that creates an SD card image that boots under qemu's emulation
 # for vexpress-a9 board. See the script mender-qemu for an example of
 # how to boot the image.
@@ -9,12 +7,7 @@ inherit mender-install
 #    part2: first rootfs, active
 #    part3: second rootfs, inactive, mirror of first,
 #           available as failsafe for when some update fails
-#    part4: extended partition
-#    part5: persistent data partition
-
-
-########## CONFIGURATION START - you can override these default
-##########                       values in your local.conf
+#    part4: persistent data partition
 
 python() {
     deprecated_vars = ['SDIMG_DATA_PART_DIR', 'SDIMG_DATA_PART_SIZE_MB',
@@ -26,47 +19,14 @@ python() {
             bb.fatal('Detected use of deprecated var %s, please replace it with %s in your setup' % (varname, newvarname))
 }
 
-# u-boot environment file
-#IMAGE_UENV_TXT_FILE ?= "uEnv.txt"
-IMAGE_UENV_TXT_FILE ?= ""
-
-IMAGE_BOOT_FILES_append = " ${IMAGE_UENV_TXT_FILE}"
-
-# make sure to provide a weak default
-UBOOT_SUFFIX ??= "bin"
-
-# This will be embedded into the boot sector, or close to the boot sector, where
-# exactly depends on the offset variable. Since it is a machine specific
-# setting, the default value is an empty string.
-IMAGE_BOOTLOADER_FILE ?= ""
-
-# Offset of bootloader, in sectors (512 bytes).
-IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ?= "2"
-
-########## CONFIGURATION END ##########
-
 inherit image
 inherit image_types
 
-addtask do_rootfs_wicenv after do_image before do_image_sdimg
+mender_part_image() {
+    suffix="$1"
+    part_type="$2"
 
-do_image_sdimg[depends] += "${@d.getVarFlag('do_image_wic', 'depends', False)} wic-tools:do_populate_sysroot dosfstools-native:do_populate_sysroot mtools-native:do_populate_sysroot rsync-native:do_populate_sysroot"
-
-IMAGE_CMD_sdimg() {
     set -ex
-
-    # For some reason, logging is not working correctly inside IMAGE_CMD bodies,
-    # so wrap all logging in these functions that also have an echo. This won't
-    # prevent warnings from being hidden deep in log files, but there is nothing
-    # we can do about that.
-    sdimg_warn() {
-        echo "$@"
-        bbwarn "$@"
-    }
-    sdimg_fatal() {
-        echo "$@"
-        bbfatal "$@"
-    }
 
     mkdir -p "${WORKDIR}"
 
@@ -94,7 +54,7 @@ IMAGE_CMD_sdimg() {
     dd if=/dev/zero of="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
     mkfs.${ARTIFACTIMG_FSTYPE} -F "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" -d "${WORKDIR}/data" -L data
 
-    wks="${WORKDIR}/mender-sdimg.wks"
+    wks="${WORKDIR}/mender-$suffix.wks"
     rm -f "$wks"
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
         if [ $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
@@ -116,7 +76,7 @@ part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADE
 EOF
     fi
 
-    if [ -n "${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}" ]; then
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)} && [ -n "${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}" ]; then
         boot_env_align_kb=$(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} / 1024)
         cat >> "$wks" <<EOF
 part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/uboot.env" --ondisk mmcblk0 --align $boot_env_align_kb --no-table
@@ -128,6 +88,7 @@ part --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --al
 part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
 part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
 part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
+bootloader --ptable $part_type
 EOF
 
     echo "### Contents of wks file ###"
@@ -135,11 +96,29 @@ EOF
     echo "### End of contents of wks file ###"
 
     # Call WIC
-    outimgname="${IMGDEPLOYDIR}/${IMAGE_NAME}.sdimg"
-    wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-sdimg"
+    outimgname="${IMGDEPLOYDIR}/${IMAGE_NAME}.$suffix"
+    wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-$suffix"
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/$(basename "${wks%.wks}")"*.direct "$outimgname"
     rm -rf "$wicout/"
 
-    ln -sfn "${IMAGE_NAME}.sdimg" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.sdimg"
+    ln -sfn "${IMAGE_NAME}.$suffix" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$suffix"
 }
+
+IMAGE_CMD_sdimg() {
+    mender_part_image sdimg msdos
+}
+IMAGE_CMD_uefiimg() {
+    mender_part_image uefiimg gpt
+}
+
+addtask do_rootfs_wicenv after do_image before do_image_sdimg
+addtask do_rootfs_wicenv after do_image before do_image_uefiimg
+
+do_image_sdimg[depends] += "${@d.getVarFlag('do_image_wic', 'depends', False)} wic-tools:do_populate_sysroot dosfstools-native:do_populate_sysroot mtools-native:do_populate_sysroot rsync-native:do_populate_sysroot"
+do_image_uefiimg[depends] += "${@d.getVarFlag('do_image_wic', 'depends', False)} wic-tools:do_populate_sysroot dosfstools-native:do_populate_sysroot mtools-native:do_populate_sysroot rsync-native:do_populate_sysroot"
+
+# This isn't actually a dependency, but a way to avoid sdimg and uefiimg
+# building simultaneously, since wic will use the same file names in both, and
+# in parallel builds this is a recipe for disaster.
+IMAGE_TYPEDEP_uefiimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"

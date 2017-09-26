@@ -1,5 +1,6 @@
 EXTRA_IMAGEDEPENDS_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
 
+
 def mender_get_env_total_aligned_size(bootenv_size, bootenv_range, alignment_kb):
     alignment_bytes = alignment_kb * 1024
 
@@ -24,15 +25,22 @@ def mender_get_env_total_aligned_size(bootenv_size, bootenv_range, alignment_kb)
 
     return "%d" % total_env_size
 
-MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET ?= "${@eval('${MENDER_PARTITION_ALIGNMENT_KB} * 1024')}"
+MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET ??= "${@eval('${MENDER_PARTITION_ALIGNMENT_KB} * 1024')}"
 
 # The total occupied length of the environment on disk, after alignment has been
 # taken into account. This is a guesstimate, and will be matched against the
 # real size in the U-Boot recipe later. Must be an *even* multiple of the
 # alignment. Most people should not need to set this, and if so, only because it
 # produces an error if left to the default.
-MENDER_STORAGE_RESERVED_RAW_SPACE ??= "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', \
-                                                            mender_get_env_total_aligned_size(${MENDER_PARTITION_ALIGNMENT_KB}, \
-                                                                                              ${MENDER_PARTITION_ALIGNMENT_KB}, \
-                                                                                              ${MENDER_PARTITION_ALIGNMENT_KB}), \
-                                                            '0', d)}"
+MENDER_STORAGE_RESERVED_RAW_SPACE_DEFAULT_mender-uboot = \
+    "${@mender_get_env_total_aligned_size(${MENDER_PARTITION_ALIGNMENT_KB}, \
+                                          ${MENDER_PARTITION_ALIGNMENT_KB}, \
+                                          ${MENDER_PARTITION_ALIGNMENT_KB})}"
+
+# u-boot environment file
+IMAGE_UENV_TXT_FILE ?= ""
+
+IMAGE_BOOT_FILES_append_mender-uboot = " ${IMAGE_UENV_TXT_FILE}"
+
+# make sure to provide a weak default
+UBOOT_SUFFIX ??= "bin"
