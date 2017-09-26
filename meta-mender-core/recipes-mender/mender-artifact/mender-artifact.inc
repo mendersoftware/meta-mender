@@ -17,10 +17,13 @@ do_compile() {
     # do_compile from go.bbclass, but that would prevent us from always building
     # the most recent version due to recursive expansion if SRCPV
 
+    if test -L ${B}/src ; then
+        rm -f ${B}/src
+    fi
     install -d ${GOPATHDIR}
     # we could also try symlinking ${S} into our fake GOPATH, however `go build...`
     # ignores symlinks in GOPATH
-    rsync -av --delete ${S}/ ${GOPATHDIR}/
+    rsync -av --delete ${S}/src/${GO_IMPORT}/ ${GOPATHDIR}/
 
     GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go go env
     if test -n "${GO_INSTALL}" ; then
