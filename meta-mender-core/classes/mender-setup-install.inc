@@ -31,17 +31,12 @@ MENDER_CALC_ROOTFS_SIZE = "${@mender_calculate_rootfs_size_kb(${MENDER_STORAGE_T
                                                               ${MENDER_PARTITIONING_OVERHEAD_KB}, \
                                                               ${MENDER_STORAGE_RESERVED_RAW_SPACE})}"
 
-python() {
-    if bb.utils.contains('DISTRO_FEATURES', 'mender-install', True, False, d):
-        # Gently apply this as the default image size.  But subtract
-        # IMAGE_ROOTFS_EXTRA_SPACE, since it will be added automatically in
-        # later bitbake calculations.
-        d.setVar('IMAGE_ROOTFS_SIZE', str(eval("(%s) - (%s)" % (d.getVar('MENDER_CALC_ROOTFS_SIZE'),
-                                                                d.getVar('IMAGE_ROOTFS_EXTRA_SPACE')))))
+# Gently apply this as the default image size.
+# But subtract IMAGE_ROOTFS_EXTRA_SPACE, since it will be added automatically
+# in later bitbake calculations.
+IMAGE_ROOTFS_SIZE ?= "${@eval('${MENDER_CALC_ROOTFS_SIZE} - (${IMAGE_ROOTFS_EXTRA_SPACE})')}"
 
-        # Set hard limit on maximum rootfs size. Calculated rootfs size is used
-        # when partitioning the disk image (be it SD card or UBI image), and
-        # defines an upper bound of the space allocated for rootfs
-        # partition/volume.
-        d.setVar('IMAGE_ROOTFS_MAXSIZE', d.getVar('MENDER_CALC_ROOTFS_SIZE'))
-}
+# Set hard limit on maximum rootfs size. Calculated rootfs size is used when
+# partitioning the disk image (be it SD card or UBI image), and defines an upper
+# bound of the space allocated for rootfs partition/volume.
+IMAGE_ROOTFS_MAXSIZE ?= "${MENDER_CALC_ROOTFS_SIZE}"
