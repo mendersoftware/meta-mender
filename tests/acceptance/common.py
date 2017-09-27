@@ -26,6 +26,7 @@ import time
 import tempfile
 import errno
 import shutil
+import signal
 
 from contextlib import contextmanager
 
@@ -39,6 +40,35 @@ def if_not_bbb(func):
             func()
     return func_wrapper
 
+
+class ProcessGroupPopen(subprocess.Popen):
+    """Wrapper for subprocess.Popen that starts the underlying process in a
+    separate process group. The wrapper overrides kill() and terminate() so
+    that the corresponding SIGKILL/SIGTERM are sent to the whole process group
+    and not just the forked process.
+
+    Note that ProcessGroupPopen() constructor hijacks preexec_fn parameter.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        def start_new_session():
+            os.setsid()
+        # for Python > 3.2 it's enough to set start_new_session=True
+        super(ProcessGroupPopen, self).__init__(*args,
+                                                preexec_fn=start_new_session,
+                                                **kwargs)
+
+    def __signal(self, sig):
+        os.killpg(self.pid, sig)
+
+    def terminate(self):
+        self.__signal(signal.SIGTERM)
+
+    def kill(self):
+        self.__signal(signal.SIGKILL)
+
+
 def start_qemu(qenv=None):
     """Start qemu and return a subprocess.Popen object corresponding to a running
     qemu process. `qenv` is a dict of environment variables that will be added
@@ -50,14 +80,13 @@ def start_qemu(qenv=None):
     The helper uses `meta-mender-qemu/scripts/mender-qemu` to start qemu, thus
     you can use `VEXPRESS_IMG`, `QEMU_DRIVE` and other environment variables to
     override the default behavior.
-
     """
     env = dict(os.environ)
     if qenv:
         env.update(qenv)
 
-    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
-                            env=env)
+    proc = ProcessGroupPopen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+                             env=env)
 
     try:
         # make sure we are connected.
@@ -68,7 +97,7 @@ def start_qemu(qenv=None):
         try:
             # qemu might have exited and this would raise an exception
             print('cleaning up qemu instance with pid {}'.format(proc.pid))
-            proc.kill()
+            proc.terminate()
         except:
             pass
 
@@ -136,15 +165,6 @@ def start_qemu_flash(latest_vexpress_nor):
 
     return qemu, img_path
 
-
-@if_not_bbb
-def kill_qemu():
-    os.system("pkill qemu-system-arm")
-    time.sleep(1)
-    try:
-        os.remove("test-image.qcow2")
-    except:
-        pass
 
 @if_not_bbb
 def is_qemu_running():
@@ -301,6 +321,75 @@ def boot_from_internal():
         reboot()
 
 @pytest.fixture(scope="session")
+def setup_board(request, clean_image, bitbake_variables):
+    bt = pytest.config.getoption("--board-type")
+
+    print('board type:', bt)
+    if bt == "qemu":
+        return qemu_running(request, clean_image)
+    elif bt == "bbb":
+        return setup_bbb(request)
+    elif bt == "colibri-imx7":
+        return setup_colibri_imx7(request, clean_image)
+    else:
+        pytest.fail('unsupported board type {}'.format(bt))
+
+
+def common_board_setup(files=None, remote_path='/tmp', image_file=None):
+    """
+    Deploy and activate an image to a board that usese mender-qa tools.
+
+    :param image_file: IMAGE_FILE as passed to deploy-test-image, can be None
+    :param remote_path: where files will be stored in the remote system
+    :param files: list of files to deploy
+    """
+    for f in files:
+        put(os.path.basename(f), local_path=os.path.dirname(f),
+            remote_path=remote_path)
+
+    env_overrides = {}
+    if image_file:
+        env_overrides['IMAGE_FILE'] = image_file
+
+    run("{} mender-qa deploy-test-image".format(' '.join(
+        ['{}={}'.format(k, v) for k, v in env_overrides.items()])))
+
+    run("mender-qa activate-test-image")
+
+    reboot()
+
+def common_board_cleanup():
+    run("mender-qa activate-test-image off")
+    reboot()
+
+
+@pytest.fixture(scope="session")
+def setup_colibri_imx7(request, clean_image):
+    latest_uboot = latest_build_artifact(clean_image['build_dir'], "u-boot-nand.imx")
+    latest_ubimg = latest_build_artifact(clean_image['build_dir'], ".ubimg")
+
+    if not latest_uboot:
+        pytest.fail('failed to find U-Boot binary')
+
+    if not latest_ubimg:
+        pytest.failed('failed to find latest ubimg for the board')
+
+    def board_setup():
+        common_board_setup(files=[latest_ubimg, latest_uboot],
+                           remote_path='/tmp',
+                           image_file=os.path.basename(latest_ubimg))
+
+    execute(board_setup, hosts=conftest.current_hosts())
+
+    def board_cleanup():
+        def board_cleanup_impl():
+            common_board_cleanup()
+        execute(board_cleanup_impl, hosts=conftest.current_hosts())
+
+    request.addfinalizer(board_cleanup)
+
+
+@pytest.fixture(scope="session")
 def setup_bbb(request):
     if pytest.config.getoption("--bbb"):
         execute(boot_from_internal)
@@ -327,6 +416,8 @@ def qemu_running(request, clean_image):
         qemu, img_path = start_qemu_sdimg(latest_sdimg)
     elif latest_vexpress_nor:
         qemu, img_path = start_qemu_flash(latest_vexpress_nor)
+    else:
+        pytest.fail("cannot find a suitable image type")
 
     print("qemu started with pid {}, image {}".format(qemu.pid, img_path))
 
@@ -347,7 +438,7 @@ def qemu_running(request, clean_image):
 
             # kill qemu
             try:
-                qemu.kill()
+                qemu.terminate()
             except OSError as oserr:
                 # qemu might have exited before we reached this place
                 if oserr.errno == errno.ESRCH:
@@ -366,7 +457,7 @@ def qemu_running(request, clean_image):
 
 
 @pytest.fixture(scope="function")
-def no_image_file(qemu_running):
+def no_image_file(setup_board):
     """Make sure 'image.dat' is not present on the device."""
     execute(no_image_file_impl, hosts=conftest.current_hosts())
 
@@ -551,7 +642,7 @@ def run_bitbake(prepared_test_build):
                                       prepared_test_build['image_name']))
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def clean_image(request, prepared_test_build_base):
     add_to_local_conf(prepared_test_build_base,
                       'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')

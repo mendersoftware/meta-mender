@@ -151,8 +151,17 @@ class TestUbimg:
         # NOTE: ubifs employs compression so the actual ubi image file size
         # will be less than what we calculated
         assert total_size_file < expected_total
-        # but assume the image will not be less than 30% of expected size
-        assert total_size_file > 0.3 * expected_total
+
+        if rootfs_size < 100*1024*1024:
+            # assume the image will not be less than 30% of expected size, but
+            # only if calculated rootfs is of modest size
+            assert total_size_file > 0.3 * expected_total
+        else:
+            # if rootfs is large, say 150-200MB and not heavily packed, the 30%
+            # image size check will fail because UBIFS does not store empty
+            # blocks, just check that the image has some reasonable size, eg.
+            # 10% of rootfs size
+            assert total_size_file >= 0.1 * expected_total
 
     def test_volumes(self, bitbake_variables, latest_ubimg):
         """Test that ubimg has correnct number of volumes, each with correct size &

@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -e
+
+. ${DATADIR}/common
+maybe_verbose
+
+uboot_opt="mender_qa_run_tests"
+
+case "$1" in
+    status)
+        out=$(fw_printenv -n $uboot_opt)
+        if [ "$out" = "1" ]; then
+            log "test image is enabled"
+        else
+            log "tests image is disabled"
+        fi
+        ;;
+    off)
+        log "deactivating test image"
+        fw_setenv $uboot_opt 0
+        ;;
+    on|'')
+        log "activating test image"
+        fw_setenv $uboot_opt 1
+        ;;
+esac

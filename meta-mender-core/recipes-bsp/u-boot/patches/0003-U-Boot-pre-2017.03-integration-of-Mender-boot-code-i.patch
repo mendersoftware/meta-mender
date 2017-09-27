@@ -1,0 +1,52 @@
+From 4e072cc810ee06a76e11a8c7861d66c52db299c5 Mon Sep 17 00:00:00 2001
+Message-Id: <4e072cc810ee06a76e11a8c7861d66c52db299c5.1501569428.git.maciej.borzecki@rndity.com>
+From: Maciej Borzecki <maciej.borzecki@rndity.com>
+Date: Tue, 13 Jun 2017 07:22:23 +0200
+Subject: [PATCH] U-Boot pre 2017.03: integration of Mender boot code into
+ U-Boot
+
+Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
+Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
+---
+ include/env_default.h     | 3 +++
+ scripts/Makefile.autoconf | 3 ++-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/include/env_default.h b/include/env_default.h
+index ea6704a97299295a2e6113c00ec64fcd735c150f..700aedb34d5d15adcfeb9c7cf696faa599076b71 100644
+--- a/include/env_default.h
++++ b/include/env_default.h
+@@ -10,6 +10,8 @@
+ 
+ #include <env_callback.h>
+ 
++#include <env_mender.h>
++
+ #ifdef DEFAULT_ENV_INSTANCE_EMBEDDED
+ env_t environment __PPCENV__ = {
+ 	ENV_CRC,	/* CRC Sum */
+@@ -22,6 +24,7 @@ static char default_environment[] = {
+ #else
+ const uchar default_environment[] = {
+ #endif
++	MENDER_ENV_SETTINGS
+ #ifdef	CONFIG_ENV_CALLBACK_LIST_DEFAULT
+ 	ENV_CALLBACK_VAR "=" CONFIG_ENV_CALLBACK_LIST_DEFAULT "\0"
+ #endif
+diff --git a/scripts/Makefile.autoconf b/scripts/Makefile.autoconf
+index 2f85eb9599148145cf9b3d38b3acbb0d0b2bbe85..1d28c8566bd4df931e2c0b6a8406c88663194476 100644
+--- a/scripts/Makefile.autoconf
++++ b/scripts/Makefile.autoconf
+@@ -110,7 +110,8 @@ define filechk_config_h
+ 	echo \#include \<config_uncmd_spl.h\>;				\
+ 	echo \#include \<configs/$(CONFIG_SYS_CONFIG_NAME).h\>;		\
+ 	echo \#include \<asm/config.h\>;				\
+-	echo \#include \<config_fallbacks.h\>;)
++	echo \#include \<config_fallbacks.h\>;				\
++	echo \#include \<config_mender.h\>;)
+ endef
+ 
+ include/config.h: scripts/Makefile.autoconf create_symlink FORCE
+-- 
+2.9.4
+

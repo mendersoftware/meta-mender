@@ -95,6 +95,7 @@ class SignatureCase:
     key = False
     key_type = ""
     checksum_ok = True
+    header_checksum_ok = True
 
     update_written = False
     success = True
@@ -106,6 +107,7 @@ class SignatureCase:
                  key,
                  key_type,
                  checksum_ok,
+                 header_checksum_ok,
                  update_written,
                  artifact_version,
                  success):
@@ -115,11 +117,12 @@ class SignatureCase:
         self.key = key
         self.key_type = key_type
         self.checksum_ok = checksum_ok
+        self.header_checksum_ok = header_checksum_ok
         self.update_written = update_written
         self.artifact_version = artifact_version
         self.success = success
 
-@pytest.mark.usefixtures("qemu_running", "no_image_file", "setup_bbb", "bitbake_path")
+@pytest.mark.usefixtures("no_image_file", "setup_board", "bitbake_path")
 class TestUpdates:
 
     @pytest.mark.min_mender_version('1.0.0')
@@ -185,6 +188,7 @@ class TestUpdates:
     @pytest.mark.min_mender_version('1.0.0')
     def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables):
         http_server_location = pytest.config.getoption("--http-server")
+        use_s3 = pytest.config.getoption("--use-s3")
         bbb = pytest.config.getoption("--bbb")
 
         if not env.host_string:
@@ -194,9 +198,10 @@ class TestUpdates:
 
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
-        if bbb:
+        if bbb or use_s3:
             Helpers.upload_to_s3()
-            http_server_location = "s3.amazonaws.com/mender/temp"
+            s3_address = pytest.config.getoption("--s3-address")
+            http_server_location = "{}/mender/temp".format(s3_address)
         else:
             http_server = subprocess.Popen(["python", "-m", "SimpleHTTPServer"])
             assert(http_server)
@@ -204,7 +209,7 @@ class TestUpdates:
         try:
             run("mender -rootfs http://%s/successful_image_update.mender" % (http_server_location))
         finally:
-            if not bbb:
+            if not bbb and not use_s3:
                 http_server.terminate()
 
         output = run("fw_printenv bootcount")
@@ -261,6 +266,7 @@ class TestUpdates:
                                             key=False,
                                             key_type=None,
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=1,
                                             success=True),
@@ -270,6 +276,7 @@ class TestUpdates:
                                             key=False,
                                             key_type=None,
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=True),
@@ -279,6 +286,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="RSA",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=True),
@@ -288,6 +296,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="RSA",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=None,
                                             success=False),
@@ -297,6 +306,7 @@ class TestUpdates:
                                             key=False,
                                             key_type="RSA",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=True),
@@ -306,6 +316,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="RSA",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=None,
                                             success=False),
@@ -315,6 +326,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="RSA",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=1,
                                             success=False),
@@ -324,6 +336,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="RSA",
                                             checksum_ok=False,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=False),
@@ -333,6 +346,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="EC",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=True),
@@ -342,6 +356,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="EC",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=None,
                                             success=False),
@@ -351,6 +366,7 @@ class TestUpdates:
                                             key=False,
                                             key_type="EC",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=True,
                                             artifact_version=None,
                                             success=True),
@@ -360,6 +376,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="EC",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=None,
                                             success=False),
@@ -369,6 +386,7 @@ class TestUpdates:
                                             key=True,
                                             key_type="EC",
                                             checksum_ok=True,
+                                            header_checksum_ok=True,
                                             update_written=False,
                                             artifact_version=1,
                                             success=False),
@@ -378,7 +396,18 @@ class TestUpdates:
                                             key=True,
                                             key_type="EC",
                                             checksum_ok=False,
+                                            header_checksum_ok=True,
                                             update_written=True,
+                                            artifact_version=None,
+                                            success=False),
+                              SignatureCase(label="EC, Correctly signed, but header does not match checksum, key present",
+                                            signature=True,
+                                            signature_ok=True,
+                                            key=True,
+                                            key_type="EC",
+                                            checksum_ok=True,
+                                            header_checksum_ok=False,
+                                            update_written=False,
                                             artifact_version=None,
                                             success=False),
                              ])
@@ -426,7 +455,7 @@ class TestUpdates:
                               % (artifact_args, image_type), shell=True)
 
         # If instructed to, corrupt the signature and/or checksum.
-        if (sig_case.signature and not sig_case.signature_ok) or not sig_case.checksum_ok:
+        if (sig_case.signature and not sig_case.signature_ok) or not sig_case.checksum_ok or not sig_case.header_checksum_ok:
             tar = subprocess.check_output(["tar", "tf", "image.mender"])
             tar_list = tar.split()
             tmpdir = tempfile.mkdtemp()
@@ -459,6 +488,22 @@ class TestUpdates:
                                 os.remove(data_file)
                         finally:
                             os.chdir("..")
+
+                    if not sig_case.header_checksum_ok:
+                        data_list = subprocess.check_output(["tar", "tzf", "header.tar.gz"])
+                        data_list = data_list.split()
+                        subprocess.check_call(["tar", "xzf", "header.tar.gz"])
+                        # Corrupt checksum by changing file slightly.
+                        with open("headers/0000/files", "a") as fd:
+                            # Some extra data to corrupt the header checksum,
+                            # but still valid JSON.
+                            fd.write(" ")
+                        # Pack it up again in same order.
+                        os.remove("header.tar.gz")
+                        subprocess.check_call(["tar", "czf", "header.tar.gz"] + data_list)
+                        for data_file in data_list:
+                            os.remove(data_file)
+
                     # Make sure we put it back in the same order.
                     os.remove("image.mender")
                     subprocess.check_call(["tar", "cf", "image.mender"] + tar_list)
