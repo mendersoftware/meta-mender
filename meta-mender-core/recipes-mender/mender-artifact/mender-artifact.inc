@@ -23,7 +23,7 @@ do_compile() {
     install -d ${GOPATHDIR}
     # we could also try symlinking ${S} into our fake GOPATH, however `go build...`
     # ignores symlinks in GOPATH
-    rsync -av --delete ${S}/ ${GOPATHDIR}/
+    rsync -av --delete ${S}/src/${GO_IMPORT}/ ${GOPATHDIR}/
 
     GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go go env
     if test -n "${GO_INSTALL}" ; then
