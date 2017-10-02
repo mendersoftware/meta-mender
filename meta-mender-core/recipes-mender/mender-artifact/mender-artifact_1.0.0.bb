@@ -6,4 +6,4 @@ SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;br
 SRCREV = "90fa13bfb57a6c0460e27c90f3f4dd1de604c789"
 
 LICENSE = "Apache-2.0"
-LIC_FILES_CHKSUM = "file://LIC_FILES_CHKSUM.sha256;md5=f4a3edb2a8fe8e2ecde8062ba20b1c86"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=f4a3edb2a8fe8e2ecde8062ba20b1c86"

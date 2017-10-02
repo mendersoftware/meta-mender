@@ -1,6 +1,6 @@
-From eb40f711ee831be664d0bd4f7c4dbce7c2521cba Mon Sep 17 00:00:00 2001
+From 9026ede4e580498dd91b70c74935b0890c422688 Mon Sep 17 00:00:00 2001
 From: Mirza Krak <mirza.krak@gmail.com>
-Date: Sun, 30 Oct 2016 21:28:43 +0100
+Date: Tue, 26 Sep 2017 06:23:52 -0400
 Subject: [PATCH 1/1] configs: rpi: enable mender requirements
 
 Which are CONFIG_BOOTCOUNT_ENV and CONFIG_BOOTCOUNT_LIMIT.
@@ -9,31 +9,64 @@ Mender also requires that the environment is on MMC
 (CONFIG_ENV_IS_IN_MMC)
 
 Signed-off-by: Mirza Krak <mirza.krak@gmail.com>
+Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
 ---
- include/configs/rpi.h | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ configs/rpi_2_defconfig     | 1 +
+ configs/rpi_3_32b_defconfig | 1 +
+ configs/rpi_3_defconfig     | 1 +
+ configs/rpi_defconfig       | 1 +
+ include/configs/rpi.h       | 2 ++
+ 5 files changed, 6 insertions(+)
 
+diff --git a/configs/rpi_2_defconfig b/configs/rpi_2_defconfig
+index 2345697..ef3c0d8 100644
+--- a/configs/rpi_2_defconfig
++++ b/configs/rpi_2_defconfig
+@@ -34,3 +34,4 @@ CONFIG_SYS_WHITE_ON_BLACK=y
+ CONFIG_CONSOLE_SCROLL_LINES=10
+ CONFIG_PHYS_TO_BUS=y
+ CONFIG_OF_LIBFDT_OVERLAY=y
++CONFIG_ENV_IS_IN_MMC=y
+diff --git a/configs/rpi_3_32b_defconfig b/configs/rpi_3_32b_defconfig
+index bb56a9e..7eaa6d8 100644
+--- a/configs/rpi_3_32b_defconfig
++++ b/configs/rpi_3_32b_defconfig
+@@ -36,3 +36,4 @@ CONFIG_SYS_WHITE_ON_BLACK=y
+ CONFIG_CONSOLE_SCROLL_LINES=10
+ CONFIG_PHYS_TO_BUS=y
+ CONFIG_OF_LIBFDT_OVERLAY=y
++CONFIG_ENV_IS_IN_MMC=y
+diff --git a/configs/rpi_3_defconfig b/configs/rpi_3_defconfig
+index 6edacd6..9f0bd16 100644
+--- a/configs/rpi_3_defconfig
++++ b/configs/rpi_3_defconfig
+@@ -36,3 +36,4 @@ CONFIG_SYS_WHITE_ON_BLACK=y
+ CONFIG_CONSOLE_SCROLL_LINES=10
+ CONFIG_PHYS_TO_BUS=y
+ CONFIG_OF_LIBFDT_OVERLAY=y
++CONFIG_ENV_IS_IN_MMC=y
+diff --git a/configs/rpi_defconfig b/configs/rpi_defconfig
+index 2e81966..9eb43a0 100644
+--- a/configs/rpi_defconfig
++++ b/configs/rpi_defconfig
+@@ -34,3 +34,4 @@ CONFIG_SYS_WHITE_ON_BLACK=y
+ CONFIG_CONSOLE_SCROLL_LINES=10
+ CONFIG_PHYS_TO_BUS=y
+ CONFIG_OF_LIBFDT_OVERLAY=y
++CONFIG_ENV_IS_IN_MMC=y
 diff --git a/include/configs/rpi.h b/include/configs/rpi.h
-index 4406366..5bf258b 100644
+index c499b45..f8813a0 100644
 --- a/include/configs/rpi.h
 +++ b/include/configs/rpi.h
-@@ -93,13 +93,12 @@
-
- /* Environment */
- #define CONFIG_ENV_SIZE			SZ_16K
--#define CONFIG_ENV_IS_IN_FAT
--#define FAT_ENV_INTERFACE		"mmc"
--#define FAT_ENV_DEVICE_AND_PART		"0:1"
--#define FAT_ENV_FILE			"uboot.env"
-+#define CONFIG_ENV_IS_IN_MMC
+@@ -90,6 +90,8 @@
  #define CONFIG_ENV_VARS_UBOOT_CONFIG
  #define CONFIG_SYS_LOAD_ADDR		0x1000000
  #define CONFIG_PREBOOT			"usb start"
 +#define CONFIG_BOOTCOUNT_ENV
 +#define CONFIG_BOOTCOUNT_LIMIT
-
+ 
  /* Shell */
- #define CONFIG_SYS_MAXARGS		16
---
-2.1.4
+ #define CONFIG_CMDLINE_EDITING
+-- 
+2.7.4
 
