@@ -21,7 +21,7 @@ FROM alpine:3.6
 # Install packages
 RUN apk update && apk upgrade && \
     apk add util-linux \
-            bash e2fsprogs-extra python3 && \
+            bash e2fsprogs-extra python3 openssh-keygen && \
     rm -rf /var/cache/apk/*
 
 # Install qemu from source
@@ -124,4 +124,5 @@ RUN if [ `stat -c %s u-boot.elf` -eq 0 ]; then rm -f u-boot.elf; fi
 
 RUN chmod +x entrypoint.sh mender-qemu
 EXPOSE 8822
+
 ENTRYPOINT ["./entrypoint.sh"]
