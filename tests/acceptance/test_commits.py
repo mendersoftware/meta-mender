@@ -40,4 +40,10 @@ class TestCommits:
             # Exclude if no matches above.
             commit_range.append(branch)
 
-        subprocess.check_call(["3rdparty/mendertesting/check_commits.sh"] + commit_range)
+        try:
+            output = subprocess.check_output(["3rdparty/mendertesting/check_commits.sh"] + commit_range,
+                                             stderr=subprocess.STDOUT)
+            # Print output, useful to make sure correct commit range is checked.
+            print(output)
+        except subprocess.CalledProcessError as e:
+            pytest.fail(e.output)
