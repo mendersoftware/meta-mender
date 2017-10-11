@@ -1,14 +1,8 @@
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
-def cert_location_if_server_crt_in(src_uri, d):
-    for src in src_uri.split():
-        if src.endswith("/server.crt"):
-            return "%s/mender/server.crt" % d.getVar('sysconfdir')
-    return ""
-
 MENDER_SERVER_URL ?= "https://docker.mender.io"
-MENDER_CERT_LOCATION ?= "${@cert_location_if_server_crt_in('${SRC_URI}', d)}"
+MENDER_CERT_LOCATION ?= "${sysconfdir}/mender/server.crt"
 # Tenant token
 MENDER_TENANT_TOKEN ?= "dummy"
 SYSTEMD_AUTO_ENABLE ?= "enable"
@@ -50,6 +44,10 @@ do_compile() {
     export PATH
 
     DEFAULT_CERT_MD5="1fba17436027eb1f5ceff4af9a63c9c2"
+
+    if [ ! -f ${WORKDIR}/server.crt ]; then
+        bbfatal "You have not provided a public server certificate. Please add the desired server certificate to the SRC_URI list, under the name 'server.crt'."
+    fi
 
     if [ "$(md5sum ${WORKDIR}/server.crt | awk '{ print $1 }')" = $DEFAULT_CERT_MD5 ]; then
         bbwarn "You are building with the default server certificate, which is not intended for production use"
@@ -146,9 +144,7 @@ do_install() {
     install -m 0644 ${B}/mender.conf ${D}/${sysconfdir}/mender
 
     #install server certificate
-    if [ -f ${WORKDIR}/server.crt ]; then
-        install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
-    fi
+    install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
 
     install -d ${D}/${localstatedir}/lib/mender
 
