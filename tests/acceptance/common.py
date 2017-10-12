@@ -671,12 +671,10 @@ def prepared_test_build_base(request, bitbake_variables):
 
     run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
     local_conf = os.path.join(build_dir, "conf", "local.conf")
-    fd = open(local_conf, "a")
-    fd.write('SSTATE_MIRRORS = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
-    # The idea here is to append customizations, and then reset the file by
-    # deleting everything below this line.
-    fd.write('### TEST CUSTOMIZATIONS BELOW HERE ###\n')
-    fd.close()
+    local_conf_orig = local_conf + ".orig"
+    with open(local_conf, "a") as fd:
+        fd.write('SSTATE_MIRRORS = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
+    run_verbose("cp %s %s" % (local_conf, local_conf_orig))
 
     os.symlink(os.path.join(os.environ['BUILDDIR'], "downloads"), os.path.join(build_dir, "downloads"))
 
@@ -685,7 +683,8 @@ def prepared_test_build_base(request, bitbake_variables):
     return {'build_dir': build_dir,
             'image_name': image_name,
             'env_setup': env_setup,
-            'local_conf': local_conf
+            'local_conf': local_conf,
+            'local_conf_orig': local_conf_orig,
     }
 
 
@@ -699,21 +698,11 @@ def prepared_test_build(prepared_test_build_base):
     - local_conf
     """
 
-    old_file = prepared_test_build_base['local_conf']
-    new_file = old_file + ".tmp"
+    new_file = prepared_test_build_base['local_conf']
+    old_file = prepared_test_build_base['local_conf_orig']
 
-    old = open(old_file)
-    new = open(new_file, "w")
-
-    # Reset "local.conf" by removing everything below the special line.
-    for line in old:
-        new.write(line)
-        if line == "### TEST CUSTOMIZATIONS BELOW HERE ###\n":
-            break
-
-    old.close()
-    new.close()
-    os.rename(new_file, old_file)
+    # Restore original local.conf
+    run_verbose("cp %s %s" % (old_file, new_file))
 
     return prepared_test_build_base
 
