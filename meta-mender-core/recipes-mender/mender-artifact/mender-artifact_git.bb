@@ -6,15 +6,22 @@ require mender-artifact.inc
 # SHA.
 def mender_artifact_autorev_if_git_version(d):
     version = d.getVar("PREFERRED_VERSION")
+    if version is None or version == "":
+        version = d.getVar("PREFERRED_VERSION_%s" % d.getVar('PN'))
     if version is not None and "git" in version:
         return d.getVar("AUTOREV")
     else:
         return "77326b288c70cd713e7ad15d2a084b6ee797e8ff"
 SRCREV ?= '${@mender_artifact_autorev_if_git_version(d)}'
 
-def mender_branch_from_preferred_version(pref_version):
+def mender_branch_from_preferred_version(d):
     import re
-    match = re.match(r"^[0-9]+\.[0-9]+\.", pref_version)
+    version = d.getVar("PREFERRED_VERSION")
+    if version is None or version == "":
+        version = d.getVar("PREFERRED_VERSION_%s" % d.getVar('PN'))
+    if version is None:
+        version = ""
+    match = re.match(r"^[0-9]+\.[0-9]+\.", version)
     if match is not None:
         # If the preferred version is some kind of version, use the branch name
         # for that one (1.0.x style).
@@ -22,7 +29,7 @@ def mender_branch_from_preferred_version(pref_version):
     else:
         # Else return master as branch.
         return "master"
-MENDER_ARTIFACT_BRANCH = "${@mender_branch_from_preferred_version('${PREFERRED_VERSION}')}"
+MENDER_ARTIFACT_BRANCH = "${@mender_branch_from_preferred_version(d)}"
 
 def mender_version_from_preferred_version(d, srcpv):
     pref_version = d.getVar("PREFERRED_VERSION")

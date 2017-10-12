@@ -734,6 +734,17 @@ def min_mender_version(request, bitbake_variables):
         pytest.skip("Test for Mender client %s and newer cannot run with Mender client %s"
                     % (test_version, mender_version))
 
+def versions_of_recipe(recipe):
+    """Returns a list of all the versions we have of the given recipe, excluding
+    git recipes."""
+
+    versions = []
+    for entry in os.listdir("../../meta-mender-core/recipes-mender/%s/" % recipe):
+        match = re.match(r"^%s_([1-9][0-9]*\.[0-9]+\.[0-9]+[^.]*)\.bb" % recipe, entry)
+        if match is not None:
+            versions.append(match.group(1))
+    return versions
+
 @pytest.fixture(autouse=True)
 def only_for_machine(request, bitbake_variables):
     """Fixture that enables use of `only_for_machine(machine-name)` mark.
