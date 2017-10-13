@@ -242,3 +242,38 @@ class TestBuild:
 
         for script in found_artifact_scripts:
             assert found_artifact_scripts[script], "%s not found in artifact script list" % script
+
+    @pytest.mark.min_mender_version('1.0.0')
+    # The extra None elements are to check for no preferred version,
+    # e.g. latest.
+    @pytest.mark.parametrize('recipe,version', [('mender', version) for version in versions_of_recipe('mender')]
+                             + [('mender', None)]
+                             + [('mender-artifact-native', version) for version in versions_of_recipe('mender-artifact')]
+                             + [('mender-artifact-native', None)])
+    def test_preferred_versions(self, prepared_test_build, recipe, version):
+        """Most Jenkins builds build with PREFERRED_VERSION set, because we want to
+        build from a specific SHA. This test tests that we can change that or
+        turn it off and the build still works."""
+
+        old_file = prepared_test_build['local_conf_orig']
+        new_file = prepared_test_build['local_conf']
+
+        if recipe.endswith("-native"):
+            base_recipe = recipe[:-len("-native")]
+        else:
+            base_recipe = recipe
+
+        for pn_style in ["", "pn-"]:
+            with open(old_file) as old_fd, open(new_file, "w") as new_fd:
+                for line in old_fd.readlines():
+                    if re.match('^EXTERNALSRC_pn-%s(-native)? *=' % base_recipe, line) is not None:
+                        continue
+                    elif re.match("^PREFERRED_VERSION_(pn-)?%s(-native)? *=" % base_recipe, line) is not None:
+                        continue
+                    else:
+                        new_fd.write(line)
+                if version is not None:
+                    new_fd.write('PREFERRED_VERSION_%s%s = "%s"\n' % (pn_style, base_recipe, version))
+                    new_fd.write('PREFERRED_VERSION_%s%s-native = "%s"\n' % (pn_style, base_recipe, version))
+
+            run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'], recipe))
