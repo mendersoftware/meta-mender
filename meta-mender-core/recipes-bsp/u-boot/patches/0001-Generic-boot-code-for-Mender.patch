@@ -1,19 +1,20 @@
-From 8d4e298b76c4cfc78f7f5b8061cc86cf0cc39aec Mon Sep 17 00:00:00 2001
-From: Kristian Amlie <kristian.amlie@mender.io>
-Date: Mon, 22 Aug 2016 10:47:08 +0200
+From 170aa32ec142d130ae44b52fd471aadc6636dec8 Mon Sep 17 00:00:00 2001
+From: Drew Moseley <drew.moseley@northern.tech>
+Date: Sat, 14 Oct 2017 00:07:17 -0400
 Subject: [PATCH] Generic boot code for Mender.
 
 Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
+Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
 ---
- include/config_mender.h | 78 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/env_mender.h    | 67 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 145 insertions(+)
+ include/config_mender.h | 60 +++++++++++++++++++++++++++++++++++++++++++
+ include/env_mender.h    | 67 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 127 insertions(+)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000..043f97d
+index 0000000..5a764be
 --- /dev/null
 +++ b/include/config_mender.h
 @@ -0,0 +1,60 @@
@@ -79,7 +80,7 @@ index 0000000..043f97d
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000..2c43fd3
+index 0000000..77154e2
 --- /dev/null
 +++ b/include/env_mender.h
 @@ -0,0 +1,67 @@
@@ -131,7 +132,7 @@ index 0000000..2c43fd3
 +    "mender_setup="                                                     \
 +    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; " \
 +    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}; " \
-+    "setenv expand_bootargs setenv bootargs ${bootargs}; "              \
++    "setenv expand_bootargs \"setenv bootargs \\\\\"${bootargs}\\\\\"\"; "              \
 +    "run expand_bootargs; "                                             \
 +    "setenv expand_bootargs\0"                                          \
 +                                                                        \
