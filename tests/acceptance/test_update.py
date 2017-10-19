@@ -189,7 +189,7 @@ class TestUpdates:
     def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables):
         http_server_location = pytest.config.getoption("--http-server")
         use_s3 = pytest.config.getoption("--use-s3")
-        bbb = pytest.config.getoption("--bbb")
+        board = pytest.config.getoption("--board-type")
 
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
@@ -198,7 +198,7 @@ class TestUpdates:
 
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
-        if bbb or use_s3:
+        if board or use_s3:
             Helpers.upload_to_s3()
             s3_address = pytest.config.getoption("--s3-address")
             http_server_location = "{}/mender/temp".format(s3_address)
@@ -209,7 +209,7 @@ class TestUpdates:
         try:
             run("mender -rootfs http://%s/successful_image_update.mender" % (http_server_location))
         finally:
-            if not bbb and not use_s3:
+            if not board and not use_s3:
                 http_server.terminate()
 
         output = run("fw_printenv bootcount")
