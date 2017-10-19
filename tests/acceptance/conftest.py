@@ -76,6 +76,9 @@ def pytest_configure(config):
     # combine_stderr to each run() or sudo() command.
     env.combine_stderr = False
 
+    env.connection_attempts = 10
+    env.timeout = 30
+
 
 def current_hosts():
     # Workaround for being inside/outside execute().
