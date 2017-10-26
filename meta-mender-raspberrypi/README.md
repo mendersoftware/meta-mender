@@ -24,13 +24,12 @@ in addition to `meta-mender` dependencies.
     - raspberrypi3
 - Add following to your local.conf (including configuration required by meta-mender-core)
 
-        KERNEL_IMAGETYPE = "uImage"
+        RPI_USE_U_BOOT = "1"
 
         MENDER_PARTITION_ALIGNMENT_KB = "4096"
         MENDER_BOOT_PART_SIZE_MB = "40"
 
         # raspberrypi files aligned with mender layout requirements
-        IMAGE_BOOT_FILES_append = " boot.scr u-boot.bin;${SDIMG_KERNELIMAGE}"
         IMAGE_INSTALL_append = " kernel-image kernel-devicetree"
         IMAGE_FSTYPES_remove += " rpi-sdimg"
 
