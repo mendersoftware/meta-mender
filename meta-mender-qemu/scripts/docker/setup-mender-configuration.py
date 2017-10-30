@@ -127,6 +127,13 @@ def main():
         os.unlink("mender.conf")
 
     if args.pregen_ssh_keys:
+
+        try:
+            os.remove("id_rsa")
+            os.remove("id_rsa.pub")
+        except:
+            pass
+
         subprocess.check_call("ssh-keygen -f id_rsa -t rsa -N ''", shell=True)
         put(local_path="id_rsa", remote_path="/home/root/.ssh/id_rsa", rootfs=rootfs)
         put(local_path="id_rsa.pub", remote_path="/home/root/.ssh/id_rsa.pub", rootfs=rootfs)
