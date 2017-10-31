@@ -28,14 +28,12 @@ diff --git a/configs/vexpress_ca9x4_defconfig b/configs/vexpress_ca9x4_defconfig
 index 7b845c6c79843f99b04bc64d80d2e13d6a53b494..554e07b4c25ad4ec7b469c9e8f830da4404eca6a 100644
 --- a/configs/vexpress_ca9x4_defconfig
 +++ b/configs/vexpress_ca9x4_defconfig
-@@ -20,3 +20,8 @@ CONFIG_CMD_MMC=y
+@@ -20,3 +20,6 @@ CONFIG_CMD_MMC=y
  CONFIG_MTD_NOR_FLASH=y
  CONFIG_BAUDRATE=38400
  CONFIG_OF_LIBFDT=y
 +CONFIG_CMD_UBI=y
 +CONFIG_CMD_UBIFS=y
-+CONFIG_MTD_DEVICE=y
-+CONFIG_MTD_PARTITIONS=y
 +CONFIG_CMD_MTDPARTS=y
 diff --git a/include/configs/vexpress_ca9x4.h b/include/configs/vexpress_ca9x4.h
 index 993398ccc696c70d7f4c23c13f00fda6c0f536fe..4138a0e0ff18ff138bfe4918cd75a3494366d94b 100644
