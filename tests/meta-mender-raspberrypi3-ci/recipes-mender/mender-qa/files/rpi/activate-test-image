@@ -1,0 +1,34 @@
+#!/bin/bash
+set -e -x
+MOUNT_DEV=${MOUNT_DEV:-/dev/mmcblk0p1}
+UENV_MOUNTD=/mnt
+
+case "$1" in
+    status)
+        if [ -e $UENV_FILE ]; then
+            val=$(grep -e "uenvcmd=" $UENV_FILE 2>/dev/null)
+            echo "test image is disabled"
+            disabled=1
+        fi
+        if [ -z "$disabled" ]; then
+            echo "tests image is enabled"
+        fi
+        ;;
+    off)
+        if grep 'mmcblk' /proc/mounts; then
+            echo "deactivating test image"
+            echo "dwc_otg.lpm_enable=0 console=serial0,115200 rootfstype=ext4 rootwait root=/dev/sda2" > /uboot/cmdline.txt && \
+            reboot
+        else
+            echo "test-image not running"
+            exit 1
+        fi
+        ;;
+    on|'')
+        echo "activating test image"
+        mount $MOUNT_DEV $UENV_MOUNTD && \
+            echo 'dwc_otg.lpm_enable=0 console=serial0,115200 rootfstype=ext4 rootwait root=${mender_kernel_root}' > /mnt/cmdline.txt && \
+            umount $MOUNT_DEV && \
+            reboot
+        ;;
+esac
