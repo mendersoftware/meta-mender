@@ -24,12 +24,14 @@ case "$1" in
         log "deactivating test image"
         mount $MOUNT_DEV $UENV_MOUNT && \
             cp ${DATADIR}/uEnv.txt ${UENV_MOUNT} && \
-            umount $MOUNT_DEV
+            umount $MOUNT_DEV &&
+            reboot
         ;;
     on|'')
         log "activating test image"
         mount $MOUNT_DEV $UENV_MOUNT && \
-            rm -f $$UENV_MOUNT/uEnv.txt && \
-            umount $MOUNT_DEV
+            rm -f $UENV_MOUNT/uEnv.txt && \
+            umount $MOUNT_DEV &&
+            reboot
         ;;
 esac

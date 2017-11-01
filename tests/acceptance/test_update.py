@@ -207,8 +207,9 @@ class TestUpdates:
             assert(http_server)
 
         try:
-            run("mender -rootfs http://%s/successful_image_update.mender" % (http_server_location))
+            output = run("mender -rootfs http://%s/successful_image_update.mender" % (http_server_location))
         finally:
+            print("output from rootfs update: ", output)
             if not board and not use_s3:
                 http_server.terminate()
 
