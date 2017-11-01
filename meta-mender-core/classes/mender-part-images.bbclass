@@ -117,6 +117,7 @@ addtask do_rootfs_wicenv after do_image before do_image_uefiimg
 
 do_image_sdimg[depends] += "${@d.getVarFlag('do_image_wic', 'depends', False)} wic-tools:do_populate_sysroot dosfstools-native:do_populate_sysroot mtools-native:do_populate_sysroot rsync-native:do_populate_sysroot"
 do_image_uefiimg[depends] += "${@d.getVarFlag('do_image_wic', 'depends', False)} wic-tools:do_populate_sysroot dosfstools-native:do_populate_sysroot mtools-native:do_populate_sysroot rsync-native:do_populate_sysroot"
+do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-bootfiles:do_populate_sysroot', '', d)}"
 
 # This isn't actually a dependency, but a way to avoid sdimg and uefiimg
 # building simultaneously, since wic will use the same file names in both, and
