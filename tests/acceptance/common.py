@@ -307,7 +307,6 @@ def setup_bbb_sdcard():
     run("/root/install-new-image.sh")
     reboot()
 
-
 def boot_from_internal():
     bootline = """uenvcmd=load mmc 1:1 ${loadaddr} /boot/vmlinuz-4.1.18-ti-r56; \
                   load mmc 1:1 ${fdtaddr} /boot/dtbs/4.1.18-ti-r56/am335x-boneblack.dtb; \
@@ -329,6 +328,8 @@ def setup_board(request, clean_image, bitbake_variables):
         return qemu_running(request, clean_image)
     elif bt == "bbb":
         return setup_bbb(request)
+    elif bt == "rpi3":
+        return setup_rpi3(request)
     elif bt == "colibri-imx7":
         return setup_colibri_imx7(request, clean_image)
     else:
@@ -354,13 +355,16 @@ def common_board_setup(files=None, remote_path='/tmp', image_file=None):
     run("{} mender-qa deploy-test-image".format(' '.join(
         ['{}={}'.format(k, v) for k, v in env_overrides.items()])))
 
-    run("mender-qa activate-test-image")
-
-    reboot()
+    with settings(warn_only=True):
+        sudo("mender-qa activate-test-image")
 
 def common_board_cleanup():
-    run("mender-qa activate-test-image off")
-    reboot()
+    with settings(warn_only=True):
+        sudo("mender-qa activate-test-image off")
+
+def common_boot_from_internal():
+    with settings(warn_only=True):
+        sudo("mender-qa activate-test-image on")
 
 
 @pytest.fixture(scope="session")
@@ -401,6 +405,14 @@ def setup_bbb(request):
             execute(bbb_finalizer_impl, hosts=conftest.current_hosts())
 
         request.addfinalizer(bbb_finalizer)
+
+@pytest.fixture(scope="session")
+def setup_rpi3(request):
+    def board_cleanup():
+        execute(common_board_cleanup, hosts=conftest.current_hosts())
+
+    execute(common_boot_from_internal, hosts=conftest.current_hosts())
+    request.addfinalizer(board_cleanup)
 
 @pytest.fixture(scope="module")
 def qemu_running(request, clean_image):
