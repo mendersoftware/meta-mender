@@ -24,14 +24,21 @@ in addition to `meta-mender` dependencies.
     - raspberrypi3
 - Add following to your local.conf (including configuration required by meta-mender-core)
 
-        KERNEL_IMAGETYPE = "uImage"
+        RPI_USE_U_BOOT = "1"
 
+        # These are simply to align with how the "stock" RPi machines are
+        # configured.
         MENDER_PARTITION_ALIGNMENT_KB = "4096"
         MENDER_BOOT_PART_SIZE_MB = "40"
 
-        # raspberrypi files aligned with mender layout requirements
-        IMAGE_BOOT_FILES_append = " boot.scr u-boot.bin;${SDIMG_KERNELIMAGE}"
+        # rpi-base.inc removes these as they are normally installed on to the
+        # vfat boot partition. To be able to update the Linux kernel Mender
+        # uses an image that resides on the root file system and below line
+        # ensures that they are installed to /boot
         IMAGE_INSTALL_append = " kernel-image kernel-devicetree"
+
+        # Mender will build an image called `sdimg` which shall be used instead
+        # of the `rpi-sdimg`.
         IMAGE_FSTYPES_remove += " rpi-sdimg"
 
 - Run `bitbake <image name>`
