@@ -1,0 +1,1 @@
+../mender/README-releasing.md
