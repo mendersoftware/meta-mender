@@ -221,6 +221,11 @@ class TestUpdates:
         output = run("fw_printenv mender_boot_part")
         assert(output == "mender_boot_part=" + passive_before[-1:])
 
+        # Delete kernel and associated files from currently running partition,
+        # so that the boot will fail if U-Boot for any reason tries to grab the
+        # kernel from the wrong place.
+        run("rm -rf /boot/*")
+
         reboot()
 
         run_after_connect("true")
