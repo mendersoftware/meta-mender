@@ -10,6 +10,7 @@ The following layers in this repository are officially supported by Mender:
 
 * `meta-mender-core` (Core components of Mender)
 * `meta-mender-beaglebone` (Beaglebone board support)
+* `meta-mender-raspberrypi` (Raspberry Pi board support, actively testing RPi3)
 * `meta-mender-qemu` (QEMU emulator board support)
 
 The rest of the layers are community supported, and the response to issues may vary.
