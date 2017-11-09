@@ -204,7 +204,7 @@ def run_after_connect(cmd, wait=360):
             try:
                 output = run(cmd)
                 break
-            except Exception as e:
+            except BaseException as e:
                 print("Could not connect to host %s: %s" % (env.host_string, e))
                 if attempt_time >= start_time + wait:
                     raise Exception("Could not reconnect to QEMU")
