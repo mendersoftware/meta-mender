@@ -1,0 +1,28 @@
+This README file contains information on the contents of the
+meta-mender-ci layer.
+
+Please see the corresponding sections below for details.
+
+
+Dependencies
+============
+
+This layer depends on:
+
+  URI: git://git.openembedded.org/bitbake
+  branch: master
+
+  URI: git://git.openembedded.org/openembedded-core
+  layers: meta
+  branch: master
+
+  URI: git://github.com/mendersoftware/meta-mender
+  layers: meta-mender-core
+  branch: master
+
+
+General
+=======
+
+This is a Mender QA specific layer. The layer contains the necessary bits and
+pieces for use with Mender CI pipeline.

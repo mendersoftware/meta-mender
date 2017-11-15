@@ -20,11 +20,11 @@ fi
 if [ -n "$1" ]
 then
     echo "Checking range: $@:"
-    git log "$@"
+    git --no-pager log "$@"
     commits="$(git rev-list --no-merges "$@")"
 else
     echo "Checking range: ${COMMIT_RANGE}:"
-    git log "$COMMIT_RANGE"
+    git --no-pager log "$COMMIT_RANGE"
     commits="$(git rev-list --no-merges "$COMMIT_RANGE")"
 fi
 notvalid=

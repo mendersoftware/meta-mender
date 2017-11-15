@@ -1,0 +1,5 @@
+uenvcmd=echo Booting from internal eMMC; run findfdt; \
+                 load mmc 1:2 ${loadaddr} /boot/${bootfile}; \
+                 load mmc 1:2 ${fdtaddr} /boot/${fdtfile}; \
+                 setenv bootargs console=tty0 console=${console} root=/dev/mmcblk1p2; \
+                 bootz ${loadaddr} - ${fdtaddr}
