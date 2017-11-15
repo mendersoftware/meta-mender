@@ -106,61 +106,6 @@ class TestBuild:
 
         assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
 
-
-    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
-    @pytest.mark.min_mender_version("1.0.0")
-    def test_tenant_token(self, prepared_test_build):
-        """Test setting a custom tenant-token"""
-
-        add_to_local_conf(prepared_test_build, 'MENDER_TENANT_TOKEN = "%s"'
-                          %  "authtentoken")
-
-        run_bitbake(prepared_test_build)
-
-        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
-
-        subprocess.check_call(["debugfs", "-R",
-                                   "dump -p /etc/mender/mender.conf mender.conf", built_rootfs])
-
-        try:
-            with open("mender.conf") as fd:
-                data = json.load(fd)
-            assert data['TenantToken'] == "authtentoken"
-
-        finally:
-            os.remove("mender.conf")
-
-
-
-    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
-    @pytest.mark.min_mender_version("1.1.0")
-    def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path):
-        """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
-        works correctly."""
-
-        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
-                          % os.path.join(os.getcwd(), signing_key("RSA").private))
-        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
-                          % os.path.join(os.getcwd(), signing_key("RSA").public))
-
-        run_bitbake(prepared_test_build)
-
-        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
-        # Copy out the key we just added from the image and use that to
-        # verify instead of the original, just to be sure.
-        subprocess.check_call(["debugfs", "-R",
-                               "dump -p /etc/mender/artifact-verify-key.pem artifact-verify-key.pem",
-                               built_rootfs])
-        try:
-            built_artifact = latest_build_artifact(prepared_test_build['build_dir'], ".mender")
-            output = subprocess.check_output(["mender-artifact", "read", "-k",
-                                              os.path.join(os.getcwd(), "artifact-verify-key.pem"),
-                                              built_artifact])
-            assert(output.find("Signature: signed and verified correctly") >= 0)
-
-        finally:
-            os.remove("artifact-verify-key.pem")
-
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     @pytest.mark.min_mender_version("1.2.0")
     def test_state_scripts(self, prepared_test_build, bitbake_variables, bitbake_path, latest_rootfs, latest_mender_image):
