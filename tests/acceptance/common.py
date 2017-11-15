@@ -602,7 +602,7 @@ def bitbake_path_string():
     os.chdir(os.environ['BUILDDIR'])
 
     # See the recipe for details about this call.
-    subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot", "mender-test-dependencies"])
+    subprocess.check_output(["bitbake", "-c", "unpack", "mender-test-dependencies"])
 
     os.fchdir(current_dir)
 
