@@ -69,7 +69,7 @@ class TestSdimg:
 
         total_size_actual = os.stat(latest_sdimg).st_size
         total_size_max_expected = int(bitbake_variables['MENDER_STORAGE_TOTAL_SIZE_MB']) * 1024 * 1024
-        total_overhead = int(bitbake_variables['MENDER_PARTITIONING_OVERHEAD_KB']) * 1024
+        total_overhead = int(bitbake_variables['MENDER_PARTITIONING_OVERHEAD_MB']) * 1024 * 1024
 
         assert(total_size_actual <= total_size_max_expected)
         assert(total_size_actual >= total_size_max_expected - total_overhead)
@@ -101,7 +101,7 @@ class TestSdimg:
         alignment = int(bitbake_variables['MENDER_PARTITION_ALIGNMENT_MB'])
         uboot_env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
         total_size = int(bitbake_variables['MENDER_STORAGE_TOTAL_SIZE_MB']) * 1024 * 1024
-        part_overhead = int(bitbake_variables['MENDER_PARTITIONING_OVERHEAD_KB']) * 1024
+        part_overhead = int(bitbake_variables['MENDER_PARTITIONING_OVERHEAD_MB']) * 1024 * 1024
         boot_part_size = int(bitbake_variables['MENDER_BOOT_PART_SIZE_MB']) * 1024 * 1024
         data_part_size = int(bitbake_variables['MENDER_DATA_PART_SIZE_MB']) * 1024 * 1024
 
@@ -134,7 +134,7 @@ class TestSdimg:
         """Test that device type file is correctly embedded."""
 
         try:
-            extract_partition(latest_sdimg, 4)
+            extract_partition(latest_sdimg, 5)
 
             subprocess.check_call(["debugfs", "-R", "dump -p /mender/device_type device_type", "sdimg4.fs"])
 
@@ -166,7 +166,7 @@ class TestSdimg:
         """Test that the owner of files on the data partition is root."""
 
         try:
-            extract_partition(latest_sdimg, 4)
+            extract_partition(latest_sdimg, 5)
 
             def check_dir(dir):
                 ls = subprocess.Popen(["debugfs", "-R" "ls -l -p %s" % dir, "sdimg4.fs"], stdout=subprocess.PIPE)
