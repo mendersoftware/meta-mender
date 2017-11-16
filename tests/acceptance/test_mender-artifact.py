@@ -80,7 +80,7 @@ class TestMenderArtifact:
                     assert(line == "data/0000.tar.gz")
                 else:
                     assert(line == "header.tar.gz")
-            elif line_no == 3:
+            elif line_no == 4:
                 if version != 1:
                     assert(line == "data/0000.tar.gz")
 
