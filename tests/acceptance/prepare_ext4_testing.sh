@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SRC_PATH=${1:-"$BBB_IMAGE_DIR/core-image-base-beaglebone.ext4"}
-DST_PATH=${2:-`pwd`"/core-image-base-beaglebone-modified-testing.ext4"}
+SRC_PATH=${1:-"$BBB_IMAGE_DIR/core-image-base-beaglebone-yocto.ext4"}
+DST_PATH=${2:-`pwd`"/core-image-base-beaglebone-yocto-modified-testing.ext4"}
 
 cp ${SRC_PATH} ${DST_PATH}
 
