@@ -272,7 +272,7 @@ def manual_uboot_commit():
 
 def setup_bbb_sdcard():
     local_sdimg = pytest.config.getoption("--sdimg-location")
-    put("core-image-base-beaglebone-modified-testing.sdimg",
+    put("core-image-base-beaglebone-yocto-modified-testing.sdimg",
         local_path=local_sdimg,
         remote_path="/opt/")
     run("chmod +x /root/install-new-image.sh")

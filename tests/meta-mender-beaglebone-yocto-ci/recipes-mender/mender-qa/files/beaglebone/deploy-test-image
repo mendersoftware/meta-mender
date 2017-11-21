@@ -6,7 +6,7 @@ set -e -x
 maybe_verbose
 
 SOURCE_DIR=${SOURCE_DIR:-/tmp}
-IMAGE_FILE=${IMAGE_FILE:-core-image-minimal-beaglebone.wic}
+IMAGE_FILE=${IMAGE_FILE:-core-image-minimal-beaglebone-yocto.wic}
 TARGET_DEV=${TARGET_DEV:-/dev/mmcblk0}
 
 IMAGE_SOURCE_FILE=${SOURCE_DIR}/${IMAGE_FILE}
