@@ -1,5 +1,1 @@
-uenvcmd=echo Booting from internal eMMC; run findfdt; \
-                 load mmc 1:2 ${loadaddr} /boot/${bootfile}; \
-                 load mmc 1:2 ${fdtaddr} /boot/${fdtfile}; \
-                 setenv bootargs console=tty0 console=${console} root=/dev/mmcblk1p2; \
-                 bootz ${loadaddr} - ${fdtaddr}
+uenvcmd=load mmc 1:2 ${loadaddr} /boot/vmlinuz-3.8.13-bone79; load mmc 1:2 ${fdtaddr} /boot/dtbs/3.8.13-bone79/am335x-boneblack.dtb; setenv bootargs console=tty0 console=${console} init=/lib/systemd/systemd rootfstype=ext4 root=/dev/mmcblk1p2; bootz ${loadaddr} - ${fdtaddr}
