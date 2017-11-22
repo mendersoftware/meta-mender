@@ -5,11 +5,11 @@
 
 # It should be placed in the home directory of the BBBs internal OS
 
-IMAGE="/opt/core-image-base-beaglebone-modified-testing.sdimg"
+IMAGE="/opt/core-image-base-beaglebone-yocto-modified-testing.sdimg"
 SDCARD=""
 
 function modify_sdimg {
-  PART_OFFSET=$(fdisk -l $IMAGE | grep core-image-base-beaglebone-modified-testing.sdimg2 | awk '{sum = $2 * 512; print sum}')
+  PART_OFFSET=$(fdisk -l $IMAGE | grep core-image-base-beaglebone-yocto-modified-testing.sdimg2 | awk '{sum = $2 * 512; print sum}')
   mkdir /mnt/sdimg 2>/dev/null
   mount -t ext4 \
         -o loop,offset="$PART_OFFSET" \
