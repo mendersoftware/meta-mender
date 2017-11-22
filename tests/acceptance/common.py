@@ -252,17 +252,22 @@ def determine_active_passive_part(bitbake_variables):
     """Given the output from mount, determine the currently active and passive
     partitions, returning them as a pair in that order."""
 
-    mount_output = run("mount")
     a = bitbake_variables["MENDER_ROOTFS_PART_A"]
     b = bitbake_variables["MENDER_ROOTFS_PART_B"]
 
-    if mount_output.find(a) >= 0:
+    a_device_type = run("stat -c %t%02T " + a).strip()
+    b_device_type = run("stat -c %t%02T " + b).strip()
+    root_device_type = run("stat -c %D /").strip()
+
+    if root_device_type == a_device_type:
         return (a, b)
-    elif mount_output.find(b) >= 0:
+    elif root_device_type == b_device_type:
         return (b, a)
     else:
-        raise Exception("Could not determine active partition. Mount output:\n {}" \
-                        "\nwas looking for {}".format(mount_output, (a, b)))
+        raise Exception(("Could not determine active partition. "
+                        + "A, B and root device type number, respectively: "
+                         + "%s, %s, %s")
+                        % (a_device_type, b_device_type, root_device_type))
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
