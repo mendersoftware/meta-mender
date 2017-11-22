@@ -198,7 +198,7 @@ class TestUpdates:
 
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
-        if board or use_s3:
+        if board != "qemu" or use_s3:
             Helpers.upload_to_s3()
             s3_address = pytest.config.getoption("--s3-address")
             http_server_location = "{}/mender/temp".format(s3_address)
@@ -209,7 +209,7 @@ class TestUpdates:
         try:
             run("mender -rootfs http://%s/successful_image_update.mender" % (http_server_location))
         finally:
-            if not board and not use_s3:
+            if board == "qemu" and not use_s3:
                 http_server.terminate()
 
         output = run("fw_printenv bootcount")
