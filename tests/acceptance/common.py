@@ -189,7 +189,7 @@ def reboot(wait = 120):
 
     fabric.network.disconnect_all()
 
-    run_after_connect("true", wait = wait)
+    run_after_connect("true", wait)
 
     qemu_prep_after_boot()
 
@@ -207,7 +207,7 @@ def run_after_connect(cmd, wait=360):
             except BaseException as e:
                 print("Could not connect to host %s: %s" % (env.host_string, e))
                 if attempt_time >= start_time + wait:
-                    raise Exception("Could not reconnect to QEMU")
+                    raise Exception("Could not reconnect to host")
                 now = time.time()
                 if now - attempt_time < 5:
                     time.sleep(60)
@@ -362,10 +362,13 @@ def common_board_cleanup():
     with settings(warn_only=True):
         sudo("mender-qa activate-test-image off")
 
+    execute(run_after_connect, "true", hosts = conftest.current_hosts())
+
 def common_boot_from_internal():
     with settings(warn_only=True):
         sudo("mender-qa activate-test-image on")
 
+    execute(run_after_connect, "true", hosts = conftest.current_hosts())
 
 @pytest.fixture(scope="session")
 def setup_colibri_imx7(request, clean_image):
@@ -395,16 +398,11 @@ def setup_colibri_imx7(request, clean_image):
 
 @pytest.fixture(scope="session")
 def setup_bbb(request):
-    if pytest.config.getoption("--bbb"):
-        execute(boot_from_internal)
-        execute(setup_bbb_sdcard, host=conftest.current_hosts())
+    def board_cleanup():
+        execute(common_board_cleanup, hosts=conftest.current_hosts())
 
-        def bbb_finalizer():
-            def bbb_finalizer_impl():
-                    execute(boot_from_internal)
-            execute(bbb_finalizer_impl, hosts=conftest.current_hosts())
-
-        request.addfinalizer(bbb_finalizer)
+    execute(common_boot_from_internal, hosts=conftest.current_hosts())
+    request.addfinalizer(board_cleanup)
 
 @pytest.fixture(scope="session")
 def setup_rpi3(request):
