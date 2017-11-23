@@ -202,7 +202,7 @@ class TestSdimg:
             except:
                 pass
 
-    def test_fstab_correct(self, latest_sdimg):
+    def test_fstab_correct(self, bitbake_path, latest_sdimg):
         with make_tempdir() as tmpdir:
             old_cwd_fd = os.open(".", os.O_RDONLY)
             os.chdir(tmpdir)
