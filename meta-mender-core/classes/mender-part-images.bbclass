@@ -39,7 +39,7 @@ mender_part_image() {
     mkdir -p "${WORKDIR}/data"
 
     if [ -n "${MENDER_DATA_PART_DIR}" ]; then
-        rsync -a ${MENDER_DATA_PART_DIR}/* "${WORKDIR}/data"
+        rsync -a --no-owner --no-group ${MENDER_DATA_PART_DIR}/* "${WORKDIR}/data"
         chown -R root:root "${WORKDIR}/data"
     fi
 
