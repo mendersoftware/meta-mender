@@ -1,23 +1,26 @@
 #!/bin/bash
 set -e -x
 MOUNT_DEV=${MOUNT_DEV:-/dev/mmcblk0p1}
-UENV_MOUNTD=/mnt
+if [ -d /uboot ]; then
+    MOUNTPOINT=/uboot
+else
+    MOUNTPOINT=/mnt
+fi
 
 case "$1" in
     status)
-        if [ -e $UENV_FILE ]; then
-            val=$(grep -e "uenvcmd=" $UENV_FILE 2>/dev/null)
+        if grep "mender" $MOUNTPOINT/boot.scr > /dev/null; then
+            echo "test image is enabled"
+        else
             echo "test image is disabled"
-            disabled=1
-        fi
-        if [ -z "$disabled" ]; then
-            echo "tests image is enabled"
         fi
         ;;
     off)
-        if grep 'mmcblk' /proc/mounts; then
+        if grep "mender" $MOUNTPOINT/boot.scr > /dev/null; then
             echo "deactivating test image"
-            echo "dwc_otg.lpm_enable=0 console=serial0,115200 rootfstype=ext4 rootwait root=/dev/sda2" > /uboot/cmdline.txt && \
+            cp $MOUNTPOINT/boot.scr $MOUNTPOINT/boot-mender.scr
+            cp $MOUNTPOINT/boot-for-flashing.scr $MOUNTPOINT/boot.scr
+            sed -ie 's,root=${mender_kernel_root},root=/dev/sda2,' $MOUNTPOINT/cmdline.txt
             reboot
         else
             echo "test-image not running"
@@ -26,9 +29,12 @@ case "$1" in
         ;;
     on|'')
         echo "activating test image"
-        mount $MOUNT_DEV $UENV_MOUNTD && \
-            echo 'dwc_otg.lpm_enable=0 console=serial0,115200 rootfstype=ext4 rootwait root=${mender_kernel_root}' > /mnt/cmdline.txt && \
-            umount $MOUNT_DEV && \
-            reboot
+        mount $MOUNT_DEV $MOUNTPOINT
+        if [ -f $MOUNTPOINT/boot-mender.scr ]; then
+            cp $MOUNTPOINT/boot-mender.scr $MOUNTPOINT/boot.scr
+        fi
+        sed -ie 's,root=/dev/sda2,root=${mender_kernel_root},' $MOUNTPOINT/cmdline.txt
+        umount $MOUNT_DEV
+        reboot
         ;;
 esac
