@@ -1,0 +1,3 @@
+Fabric
+python-lzo
+ubi-reader

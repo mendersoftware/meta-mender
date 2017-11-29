@@ -24,7 +24,7 @@ do_compile() {
 
     GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go go env
     if test -n "${GO_INSTALL}" ; then
-       GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go make -C ${GOPATHDIR} V=1 install
+       oe_runmake GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go -C ${GOPATHDIR} V=1 install
     fi
 }
 

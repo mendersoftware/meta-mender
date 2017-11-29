@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Mender QA helper utility. The `mender-qa` tool will invoke subcommands, each
+# subcommand is an executable file/script/binary stored in /usr/share/mender-qa.
+# The name of subcommand file is exactly the same as passed in `mender-qa` command
+# line.
+#
+# mender-qa will set the following environment variables:
+# - DATADIR - set to /usr/share/mender-qa
+# - V - if 1 then the callee is expected to produce verbose output
+
+datadir=/usr/share/mender-qa
+commands_registry=${datadir}/commands
+
+while getopts "dh" opt 2>/dev/null; do
+     case "$opt" in
+         d)
+             debug=1
+             ;;
+         h)
+             echo "usage: $(basename $0) [-d] <command>"
+             echo "Available commands:"
+             for c in $(cat $commands_registry); do
+                 echo "    $c"
+             done
+             exit 0
+             ;;
+         \?)
+             echo "$opt"
+             ;;
+         *)
+             break
+             ;;
+     esac
+done
+shift $(($OPTIND -1))
+
+if [ "$debug" = "1" ]; then
+    export V=1
+    set -x
+fi
+
+command=$1
+if [ -z "$command" ]; then
+    echo "command not provided, see -h for help"
+    exit 1
+fi
+
+shift
+
+helper="/usr/share/mender-qa/${command}"
+
+if grep -q -x "${command}" ${commands_registry} && test -x "$helper"; then
+    DATADIR=${datadir} "$helper" "$@"
+else
+    echo "command $command not implemented"
+    exit 1
+fi

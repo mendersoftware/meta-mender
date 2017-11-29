@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2016 Mender Software AS
+# Copyright 2017 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ import pytest
 import re
 import subprocess
 
+@pytest.mark.min_mender_version("1.0.0")
 class TestCommits:
     def test_commits(self):
         # First find which range to check. Include HEAD and exclude all known
@@ -39,4 +40,10 @@ class TestCommits:
             # Exclude if no matches above.
             commit_range.append(branch)
 
-        subprocess.check_call(["3rdparty/mendertesting/check_commits.sh"] + commit_range)
+        try:
+            output = subprocess.check_output(["3rdparty/mendertesting/check_commits.sh"] + commit_range,
+                                             stderr=subprocess.STDOUT)
+            # Print output, useful to make sure correct commit range is checked.
+            print(output)
+        except subprocess.CalledProcessError as e:
+            pytest.fail(e.output)
