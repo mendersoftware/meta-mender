@@ -98,7 +98,7 @@ class TestSdimg:
 
         fdisk.wait()
 
-        alignment = int(bitbake_variables['MENDER_PARTITION_ALIGNMENT_MB'])
+        alignment = int(bitbake_variables['MENDER_PARTITION_ALIGNMENT_MB']) * 1024 * 1024
         uboot_env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
         total_size = int(bitbake_variables['MENDER_STORAGE_TOTAL_SIZE_MB']) * 1024 * 1024
         part_overhead = int(bitbake_variables['MENDER_PARTITIONING_OVERHEAD_MB']) * 1024 * 1024
@@ -115,19 +115,21 @@ class TestSdimg:
         # Subsequent partitions should start where previous one left off.
         assert(parts_start[1] == parts_end[0])
         assert(parts_start[2] == parts_end[1])
-        assert(parts_start[3] == parts_end[2])
+        # Except data partition, which is an extended partition, and starts one
+        # full alignment higher.
+        assert(parts_start[4] == parts_end[2] + alignment)
 
         # Partitions should extend for their size rounded up to alignment.
         # No set size for Rootfs partitions, so cannot check them.
         # Boot partition.
         assert(parts_end[0] == parts_start[0] + align_up(boot_part_size, alignment))
         # Data partition.
-        assert(parts_end[3] == parts_start[3] + align_up(data_part_size, alignment))
+        assert(parts_end[4] == parts_start[4] + align_up(data_part_size, alignment))
 
         # End of the last partition can be smaller than total image size, but
         # not by more than the calculated overhead..
-        assert(parts_end[3] <= total_size)
-        assert(parts_end[3] >= total_size - part_overhead)
+        assert(parts_end[4] <= total_size)
+        assert(parts_end[4] >= total_size - part_overhead)
 
 
     def test_device_type(self, latest_sdimg, bitbake_variables, bitbake_path):
@@ -136,7 +138,7 @@ class TestSdimg:
         try:
             extract_partition(latest_sdimg, 5)
 
-            subprocess.check_call(["debugfs", "-R", "dump -p /mender/device_type device_type", "sdimg4.fs"])
+            subprocess.check_call(["debugfs", "-R", "dump -p /mender/device_type device_type", "sdimg5.fs"])
 
             assert(os.stat("device_type").st_mode & 0777 == 0444)
 
@@ -157,7 +159,7 @@ class TestSdimg:
 
         finally:
             try:
-                os.remove("sdimg4.fs")
+                os.remove("sdimg5.fs")
                 os.remove("device_type")
             except:
                 pass
@@ -169,7 +171,7 @@ class TestSdimg:
             extract_partition(latest_sdimg, 5)
 
             def check_dir(dir):
-                ls = subprocess.Popen(["debugfs", "-R" "ls -l -p %s" % dir, "sdimg4.fs"], stdout=subprocess.PIPE)
+                ls = subprocess.Popen(["debugfs", "-R" "ls -l -p %s" % dir, "sdimg5.fs"], stdout=subprocess.PIPE)
                 entries = ls.stdout.readlines()
                 ls.wait()
 
@@ -198,7 +200,7 @@ class TestSdimg:
 
         finally:
             try:
-                os.remove("sdimg4.fs")
+                os.remove("sdimg5.fs")
             except:
                 pass
 
