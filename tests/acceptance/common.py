@@ -716,11 +716,7 @@ def prepared_test_build(prepared_test_build_base):
     - local_conf
     """
 
-    new_file = prepared_test_build_base['local_conf']
-    old_file = prepared_test_build_base['local_conf_orig']
-
-    # Restore original local.conf
-    run_verbose("cp %s %s" % (old_file, new_file))
+    reset_local_conf(prepared_test_build_base)
 
     return prepared_test_build_base
 
@@ -732,6 +728,14 @@ def add_to_local_conf(prepared_test_build, string):
     with open(prepared_test_build['local_conf'], "a") as fd:
         fd.write('\n## ADDED BY TEST\n')
         fd.write("%s\n" % string)
+
+def reset_local_conf(prepared_test_build):
+    new_file = prepared_test_build['local_conf']
+    old_file = prepared_test_build['local_conf_orig']
+
+    # Restore original local.conf
+    run_verbose("cp %s %s" % (old_file, new_file))
+
 
 
 @pytest.fixture(autouse=True)
