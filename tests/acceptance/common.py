@@ -643,13 +643,21 @@ def signing_key(key_type):
 
     return KeyPair()
 
-def run_verbose(cmd):
-    print(cmd)
-    return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
+def run_verbose(cmd, capture=False):
+    if capture:
+        print("subprocess.check_output(\"%s\")" % cmd)
+        return subprocess.check_output(cmd, shell=True, executable="/bin/bash",
+                                       stderr=subprocess.STDOUT)
+    else:
+        print(cmd)
+        return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
 
-def run_bitbake(prepared_test_build):
+def run_bitbake(prepared_test_build, target=None, capture=False):
+    if target is None:
+        target = prepared_test_build['image_name']
     run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'],
-                                      prepared_test_build['image_name']))
+                                      target),
+                capture=capture)
 
 
 @pytest.fixture(scope="session")
