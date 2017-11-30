@@ -1,0 +1,47 @@
+TMP ?= /tmp
+LOGS ?= test_uboot_compile-logs
+
+# Collect a list of targets for all the boards.
+BOARD_LOGS = $(patsubst $(UBOOT_SRC)/configs/%_defconfig,$(LOGS)/%_defconfig,$(shell ls $(UBOOT_SRC)/configs/*_defconfig))
+
+all: $(BOARD_LOGS)
+
+clean:
+	rm -rf $(LOGS)
+
+$(LOGS):
+	mkdir -p $(LOGS)
+
+$(BOARD_LOGS): $(LOGS)
+
+# Do the auto configuration for each board and make a log. Failure is not
+# recorded in the return code, but in the log instead.
+$(LOGS)/%_defconfig:
+	if [ -z "$(TESTS_DIR)" -o -z "$(UBOOT_SRC)" ]; then \
+		echo "Not all variables are set"; \
+		exit 1; \
+	fi
+	rm -rf "$(TMP)/`basename $@`"
+	mkdir -p "$(TMP)/`basename $@`"
+	cp -r "$(UBOOT_SRC)" "$(TMP)/`basename $@`/orig"
+	mkdir -p "$(TMP)/`basename $@`/work"
+
+	# Auto configure board.
+	$(TESTS_DIR)/../../meta-mender-core/recipes-bsp/u-boot/files/uboot_auto_configure.sh \
+			--config=`basename $@` \
+			--src-dir="$(TMP)/`basename $@`/orig" \
+			--tmp-dir="$(TMP)/`basename $@`/work" --debug \
+			>> $(LOGS)/`basename $@` 2>&1 \
+		|| ( echo AutoPatchFailed >> $(LOGS)/`basename $@` )
+
+	# Setup compile.
+	$(MAKE) -C "$(TMP)/`basename $@`/orig" "`basename $@`" \
+			>> $(LOGS)/`basename $@` 2>&1 \
+		|| ( echo AutoPatchFailed >> $(LOGS)/`basename $@` )
+
+	# Try to compile it.
+	$(MAKE) -C "$(TMP)/`basename $@`/orig" \
+			>> $(LOGS)/`basename $@` 2>&1 \
+		|| ( echo AutoPatchFailed >> $(LOGS)/`basename $@` )
+
+	rm -rf "$(TMP)/`basename $@`"

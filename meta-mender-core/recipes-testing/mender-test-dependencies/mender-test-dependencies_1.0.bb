@@ -3,8 +3,6 @@
 
 DEPENDS = "mender-artifact-native e2fsprogs-native util-linux-native"
 
-inherit native
-
 LICENSE = "Apache-2.0"
 
 do_compile() {
