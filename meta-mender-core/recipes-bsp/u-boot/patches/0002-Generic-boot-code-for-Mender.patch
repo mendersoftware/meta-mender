@@ -101,7 +101,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efcfc87d682
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,79 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -142,7 +142,6 @@ index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efc
 +    "mender_mtd_ubi_dev_name=" MENDER_MTD_UBI_DEVICE_NAME "\0"          \
 +                                                                        \
 +    "mender_boot_part=" __stringify(MENDER_ROOTFS_PART_A_NUMBER) "\0"   \
-+    "mender_boot_part_name=" MENDER_ROOTFS_PART_A_NAME "\0"             \
 +                                                                        \
 +    "mender_uboot_boot=" MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":" __stringify(MENDER_BOOT_PART_NUMBER) "\0" \
 +                                                                        \
@@ -151,7 +150,13 @@ index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efc
 +    "mender_uboot_dev=" __stringify(MENDER_UBOOT_STORAGE_DEVICE) "\0"   \
 +                                                                        \
 +    "mender_setup="                                                     \
-+    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; " \
++    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; "    \
++    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "     \
++    "then "                                                                            \
++    "setenv mender_boot_part_name " MENDER_ROOTFS_PART_A_NAME "; "                     \
++    "else "                                                                             \
++    "setenv mender_boot_part_name " MENDER_ROOTFS_PART_B_NAME "; "                     \
++    "fi; "                                                                             \
 +    "setenv mender_kernel_root_name ${mender_boot_part_name}; "         \
 +    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}; " \
 +    "setenv mender_uboot_root_name ${mender_boot_part_name}; "          \
@@ -163,10 +168,8 @@ index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efc
 +    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "     \
 +    "then "                                                                            \
 +    "setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_B_NUMBER) "; "           \
-+    "setenv mender_boot_part_name " MENDER_ROOTFS_PART_B_NAME "; "                     \
 +    "else "                                                                            \
 +    "setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "           \
-+    "setenv mender_boot_part_name " MENDER_ROOTFS_PART_A_NAME "; "      \
 +    "fi; "                                                              \
 +    "setenv upgrade_available 0; "                                      \
 +    "saveenv; "                                                         \
