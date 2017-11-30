@@ -1,0 +1,8 @@
+[Match]
+Name=eth*
+
+[Network]
+DHCP=v4
+
+[DHCPv4]
+UseHostname=false

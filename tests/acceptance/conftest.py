@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2016 Mender Software AS
+# Copyright 2017 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -37,6 +37,17 @@ def pytest_addoption(parser):
     parser.addoption("--sdimg-location", action="store",
                      default=os.getcwd(),
                      help="location to the sdimg you want to install on the bbb")
+    parser.addoption("--bitbake-image", action="store",
+                     default='core-image-full-cmdline',
+                     help="image to build during the tests")
+    parser.addoption("--keep-build-dir", action="store_true", default=False,
+                     help="do not remove Yocto build directory after each test")
+    parser.addoption("--board-type", action="store", default='qemu',
+                     help="type of board to use in testing, supported types: qemu, bbb, colibri-imx7")
+    parser.addoption("--use-s3", action="store_true", default=False,
+                     help="use S3 for transferring images under test to target boards")
+    parser.addoption("--s3-address", action="store", default="s3.amazonaws.com",
+                     help="address of S3 server, defaults to AWS, override when using minio")
 
 
 def pytest_configure(config):
@@ -65,9 +76,8 @@ def pytest_configure(config):
     # combine_stderr to each run() or sudo() command.
     env.combine_stderr = False
 
-
-def pytest_unconfigure(config):
-    pass
+    env.connection_attempts = 10
+    env.timeout = 30
 
 
 def current_hosts():

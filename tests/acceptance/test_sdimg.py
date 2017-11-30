@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2016 Mender Software AS
+# Copyright 2017 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -19,30 +19,10 @@ import pytest
 import subprocess
 import os
 import re
+import tempfile
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
-
-class EmbeddedBootloader:
-    loader = None
-    offset = 0
-
-    def __init__(self, loader, offset):
-        self.loader = loader
-        self.offset = offset
-
-@pytest.fixture(scope="session")
-def embedded_bootloader(bitbake_variables):
-    loader_base = bitbake_variables['IMAGE_BOOTLOADER_FILE']
-    loader_dir = bitbake_variables['DEPLOY_DIR_IMAGE']
-    loader = None
-    offset = int(bitbake_variables['IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET']) * 512
-
-    if loader_base is not None and loader_base != "":
-        loader = os.path.join(loader_dir, loader_base)
-
-    return EmbeddedBootloader(loader, offset)
-
 
 def align_up(bytes, alignment):
     """Rounds bytes up to nearest alignment."""
@@ -66,33 +46,23 @@ def extract_partition(sdimg, number):
                            "skip=%d" % start, "count=%d" % (end - start)])
 
 
+@pytest.mark.only_with_image('sdimg')
+@pytest.mark.min_mender_version("1.0.0")
 class TestSdimg:
-    def test_bootloader_embed(self, embedded_bootloader, latest_sdimg):
-        """Test that IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
-        correctly in the resulting sdimg. If the variable has not been defined,
-        the test is skipped."""
 
-        if embedded_bootloader.loader is None:
-            pytest.skip("No embedded bootloader specified")
+    @staticmethod
+    def verify_fstab(data):
+        lines = data.split('\n')
 
-        original = os.open(embedded_bootloader.loader, os.O_RDONLY)
-        embedded = os.open(latest_sdimg, os.O_RDONLY)
-        os.lseek(embedded, embedded_bootloader.offset, 0)
+        occurred = {}
 
-        checked = 0
-        block_size = 4096
-        while True:
-            org_read = os.read(original, block_size)
-            org_read_size = len(org_read)
-            emb_read = os.read(embedded, org_read_size)
-
-            assert(org_read == emb_read), "Embedded bootloader is not identical to the file specified in IMAGE_BOOTLOADER_FILE"
-
-            if org_read_size < block_size:
-                break
-
-        os.close(original)
-        os.close(embedded)
+        # No entry should occur twice.
+        for line in lines:
+            cols = line.split()
+            if len(line) == 0 or line[0] == '#' or len(cols) < 2:
+                continue
+            assert occurred.get(cols[1]) is None, "%s appeared twice in fstab:\n%s" % (cols[1], data)
+            occurred[cols[1]] = True
 
     def test_total_size(self, bitbake_variables, latest_sdimg):
         """Test that the total size of the sdimg is correct."""
@@ -233,3 +203,17 @@ class TestSdimg:
                 os.remove("sdimg5.fs")
             except:
                 pass
+
+    def test_fstab_correct(self, latest_sdimg):
+        with make_tempdir() as tmpdir:
+            old_cwd_fd = os.open(".", os.O_RDONLY)
+            os.chdir(tmpdir)
+            try:
+                extract_partition(latest_sdimg, 2)
+                subprocess.check_call(["debugfs", "-R", "dump -p /etc/fstab fstab", "sdimg2.fs"])
+                with open("fstab") as fd:
+                    data = fd.read()
+                TestSdimg.verify_fstab(data)
+            finally:
+                os.fchdir(old_cwd_fd)
+                os.close(old_cwd_fd)
