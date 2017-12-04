@@ -139,6 +139,14 @@ do_mender_uboot_auto_configure() {
         exit 0
     fi
 
+    # Try to detect whether Mender specific porting patches have already been
+    # applied. To do this, we can look for "mender_setup" anywhere outside of
+    # env_mender.h, since the old instructions would put it outside, and in the
+    # new auto-patching it is always inside.
+    if [ `fgrep -rl mender_setup ${S} | fgrep -v /env_mender.h | wc -l` -gt 0 ]; then
+        bbwarn 'Detected previously applied Mender patch on top of U-Boot. Probably U-Boot will either produce compile errors or misbehave. It is advised to either remove any Mender specific patches, or disable the auto-patching by setting MENDER_UBOOT_AUTO_CONFIGURE = "0" somewhere in the U-Boot recipe.'
+    fi
+
     cd ${WORKDIR}
 
     # This is for diffing and displaying the patch later, if necessary.
