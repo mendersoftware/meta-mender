@@ -1,6 +1,6 @@
-From c2c6f210e21f9fcbed633a8e0a59fa2d954da827 Mon Sep 17 00:00:00 2001
+From 59e241d64639a6d56ebcd1aa2a9d60678a849373 Mon Sep 17 00:00:00 2001
 From: Drew Moseley <drew.moseley@northern.tech>
-Date: Tue, 26 Sep 2017 06:46:08 -0400
+Date: Sun, 10 Dec 2017 14:00:54 -0500
 Subject: [PATCH] Enable U-Boot on QEMU to use Mender boot code.
 
 Also make sure the U-Boot environment is on SD card.
@@ -12,24 +12,29 @@ Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
  2 files changed, 22 insertions(+), 5 deletions(-)
 
 diff --git a/configs/vexpress_ca9x4_defconfig b/configs/vexpress_ca9x4_defconfig
-index 60af905..e4c1d30 100644
+index 4cbc962..d7f19b7 100644
 --- a/configs/vexpress_ca9x4_defconfig
 +++ b/configs/vexpress_ca9x4_defconfig
-@@ -17,7 +17,8 @@ CONFIG_CMD_MMC=y
+@@ -16,7 +16,7 @@ CONFIG_CMD_MMC=y
  # CONFIG_CMD_SETEXPR is not set
  # CONFIG_CMD_NFS is not set
  # CONFIG_CMD_MISC is not set
 -CONFIG_ENV_IS_IN_FLASH=y
 +# CONFIG_ENV_IS_IN_FLASH is not set
  CONFIG_MTD_NOR_FLASH=y
+ CONFIG_NETDEVICES=y
+ CONFIG_SMC911X=y
+@@ -24,3 +24,4 @@ CONFIG_SMC911X_BASE=0x4e000000
+ CONFIG_SMC911X_32_BIT=y
  CONFIG_BAUDRATE=38400
  CONFIG_OF_LIBFDT=y
 +CONFIG_ENV_IS_IN_MMC=y
+\ No newline at end of file
 diff --git a/include/configs/vexpress_common.h b/include/configs/vexpress_common.h
-index bcaf5c9..df6616e 100644
+index ade7ba4..fe81dac 100644
 --- a/include/configs/vexpress_common.h
 +++ b/include/configs/vexpress_common.h
-@@ -164,6 +164,9 @@
+@@ -158,6 +158,9 @@
  #define CONFIG_SYS_LOAD_ADDR		(V2M_BASE + 0x8000)
  #define LINUX_BOOT_PARAM_ADDR		(V2M_BASE + 0x2000)
  
@@ -39,7 +44,7 @@ index bcaf5c9..df6616e 100644
  /* Physical Memory Map */
  #define CONFIG_NR_DRAM_BANKS		2
  #define PHYS_SDRAM_1			(V2M_BASE)	/* SDRAM Bank #1 */
-@@ -194,6 +197,22 @@
+@@ -188,6 +191,22 @@
          func(DHCP, dhcp, na)
  #include <config_distro_bootcmd.h>
  
@@ -62,7 +67,7 @@ index bcaf5c9..df6616e 100644
  #ifdef CONFIG_VEXPRESS_ORIGINAL_MEMORY_MAP
  #define CONFIG_PLATFORM_ENV_SETTINGS \
  		"loadaddr=0x80008000\0" \
-@@ -217,6 +236,7 @@
+@@ -211,6 +230,7 @@
  #endif
  #define CONFIG_EXTRA_ENV_SETTINGS \
  		CONFIG_PLATFORM_ENV_SETTINGS \
@@ -70,7 +75,7 @@ index bcaf5c9..df6616e 100644
                  BOOTENV \
  		"console=ttyAMA0,38400n8\0" \
  		"dram=1024M\0" \
-@@ -262,10 +282,6 @@
+@@ -256,10 +276,6 @@
  #define CONFIG_ENV_OVERWRITE		1
  
  /* Store environment at top of flash */
