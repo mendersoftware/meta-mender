@@ -44,3 +44,8 @@ IMAGE_BOOT_FILES_append_mender-uboot = " ${IMAGE_UENV_TXT_FILE}"
 
 # make sure to provide a weak default
 UBOOT_SUFFIX ??= "bin"
+
+# Prefer to use our auto provided fw-utils variant which duplicates the sources
+# from u-boot, so we don't have to apply the same patches twice.
+PREFERRED_PROVIDER_u-boot-fw-utils ??= "u-boot-fw-utils-mender-auto-provided"
+PREFERRED_RPROVIDER_u-boot-fw-utils ??= "u-boot-fw-utils-mender-auto-provided"

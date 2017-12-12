@@ -2,8 +2,6 @@ require u-boot-mender-common.inc
 
 inherit deploy
 
-DEPENDS_append = " u-boot"
-
 do_compile_append() {
     alignment_bytes=$(expr ${MENDER_PARTITION_ALIGNMENT_KB} \* 1024)
     if [ $(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} % $alignment_bytes) -ne 0 ]; then
@@ -12,14 +10,7 @@ do_compile_append() {
     fi
 
     if [ ! -e ${WORKDIR}/fw_env.config.default ]; then
-        # fw-utils seem to only be able to handle hex values.
-        HEX_BOOTENV_SIZE="$(printf 0x%x "${BOOTENV_SIZE}")"
-
-        # create fw_env.config file
-        cat > ${WORKDIR}/fw_env.config <<EOF
-${MENDER_STORAGE_DEVICE} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1} $HEX_BOOTENV_SIZE
-${MENDER_STORAGE_DEVICE} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2} $HEX_BOOTENV_SIZE
-EOF
+        mender_create_fw_env_config_file ${WORKDIR}/fw_env.config
     else
         cp ${WORKDIR}/fw_env.config.default ${WORKDIR}/fw_env.config
     fi

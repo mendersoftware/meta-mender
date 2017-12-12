@@ -1,0 +1,12 @@
+diff --git a/include/env_default.h b/include/env_default.h
+index 0095810..371b186 100644
+--- a/include/env_default.h
++++ b/include/env_default.h
+@@ -110,6 +110,7 @@ const uchar default_environment[] = {
+ #ifdef	CONFIG_EXTRA_ENV_SETTINGS
+ 	CONFIG_EXTRA_ENV_SETTINGS
+ #endif
++	"mender_test_var=TestStringThatMustOccur_Mender!#%&\0"
+ 	"\0"
+ #ifdef DEFAULT_ENV_INSTANCE_EMBEDDED
+ 	}

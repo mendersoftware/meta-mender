@@ -17,7 +17,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..116b87f7b52571fda45327d4ebcd1fa5ec40f143
 --- /dev/null
 +++ b/include/config_mender.h
-@@ -0,0 +1,78 @@
+@@ -0,0 +1,83 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -38,6 +38,9 @@ index 0000000000000000000000000000000000000000..116b87f7b52571fda45327d4ebcd1fa5
 +
 +#ifndef HEADER_CONFIG_MENDER_H
 +#define HEADER_CONFIG_MENDER_H
++
++/* Avoid Mender specific code if we are just probing for configuration. */
++#ifndef MENDER_AUTO_PROBING
 +
 +#include <config_mender_defines.h>
 +
@@ -95,13 +98,15 @@ index 0000000000000000000000000000000000000000..116b87f7b52571fda45327d4ebcd1fa5
 +#define CONFIG_ENV_OFFSET        MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
 +#define CONFIG_ENV_OFFSET_REDUND MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
 +
++#endif /* !MENDER_AUTO_PROBING */
++
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
 index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efcfc87d682
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,79 @@
+@@ -0,0 +1,102 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -122,6 +127,11 @@ index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efc
 +
 +#ifndef HEADER_ENV_MENDER_H
 +#define HEADER_ENV_MENDER_H
++
++/* Avoid Mender specific code if we are just probing for configuration. */
++#ifdef MENDER_AUTO_PROBING
++#define MENDER_ENV_SETTINGS
++#else
 +
 +#include <config_mender_defines.h>
 +
@@ -148,6 +158,12 @@ index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efc
 +    "mender_uboot_if=" MENDER_UBOOT_STORAGE_INTERFACE "\0"              \
 +                                                                        \
 +    "mender_uboot_dev=" __stringify(MENDER_UBOOT_STORAGE_DEVICE) "\0"   \
++                                                                        \
++    "mender_boot_kernel_type=" MENDER_BOOT_KERNEL_TYPE "\0"             \
++                                                                        \
++    "mender_kernel_name=" MENDER_KERNEL_NAME "\0"                       \
++                                                                        \
++    "mender_dtb_name=" MENDER_DTB_NAME "\0"                             \
 +                                                                        \
 +    "mender_setup="                                                     \
 +    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; "    \
@@ -179,6 +195,18 @@ index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efc
 +    "if test ${upgrade_available} = 1; "                                \
 +    "then reset; "                                                      \
 +    "fi\0"
++
++#define CONFIG_MENDER_BOOTCOMMAND                                       \
++    "run mender_setup; "                                                \
++    "setenv bootargs root=${mender_kernel_root} ${bootargs}; "          \
++    "if test \"${fdt_addr_r}\" != \"\"; then "                          \
++    "load ${mender_uboot_root} ${fdt_addr_r} /boot/${mender_dtb_name}; " \
++    "fi; "                                                              \
++    "load ${mender_uboot_root} ${kernel_addr_r} /boot/${mender_kernel_name}; " \
++    "${mender_boot_kernel_type} ${kernel_addr_r} - ${fdt_addr_r}; "     \
++    "run mender_try_to_recover"
++
++#endif /* !MENDER_AUTO_PROBING */
 +
 +#endif /* HEADER_ENV_MENDER_H */
 -- 

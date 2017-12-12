@@ -1,0 +1,28 @@
+From 39718a5b137a7fdea25971b906d72a28623a2025 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@northern.tech>
+Date: Mon, 9 Oct 2017 14:28:24 +0200
+Subject: [PATCH] Set correct load addresses for QEMU.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+---
+ include/configs/vexpress_common.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/include/configs/vexpress_common.h b/include/configs/vexpress_common.h
+index bcaf5c9..638b943 100644
+--- a/include/configs/vexpress_common.h
++++ b/include/configs/vexpress_common.h
+@@ -216,7 +216,9 @@
+ 		"kernel_addr_r=0xa0008000\0"
+ #endif
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+-		CONFIG_PLATFORM_ENV_SETTINGS \
++                "kernel_addr_r=0x60100000\0" \
++                "fdt_addr_r=0x60000000\0" \
++                "bootargs=console=tty0 console=ttyAMA0,38400n8\0" \
+                 BOOTENV \
+ 		"console=ttyAMA0,38400n8\0" \
+ 		"dram=1024M\0" \
+-- 
+2.7.4
+

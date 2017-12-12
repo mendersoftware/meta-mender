@@ -643,13 +643,21 @@ def signing_key(key_type):
 
     return KeyPair()
 
-def run_verbose(cmd):
-    print(cmd)
-    return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
+def run_verbose(cmd, capture=False):
+    if capture:
+        print("subprocess.check_output(\"%s\")" % cmd)
+        return subprocess.check_output(cmd, shell=True, executable="/bin/bash",
+                                       stderr=subprocess.STDOUT)
+    else:
+        print(cmd)
+        return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
 
-def run_bitbake(prepared_test_build):
+def run_bitbake(prepared_test_build, target=None, capture=False):
+    if target is None:
+        target = prepared_test_build['image_name']
     run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'],
-                                      prepared_test_build['image_name']))
+                                      target),
+                capture=capture)
 
 
 @pytest.fixture(scope="session")
@@ -708,11 +716,7 @@ def prepared_test_build(prepared_test_build_base):
     - local_conf
     """
 
-    new_file = prepared_test_build_base['local_conf']
-    old_file = prepared_test_build_base['local_conf_orig']
-
-    # Restore original local.conf
-    run_verbose("cp %s %s" % (old_file, new_file))
+    reset_local_conf(prepared_test_build_base)
 
     return prepared_test_build_base
 
@@ -724,6 +728,14 @@ def add_to_local_conf(prepared_test_build, string):
     with open(prepared_test_build['local_conf'], "a") as fd:
         fd.write('\n## ADDED BY TEST\n')
         fd.write("%s\n" % string)
+
+def reset_local_conf(prepared_test_build):
+    new_file = prepared_test_build['local_conf']
+    old_file = prepared_test_build['local_conf_orig']
+
+    # Restore original local.conf
+    run_verbose("cp %s %s" % (old_file, new_file))
+
 
 
 @pytest.fixture(autouse=True)
