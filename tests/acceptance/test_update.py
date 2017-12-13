@@ -488,9 +488,6 @@ class TestUpdates:
                             # Corrupt checksum by changing file slightly.
                             with open("image.dat", "r+") as fd:
                                 Helpers.corrupt_middle_byte(fd)
-                                # Need to update the expected content in this case.
-                                fd.seek(0)
-                                new_content = fd.read()
                             # Pack it up again in same order.
                             os.remove("0000.tar.gz")
                             subprocess.check_call(["tar", "czf", "0000.tar.gz"] + data_list)
