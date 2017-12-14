@@ -36,7 +36,7 @@ IMAGE_CMD_mender () {
     done
 
     if [ -z "$devs_compatible" ]; then
-        bberror "MENDER_DEVICE_TYPES_COMPATIBLE variable cannot be empty."
+        bbfatal "MENDER_DEVICE_TYPES_COMPATIBLE variable cannot be empty."
     fi
 
     extra_args=
