@@ -30,10 +30,7 @@ def pytest_addoption(parser):
     parser.addoption("--user", action="store", default="root",
                      help="user to log into remote hosts with (default is root)")
     parser.addoption("--http-server", action="store", default="10.0.2.2:8000",
-                     help="""Remote HTTP server containing update image,
-                     if --bbb is set, this value is set to the s3 url""")
-    parser.addoption("--bbb", action="store_true", default=False,
-                     help="the tests are running against a BeagleBone Black")
+                     help="Remote HTTP server containing update image")
     parser.addoption("--sdimg-location", action="store",
                      default=os.getcwd(),
                      help="location to the sdimg you want to install on the bbb")
