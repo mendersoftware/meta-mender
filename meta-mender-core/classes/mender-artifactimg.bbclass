@@ -26,20 +26,15 @@ IMAGE_CMD_mender () {
         bbfatal "Size of rootfs is greater than the calculated partition space ($rootfs_size > $calc_rootfs_size). This image won't fit on a device with the current storage configuration. Try reducing IMAGE_OVERHEAD_FACTOR if it is higher than 1.0, or raise MENDER_STORAGE_TOTAL_SIZE_MB if the device in fact has more storage."
     fi
 
-    # Trim leading/trailing spaces, and replace spaces with commas for
-    # consumption by mender-artifact tool.
-    devs_compatible=
-    sep=
-    for dev in ${MENDER_DEVICE_TYPES_COMPATIBLE}; do
-        devs_compatible="$devs_compatible$sep$dev"
-        sep=,
-    done
-
-    if [ -z "$devs_compatible" ]; then
-        bberror "MENDER_DEVICE_TYPES_COMPATIBLE variable cannot be empty."
+    if [ -z "${MENDER_DEVICE_TYPES_COMPATIBLE}" ]; then
+        bbfatal "MENDER_DEVICE_TYPES_COMPATIBLE variable cannot be empty."
     fi
 
     extra_args=
+
+    for dev in ${MENDER_DEVICE_TYPES_COMPATIBLE}; do
+        extra_args="$extra_args -t $dev"
+    done
 
     if [ -n "${MENDER_ARTIFACT_SIGNING_KEY}" ]; then
         extra_args="$extra_args -k ${MENDER_ARTIFACT_SIGNING_KEY}"
@@ -50,7 +45,7 @@ IMAGE_CMD_mender () {
     fi
 
     mender-artifact write rootfs-image \
-        -n ${MENDER_ARTIFACT_NAME} -t "$devs_compatible" \
+        -n ${MENDER_ARTIFACT_NAME} \
         $extra_args \
         -u ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
         ${MENDER_ARTIFACT_EXTRA_ARGS} \
