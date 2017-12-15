@@ -83,14 +83,14 @@ do_provide_mender_defines() {
 
     MENDER_DTB_NAME=$(echo "${KERNEL_DEVICETREE}" | sed 's/\s/\n/g' | grep -v '.dtbo' | grep -o '[^ ]*$')
 
-    if [ -z "${MENDER_DTB_NAME}" ]; then
+    if [ -z "$MENDER_DTB_NAME" ]; then
         bbfatal "Did not find a dtb specified in KERNEL_DEVICETREE"
         exit 1
     fi
 
-    DTB_COUNT=$(echo ${MENDER_DTB_NAME} | sed 's/\s/\n/g' | wc -l)
+    DTB_COUNT=$(echo $MENDER_DTB_NAME | sed 's/\s/\n/g' | wc -l)
 
-    if [ "${DTB_COUNT}" -ne 1 ]; then
+    if [ "$DTB_COUNT" -ne 1 ]; then
         bbwarn "Found more then one dtb specified in KERNEL_DEVICETREE. Only one should be specified. Choosing the last one."
         MENDER_DTB_NAME=$(echo $MENDER_DTB_NAME | sed 's/\s/\n/g' | tail -1)
     fi
