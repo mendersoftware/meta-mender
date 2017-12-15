@@ -91,8 +91,8 @@ do_provide_mender_defines() {
     DTB_COUNT=$(echo $MENDER_DTB_NAME | sed 's/\s/\n/g' | wc -l)
 
     if [ "$DTB_COUNT" -ne 1 ]; then
-        bbwarn "Found more then one dtb specified in KERNEL_DEVICETREE. Only one should be specified. Choosing the last one."
-        MENDER_DTB_NAME=$(echo $MENDER_DTB_NAME | sed 's/\s/\n/g' | tail -1)
+        bbfatal "Found more then one dtb specified in KERNEL_DEVICETREE. Only one should be specified."
+        exit 1
     fi
 
     cat > ${S}/include/config_mender_defines.h <<EOF
