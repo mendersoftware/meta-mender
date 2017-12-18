@@ -277,3 +277,19 @@ class TestBuild:
                     new_fd.write('PREFERRED_VERSION_%s%s-native = "%s"\n' % (pn_style, base_recipe, version))
 
             run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'], recipe))
+
+    @pytest.mark.min_mender_version('1.1.0')
+    def test_multiple_device_types_compatible(self, prepared_test_build, bitbake_path):
+        """Tests that we can include multiple device_types in the artifact."""
+
+        add_to_local_conf(prepared_test_build, 'MENDER_DEVICE_TYPES_COMPATIBLE = "machine1 machine2"')
+        run_bitbake(prepared_test_build)
+
+        image = latest_build_artifact(prepared_test_build['build_dir'], '.mender')
+
+        output = run_verbose("mender-artifact read %s" % image, capture=True)
+        assert "Compatible devices: '[machine1 machine2]'" in output
+
+        output = subprocess.check_output("tar xOf %s header.tar.gz | tar xOz header-info" % image, shell=True)
+        data = json.loads(output)
+        assert data["device_types_compatible"] == ["machine1", "machine2"]

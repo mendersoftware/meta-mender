@@ -439,6 +439,10 @@ class TestUpdates:
         new_content = sig_case.label
         with open("image.dat", "w") as fd:
             fd.write(new_content)
+            # Write some extra data just to make sure the update is big enough
+            # to be written even if the checksum is wrong. If it's too small it
+            # may fail before it has a chance to be written.
+            fd.write("\x00" * (1048576 * 8))
 
         artifact_args = ""
 
@@ -484,9 +488,6 @@ class TestUpdates:
                             # Corrupt checksum by changing file slightly.
                             with open("image.dat", "r+") as fd:
                                 Helpers.corrupt_middle_byte(fd)
-                                # Need to update the expected content in this case.
-                                fd.seek(0)
-                                new_content = fd.read()
                             # Pack it up again in same order.
                             os.remove("0000.tar.gz")
                             subprocess.check_call(["tar", "czf", "0000.tar.gz"] + data_list)
