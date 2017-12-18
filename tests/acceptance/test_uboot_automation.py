@@ -32,7 +32,7 @@ class TestUbootAutomation:
         # This way, the test will quickly be skipped until any of the SHAs
         # change. You can obtain the SHAs using the same Git command as used
         # below.
-        expected_poky_rev = "65d23bd7986615fdfb0f1717b615534a2a14ab80"
+        expected_poky_rev = "abec40e5ebc6f1b804cf698e365737224a57c41d"
         expected_meta_mender_uboot_rev = "f8202860ccbe1a2904665cf038f60fa331d20ac3"
 
         # SHA from poky repository.
