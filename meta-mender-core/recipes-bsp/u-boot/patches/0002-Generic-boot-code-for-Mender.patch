@@ -1,20 +1,21 @@
-From be67692d01e8cb535587e6b8ad1593363c2d055e Mon Sep 17 00:00:00 2001
-From: Kristian Amlie <kristian.amlie@mender.io>
-Date: Mon, 22 Aug 2016 10:47:08 +0200
+From 9ce2038eec7ef21ce07f2f0ddde13782635c1821 Mon Sep 17 00:00:00 2001
+From: Drew Moseley <drew.moseley@northern.tech>
+Date: Wed, 20 Dec 2017 09:53:16 -0500
 Subject: [PATCH] Generic boot code for Mender.
 
 Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
 Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
+Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
 ---
- include/config_mender.h | 78 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/env_mender.h    | 76 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 154 insertions(+)
+ include/config_mender.h |  83 +++++++++++++++++++++++++++++++++++++++
+ include/env_mender.h    | 102 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 185 insertions(+)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..116b87f7b52571fda45327d4ebcd1fa5ec40f143
+index 0000000..63a32a6
 --- /dev/null
 +++ b/include/config_mender.h
 @@ -0,0 +1,83 @@
@@ -103,7 +104,7 @@ index 0000000000000000000000000000000000000000..116b87f7b52571fda45327d4ebcd1fa5
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efcfc87d682
+index 0000000..705c39e
 --- /dev/null
 +++ b/include/env_mender.h
 @@ -0,0 +1,102 @@
@@ -176,7 +177,7 @@ index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efc
 +    "setenv mender_kernel_root_name ${mender_boot_part_name}; "         \
 +    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}; " \
 +    "setenv mender_uboot_root_name ${mender_boot_part_name}; "          \
-+    "setenv expand_bootargs setenv bootargs ${bootargs}; "              \
++    "setenv expand_bootargs \"setenv bootargs \\\\\"${bootargs}\\\\\"\"; "              \
 +    "run expand_bootargs; "                                             \
 +    "setenv expand_bootargs\0"                                          \
 +                                                                        \
@@ -210,5 +211,5 @@ index 0000000000000000000000000000000000000000..b4fcdb8148311362222415ae13b37efc
 +
 +#endif /* HEADER_ENV_MENDER_H */
 -- 
-2.9.4
+2.7.4
 
