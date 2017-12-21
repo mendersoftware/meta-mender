@@ -270,28 +270,6 @@ def manual_uboot_commit():
     run("fw_setenv bootcount 0")
 
 
-def setup_bbb_sdcard():
-    local_sdimg = pytest.config.getoption("--sdimg-location")
-    put("core-image-base-beaglebone-modified-testing.sdimg",
-        local_path=local_sdimg,
-        remote_path="/opt/")
-    run("chmod +x /root/install-new-image.sh")
-
-    #easier to keep the followinf in a bash script
-    run("/root/install-new-image.sh")
-    reboot()
-
-def boot_from_internal():
-    bootline = """uenvcmd=load mmc 1:1 ${loadaddr} /boot/vmlinuz-4.1.18-ti-r56; \
-                  load mmc 1:1 ${fdtaddr} /boot/dtbs/4.1.18-ti-r56/am335x-boneblack.dtb; \
-                  setenv bootargs console=tty0 console=${console} root=/dev/mmcblk1p1; \
-                  bootz ${loadaddr} - ${fdtaddr}"""
-
-    if "yocto" in run("uname -a"):
-        with settings(warn_only=True):
-            run("sed '/uenvcmd/d' -i /uboot/uEnv.txt")
-        append("/uboot/uEnv.txt", bootline)
-        reboot()
 
 def common_board_setup(files=None, remote_path='/tmp', image_file=None):
     """
