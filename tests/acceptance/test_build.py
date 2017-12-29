@@ -177,14 +177,14 @@ class TestBuild:
             entry = line.split('/')
             if entry[5] == "scripts":
                 # The scripts directory exists. That is fine in itself, but it
-                # should be empty.
+                # should not contain any script files ("version" is allowed).
                 output = subprocess.check_output(["debugfs", "-R", "ls -p /etc/mender/scripts", latest_rootfs])
                 for line in output.split('\n'):
                     if len(line) == 0:
                         continue
 
                     entry = line.split('/')
-                    assert entry[5] == "." or entry[5] == "..", "There should be no file in /etc/mender/scripts"
+                    assert entry[5] == "." or entry[5] == ".." or entry[5] == "version", "There should be no script file in /etc/mender/scripts"
                 break
 
         # Check artifact.
