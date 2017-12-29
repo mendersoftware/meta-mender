@@ -1,7 +1,6 @@
 inherit deploy
 
 MENDER_STATE_SCRIPTS_DIR = "${B}/mender-state-scripts"
-MENDER_STATE_SCRIPTS_VERSION = "2"
 
 # Default is to look in these two directories for scripts.
 MENDER_STATE_SCRIPTS ?= "${S}/mender-state-scripts ${MENDER_STATE_SCRIPTS_DIR}"
@@ -69,12 +68,6 @@ install_or_deploy_scripts() {
                 ;;
         esac
     done
-
-    # Setup state script version file
-    if [ $action = install ]; then
-        install -d -m 755 ${D}${sysconfdir}/mender/scripts/
-        echo -n "${MENDER_STATE_SCRIPTS_VERSION}" > ${D}${sysconfdir}/mender/scripts/version
-    fi
 }
 
 do_install_append() {
