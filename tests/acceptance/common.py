@@ -32,15 +32,6 @@ from contextlib import contextmanager
 
 import conftest
 
-def if_not_bbb(func):
-    def func_wrapper():
-        if pytest.config.getoption("bbb"):
-            return
-        else:
-            func()
-    return func_wrapper
-
-
 class ProcessGroupPopen(subprocess.Popen):
     """Wrapper for subprocess.Popen that starts the underlying process in a
     separate process group. The wrapper overrides kill() and terminate() so
@@ -110,9 +101,6 @@ def start_qemu(qenv=None):
 
 def start_qemu_sdimg(latest_sdimg):
     """Start qemu instance running *.sdimg"""
-    if pytest.config.getoption("bbb"):
-        return
-
     fh, img_path = tempfile.mkstemp(suffix=".sdimg", prefix="test-image")
     # don't need an open fd to temp file
     os.close(fh)
@@ -164,20 +152,6 @@ def start_qemu_flash(latest_vexpress_nor):
         raise
 
     return qemu, img_path
-
-
-@if_not_bbb
-def is_qemu_running():
-    while True:
-        proc = subprocess.Popen(["pgrep", "qemu"], stdout=subprocess.PIPE)
-        assert(proc)
-        try:
-            if proc.stdout.readlines() == []:
-                return False
-            else:
-                return True
-        finally:
-            proc.wait()
 
 
 def reboot(wait = 120):
@@ -324,11 +298,11 @@ def setup_board(request, clean_image, bitbake_variables):
     bt = pytest.config.getoption("--board-type")
 
     print('board type:', bt)
-    if bt == "qemu":
+    if "qemu" in bt:
         return qemu_running(request, clean_image)
-    elif bt == "bbb":
+    elif bt == "beagleboneblack":
         return setup_bbb(request)
-    elif bt == "rpi3":
+    elif bt == "raspberrypi3":
         return setup_rpi3(request)
     elif bt == "colibri-imx7":
         return setup_colibri_imx7(request, clean_image)
@@ -414,9 +388,6 @@ def setup_rpi3(request):
 
 @pytest.fixture(scope="module")
 def qemu_running(request, clean_image):
-    if pytest.config.getoption("--bbb"):
-        return
-
     latest_sdimg = latest_build_artifact(clean_image['build_dir'], ".sdimg")
     latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], ".vexpress-nor")
 
