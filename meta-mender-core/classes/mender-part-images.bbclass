@@ -99,7 +99,7 @@ EOF
     outimgname="${IMGDEPLOYDIR}/${IMAGE_NAME}.$suffix"
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-$suffix"
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
-    mv "$wicout/$(basename "${wks%.wks}")"*.direct "$outimgname"
+    mv "$wicout/build/$(basename "${wks%.wks}")"*.direct "$outimgname"
     rm -rf "$wicout/"
 
     ln -sfn "${IMAGE_NAME}.$suffix" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$suffix"
