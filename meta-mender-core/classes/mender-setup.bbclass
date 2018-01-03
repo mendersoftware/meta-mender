@@ -50,6 +50,11 @@ MENDER_DEVICE_TYPE_DEFAULT = "${MACHINE}"
 MENDER_DEVICE_TYPES_COMPATIBLE ??= "${MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT}"
 MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT = "${MENDER_DEVICE_TYPE}"
 
+# Upstream poky changed their Beaglebone machine name from "beaglebone" to
+# "beaglebone-yocto". Add the old name to the list of compatible devices, so
+# people can upgrade.
+MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT_append_beaglebone-yocto = " beaglebone"
+
 # Total size of the medium that mender sdimg will be written to. The size of
 # rootfs partition will be calculated automatically by subtracting the size of
 # boot and data partitions along with some predefined overhead (see
