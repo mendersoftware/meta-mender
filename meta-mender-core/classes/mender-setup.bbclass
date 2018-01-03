@@ -149,16 +149,16 @@ python() {
         'mender-uboot',
     }
 
-    mfe = d.getVar('MENDER_FEATURE_ENABLE')
+    mfe = d.getVar('MENDER_FEATURE_ENABLE', True)
     mfe = mfe.split() if mfe is not None else []
-    mfd = d.getVar('MENDER_FEATURE_DISABLE')
+    mfd = d.getVar('MENDER_FEATURE_DISABLE', True)
     mfd = mfd.split() if mfd is not None else []
     for feature in mfe + mfd:
         if not feature.startswith('mender-'):
             bb.fatal("%s in MENDER_FEATURE_ENABLE or MENDER_FEATURE_DISABLE is not a Mender feature."
                      % feature)
 
-    for feature in d.getVar('DISTRO_FEATURES').split():
+    for feature in d.getVar('DISTRO_FEATURES', True).split():
         if feature.startswith("mender-"):
             if feature not in mender_features:
                 bb.fatal("%s from MENDER_FEATURE_ENABLE or DISTRO_FEATURES is not a valid Mender feature."

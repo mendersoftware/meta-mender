@@ -92,7 +92,7 @@ addtask do_provide_mender_defines after do_patch before do_configure
 # The only reason it's not evaluated the same way is that we don't have the
 # necessary information (BOOTENV_SIZE and BOOTENV_RANGE) when evaluating
 # MENDER_STORAGE_RESERVED_RAW_SPACE.
-MENDER_BOOTENV_TOTAL_ALIGNED_SIZE = "${@mender_get_env_total_aligned_size(${BOOTENV_SIZE}, d.getVar('BOOTENV_RANGE') or None, ${MENDER_PARTITION_ALIGNMENT_KB})}"
+MENDER_BOOTENV_TOTAL_ALIGNED_SIZE = "${@mender_get_env_total_aligned_size(${BOOTENV_SIZE}, d.getVar('BOOTENV_RANGE', True) or None, ${MENDER_PARTITION_ALIGNMENT_KB})}"
 
 def mender_get_env_offset(start_offset, index, total_aligned_size):
     if index == 1:

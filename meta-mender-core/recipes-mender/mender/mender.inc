@@ -4,7 +4,7 @@ HOMEPAGE = "https://mender.io"
 def cert_location_if_server_crt_in(src_uri, d):
     for src in src_uri.split():
         if src.endswith("/server.crt"):
-            return "%s/mender/server.crt" % d.getVar('sysconfdir')
+            return "%s/mender/server.crt" % d.getVar('sysconfdir', True)
     return ""
 
 MENDER_SERVER_URL ?= "https://docker.mender.io"
@@ -75,7 +75,7 @@ python do_prepare_mender_conf() {
 
     # If a mender.conf has been provided in SRC_URI, merge this with the
     # settings we generate. The settings specified by variables take precedence.
-    src_conf = os.path.join(d.getVar("WORKDIR"), "mender.conf")
+    src_conf = os.path.join(d.getVar("WORKDIR", True), "mender.conf")
     if os.path.exists(src_conf):
         bb.debug(1, "mender.conf already present in ${WORKDIR}, merging with generated settings.")
         fd = open(src_conf)
@@ -92,25 +92,25 @@ python do_prepare_mender_conf() {
             else:
                 conf[key] = value
 
-    key_in_src_uri = os.path.exists(os.path.join(d.getVar("WORKDIR"), "artifact-verify-key.pem"))
-    key_in_var = d.getVar("MENDER_ARTIFACT_VERIFY_KEY") not in [None, ""]
+    key_in_src_uri = os.path.exists(os.path.join(d.getVar("WORKDIR", True), "artifact-verify-key.pem"))
+    key_in_var = d.getVar("MENDER_ARTIFACT_VERIFY_KEY", True) not in [None, ""]
 
     # Add new variable -> config assignments here.
     if key_in_src_uri or key_in_var:
-        conf_maybe_add("ArtifactVerifyKey", "%s/mender/artifact-verify-key.pem" % d.getVar("sysconfdir"), integer=False)
-    conf_maybe_add("InventoryPollIntervalSeconds", d.getVar("MENDER_INVENTORY_POLL_INTERVAL_SECONDS"), integer=True)
+        conf_maybe_add("ArtifactVerifyKey", "%s/mender/artifact-verify-key.pem" % d.getVar("sysconfdir", True), integer=False)
+    conf_maybe_add("InventoryPollIntervalSeconds", d.getVar("MENDER_INVENTORY_POLL_INTERVAL_SECONDS", True), integer=True)
     # Mandatory variables - will always exist
-    conf_maybe_add("RetryPollIntervalSeconds", d.getVar("MENDER_RETRY_POLL_INTERVAL_SECONDS"), integer=True)
-    conf_maybe_add("RootfsPartA", d.getVar("MENDER_ROOTFS_PART_A"), integer=False)
-    conf_maybe_add("RootfsPartB", d.getVar("MENDER_ROOTFS_PART_B"), integer=False)
-    conf_maybe_add("ServerCertificate", d.getVar("MENDER_CERT_LOCATION"), integer=False)
-    conf_maybe_add("ServerURL", d.getVar("MENDER_SERVER_URL"), integer=False)
-    conf_maybe_add("UpdatePollIntervalSeconds", d.getVar("MENDER_UPDATE_POLL_INTERVAL_SECONDS"), integer=True)
+    conf_maybe_add("RetryPollIntervalSeconds", d.getVar("MENDER_RETRY_POLL_INTERVAL_SECONDS", True), integer=True)
+    conf_maybe_add("RootfsPartA", d.getVar("MENDER_ROOTFS_PART_A", True), integer=False)
+    conf_maybe_add("RootfsPartB", d.getVar("MENDER_ROOTFS_PART_B", True), integer=False)
+    conf_maybe_add("ServerCertificate", d.getVar("MENDER_CERT_LOCATION", True), integer=False)
+    conf_maybe_add("ServerURL", d.getVar("MENDER_SERVER_URL", True), integer=False)
+    conf_maybe_add("UpdatePollIntervalSeconds", d.getVar("MENDER_UPDATE_POLL_INTERVAL_SECONDS", True), integer=True)
 
     # Tenant-token is optional, but falls back to a default-value set in config.go
-    conf_maybe_add("TenantToken", d.getVar("MENDER_TENANT_TOKEN"), integer=False)
+    conf_maybe_add("TenantToken", d.getVar("MENDER_TENANT_TOKEN", True), integer=False)
 
-    dst_conf = os.path.join(d.getVar("B"), "mender.conf")
+    dst_conf = os.path.join(d.getVar("B", True), "mender.conf")
     fd = open(dst_conf, "w")
     json.dump(conf, fd, indent=4, sort_keys=True)
     fd.close()
