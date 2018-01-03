@@ -17,7 +17,7 @@ IMAGE_TYPEDEP_ubimg_append = "ubifs"
 inherit image
 inherit image_types
 
-do_image_ubimg[depends] += "mtd-utils-native:do_populate_sysroot"
+IMAGE_DEPENDS_ubimg = "mtd-utils-native"
 
 IMAGE_CMD_ubimg () {
     # For some reason, logging is not working correctly inside IMAGE_CMD bodies,
