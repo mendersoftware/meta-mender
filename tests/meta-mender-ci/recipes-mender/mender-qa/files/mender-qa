@@ -10,7 +10,6 @@
 # - V - if 1 then the callee is expected to produce verbose output
 
 datadir=/usr/share/mender-qa
-commands_registry=${datadir}/commands
 
 while getopts "dh" opt 2>/dev/null; do
      case "$opt" in
@@ -20,10 +19,8 @@ while getopts "dh" opt 2>/dev/null; do
          h)
              echo "usage: $(basename $0) [-d] <command>"
              echo "Available commands:"
-             for c in $(cat $commands_registry); do
-                 echo "    $c"
-             done
-             exit 0
+             find $datadir -type -111 -printf '%f\n'
+             exit 1
              ;;
          \?)
              echo "$opt"
@@ -50,7 +47,7 @@ shift
 
 helper="/usr/share/mender-qa/${command}"
 
-if grep -q -x "${command}" ${commands_registry} && test -x "$helper"; then
+if test -x "$helper"; then
     DATADIR=${datadir} "$helper" "$@"
 else
     echo "command $command not implemented"
