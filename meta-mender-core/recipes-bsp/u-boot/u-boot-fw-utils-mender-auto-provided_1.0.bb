@@ -39,7 +39,17 @@ do_patch[depends] += "${MENDER_PREFERRED_UBOOT}:do_mender_tar_src"
 
 do_compile () {
     oe_runmake ${UBOOT_MACHINE}
-    oe_runmake envtools
+
+    # Detect what the build target to the environment tools is. It changed from
+    # "env" to "envtools" in v2017.09.
+    grep -q '^tools-all: *env\b' Makefile && ENV_TARGET=env
+    grep -q '^tools-all: *envtools\b' Makefile && ENV_TARGET=envtools
+    if [ -z "$ENV_TARGET" ]; then
+        echo "Could not determine environment tools target."
+        exit 1
+    fi
+
+    oe_runmake $ENV_TARGET
 }
 
 do_install () {
