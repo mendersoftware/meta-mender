@@ -1,10 +1,7 @@
-From a2bc4d72fe6c8e888534fb4049374af4fef394e5 Mon Sep 17 00:00:00 2001
-Message-Id: <a2bc4d72fe6c8e888534fb4049374af4fef394e5.1497444332.git.maciej.borzecki@rndity.com>
-In-Reply-To: <cover.1497444332.git.maciej.borzecki@rndity.com>
-References: <cover.1497444332.git.maciej.borzecki@rndity.com>
-From: Maciej Borzecki <maciej.borzecki@rndity.com>
-Date: Mon, 12 Jun 2017 23:14:40 +0200
-Subject: [PATCH 1/5] vexpress_ca9x4: enable booting from ubifs
+From 98fda6792e8471c64fd3d28438121c2d0adcd870 Mon Sep 17 00:00:00 2001
+From: Drew Moseley <drew.moseley@northern.tech>
+Date: Thu, 4 Jan 2018 11:35:39 -0500
+Subject: [PATCH] vexpress_ca9x4: enable booting from ubifs
 
 Enable options that add support for UBI images on CFI and UBIFS.
 
@@ -12,36 +9,42 @@ Enable MTD concatenation, thus 2*64MB NOR flash appears as single 128MB device.
 
 Define the follwing flash partitions:
  - 1MB - uboot
- - 1MB - uboot environment (previously stored at the top of the flash)
- - remaining - UBI
+    - 1MB - uboot environment (previously stored at the top of the flash)
+          - remaining - UBI
 
 When defining mtdparts use device name that matches kernel's MTD name (otherwise
 partitioning will not be applied).
 
 Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
+
+Backported to morty
+
+Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
 ---
- configs/vexpress_ca9x4_defconfig |  5 ++++
- include/configs/vexpress_ca9x4.h | 57 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 62 insertions(+)
+ configs/vexpress_ca9x4_defconfig |  1 +
+ include/configs/vexpress_ca9x4.h | 59 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 60 insertions(+)
 
 diff --git a/configs/vexpress_ca9x4_defconfig b/configs/vexpress_ca9x4_defconfig
-index 7b845c6c79843f99b04bc64d80d2e13d6a53b494..554e07b4c25ad4ec7b469c9e8f830da4404eca6a 100644
+index 2947fc1..104b098 100644
 --- a/configs/vexpress_ca9x4_defconfig
 +++ b/configs/vexpress_ca9x4_defconfig
-@@ -20,3 +20,4 @@ CONFIG_CMD_MMC=y
- CONFIG_MTD_NOR_FLASH=y
- CONFIG_BAUDRATE=38400
- CONFIG_OF_LIBFDT=y
+@@ -14,3 +14,4 @@ CONFIG_TARGET_VEXPRESS_CA9X4=y
+ # CONFIG_CMD_SETEXPR is not set
+ # CONFIG_CMD_NFS is not set
+ # CONFIG_CMD_MISC is not set
 +CONFIG_CMD_UBI=y
+\ No newline at end of file
 diff --git a/include/configs/vexpress_ca9x4.h b/include/configs/vexpress_ca9x4.h
-index 993398ccc696c70d7f4c23c13f00fda6c0f536fe..4138a0e0ff18ff138bfe4918cd75a3494366d94b 100644
+index 99be50a..99f1135 100644
 --- a/include/configs/vexpress_ca9x4.h
 +++ b/include/configs/vexpress_ca9x4.h
-@@ -14,4 +14,62 @@
- #define CONFIG_VEXPRESS_ORIGINAL_MEMORY_MAP
+@@ -15,4 +15,63 @@
+ #define CONFIG_BOOTP_VCI_STRING     "U-Boot.armv7.vexpress_ca9x4"
  #include "vexpress_common.h"
  
 +#define CONFIG_RBTREE
++#define CONFIG_CMD_UBI
 +#define CONFIG_CMD_UBIFS
 +#define CONFIG_CMD_MTDPARTS
 +#define CONFIG_MTD_DEVICE
@@ -101,5 +104,5 @@ index 993398ccc696c70d7f4c23c13f00fda6c0f536fe..4138a0e0ff18ff138bfe4918cd75a349
 +
  #endif /* VEXPRESS_CA9X4_H */
 -- 
-2.9.3
+2.7.4
 
