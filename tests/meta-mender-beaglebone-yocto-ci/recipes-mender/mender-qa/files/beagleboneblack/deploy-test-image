@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e -x
+
+. ${DATADIR}/common
+maybe_verbose
+
+SOURCE_DIR=${SOURCE_DIR:-/tmp}
+IMAGE_FILE=${IMAGE_FILE:-core-image-minimal-beaglebone-yocto.wic}
+TARGET_DEV=${TARGET_DEV:-/dev/mmcblk0}
+
+IMAGE_SOURCE_FILE=${SOURCE_DIR}/${IMAGE_FILE}
+
+# unmount all partitions from target dev
+for mp in $(cat /proc/mounts |grep "$TARGET_DEV" | cut -d' ' -f2); do
+    log "unmounting $mp (mounted from $TARGET_DEV"
+    umount $mp
+done
+
+if [ -e "$IMAGE_SOURCE_FILE" ]; then
+    LSB_RELEASE=$(lsb_release -i)
+
+    if echo "$LSB_RELEASE" | grep -i debian; then
+        log "writing system image $IMAGE_FILE to $TARGET_DEV"
+        dd if=$IMAGE_SOURCE_FILE of=$TARGET_DEV bs=1M
+    else
+        log "Debian system not detected, not DDing"
+        exit 1
+    fi
+
+else
+    log "no system image to deploy"
+    exit 1
+fi

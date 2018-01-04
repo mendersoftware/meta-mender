@@ -1,5 +1,5 @@
 PACKAGES += "rssh-tunnel"
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/rpi:${THISDIR}/files/:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files/raspberrypi3:${THISDIR}/files/:"
 
 SRC_URI_append = " file://rssh.service \
                    file://id_rsa \
