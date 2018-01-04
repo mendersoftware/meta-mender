@@ -294,14 +294,16 @@ def common_board_setup(files=None, remote_path='/tmp', image_file=None):
         sudo("mender-qa activate-test-image")
 
 def common_board_cleanup():
+    sudo("mender-qa activate-test-image off")
     with settings(warn_only=True):
-        sudo("mender-qa activate-test-image off")
+        sudo("reboot")
 
     execute(run_after_connect, "true", hosts = conftest.current_hosts())
 
 def common_boot_from_internal():
+    sudo("mender-qa activate-test-image on")
     with settings(warn_only=True):
-        sudo("mender-qa activate-test-image on")
+        sudo("reboot")
 
     execute(run_after_connect, "true", hosts = conftest.current_hosts())
 

@@ -21,7 +21,6 @@ case "$1" in
             cp $MOUNTPOINT/boot.scr $MOUNTPOINT/boot-mender.scr
             cp $MOUNTPOINT/boot-for-flashing.scr $MOUNTPOINT/boot.scr
             sed -ie 's,root=${mender_kernel_root},root=/dev/sda2,' $MOUNTPOINT/cmdline.txt
-            reboot
         else
             echo "test-image not running"
             exit 1
@@ -35,6 +34,5 @@ case "$1" in
         fi
         sed -ie 's,root=/dev/sda2,root=${mender_kernel_root},' $MOUNTPOINT/cmdline.txt
         umount $MOUNT_DEV
-        reboot
         ;;
 esac
