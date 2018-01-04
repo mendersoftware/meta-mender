@@ -1,5 +1,5 @@
 PACKAGES += "rssh-tunnel"
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/beaglebone/:${THISDIR}/files/:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files/beagleboneblack/:${THISDIR}/files/:"
 
 SRC_URI_append = " file://rssh.service \
                    file://id_rsa \
