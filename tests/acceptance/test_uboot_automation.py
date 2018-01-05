@@ -25,26 +25,32 @@ from common import *
 
 class TestUbootAutomation:
     def revision_already_checked(self):
-        # Update these two to skip the check. This should be updated to new SHAs
-        # once you have verified that:
-        #   1. The poky revision passes the test.
-        #   2. The meta-mender revision passes the test.
-        # This way, the test will quickly be skipped until any of the SHAs
-        # change. You can obtain the SHAs using the same Git command as used
-        # below.
+        # ----------------------------------------------------------------------
+        # Update these two to skip the check.
         expected_poky_rev = "65d23bd7986615fdfb0f1717b615534a2a14ab80"
         expected_meta_mender_uboot_rev = "f8202860ccbe1a2904665cf038f60fa331d20ac3"
+        # ----------------------------------------------------------------------
 
         # SHA from poky repository.
         poky_rev = subprocess.check_output("git rev-parse HEAD", shell=True,
                                            cwd=os.path.join(os.environ['BUILDDIR'], "..")).strip()
-        if expected_poky_rev != poky_rev:
-            return False
-
         # SHA from meta-mender repository.
         meta_mender_uboot_rev = subprocess.check_output("git rev-list -n1 HEAD -- ../../meta-mender-core/recipes-bsp/u-boot",
                                                         shell=True).strip()
-        if expected_meta_mender_uboot_rev != meta_mender_uboot_rev:
+        if expected_poky_rev != poky_rev or expected_meta_mender_uboot_rev != meta_mender_uboot_rev:
+            print("""Need to run test_uboot_compile. Used these SHAs for comparison:
+
+poky_rev = %s
+meta_mender_uboot_rev = %s
+
+If this combination has been verified to pass, you can set the two variables:
+
+expected_poky_rev
+expected_meta_mender_uboot_rev
+
+to the values above. This will cause the test to be skipped until the SHAs
+change."""
+                  % (poky_rev, meta_mender_uboot_rev))
             return False
 
         return True
