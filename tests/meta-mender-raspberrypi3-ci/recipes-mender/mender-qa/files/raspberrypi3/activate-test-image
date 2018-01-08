@@ -7,6 +7,10 @@ else
     MOUNTPOINT=/mnt
 fi
 
+if ! mount | grep $MOUNT_DEV; then
+    mount $MOUNT_DEV $MOUNTPOINT
+fi
+
 case "$1" in
     status)
         if grep "mender" $MOUNTPOINT/boot.scr > /dev/null; then
@@ -27,11 +31,9 @@ case "$1" in
         ;;
     on|'')
         echo "activating test image"
-        mount $MOUNT_DEV $MOUNTPOINT
         if [ -f $MOUNTPOINT/boot-mender.scr ]; then
             cp $MOUNTPOINT/boot-mender.scr $MOUNTPOINT/boot.scr
         fi
         sed -ie 's,root=/dev/sda2,root=${mender_kernel_root},' $MOUNTPOINT/cmdline.txt
-        umount $MOUNT_DEV
         ;;
 esac
