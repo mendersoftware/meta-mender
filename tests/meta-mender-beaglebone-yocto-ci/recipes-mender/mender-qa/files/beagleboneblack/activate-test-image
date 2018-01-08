@@ -6,30 +6,30 @@ set -e -x
 maybe_verbose
 
 MOUNT_DEV=${MOUNT_DEV:-/dev/mmcblk0p1}
-UENV_MOUNT=/mnt
-UENV_FILE="${UENV_MOUNT}/uEnv.txt"
+if [ -d /uboot ]; then
+    MOUNTPOINT=/uboot
+else
+    MOUNTPOINT=/mnt
+fi
+
+if ! mount | grep $MOUNT_DEV; then
+    mount $MOUNT_DEV $MOUNTPOINT
+fi
 
 case "$1" in
     status)
-        if [ -e $UENV_FILE ]; then
-            val=$(grep -e "uenvcmd=" $UENV_FILE 2>/dev/null)
+        if [ -e ${MOUNTPOINT}/uEnv.txt ]; then
             log "test image is disabled"
-            disabled=1
-        fi
-        if [ -z "$disabled" ]; then
-            log "tests image is enabled"
+        else
+            log "test image is enabled"
         fi
         ;;
     off)
         log "deactivating test image"
-        mount $MOUNT_DEV $UENV_MOUNT && \
-            cp ${DATADIR}/uEnv.txt ${UENV_MOUNT} && \
-            umount $MOUNT_DEV
+        cp ${DATADIR}/uEnv.txt ${MOUNTPOINT}
         ;;
     on|'')
         log "activating test image"
-        mount $MOUNT_DEV $UENV_MOUNT && \
-            rm -f $UENV_MOUNT/uEnv.txt && \
-            umount $MOUNT_DEV
+        rm -f $MOUNTPOINT/uEnv.txt
         ;;
 esac
