@@ -20,11 +20,11 @@ def setup_board(request, clean_image, bitbake_variables):
     bt = pytest.config.getoption("--board-type")
 
     print('board type:', bt)
-    if bt == "qemu":
+    if "qemu" in bt:
         return qemu_running(request, clean_image)
-    elif bt == "bbb":
+    elif bt == "beagleboneblack":
         return setup_bbb(request)
-    elif bt == "rpi3":
+    elif bt == "raspberrypi3":
         return setup_rpi3(request)
     elif bt == "colibri-imx7":
         return setup_colibri_imx7(request, clean_image)
@@ -75,9 +75,6 @@ def setup_rpi3(request):
 
 @pytest.fixture(scope="module")
 def qemu_running(request, clean_image):
-    if pytest.config.getoption("--bbb"):
-        return
-
     latest_sdimg = latest_build_artifact(clean_image['build_dir'], ".sdimg")
     latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], ".vexpress-nor")
 

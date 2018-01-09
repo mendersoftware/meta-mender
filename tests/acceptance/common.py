@@ -32,15 +32,6 @@ from contextlib import contextmanager
 
 import conftest
 
-def if_not_bbb(func):
-    def func_wrapper():
-        if pytest.config.getoption("bbb"):
-            return
-        else:
-            func()
-    return func_wrapper
-
-
 class ProcessGroupPopen(subprocess.Popen):
     """Wrapper for subprocess.Popen that starts the underlying process in a
     separate process group. The wrapper overrides kill() and terminate() so
@@ -110,9 +101,6 @@ def start_qemu(qenv=None):
 
 def start_qemu_sdimg(latest_sdimg):
     """Start qemu instance running *.sdimg"""
-    if pytest.config.getoption("bbb"):
-        return
-
     fh, img_path = tempfile.mkstemp(suffix=".sdimg", prefix="test-image")
     # don't need an open fd to temp file
     os.close(fh)
@@ -164,20 +152,6 @@ def start_qemu_flash(latest_vexpress_nor):
         raise
 
     return qemu, img_path
-
-
-@if_not_bbb
-def is_qemu_running():
-    while True:
-        proc = subprocess.Popen(["pgrep", "qemu"], stdout=subprocess.PIPE)
-        assert(proc)
-        try:
-            if proc.stdout.readlines() == []:
-                return False
-            else:
-                return True
-        finally:
-            proc.wait()
 
 
 def reboot(wait = 120):
@@ -296,28 +270,6 @@ def manual_uboot_commit():
     run("fw_setenv bootcount 0")
 
 
-def setup_bbb_sdcard():
-    local_sdimg = pytest.config.getoption("--sdimg-location")
-    put("core-image-base-beaglebone-modified-testing.sdimg",
-        local_path=local_sdimg,
-        remote_path="/opt/")
-    run("chmod +x /root/install-new-image.sh")
-
-    #easier to keep the followinf in a bash script
-    run("/root/install-new-image.sh")
-    reboot()
-
-def boot_from_internal():
-    bootline = """uenvcmd=load mmc 1:1 ${loadaddr} /boot/vmlinuz-4.1.18-ti-r56; \
-                  load mmc 1:1 ${fdtaddr} /boot/dtbs/4.1.18-ti-r56/am335x-boneblack.dtb; \
-                  setenv bootargs console=tty0 console=${console} root=/dev/mmcblk1p1; \
-                  bootz ${loadaddr} - ${fdtaddr}"""
-
-    if "yocto" in run("uname -a"):
-        with settings(warn_only=True):
-            run("sed '/uenvcmd/d' -i /uboot/uEnv.txt")
-        append("/uboot/uEnv.txt", bootline)
-        reboot()
 
 def common_board_setup(files=None, remote_path='/tmp', image_file=None):
     """
@@ -342,14 +294,16 @@ def common_board_setup(files=None, remote_path='/tmp', image_file=None):
         sudo("mender-qa activate-test-image")
 
 def common_board_cleanup():
+    sudo("mender-qa activate-test-image off")
     with settings(warn_only=True):
-        sudo("mender-qa activate-test-image off")
+        sudo("reboot")
 
     execute(run_after_connect, "true", hosts = conftest.current_hosts())
 
 def common_boot_from_internal():
+    sudo("mender-qa activate-test-image on")
     with settings(warn_only=True):
-        sudo("mender-qa activate-test-image on")
+        sudo("reboot")
 
     execute(run_after_connect, "true", hosts = conftest.current_hosts())
 
