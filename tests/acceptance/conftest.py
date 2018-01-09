@@ -20,7 +20,7 @@ from fabric.api import *
 
 import unittest
 
-import common
+from fixtures import *
 
 
 def pytest_addoption(parser):
