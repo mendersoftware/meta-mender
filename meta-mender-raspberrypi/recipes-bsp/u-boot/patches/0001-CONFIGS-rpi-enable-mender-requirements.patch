@@ -16,7 +16,8 @@ Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
  configs/rpi_3_defconfig     | 1 +
  configs/rpi_defconfig       | 1 +
  include/configs/rpi.h       | 2 ++
- 5 files changed, 6 insertions(+)
+ configs/rpi_0_w_defconfig | 1 +
+ 6 files changed, 7 insertions(+)
 
 diff --git a/configs/rpi_2_defconfig b/configs/rpi_2_defconfig
 index 2345697..ef3c0d8 100644
@@ -68,5 +69,14 @@ index c499b45..f8813a0 100644
  /* Shell */
  #define CONFIG_CMDLINE_EDITING
 -- 
-2.7.4
-
+diff --git a/configs/rpi_0_w_defconfig b/configs/rpi_0_w_defconfig
+index 623aad3a5a..952ffb5d6e 100644
+--- a/configs/rpi_0_w_defconfig
++++ b/configs/rpi_0_w_defconfig
+@@ -33,3 +33,4 @@ CONFIG_SYS_WHITE_ON_BLACK=y
+ CONFIG_CONSOLE_SCROLL_LINES=10
+ CONFIG_PHYS_TO_BUS=y
+ CONFIG_OF_LIBFDT_OVERLAY=y
++CONFIG_ENV_IS_IN_MMC=y
+-- 
+2.11.0
