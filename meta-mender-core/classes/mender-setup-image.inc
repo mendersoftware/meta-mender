@@ -15,17 +15,17 @@ python() {
 # Update fstab for Mender
 ROOTFS_POSTPROCESS_COMMAND_append += " mender_update_fstab_file ; "
 mender_update_fstab_file() {
-    mkdir -p ${IMAGE_ROOTFS}/uboot
-    mkdir -p ${IMAGE_ROOTFS}/data
-
-    echo "# Where the U-Boot environment resides; for devices with SD card support ONLY!" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
-
-    if [ -n "${MENDER_BOOT_PART}" ]; then
-        echo "${MENDER_BOOT_PART}   /uboot               ${MENDER_BOOT_PART_FSTYPE}       defaults,sync    0  0" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
-    else
-        bbdebug 2 "MENDER_BOOT_PART not set. Not adding to fstab..."
+    if [ "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-sd', 'true', 'false', d)}" ]; then
+        if [ -n "${MENDER_BOOT_PART}" ]; then
+            echo "# Where the U-Boot environment resides; for devices with SD card support ONLY!" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+            mkdir -p ${IMAGE_ROOTFS}/uboot
+            echo "${MENDER_BOOT_PART}   /uboot               ${MENDER_BOOT_PART_FSTYPE}       defaults,sync    0  0" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+        else
+            bbdebug 2 "MENDER_BOOT_PART not set. Not adding to fstab..."
+        fi
     fi
 
+    mkdir -p ${IMAGE_ROOTFS}/data
     echo "${MENDER_DATA_PART}   /data                ${MENDER_DATA_PART_FSTYPE}       defaults         0  0" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
 }
 
