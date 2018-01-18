@@ -71,7 +71,8 @@ IMAGE_CMD_ubimg () {
     mkdir -p "${WORKDIR}/data"
 
     if [ -n "${MENDER_DATA_PART_DIR}" ]; then
-        find "${MENDER_DATA_PART_DIR}" -not -name . -exec cp -a '{}' "${WORKDIR}/data" \;
+        rsync -a --no-owner --no-group ${MENDER_DATA_PART_DIR}/* "${WORKDIR}/data"
+        chown -R root:root "${WORKDIR}/data"
     fi
 
     if [ -f "${DEPLOY_DIR_IMAGE}/data.tar" ]; then
@@ -93,3 +94,5 @@ IMAGE_CMD_ubimg () {
 }
 
 IMAGE_TYPEDEP_ubimg_append = " ubifs"
+
+IMAGE_DEPENDS_ubimg += "rsync-native"
