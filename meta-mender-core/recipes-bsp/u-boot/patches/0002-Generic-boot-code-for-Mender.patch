@@ -1,21 +1,21 @@
-From 9ce2038eec7ef21ce07f2f0ddde13782635c1821 Mon Sep 17 00:00:00 2001
+From 0458d23041d7f6f36a64160d466bbf6e4744e7b4 Mon Sep 17 00:00:00 2001
 From: Drew Moseley <drew.moseley@northern.tech>
-Date: Wed, 20 Dec 2017 09:53:16 -0500
+Date: Fri, 19 Jan 2018 15:06:08 -0500
 Subject: [PATCH] Generic boot code for Mender.
 
 Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
 Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
 Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
 ---
- include/config_mender.h |  83 +++++++++++++++++++++++++++++++++++++++
- include/env_mender.h    | 102 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 185 insertions(+)
+ include/config_mender.h | 78 ++++++++++++++++++++++++++++++++++++++++
+ include/env_mender.h    | 95 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 173 insertions(+)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000..63a32a6
+index 0000000..116b87f
 --- /dev/null
 +++ b/include/config_mender.h
 @@ -0,0 +1,78 @@
@@ -99,10 +99,10 @@ index 0000000..63a32a6
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000..705c39e
+index 0000000..ff9337d
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,79 @@
+@@ -0,0 +1,95 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -150,6 +150,12 @@ index 0000000..705c39e
 +                                                                        \
 +    "mender_uboot_dev=" __stringify(MENDER_UBOOT_STORAGE_DEVICE) "\0"   \
 +                                                                        \
++    "mender_boot_kernel_type=" MENDER_BOOT_KERNEL_TYPE "\0"             \
++                                                                        \
++    "mender_kernel_name=" MENDER_KERNEL_NAME "\0"                       \
++                                                                        \
++    "mender_dtb_name=" MENDER_DTB_NAME "\0"                             \
++                                                                        \
 +    "mender_setup="                                                     \
 +    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; "    \
 +    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "     \
@@ -180,6 +186,16 @@ index 0000000..705c39e
 +    "if test ${upgrade_available} = 1; "                                \
 +    "then reset; "                                                      \
 +    "fi\0"
++
++#define CONFIG_MENDER_BOOTCOMMAND                                       \
++    "run mender_setup; "                                                \
++    "setenv bootargs root=${mender_kernel_root} ${bootargs}; "          \
++    "if test \"${fdt_addr_r}\" != \"\"; then "                          \
++    "load ${mender_uboot_root} ${fdt_addr_r} /boot/${mender_dtb_name}; " \
++    "fi; "                                                              \
++    "load ${mender_uboot_root} ${kernel_addr_r} /boot/${mender_kernel_name}; " \
++    "${mender_boot_kernel_type} ${kernel_addr_r} - ${fdt_addr_r}; "     \
++    "run mender_try_to_recover"
 +
 +#endif /* HEADER_ENV_MENDER_H */
 -- 
