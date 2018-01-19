@@ -1,6 +1,8 @@
+DEPENDS += "coreutils-native"
+
 get_uboot_interface_from_device() {
     case "$1" in
-        /dev/mmcblk[0-9]p[1-9]|/dev/mmcblk[0-9])
+        /dev/mmcblk* )
             echo mmc
             ;;
         *)
@@ -11,32 +13,40 @@ get_uboot_interface_from_device() {
 }
 
 get_uboot_device_from_device() {
+    dev_base="unknown"
     case "$1" in
-        /dev/mmcblk[0-9]p[1-9])
-            dev_base=${1%p[1-9]}
-            echo ${dev_base#/dev/mmcblk}
+        /dev/mmcblk*p* )
+            dev_base=$(echo $1 | cut -dk -f2 | cut -dp -f1)
             ;;
-        /dev/mmcblk[0-9])
-            echo ${1#/dev/mmcblk}
-            ;;
-        *)
-            bberror "Could not determine U-Boot device from $1"
-            exit 1
+        /dev/mmcblk* )
+            dev_base=$(echo $1 | cut -dk -f2)
             ;;
     esac
+
+    device=$(printf "%X" $dev_base 2>/dev/null)
+    if [ $? = 1 ]; then
+        bberror "Could not determine U-Boot device from $1"
+        exit 1
+    else
+        echo $device
+    fi
 }
 
 get_part_number_from_device() {
+    dev_base="unknown"
     case "$1" in
-        /dev/mmcblk[0-9]p[1-9])
-            echo ${1##*[0-9]p}
+        /dev/mmcblk*p* )
+            dev_base=$(echo $1 | cut -dk -f2 | cut -dp -f2)
             ;;
-        ubi[0-9]_[0-9])
-            echo ${1##*[0-9]_}
-            ;;
-        *)
-            bberror "Could not determine partition number from $1"
-            exit 1
+        ubi*_* )
+            dev_base=$(echo $1 | cut -d_ -f2)
             ;;
     esac
+    part=$(printf "%X" $dev_base 2>/dev/null)
+    if [ $? = 1 ]; then
+        bberror "Could not determine partition number from $1"
+        exit 1
+    else
+        echo $part
+    fi
 }
