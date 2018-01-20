@@ -57,7 +57,13 @@ do_provide_mender_defines() {
         MENDER_UBOOT_STORAGE_DEVICE=`get_uboot_device_from_device ${MENDER_STORAGE_DEVICE}`
     fi
 
-    case "${KERNEL_IMAGETYPE}" in
+    if [ -n "${MENDER_KERNEL_IMAGETYPE_FORCE}" ]; then
+        MENDER_KERNEL_IMAGETYPE="${MENDER_KERNEL_IMAGETYPE_FORCE}"
+    else
+        MENDER_KERNEL_IMAGETYPE="${KERNEL_IMAGETYPE}"
+    fi
+
+    case "$MENDER_KERNEL_IMAGETYPE" in
         *uImage*)
             MENDER_BOOT_KERNEL_TYPE=bootm
             ;;
@@ -81,6 +87,7 @@ do_provide_mender_defines() {
     fi
 
     DTB_COUNT=$(echo "$MENDER_DTB_NAME" | wc -l)
+
     if [ "$DTB_COUNT" -ne 1 ]; then
         bbwarn "Found more than one dtb specified in KERNEL_DEVICETREE. Only one should be specified. Choosing the last one."
         MENDER_DTB_NAME="$(echo "$MENDER_DTB_NAME" | tail -1)"
@@ -117,7 +124,7 @@ do_provide_mender_defines() {
 #undef MENDER_BOOTENV_RANGE
 
 #define MENDER_BOOT_KERNEL_TYPE "$MENDER_BOOT_KERNEL_TYPE"
-#define MENDER_KERNEL_NAME "${KERNEL_IMAGETYPE}"
+#define MENDER_KERNEL_NAME "$MENDER_KERNEL_IMAGETYPE"
 #define MENDER_DTB_NAME "$MENDER_DTB_NAME"
 EOF
 
