@@ -80,7 +80,7 @@ echo "--- starting qemu"
 QEMU_AUDIO_DRV=none \
     $QEMU_SYSTEM_ARM \
     -M vexpress-a9 \
-    -m 128M \
+    -m 256M \
     -kernel "$UBOOT_ELF" \
     -net nic,macaddr="$RANDOM_MAC" \
     -net user,hostfwd=tcp::8822-:22 \
