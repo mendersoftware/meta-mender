@@ -28,7 +28,7 @@ class TestUbootAutomation:
         # ----------------------------------------------------------------------
         # Update these two to skip the check.
         expected_poky_rev = "abec40e5ebc6f1b804cf698e365737224a57c41d"
-        expected_meta_mender_uboot_rev = "f8202860ccbe1a2904665cf038f60fa331d20ac3"
+        expected_meta_mender_uboot_rev = "2ba764ce62afb57e4f5d71a494ead93a89988bfa"
         # ----------------------------------------------------------------------
 
         # SHA from poky repository.
