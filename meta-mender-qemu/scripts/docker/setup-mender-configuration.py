@@ -62,7 +62,6 @@ def main():
     parser.add_argument("--server-crt", help="server.crt file to put in image")
     parser.add_argument("--server-url", help="Server address to put in configuration")
     parser.add_argument("--verify-key", help="Key used to verify signed image")
-    parser.add_argument("--pregen-ssh-keys", action="store_true", help="Pregenerate, and insert SSH keys")
     args = parser.parse_args()
 
     if len(sys.argv) == 1:
@@ -126,17 +125,6 @@ def main():
             rootfs=rootfs)
         os.unlink("mender.conf")
 
-    if args.pregen_ssh_keys:
-
-        try:
-            os.remove("id_rsa")
-            os.remove("id_rsa.pub")
-        except:
-            pass
-
-        subprocess.check_call("ssh-keygen -f id_rsa -t rsa -N ''", shell=True)
-        put(local_path="id_rsa", remote_path="/home/root/.ssh/id_rsa", rootfs=rootfs)
-        put(local_path="id_rsa.pub", remote_path="/home/root/.ssh/id_rsa.pub", rootfs=rootfs)
 
     # Put back ext4 image into sdimg.
     insert_ext4(sdimg=args.sdimg, rootfs=rootfs)
