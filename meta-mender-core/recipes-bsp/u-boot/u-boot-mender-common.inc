@@ -186,12 +186,11 @@ do_save_mender_auto_configured_patch() {
     # "bbnote" might be more appropriate here, but it doesn't always display.
     bbwarn "Auto configured U-Boot patch has been stored in ${WORKDIR}/mender_auto_configured.patch"
 }
-do_save_mender_auto_configured_patch[depends] = "${PN}:do_mender_uboot_auto_configure"
 
 python() {
     if bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', '1', True, False, d):
         bb.build.addtask('do_mender_uboot_auto_configure', 'do_configure', 'do_provide_mender_defines', d)
-        bb.build.addtask('do_save_mender_auto_configured_patch', '', '', d)
+        bb.build.addtask('do_save_mender_auto_configured_patch', '', 'do_mender_uboot_auto_configure', d)
 }
 
 ################################################################################
