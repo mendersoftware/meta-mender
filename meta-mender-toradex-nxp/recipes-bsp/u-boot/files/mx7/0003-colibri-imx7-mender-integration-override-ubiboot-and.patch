@@ -1,0 +1,48 @@
+From 4ad558ba12f1edf6cf70cd178e4bb1852cfc9222 Mon Sep 17 00:00:00 2001
+From: Drew Moseley <drew.moseley@northern.tech>
+Date: Wed, 22 Nov 2017 15:40:03 -0500
+Subject: [PATCH] colibri-imx7: mender integration, override ubiboot and
+ bootcmd
+
+Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
+Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
+---
+ include/configs/colibri_imx7.h | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
+
+diff --git a/include/configs/colibri_imx7.h b/include/configs/colibri_imx7.h
+index 1f42004..dfb66fc 100644
+--- a/include/configs/colibri_imx7.h
++++ b/include/configs/colibri_imx7.h
+@@ -94,17 +94,20 @@
+ 	"run fdt_fixup && bootz ${kernel_addr_r} - ${fdt_addr_r}\0" \
+ 
+ #define UBI_BOOTCMD \
+-	"ubiargs=ubi.mtd=ubi root=ubi0:rootfs rw rootfstype=ubifs " \
++	"ubiargs=ubi.mtd=${mender_mtd_ubi_dev_name} root=${mender_kernel_root} rw rootfstype=ubifs " \
+ 		"ubi.fm_autoconvert=1\0" \
+ 	"ubiboot=run setup; " \
+-		"setenv bootargs ${defargs} ${ubiargs} " \
++		"setenv fdtfile ${soc}-colibri-${fdt_board}.dtb; "  \
++		"setenv bootargs ${defargs} ${ubiargs} ${mtdparts} " \
+ 		"${setupargs} ${vidargs}; echo Booting from NAND...; " \
+-		"ubi part ubi && run m4boot && " \
+-		"ubi read ${kernel_addr_r} kernel && " \
+-		"ubi read ${fdt_addr_r} dtb && " \
+-		"run fdt_fixup && bootz ${kernel_addr_r} - ${fdt_addr_r}\0" \
+-
+-#define CONFIG_BOOTCOMMAND "run ubiboot; " \
++		"run mender_setup; "                                   \
++		"ubi part ${mender_mtd_ubi_dev_name} && "              \
++		"ubifsmount ${mender_uboot_root_name} && "             \
++		"ubifsload ${kernel_addr_r} /boot/zImage && "          \
++		"ubifsload ${fdt_addr_r} /boot/${fdtfile} && "         \
++		"bootz ${kernel_addr_r} - ${fdt_addr_r}\0"             \
++
++#define CONFIG_BOOTCOMMAND "run ubiboot; run mender_try_to_recover; " \
+ 	"setenv fdtfile ${soc}-colibri-${fdt_board}.dtb && run distro_bootcmd;"
+ 
+ #define BOOTENV_RUN_NET_USB_START ""
+-- 
+2.7.4
+
