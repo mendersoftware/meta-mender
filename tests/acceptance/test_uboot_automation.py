@@ -27,7 +27,7 @@ class TestUbootAutomation:
     def revision_already_checked(self):
         # ----------------------------------------------------------------------
         # Update these two to skip the check.
-        expected_poky_rev = "57ccc81a7c77c68af1e1d0ff816f06f9abe53c3f"
+        expected_poky_rev = "0c537554fc2cf58a9cbfeaf39ed918c607483dce"
         expected_meta_mender_uboot_rev = "2ba764ce62afb57e4f5d71a494ead93a89988bfa"
         # ----------------------------------------------------------------------
 
