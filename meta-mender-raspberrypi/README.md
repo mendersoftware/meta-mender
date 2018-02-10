@@ -41,4 +41,8 @@ in addition to `meta-mender` dependencies.
         # of the `rpi-sdimg`.
         IMAGE_FSTYPES_remove += " rpi-sdimg"
 
+        # Use the same type here as specified in IMAGE_FSTYPES to avoid
+        # building an unneeded image file.
+        SDIMG_ROOTFS_TYPE = "ext4"
+
 - Run `bitbake <image name>`
