@@ -55,8 +55,10 @@ do_provide_mender_defines() {
 
     if [ -n "${MENDER_KERNEL_IMAGETYPE_FORCE}" ]; then
         MENDER_KERNEL_IMAGETYPE="${MENDER_KERNEL_IMAGETYPE_FORCE}"
-    else
+    elif [ -n "${KERNEL_IMAGETYPE}" ]; then
         MENDER_KERNEL_IMAGETYPE="${KERNEL_IMAGETYPE}"
+    else
+        MENDER_KERNEL_IMAGETYPE="zImage"
     fi
 
     case "$MENDER_KERNEL_IMAGETYPE" in
