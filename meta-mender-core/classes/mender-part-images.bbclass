@@ -22,6 +22,20 @@ python() {
 inherit image
 inherit image_types
 
+# This normally defaults to .rootfs which is misleading as this is not a simple
+# rootfs image and causes problems if one wants to use something like this:
+#
+#    IMAGE_FSTYPES += "sdimg.gz"
+#
+# Above assumes that the image name is:
+#
+#    ${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${type}
+#
+# Which results in a empty "gz" archive when using the default value, in our
+# case IMAGE_NAME_SUFFIX should be empty as we do not use it when naming
+# our image.
+IMAGE_NAME_SUFFIX_sdimg = ""
+
 mender_part_image() {
     suffix="$1"
     part_type="$2"
