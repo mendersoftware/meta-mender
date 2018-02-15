@@ -1,0 +1,8 @@
+# Configuration file for fw_(printenv/saveenv) utility.
+# Up to two entries are valid, in this case the redundant
+# environment sector is assumed present.
+# Notice, that the "Number of sectors" is ignored on NOR.
+
+# MTD device name       Device offset   Env. size       Flash sector size       Number of sectors
+/dev/mtd2               0x00000          0x20000         0x20000                 1
+/dev/mtd2               0x20000          0x20000         0x20000                 1
