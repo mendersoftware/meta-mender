@@ -1,6 +1,6 @@
 IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender', '', d)}"
 IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-sd', ' sdimg', '', d)}"
-IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', ' ubimg', '', d)}"
+IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', ' ubimg mtdimg', '', d)}"
 
 python() {
     depends_on_mender_image = ['mender-image-sd', 'mender-image-ubi']
