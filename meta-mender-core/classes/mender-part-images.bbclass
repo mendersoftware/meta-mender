@@ -129,7 +129,7 @@ EOF
     ln -sfn "${IMAGE_NAME}.$suffix" "${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.$suffix"
     rm -rf "$wicout/"
 
-    ln -sfn "${IMAGE_NAME}.$suffix" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$suffix"
+    ln -sfn "${IMAGE_NAME}.$suffix" "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.$suffix"
 }
 
 IMAGE_CMD_sdimg() {
