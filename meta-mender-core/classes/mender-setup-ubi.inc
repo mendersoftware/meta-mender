@@ -18,9 +18,9 @@ MENDER_DATA_PART_FSTYPE_DEFAULT_mender-ubi = "ubifs"
 # rootfs part
 #
 # It also needs the volume index e.g.
-# ubifsmount ubi0:rootfsa
-MENDER_ROOTFS_PART_A_NAME_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE}:rootfsa"
-MENDER_ROOTFS_PART_B_NAME_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE}:rootfsb"
+# ubifsmount ubi:rootfsa
+MENDER_ROOTFS_PART_A_NAME_DEFAULT_mender-ubi = "${MENDER_MTD_UBI_DEVICE_NAME}:rootfsa"
+MENDER_ROOTFS_PART_B_NAME_DEFAULT_mender-ubi = "${MENDER_MTD_UBI_DEVICE_NAME}:rootfsb"
 
 # The name of of the MTD part holding your UBI volumes.
 MENDER_MTD_UBI_DEVICE_NAME_DEFAULT_mender-ubi = "ubi"
