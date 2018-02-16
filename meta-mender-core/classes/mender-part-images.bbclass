@@ -22,6 +22,29 @@ python() {
 inherit image
 inherit image_types
 
+mender_get_bootloader_offset() {
+    if [ $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
+        bbfatal "IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET must be aligned to kB" \
+                "boundary (an even number)."
+    fi
+    local bootloader_offset_kb=$(expr $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
+    local bootloader_size=$(stat -c '%s' "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}")
+    local bootloader_end=$(expr $bootloader_offset_kb \* 1024 + $bootloader_size)
+    if [ $bootloader_end -gt ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} ]; then
+        bbfatal "Size of bootloader specified in IMAGE_BOOTLOADER_FILE" \
+                "exceeds MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET, which is" \
+                "reserved for U-Boot environment storage. Please raise it" \
+                "manually."
+    fi
+
+    echo $bootloader_offset_kb
+}
+
+
+################################################################################
+# Block storage
+################################################################################
+
 mender_part_image() {
     suffix="$1"
     part_type="$2"
@@ -57,22 +80,9 @@ mender_part_image() {
     wks="${WORKDIR}/mender-$suffix.wks"
     rm -f "$wks"
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
-        if [ $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
-            bbfatal "IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET must be aligned to kB" \
-                    "boundary (an even number)."
-        fi
-        bootloader_align_kb=$(expr $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
-        bootloader_size=$(stat -c '%s' "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}")
-        bootloader_end=$(expr $bootloader_align_kb \* 1024 + $bootloader_size)
-        if [ $bootloader_end -gt ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} ]; then
-            bberror "Size of bootloader specified in IMAGE_BOOTLOADER_FILE" \
-                    "exceeds MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET, which is" \
-                    "reserved for U-Boot environment storage. Please raise it" \
-                    "manually."
-        fi
         cat >> "$wks" <<EOF
 # embed bootloader
-part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" --ondisk mmcblk0 --align $bootloader_align_kb --no-table
+part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" --ondisk mmcblk0 --align $(mender_get_bootloader_offset) --no-table
 EOF
     fi
 
@@ -102,7 +112,7 @@ EOF
     mv "$wicout/$(basename "${wks%.wks}")"*.direct "$outimgname"
     rm -rf "$wicout/"
 
-    ln -sfn "${IMAGE_NAME}.$suffix" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$suffix"
+    ln -sfn "${IMAGE_NAME}.$suffix" "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.$suffix"
 }
 
 IMAGE_CMD_sdimg() {
@@ -123,3 +133,76 @@ do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-
 # building simultaneously, since wic will use the same file names in both, and
 # in parallel builds this is a recipe for disaster.
 IMAGE_TYPEDEP_uefiimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"
+
+
+################################################################################
+# Flash storage
+################################################################################
+
+mender_flash_mtdpart() {
+    local file="$1"
+    local size="$2"
+    local kbsize="$3"
+    local kboffset="$4"
+    local name="$5"
+
+    if [ "$size" = "-" ]; then
+        # Remaining space.
+        local total_space_kb=$(expr ${MENDER_STORAGE_TOTAL_SIZE_MB} \* 1024)
+        kbsize=$(expr $total_space_kb - $kboffset)
+        size=$(expr $kbsize \* 1024)
+    fi
+
+    if [ "$file" != "/dev/zero" ]; then
+        local file_size=$(stat -Lc '%s' "$file")
+        if [ $file_size -gt $size ]; then
+            bbfatal "$file is too big to fit inside '$name' mtdpart of size $size."
+        fi
+    fi
+    dd if="$file" \
+        of="${IMGDEPLOYDIR}/${IMAGE_NAME}.mtdimg" \
+        bs=1024 \
+        seek=$kboffset \
+        count=$kbsize
+}
+
+IMAGE_CMD_mtdimg() {
+    set -ex
+
+    # We don't actually use the result from this one, it's only to trigger a
+    # warning or error if the variable is not correctly set.
+    mender_get_mtdparts
+
+    ${@mender_make_mtdparts_shell_array(d)}
+
+    local remaining_encountered=0
+    local i=0
+    while [ $i -lt $mtd_count ]; do
+        eval local name="\"\$mtd_names_$i\""
+        eval local size="\"\$mtd_sizes_$i\""
+        eval local kbsize="\"\$mtd_kbsizes_$i\""
+        eval local kboffset="\"\$mtd_kboffsets_$i\""
+
+        if [ "$name" = "u-boot" ]; then
+            if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
+                mender_flash_mtdpart "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" $size $kbsize $kboffset $name
+            else
+                bbwarn "There is a 'u-boot' mtdpart, but IMAGE_BOOTLOADER_FILE is undefined. Filling with zeros."
+                mender_flash_mtdpart "/dev/zero" $size $kbsize $kboffset $name
+            fi
+        elif [ "$name" = "u-boot-env" ]; then
+            mender_flash_mtdpart "${DEPLOY_DIR_IMAGE}/uboot.env" $size $kbsize $kboffset $name
+        elif [ "$name" = "ubi" ]; then
+            mender_flash_mtdpart "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubimg" $size $kbsize $kboffset $name
+        else
+            bbwarn "Don't know how to flash mtdparts '$name'. Filling with zeros."
+            mender_flash_mtdpart "/dev/zero" $size $kbsize $kboffset $name
+        fi
+
+        i=$(expr $i + 1)
+    done
+
+    ln -sfn "${IMAGE_NAME}.mtdimg" "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.mtdimg"
+}
+
+IMAGE_TYPEDEP_mtdimg_append = " ubimg"

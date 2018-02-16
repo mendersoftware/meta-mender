@@ -41,7 +41,7 @@ PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-install'
 PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
 
 PACKAGECONFIG[mender-install] = ",,,mender-artifact-info ca-certificates"
-PACKAGECONFIG[u-boot] = ",,u-boot-fw-utils,u-boot-fw-utils"
+PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
 
 do_compile() {
     GOPATH="${B}:${S}"
