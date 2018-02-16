@@ -20,6 +20,8 @@ inherit image_types
 do_image_ubimg[depends] += "mtd-utils-native:do_populate_sysroot"
 
 IMAGE_CMD_ubimg () {
+    set -e -x
+
     # For some reason, logging is not working correctly inside IMAGE_CMD bodies,
     # so wrap all logging in these functions that also have an echo. This won't
     # prevent warnings from being hidden deep in log files, but there is nothing
@@ -39,6 +41,12 @@ IMAGE_CMD_ubimg () {
     # despite not using it. If "rm_work" is enabled, this directory won't always
     # exist.
     mkdir -p "${IMAGE_ROOTFS}"
+
+    if [ "${MENDER_BOOT_PART_SIZE_MB}" != "0" ]; then
+        ubimg_fatal "Boot partition is not supported for ubimg. MENDER_BOOT_PART_SIZE_MB should be set to 0."
+    fi
+
+    rm -f ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
 
     echo \[rootfsA\] >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo mode=ubi >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
@@ -66,6 +74,8 @@ IMAGE_CMD_ubimg () {
     echo vol_type=dynamic >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo vol_name=data >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo "" >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
+
+    cat ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
 
     rm -rf "${WORKDIR}/data" || true
     mkdir -p "${WORKDIR}/data"
