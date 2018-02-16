@@ -1,3 +1,5 @@
+inherit mender-helpers
+
 # ------------------------------ CONFIGURATION ---------------------------------
 
 # The storage device that holds the device partitions.
@@ -76,14 +78,13 @@ MENDER_DATA_PART_SIZE_MB_DEFAULT = "128"
 MENDER_BOOT_PART_SIZE_MB ??= "${MENDER_BOOT_PART_SIZE_MB_DEFAULT}"
 MENDER_BOOT_PART_SIZE_MB_DEFAULT = "16"
 
-# For performance reasons, we try to align the partitions to the SD
-# card's erase block. It is impossible to know this information with
-# certainty, but one way to find out is to run the "flashbench" tool on
-# your SD card and study the results. If you do, feel free to override
-# this default.
+# For performance reasons, we try to align the partitions to the SD card's erase
+# block (PEB). It is impossible to know this information with certainty, but one
+# way to find out is to run the "flashbench" tool on your SD card and study the
+# results. If you do, feel free to override this default.
 #
-# 8MB alignment is a safe setting that might waste some space if the
-# erase block is smaller.
+# 8MB alignment is a safe setting that might waste some space if the erase block
+# is smaller.
 MENDER_PARTITION_ALIGNMENT_KB ??= "${MENDER_PARTITION_ALIGNMENT_KB_DEFAULT}"
 MENDER_PARTITION_ALIGNMENT_KB_DEFAULT = "8192"
 
@@ -108,10 +109,12 @@ MENDER_UBOOT_STORAGE_DEVICE_DEFAULT = ""
 # This will be embedded into the boot sector, or close to the boot sector, where
 # exactly depends on the offset variable. Since it is a machine specific
 # setting, the default value is an empty string.
-IMAGE_BOOTLOADER_FILE ??= ""
+IMAGE_BOOTLOADER_FILE ??= "${MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT}"
+MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT = ""
 
 # Offset of bootloader, in sectors (512 bytes).
-IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "2"
+IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT}"
+IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT = "2"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
@@ -175,6 +178,14 @@ python() {
     if d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True):
         bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
 }
+
+
+def mender_get_bytes_with_unit(bytes):
+    if bytes % 1048576 == 0:
+        return "%dm" % (bytes / 1048576)
+    if bytes % 1024 == 0:
+        return "%dk" % (bytes / 1024)
+    return "%d" % bytes
 
 # Including these does not mean that all these features will be enabled, just
 # that their configuration will be considered. Use DISTRO_FEATURES to enable and

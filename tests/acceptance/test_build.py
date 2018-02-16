@@ -301,3 +301,77 @@ class TestBuild:
         output = subprocess.check_output("tar xOf %s header.tar.gz | tar xOz header-info" % image, shell=True)
         data = json.loads(output)
         assert data["device_types_compatible"] == ["machine1", "machine2"]
+
+    @pytest.mark.only_for_machine('vexpress-qemu-flash')
+    @pytest.mark.min_mender_version('1.3.0')
+    @pytest.mark.parametrize('test_case_name,test_case', [
+        ("Default", {
+            "vars": [],
+            "success": True,
+            "expected": {
+                "MENDER_MTDIDS": "nor2=40000000.flash",
+                "MENDER_IS_ON_MTDID": "40000000.flash",
+                "MENDER_MTDPARTS": "40000000.flash:1m(u-boot)ro,2m(u-boot-env),-(ubi)",
+            },
+        }),
+        ("custom_mtdids", {
+            "vars": [
+                'MENDER_MTDIDS = "nor3=40000001.flash"',
+            ],
+            "success": True,
+            "expected": {
+                "MENDER_MTDIDS": "nor3=40000001.flash",
+                "MENDER_IS_ON_MTDID": "40000001.flash",
+                "MENDER_MTDPARTS": "40000001.flash:1m(u-boot)ro,2m(u-boot-env),-(ubi)",
+            },
+        }),
+        ("multiple_mtdids_no_selected_one", {
+            "vars": [
+                'MENDER_MTDIDS = "nor2=40000000.flash,nor3=50000000.flash"',
+            ],
+            "success": False,
+            "expected": {
+                "MENDER_MTDIDS": "nor2=40000000.flash,nor3=50000000.flash",
+            },
+        }),
+        ("multiple_mtdids_and_selected_one", {
+            "vars": [
+                'MENDER_MTDIDS = "nor2=40000001.flash,nor3=50000000.flash"',
+                'MENDER_IS_ON_MTDID = "40000001.flash"',
+            ],
+            "success": False,
+            "expected": {
+                "MENDER_MTDIDS": "nor2=40000001.flash,nor3=50000000.flash",
+                "MENDER_IS_ON_MTDID": "40000001.flash",
+            },
+        }),
+        ("multiple_mtdparts", {
+            "vars": [
+                'MENDER_MTDIDS = "nor2=40000000.flash,nor3=50000000.flash"',
+                'MENDER_IS_ON_MTDID = "40000000.flash"',
+                'MENDER_MTDPARTS = "50000000.flash:1m(whatever);40000000.flash:1m(u-boot)ro,3m(u-boot-env),-(ubi)"',
+            ],
+            "success": True,
+            "expected": {
+                "MENDER_MTDIDS": "nor2=40000000.flash,nor3=50000000.flash",
+                "MENDER_IS_ON_MTDID": "40000000.flash",
+                "MENDER_MTDPARTS": "50000000.flash:1m(whatever);40000000.flash:1m(u-boot)ro,3m(u-boot-env),-(ubi)",
+            },
+        }),
+    ])
+    def test_various_mtd_combinations(self, test_case_name, test_case, prepared_test_build):
+        """Tests that we can build with various combinations of MTD variables,
+        and that they receive the correct values."""
+
+        add_to_local_conf(prepared_test_build, "\n".join(test_case["vars"]))
+        try:
+            run_bitbake(prepared_test_build)
+            assert test_case['success'], "Build succeeded, but should fail"
+        except subprocess.CalledProcessError:
+            assert not test_case['success'], "Build failed"
+
+        variables = get_bitbake_variables(prepared_test_build['image_name'],
+                                          prepared_test_build['env_setup'])
+
+        for key in test_case['expected']:
+            assert test_case['expected'][key] == variables[key]

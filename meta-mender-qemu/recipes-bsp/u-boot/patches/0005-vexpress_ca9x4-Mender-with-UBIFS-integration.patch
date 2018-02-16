@@ -15,15 +15,6 @@ diff --git a/include/configs/vexpress_ca9x4.h b/include/configs/vexpress_ca9x4.h
 index 4138a0e0ff18ff138bfe4918cd75a3494366d94b..4ec386fd85e8abcec90e66ff6e4a90bb23f354de 100644
 --- a/include/configs/vexpress_ca9x4.h
 +++ b/include/configs/vexpress_ca9x4.h
-@@ -34,7 +34,7 @@
- #define MTDIDS_DEFAULT		"nor2=40000000.flash"
- #define MTDPARTS_DEFAULT  "mtdparts=40000000.flash:"  \
-   "1m(u-boot)ro," \
--  "1m(u-boot-env)ro," \
-+  "1m(u-boot-env)," \
-   "-(ubi)"
- 
- #ifdef CONFIG_EXTRA_ENV_SETTINGS
 @@ -44,8 +44,10 @@
  #define UBI_BOOTCMD \
   	"ubiboot=" \

@@ -7,7 +7,8 @@ def mender_get_part_overhead(d):
     return 0
 
 # Overhead lost due to partitioning.
-MENDER_PARTITIONING_OVERHEAD_KB ?= "${@mender_get_part_overhead(d)}"
+MENDER_PARTITIONING_OVERHEAD_KB ??= "${MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT}"
+MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT ?= "${@mender_get_part_overhead(d)}"
 
 def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, overhead_kb, reserved_space_size):
     # Space left in raw device.
@@ -34,9 +35,11 @@ MENDER_CALC_ROOTFS_SIZE = "${@mender_calculate_rootfs_size_kb(${MENDER_STORAGE_T
 # Gently apply this as the default image size.
 # But subtract IMAGE_ROOTFS_EXTRA_SPACE, since it will be added automatically
 # in later bitbake calculations.
-IMAGE_ROOTFS_SIZE ?= "${@eval('${MENDER_CALC_ROOTFS_SIZE} - (${IMAGE_ROOTFS_EXTRA_SPACE})')}"
+IMAGE_ROOTFS_SIZE ?= "${MENDER_IMAGE_ROOTFS_SIZE_DEFAULT}"
+MENDER_IMAGE_ROOTFS_SIZE_DEFAULT ?= "${@eval('${MENDER_CALC_ROOTFS_SIZE} - (${IMAGE_ROOTFS_EXTRA_SPACE})')}"
 
 # Set hard limit on maximum rootfs size. Calculated rootfs size is used when
 # partitioning the disk image (be it SD card or UBI image), and defines an upper
 # bound of the space allocated for rootfs partition/volume.
-IMAGE_ROOTFS_MAXSIZE ?= "${MENDER_CALC_ROOTFS_SIZE}"
+IMAGE_ROOTFS_MAXSIZE ?= "${MENDER_IMAGE_ROOTFS_MAXSIZE_DEFAULT}"
+MENDER_IMAGE_ROOTFS_MAXSIZE_DEFAULT ?= "${MENDER_CALC_ROOTFS_SIZE}"

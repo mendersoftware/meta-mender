@@ -39,7 +39,7 @@ diff --git a/include/configs/vexpress_ca9x4.h b/include/configs/vexpress_ca9x4.h
 index 993398ccc696c70d7f4c23c13f00fda6c0f536fe..4138a0e0ff18ff138bfe4918cd75a3494366d94b 100644
 --- a/include/configs/vexpress_ca9x4.h
 +++ b/include/configs/vexpress_ca9x4.h
-@@ -14,4 +14,61 @@
+@@ -14,4 +14,51 @@
  #define CONFIG_VEXPRESS_ORIGINAL_MEMORY_MAP
  #include "vexpress_common.h"
  
@@ -55,16 +55,6 @@ index 993398ccc696c70d7f4c23c13f00fda6c0f536fe..4138a0e0ff18ff138bfe4918cd75a349
 +#undef CONFIG_SYS_MALLOC_LEN
 +#define CONFIG_SYS_MALLOC_LEN (8 * 1024 * 1024)
 +#endif
-+
-+/* CONFIG_MTD_CONCAT is set, hence nor0 and nor1 will become a single device
-+   named nor2
-+
-+   NOTE: NOR flash appears as a single MTD device with name 40000000.flash */
-+#define MTDIDS_DEFAULT		"nor2=40000000.flash"
-+#define MTDPARTS_DEFAULT  "mtdparts=40000000.flash:"  \
-+  "1m(u-boot)ro," \
-+  "1m(u-boot-env)ro," \
-+  "-(ubi)"
 +
 +#ifdef CONFIG_EXTRA_ENV_SETTINGS
 +#undef CONFIG_EXTRA_ENV_SETTINGS
