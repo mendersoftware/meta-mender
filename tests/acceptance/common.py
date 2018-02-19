@@ -189,7 +189,7 @@ def reboot(wait = 120):
 
     fabric.network.disconnect_all()
 
-    run_after_connect("true", wait = wait)
+    run_after_connect("true", wait)
 
     qemu_prep_after_boot()
 
@@ -207,7 +207,7 @@ def run_after_connect(cmd, wait=360):
             except BaseException as e:
                 print("Could not connect to host %s: %s" % (env.host_string, e))
                 if attempt_time >= start_time + wait:
-                    raise Exception("Could not reconnect to QEMU")
+                    raise Exception("Could not reconnect to host")
                 now = time.time()
                 if now - attempt_time < 5:
                     time.sleep(60)
@@ -362,10 +362,13 @@ def common_board_cleanup():
     with settings(warn_only=True):
         sudo("mender-qa activate-test-image off")
 
+    execute(run_after_connect, "true", hosts = conftest.current_hosts())
+
 def common_boot_from_internal():
     with settings(warn_only=True):
         sudo("mender-qa activate-test-image on")
 
+    execute(run_after_connect, "true", hosts = conftest.current_hosts())
 
 @pytest.fixture(scope="session")
 def setup_colibri_imx7(request, clean_image):
@@ -395,16 +398,11 @@ def setup_colibri_imx7(request, clean_image):
 
 @pytest.fixture(scope="session")
 def setup_bbb(request):
-    if pytest.config.getoption("--bbb"):
-        execute(boot_from_internal)
-        execute(setup_bbb_sdcard, host=conftest.current_hosts())
+    def board_cleanup():
+        execute(common_board_cleanup, hosts=conftest.current_hosts())
 
-        def bbb_finalizer():
-            def bbb_finalizer_impl():
-                    execute(boot_from_internal)
-            execute(bbb_finalizer_impl, hosts=conftest.current_hosts())
-
-        request.addfinalizer(bbb_finalizer)
+    execute(common_boot_from_internal, hosts=conftest.current_hosts())
+    request.addfinalizer(board_cleanup)
 
 @pytest.fixture(scope="session")
 def setup_rpi3(request):
@@ -602,7 +600,7 @@ def bitbake_path_string():
     os.chdir(os.environ['BUILDDIR'])
 
     # See the recipe for details about this call.
-    subprocess.check_output(["bitbake", "-c", "unpack", "mender-test-dependencies"])
+    subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot", "mender-test-dependencies"])
 
     os.fchdir(current_dir)
 
@@ -645,13 +643,21 @@ def signing_key(key_type):
 
     return KeyPair()
 
-def run_verbose(cmd):
-    print(cmd)
-    return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
+def run_verbose(cmd, capture=False):
+    if capture:
+        print("subprocess.check_output(\"%s\")" % cmd)
+        return subprocess.check_output(cmd, shell=True, executable="/bin/bash",
+                                       stderr=subprocess.STDOUT)
+    else:
+        print(cmd)
+        return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
 
-def run_bitbake(prepared_test_build):
+def run_bitbake(prepared_test_build, target=None, capture=False):
+    if target is None:
+        target = prepared_test_build['image_name']
     run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'],
-                                      prepared_test_build['image_name']))
+                                      target),
+                capture=capture)
 
 
 @pytest.fixture(scope="session")
@@ -710,11 +716,7 @@ def prepared_test_build(prepared_test_build_base):
     - local_conf
     """
 
-    new_file = prepared_test_build_base['local_conf']
-    old_file = prepared_test_build_base['local_conf_orig']
-
-    # Restore original local.conf
-    run_verbose("cp %s %s" % (old_file, new_file))
+    reset_local_conf(prepared_test_build_base)
 
     return prepared_test_build_base
 
@@ -726,6 +728,14 @@ def add_to_local_conf(prepared_test_build, string):
     with open(prepared_test_build['local_conf'], "a") as fd:
         fd.write('\n## ADDED BY TEST\n')
         fd.write("%s\n" % string)
+
+def reset_local_conf(prepared_test_build):
+    new_file = prepared_test_build['local_conf']
+    old_file = prepared_test_build['local_conf_orig']
+
+    # Restore original local.conf
+    run_verbose("cp %s %s" % (old_file, new_file))
+
 
 
 @pytest.fixture(autouse=True)

@@ -1,0 +1,37 @@
+From 96368a650bc5b77fcd116e00ae4610a627247fe8 Mon Sep 17 00:00:00 2001
+Message-Id: <96368a650bc5b77fcd116e00ae4610a627247fe8.1501569428.git.maciej.borzecki@rndity.com>
+From: Maciej Borzecki <maciej.borzecki@rndity.com>
+Date: Mon, 31 Jul 2017 12:57:09 +0200
+Subject: [PATCH] colibri-imx7: mender integration primer, enable
+ BOOTCOUNT, BOOTCOUNT_ENV, ENV_OFFSET will be set by mender
+
+Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
+---
+ include/configs/colibri_imx7.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/include/configs/colibri_imx7.h b/include/configs/colibri_imx7.h
+index bb40b39b5f79e8fa3989edb93a55639da9056979..cf7a968be7a8d669cf530d522b4e240658a9ad32 100644
+--- a/include/configs/colibri_imx7.h
++++ b/include/configs/colibri_imx7.h
+@@ -182,7 +182,8 @@
+ #define CONFIG_ENV_OFFSET		(8 * SZ_64K)
+ #elif defined(CONFIG_ENV_IS_IN_NAND)
+ #define CONFIG_ENV_SECT_SIZE		(128 * 1024)
+-#define CONFIG_ENV_OFFSET		(28 * CONFIG_ENV_SECT_SIZE)
++/* configured by mender integration */
++/* #define CONFIG_ENV_OFFSET		(28 * CONFIG_ENV_SECT_SIZE) */
+ #define CONFIG_ENV_SIZE			CONFIG_ENV_SECT_SIZE
+ #endif
+ 
+@@ -250,4 +251,7 @@
+ #define CONFIG_VIDEO_BMP_LOGO
+ #endif
+ 
++#define CONFIG_BOOTCOUNT_LIMIT
++#define CONFIG_BOOTCOUNT_ENV
++
+ #endif
+-- 
+2.9.4
+

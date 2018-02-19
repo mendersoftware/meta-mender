@@ -106,6 +106,61 @@ class TestBuild:
 
         assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
 
+
+    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    @pytest.mark.min_mender_version("1.0.0")
+    def test_tenant_token(self, prepared_test_build):
+        """Test setting a custom tenant-token"""
+
+        add_to_local_conf(prepared_test_build, 'MENDER_TENANT_TOKEN = "%s"'
+                          %  "authtentoken")
+
+        run_bitbake(prepared_test_build)
+
+        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
+
+        subprocess.check_call(["debugfs", "-R",
+                                   "dump -p /etc/mender/mender.conf mender.conf", built_rootfs])
+
+        try:
+            with open("mender.conf") as fd:
+                data = json.load(fd)
+            assert data['TenantToken'] == "authtentoken"
+
+        finally:
+            os.remove("mender.conf")
+
+
+
+    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    @pytest.mark.min_mender_version("1.1.0")
+    def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path):
+        """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
+        works correctly."""
+
+        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
+                          % os.path.join(os.getcwd(), signing_key("RSA").private))
+        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
+                          % os.path.join(os.getcwd(), signing_key("RSA").public))
+
+        run_bitbake(prepared_test_build)
+
+        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
+        # Copy out the key we just added from the image and use that to
+        # verify instead of the original, just to be sure.
+        subprocess.check_call(["debugfs", "-R",
+                               "dump -p /etc/mender/artifact-verify-key.pem artifact-verify-key.pem",
+                               built_rootfs])
+        try:
+            built_artifact = latest_build_artifact(prepared_test_build['build_dir'], ".mender")
+            output = subprocess.check_output(["mender-artifact", "read", "-k",
+                                              os.path.join(os.getcwd(), "artifact-verify-key.pem"),
+                                              built_artifact])
+            assert(output.find("Signature: signed and verified correctly") >= 0)
+
+        finally:
+            os.remove("artifact-verify-key.pem")
+
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     @pytest.mark.min_mender_version("1.2.0")
     def test_state_scripts(self, prepared_test_build, bitbake_variables, bitbake_path, latest_rootfs, latest_mender_image):
@@ -122,14 +177,14 @@ class TestBuild:
             entry = line.split('/')
             if entry[5] == "scripts":
                 # The scripts directory exists. That is fine in itself, but it
-                # should be empty.
+                # should not contain any script files ("version" is allowed).
                 output = subprocess.check_output(["debugfs", "-R", "ls -p /etc/mender/scripts", latest_rootfs])
                 for line in output.split('\n'):
                     if len(line) == 0:
                         continue
 
                     entry = line.split('/')
-                    assert entry[5] == "." or entry[5] == "..", "There should be no file in /etc/mender/scripts"
+                    assert entry[5] == "." or entry[5] == ".." or entry[5] == "version", "There should be no script file in /etc/mender/scripts"
                 break
 
         # Check artifact.
@@ -140,6 +195,53 @@ class TestBuild:
                 output = subprocess.check_output("tar xOf %s header.tar.gz| tar tz scripts"
                                                  % latest_mender_image, shell=True)
                 assert len(output.strip()) == 0, "Unexpected scripts in base image: %s" % output
+
+        # Alright, now build a new image containing scripts.
+        add_to_local_conf(prepared_test_build, 'IMAGE_INSTALL_append = " example-state-scripts"')
+        run_bitbake(prepared_test_build)
+
+        found_rootfs_scripts = {
+            "version": False,
+            "Idle_Enter_00": False,
+            "Sync_Enter_10": False,
+            "Sync_Leave_90": False,
+        }
+        found_artifact_scripts = {
+            "ArtifactInstall_Enter_00": False,
+            "ArtifactInstall_Leave_99": False,
+            "ArtifactReboot_Leave_50": False,
+            "ArtifactCommit_Enter_50": False,
+        }
+
+        # Check new rootfs.
+        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
+        output = subprocess.check_output(["debugfs", "-R", "ls -p /etc/mender/scripts", built_rootfs])
+        for line in output.split('\n'):
+            if len(line) == 0:
+                continue
+
+            entry = line.split('/')
+
+            if entry[5] == "." or entry[5] == "..":
+                continue
+
+            assert found_rootfs_scripts.get(entry[5]) is not None, "Unexpected script in rootfs %s" % entry[5]
+            found_rootfs_scripts[entry[5]] = True
+
+        for script in found_rootfs_scripts:
+            assert found_rootfs_scripts[script], "%s not found in rootfs script list" % script
+
+        # Check new artifact.
+        built_mender_image = latest_build_artifact(prepared_test_build['build_dir'], ".mender")
+        output = subprocess.check_output("tar xOf %s header.tar.gz| tar tz scripts"
+                                         % built_mender_image, shell=True)
+        for line in output.strip().split('\n'):
+            script = os.path.basename(line)
+            assert found_artifact_scripts.get(script) is not None, "Unexpected script in image: %s" % script
+            found_artifact_scripts[script] = True
+
+        for script in found_artifact_scripts:
+            assert found_artifact_scripts[script], "%s not found in artifact script list" % script
 
     @pytest.mark.min_mender_version('1.0.0')
     # The extra None elements are to check for no preferred version,
@@ -175,3 +277,19 @@ class TestBuild:
                     new_fd.write('PREFERRED_VERSION_%s%s-native = "%s"\n' % (pn_style, base_recipe, version))
 
             run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'], recipe))
+
+    @pytest.mark.min_mender_version('1.1.0')
+    def test_multiple_device_types_compatible(self, prepared_test_build, bitbake_path):
+        """Tests that we can include multiple device_types in the artifact."""
+
+        add_to_local_conf(prepared_test_build, 'MENDER_DEVICE_TYPES_COMPATIBLE = "machine1 machine2"')
+        run_bitbake(prepared_test_build)
+
+        image = latest_build_artifact(prepared_test_build['build_dir'], '.mender')
+
+        output = run_verbose("mender-artifact read %s" % image, capture=True)
+        assert "Compatible devices: '[machine1 machine2]'" in output
+
+        output = subprocess.check_output("tar xOf %s header.tar.gz | tar xOz header-info" % image, shell=True)
+        data = json.loads(output)
+        assert data["device_types_compatible"] == ["machine1", "machine2"]

@@ -42,7 +42,7 @@ class Helpers:
     def get_env_offsets(bitbake_variables):
         offsets = [0, 0]
 
-        alignment = int(bitbake_variables["MENDER_PARTITION_ALIGNMENT_MB"])
+        alignment = int(bitbake_variables["MENDER_PARTITION_ALIGNMENT_KB"]) * 1024
         env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
         offsets[0] = int(bitbake_variables["MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET"])
         offsets[1] = offsets[0] + int(env_size / 2)
@@ -207,8 +207,9 @@ class TestUpdates:
             assert(http_server)
 
         try:
-            run("mender -rootfs http://%s/successful_image_update.mender" % (http_server_location))
+            output = run("mender -rootfs http://%s/successful_image_update.mender" % (http_server_location))
         finally:
+            print("output from rootfs update: ", output)
             if not board and not use_s3:
                 http_server.terminate()
 
@@ -438,6 +439,10 @@ class TestUpdates:
         new_content = sig_case.label
         with open("image.dat", "w") as fd:
             fd.write(new_content)
+            # Write some extra data just to make sure the update is big enough
+            # to be written even if the checksum is wrong. If it's too small it
+            # may fail before it has a chance to be written.
+            fd.write("\x00" * (1048576 * 8))
 
         artifact_args = ""
 
@@ -483,9 +488,6 @@ class TestUpdates:
                             # Corrupt checksum by changing file slightly.
                             with open("image.dat", "r+") as fd:
                                 Helpers.corrupt_middle_byte(fd)
-                                # Need to update the expected content in this case.
-                                fd.seek(0)
-                                new_content = fd.read()
                             # Pack it up again in same order.
                             os.remove("0000.tar.gz")
                             subprocess.check_call(["tar", "czf", "0000.tar.gz"] + data_list)

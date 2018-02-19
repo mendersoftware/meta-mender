@@ -1,0 +1,13 @@
+[Unit]
+Description=Setup a secure tunnel to reverse.mender.io
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/ssh -i /usr/share/mender-qa/rssh/id_rsa -NT -o ServerAliveInterval=60 -o ExitOnForwardFailure=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -f -R 2211:localhost:22 tunneling@188.166.29.46
+RestartSec=10
+Restart=on-failure
+User=root
+Type=forking
+
+[Install]
+WantedBy=multi-user.target

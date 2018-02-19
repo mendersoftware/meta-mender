@@ -1,22 +1,21 @@
-From ca28d5b6fbc9d834e6480071475b95b3449e2697 Mon Sep 17 00:00:00 2001
-Message-Id: <ca28d5b6fbc9d834e6480071475b95b3449e2697.1501847141.git.maciej.borzecki@rndity.com>
-From: Maciej Borzecki <maciej.borzecki@rndity.com>
-Date: Fri, 4 Aug 2017 13:44:42 +0200
+From 269e34cbdd0da9b902861e7db4e9dfb7911911f4 Mon Sep 17 00:00:00 2001
+From: Drew Moseley <drew.moseley@northern.tech>
+Date: Mon, 27 Nov 2017 16:40:43 -0500
 Subject: [PATCH] colibri-imx7: Mender QA - extend env to support integration
  with CI pipeline
 
-Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
+Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
 ---
- include/configs/colibri_imx7.h | 23 ++++++++++++++++++-----
- 1 file changed, 18 insertions(+), 5 deletions(-)
+ include/configs/colibri_imx7.h | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
 diff --git a/include/configs/colibri_imx7.h b/include/configs/colibri_imx7.h
-index 638e85238787281f35cc1cd68b738da0f5c9c827..7675cf91f7333ed6891a865fcecef95bad7d0a82 100644
+index dfb66fc..63daf09 100644
 --- a/include/configs/colibri_imx7.h
 +++ b/include/configs/colibri_imx7.h
-@@ -78,7 +78,7 @@
+@@ -87,7 +87,7 @@
  #define SD_BOOTCMD \
- 	"sdargs=root=/dev/mmcblk0p2 rw rootwait\0"	\
+ 	"sdargs=root=/dev/mmcblk0p2 ro rootwait\0" \
  	"sdboot=run setup; setenv bootargs ${defargs} ${sdargs} " \
 -	"${setupargs} ${vidargs}; echo Booting from MMC/SD card...; " \
 +	"${setupargs} ${vidargs} ${mtdparts}; echo Booting from MMC/SD card...; " \
@@ -24,8 +23,8 @@ index 638e85238787281f35cc1cd68b738da0f5c9c827..7675cf91f7333ed6891a865fcecef95b
  	"load mmc 0:1 ${kernel_addr_r} ${kernel_file} && " \
  	"load mmc 0:1 ${fdt_addr_r} ${soc}-colibri-${fdt_board}.dtb && " \
 @@ -107,8 +107,21 @@
-   	"ubifsload ${fdt_addr_r} /boot/${fdtfile} && "         \
-   	"bootz ${kernel_addr_r} - ${fdt_addr_r}\0"             \
+ 		"ubifsload ${fdt_addr_r} /boot/${fdtfile} && "         \
+ 		"bootz ${kernel_addr_r} - ${fdt_addr_r}\0"             \
  
 -#define CONFIG_BOOTCOMMAND "run ubiboot; run mender_try_to_recover; " \
 -	"setenv fdtfile ${soc}-colibri-${fdt_board}.dtb && run distro_bootcmd;"
@@ -47,17 +46,6 @@ index 638e85238787281f35cc1cd68b738da0f5c9c827..7675cf91f7333ed6891a865fcecef95b
  
  #define BOOTENV_RUN_NET_USB_START ""
  #define BOOT_TARGET_DEVICES(func) \
-@@ -216,8 +229,8 @@
- #define MTDIDS_DEFAULT		"nand0=gpmi-nand"
- #define MTDPARTS_DEFAULT	"mtdparts=gpmi-nand:"		\
- 				"512k(mx7-bcb),"		\
--				"1536k(u-boot1)ro,"		\
--				"1536k(u-boot2)ro,"		\
-+				"1536k(u-boot1),"		\
-+				"1536k(u-boot2),"		\
- 				"512k(u-boot-env),"		\
- 				"-(ubi)"
- 
 -- 
-2.9.4
+2.7.4
 

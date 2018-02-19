@@ -16,6 +16,15 @@
 set -e
 set -x
 
+TMPDIR=${TMPDIR:-$(mktemp -d /tmp/mender-qemu.XXXXXXXX)}
+trap cleanup 1 15
+
+cleanup() {
+    if [ -n "$TMPDIR" -a -e "$TMPDIR" ]; then
+        rm -rf $TMPDIR
+    fi
+}
+
 # if called under Yocto/OE shell, BUILDDIR will already be set correctly
 if [ -z "$BUILDDIR" ]; then
     # try to guess BUILDDIR
@@ -37,18 +46,47 @@ else
     BUILDTMP=${BUILDDIR}/tmp-glibc
 fi
 
-UBOOT_ELF=${UBOOT_ELF:-"${BUILDTMP}/deploy/images/vexpress-qemu/u-boot.elf"}
-VEXPRESS_SDIMG=${VEXPRESS_SDIMG:-"${BUILDTMP}/deploy/images/vexpress-qemu/${IMAGE_NAME}-vexpress-qemu.sdimg"}
-QEMU_SYSTEM_ARM=${QEMU_SYSTEM_ARM:-"${BUILDTMP}/sysroots/x86_64-linux/usr/bin/qemu-system-arm"}
+MACHINE=${MACHINE:-"vexpress-qemu"}
+UBOOT_ELF=${UBOOT_ELF:-"${BUILDTMP}/deploy/images/${MACHINE}/u-boot.elf"}
+VEXPRESS_IMG=${VEXPRESS_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.sdimg"}
+QEMU_SYSTEM_ARM=${QEMU_SYSTEM_ARM:-"qemu-system-arm"}
 RANDOM_MAC="52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"
+# use to pass -drive .. parameters directly
+QEMU_DRIVE=${QEMU_DRIVE:-""}
+
+QEMU_ARGS=""
+case $VEXPRESS_IMG in
+    *.sdimg)
+        QEMU_ARGS="$QEMU_ARGS -drive file=$VEXPRESS_IMG,if=sd,format=raw,file.locking=off "
+        ;;
+    *.vexpress-nor)
+        tar -C $TMPDIR -xvf $VEXPRESS_IMG
+        QEMU_ARGS="$QEMU_ARGS -drive file=${TMPDIR}/nor0,if=pflash,format=raw -drive file=${TMPDIR}/nor1,if=pflash,format=raw "
+        ;;
+    *)
+        if [ -n "$QEMU_DRIVE" ]; then
+            QEMU_ARGS="$QEMU_ARGS $QEMU_DRIVE "
+        else
+            echo "unsupported image $VEXPRESS_IMG"
+            exit 1
+        fi
+esac
+
+echo "--- qemu version"
+$QEMU_SYSTEM_ARM --version
+
+echo "--- starting qemu"
 
 QEMU_AUDIO_DRV=none \
     $QEMU_SYSTEM_ARM \
     -M vexpress-a9 \
     -m 128M \
     -kernel "$UBOOT_ELF" \
-    -drive file="$VEXPRESS_SDIMG",if=sd \
     -net nic,macaddr="$RANDOM_MAC" \
     -net user,hostfwd=tcp::8822-:22 \
     -display vnc=:23 \
-    -nographic
+    -nographic \
+    $QEMU_ARGS \
+    "$@"
+
+cleanup

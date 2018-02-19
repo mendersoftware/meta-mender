@@ -4,8 +4,6 @@ This Yocto layers contains recipes which enables support of building Mender clie
 
 **NOTE!**. To be able to support update of Linux kernel and DTB, Mender requires these to be installed in the `/boot` directory for each rootfs (normally /dev/mmcblk0p2 and /dev/mmcblk0p3). On the other hand, the Raspberry Pi boot firmware requires that the DTB file is in the same partition as the boot firmware (/dev/mmcbl0p1) and the config.txt file. For now Mender will not use the DTB that is delivered with new artifacts and will continue to boot with the original DTB that was populated using the SDIMG file.
 
-Above should not pose any problems if you do not require any changes in `config.txt` and the default configuration certainly is enough to run Mender client.
-
 ## Dependencies
 
 This layer depends on:
@@ -28,13 +26,12 @@ in addition to `meta-mender` dependencies.
 
         KERNEL_IMAGETYPE = "uImage"
 
-        MENDER_PARTITION_ALIGNMENT_MB = "4"
+        MENDER_PARTITION_ALIGNMENT_KB = "4096"
         MENDER_BOOT_PART_SIZE_MB = "40"
-
-        IMAGE_DEPENDS_sdimg += " bcm2835-bootfiles"
 
         # raspberrypi files aligned with mender layout requirements
         IMAGE_BOOT_FILES_append = " boot.scr u-boot.bin;${SDIMG_KERNELIMAGE}"
         IMAGE_INSTALL_append = " kernel-image kernel-devicetree"
+        IMAGE_FSTYPES_remove += " rpi-sdimg"
 
 - Run `bitbake <image name>`

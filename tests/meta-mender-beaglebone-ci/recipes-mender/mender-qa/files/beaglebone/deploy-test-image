@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -e -x
 
 . ${DATADIR}/common
 maybe_verbose
@@ -18,8 +18,15 @@ for mp in $(cat /proc/mounts |grep "$TARGET_DEV" | cut -d' ' -f2); do
 done
 
 if [ -e "$IMAGE_SOURCE_FILE" ]; then
-    log "writing system image $IMAGE_FILE to $TARGET_DEV"
-    dd if=$IMAGE_SOURCE_FILE of=$TARGET_DEV bs=1M
+    LSB_RELEASE=$(lsb_release -i)
+
+    echo "$LSB_RELEASE" | grep -i debian && {
+        log "writing system image $IMAGE_FILE to $TARGET_DEV"
+        dd if=$IMAGE_SOURCE_FILE of=$TARGET_DEV bs=1M && reboot
+    }
+
+    log "Debian system not detected, not DDing"
+
 else
     log "no system image to deploy"
 fi
