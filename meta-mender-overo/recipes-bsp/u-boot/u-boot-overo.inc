@@ -5,6 +5,7 @@ SRC_URI_remove_overo += " file://0003-Integration-of-Mender-boot-code-into-U-Boo
 SRC_URI_append_overo += " file://0003-U-Boot-pre-2017.03-integration-of-Mender-boot-code-i.patch"
 
 SRC_URI_append_overo += " file://0002-u-boot-Mender-integration-for-Overo-board.patch"
+SRC_URI_append_overo += " file://0003-Make-sure-to-run-mmc-dev-command-before-Mender-boot.patch"
 
 # Custom DEVICE_NAME based on upstream kernel DTB and UBoot MTD partition table
 # This needs to be kept in sync with arch/arm/boot/dts/omap3-overo-base.dtsi
