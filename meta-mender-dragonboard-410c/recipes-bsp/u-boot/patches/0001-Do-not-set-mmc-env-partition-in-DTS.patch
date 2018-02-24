@@ -1,0 +1,30 @@
+From 0d5e9abe49e25060103c5a4e71c52a436b6b11f3 Mon Sep 17 00:00:00 2001
+From: Drew Moseley <drew.moseley@northern.tech>
+Date: Sat, 24 Feb 2018 00:01:26 -0500
+Subject: [PATCH] Do not set mmc-env-partition in DTS.
+
+We will let Mender auto-configure all of these settings.
+---
+ arch/arm/dts/dragonboard410c-uboot.dtsi | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/arch/arm/dts/dragonboard410c-uboot.dtsi b/arch/arm/dts/dragonboard410c-uboot.dtsi
+index c3475c4..c4ec1b3 100644
+--- a/arch/arm/dts/dragonboard410c-uboot.dtsi
++++ b/arch/arm/dts/dragonboard410c-uboot.dtsi
+@@ -6,12 +6,6 @@
+  * SPDX-License-Identifier:	GPL-2.0+
+  */
+ 
+-/ {
+-	config {
+-		u-boot,mmc-env-partition = "boot";
+-	};
+-};
+-
+ 
+ &pm8916_gpios {
+ 	usb_hub_reset_pm {
+-- 
+2.11.0
+
