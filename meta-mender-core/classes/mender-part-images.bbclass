@@ -22,6 +22,20 @@ python() {
 inherit image
 inherit image_types
 
+# This normally defaults to .rootfs which is misleading as this is not a simple
+# rootfs image and causes problems if one wants to use something like this:
+#
+#    IMAGE_FSTYPES += "sdimg.gz"
+#
+# Above assumes that the image name is:
+#
+#    ${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${type}
+#
+# Which results in a empty "gz" archive when using the default value, in our
+# case IMAGE_NAME_SUFFIX should be empty as we do not use it when naming
+# our image.
+IMAGE_NAME_SUFFIX_sdimg = ""
+
 mender_part_image() {
     suffix="$1"
     part_type="$2"
@@ -54,15 +68,21 @@ mender_part_image() {
     dd if=/dev/zero of="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
     mkfs.${ARTIFACTIMG_FSTYPE} -F "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" -d "${WORKDIR}/data" -L data
 
+    # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
+    install -m 0644 "${DEPLOY_DIR_IMAGE}/uboot.env" "${WORKDIR}/"
+
     wks="${WORKDIR}/mender-$suffix.wks"
     rm -f "$wks"
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
+        # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
+        install -m 0644 "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" "${WORKDIR}/"
+
         if [ $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
             bbfatal "IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET must be aligned to kB" \
                     "boundary (an even number)."
         fi
         bootloader_align_kb=$(expr $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
-        bootloader_size=$(stat -c '%s' "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}")
+        bootloader_size=$(stat -c '%s' "${WORKDIR}/${IMAGE_BOOTLOADER_FILE}")
         bootloader_end=$(expr $bootloader_align_kb \* 1024 + $bootloader_size)
         if [ $bootloader_end -gt ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} ]; then
             bberror "Size of bootloader specified in IMAGE_BOOTLOADER_FILE" \
@@ -72,14 +92,14 @@ mender_part_image() {
         fi
         cat >> "$wks" <<EOF
 # embed bootloader
-part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" --ondisk mmcblk0 --align $bootloader_align_kb --no-table
+part --source rawcopy --sourceparams="file=${WORKDIR}/${IMAGE_BOOTLOADER_FILE}" --ondisk mmcblk0 --align $bootloader_align_kb --no-table
 EOF
     fi
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)} && [ -n "${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}" ]; then
         boot_env_align_kb=$(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} / 1024)
         cat >> "$wks" <<EOF
-part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/uboot.env" --ondisk mmcblk0 --align $boot_env_align_kb --no-table
+part --source rawcopy --sourceparams="file=${WORKDIR}/uboot.env" --ondisk mmcblk0 --align $boot_env_align_kb --no-table
 EOF
     fi
 
@@ -100,6 +120,7 @@ EOF
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-$suffix"
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/$(basename "${wks%.wks}")"*.direct "$outimgname"
+    ln -sfn "${IMAGE_NAME}.$suffix" "${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.$suffix"
     rm -rf "$wicout/"
 
     ln -sfn "${IMAGE_NAME}.$suffix" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$suffix"
