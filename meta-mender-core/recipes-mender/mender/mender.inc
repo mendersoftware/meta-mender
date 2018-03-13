@@ -15,6 +15,9 @@ SYSTEMD_AUTO_ENABLE ?= "enable"
 MENDER_UPDATE_POLL_INTERVAL_SECONDS ?= "1800"
 MENDER_INVENTORY_POLL_INTERVAL_SECONDS ?= "1800"
 MENDER_RETRY_POLL_INTERVAL_SECONDS ?= "300"
+MENDER_STATE_SCRIPT_RETRY_INTERVAL_SECONDS ?= "1800"
+MENDER_STATE_SCRIPT_RETRY_TIMEOUT_SECONDS ?= "60"
+MENDER_STATE_SCRIPT_TIMEOUT_SECONDS ?= "300"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
@@ -99,6 +102,9 @@ python do_prepare_mender_conf() {
     if key_in_src_uri or key_in_var:
         conf_maybe_add("ArtifactVerifyKey", "%s/mender/artifact-verify-key.pem" % d.getVar("sysconfdir"), integer=False)
     conf_maybe_add("InventoryPollIntervalSeconds", d.getVar("MENDER_INVENTORY_POLL_INTERVAL_SECONDS"), integer=True)
+    conf_maybe_add("StateScriptRetryIntervalSeconds", d.getVar("MENDER_STATE_SCRIPT_RETRY_INTERVAL_SECONDS"), integer=True)
+    conf_maybe_add("StateScriptRetryTimeoutSeconds", d.getVar("MENDER_STATE_SCRIPT_RETRY_TIMEOUT_SECONDS"), integer=True)
+    conf_maybe_add("StateScriptTimeoutSeconds", d.getVar("MENDER_STATE_SCRIPT_TIMEOUT_SECONDS"), integer=True)
     # Mandatory variables - will always exist
     conf_maybe_add("RetryPollIntervalSeconds", d.getVar("MENDER_RETRY_POLL_INTERVAL_SECONDS"), integer=True)
     conf_maybe_add("RootfsPartA", d.getVar("MENDER_ROOTFS_PART_A"), integer=False)
