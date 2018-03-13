@@ -9,15 +9,27 @@ def mender_get_part_overhead(d):
 # Overhead lost due to partitioning.
 MENDER_PARTITIONING_OVERHEAD_KB ?= "${@mender_get_part_overhead(d)}"
 
-def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, overhead_kb, reserved_space_size):
-    # Space left in raw device.
-    calc_space = (total_mb - boot_mb - data_mb) * 1048576 - overhead_kb * 1024
+def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, alignment_kb, overhead_kb, reserved_space_size):
+    import math
+
+    # Turn into kiB.
+    alignment = alignment_kb * 1024
+
+    # Space used by each of the partitions, aligned to partition alignment
+    calc_space = math.ceil(boot_mb * 1048576 / alignment) * alignment
+    calc_space += math.ceil(data_mb * 1048576 / alignment) * alignment
+
+    # Remaining space after partitions and overhead are subtracted.
+    calc_space = total_mb * 1048576 - calc_space - overhead_kb * 1024
 
     # Subtract reserved raw space.
     calc_space = calc_space - reserved_space_size
 
     # Split in two.
     calc_space = calc_space / 2
+
+    # Need to align to partition alignment, and round down.
+    calc_space = int(calc_space / alignment) * alignment
 
     # Turn into kiB.
     calc_space_kb = calc_space / 1024
@@ -28,6 +40,7 @@ def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, overhead_kb, res
 MENDER_CALC_ROOTFS_SIZE = "${@mender_calculate_rootfs_size_kb(${MENDER_STORAGE_TOTAL_SIZE_MB}, \
                                                               ${MENDER_BOOT_PART_SIZE_MB}, \
                                                               ${MENDER_DATA_PART_SIZE_MB}, \
+                                                              ${MENDER_PARTITION_ALIGNMENT_KB}, \
                                                               ${MENDER_PARTITIONING_OVERHEAD_KB}, \
                                                               ${MENDER_STORAGE_RESERVED_RAW_SPACE})}"
 
