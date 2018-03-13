@@ -85,14 +85,18 @@ MENDER_BOOT_PART_SIZE_MB_DEFAULT = "16"
 #
 # 8MB alignment is a safe setting that might waste some space if the erase block
 # is smaller.
-MENDER_PARTITION_ALIGNMENT_KB ??= "${MENDER_PARTITION_ALIGNMENT_KB_DEFAULT}"
-MENDER_PARTITION_ALIGNMENT_KB_DEFAULT = "8192"
+#
+# Historically MENDER_PARTITION_ALIGNMENT was always in KiB, but due to UBI
+# using some bytes for bookkeeping, each block is not always a KiB
+# multiple. Hence it needs to be expressed in bytes in those cases.
+MENDER_PARTITION_ALIGNMENT ??= "${MENDER_PARTITION_ALIGNMENT_DEFAULT}"
+MENDER_PARTITION_ALIGNMENT_DEFAULT = "${MENDER_FLASH_PEB_SIZE}"
 
 # The reserved space between the partition table and the first partition.
 # Most people don't need to set this, and it will be automatically overridden
 # by mender-uboot distro feature.
-MENDER_STORAGE_RESERVED_RAW_SPACE ??= "${MENDER_STORAGE_RESERVED_RAW_SPACE_DEFAULT}"
-MENDER_STORAGE_RESERVED_RAW_SPACE_DEFAULT = "0"
+MENDER_RESERVED_SPACE_BOOTLOADER_DATA ??= "${MENDER_RESERVED_SPACE_BOOTLOADER_DATA_DEFAULT}"
+MENDER_RESERVED_SPACE_BOOTLOADER_DATA_DEFAULT = "0"
 
 # The interface to load partitions from. This is normally empty, in which case
 # it is deduced from MENDER_STORAGE_DEVICE. Only use this if the interface
@@ -176,7 +180,11 @@ python() {
 
 python() {
     if d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True):
-        bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
+        bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT instead.")
+    if d.getVar('MENDER_PARTITION_ALIGNMENT_KB', True):
+        bb.fatal("MENDER_PARTITION_ALIGNMENT_KB is deprecated. Please define MENDER_PARTITION_ALIGNMENT instead.")
+    if d.getVar('MENDER_STORAGE_RESERVED_RAW_SPACE', True):
+        bb.fatal("MENDER_STORAGE_RESERVED_RAW_SPACE is deprecated. Please define MENDER_RESERVED_SPACE_BOOTLOADER_DATA instead.")
 }
 
 

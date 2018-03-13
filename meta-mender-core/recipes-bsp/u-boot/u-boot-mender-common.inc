@@ -40,12 +40,12 @@ do_provide_mender_defines() {
         bbfatal "To compile U-Boot with mender you have to add 'mender-uboot' to MENDER_FEATURES_ENABLE or DISTRO_FEATURES."
     fi
 
-    if [ $(expr ${MENDER_STORAGE_RESERVED_RAW_SPACE} % \( ${MENDER_PARTITION_ALIGNMENT_KB} \* 1024 \* 2 \)) -ne 0 ]; then
-        bbfatal "MENDER_STORAGE_RESERVED_RAW_SPACE is not an even multiple of MENDER_PARTITION_ALIGNMENT_KB."
+    if [ $(expr ${MENDER_RESERVED_SPACE_BOOTLOADER_DATA} % \( ${MENDER_PARTITION_ALIGNMENT} \* 2 \)) -ne 0 ]; then
+        bbfatal "MENDER_RESERVED_SPACE_BOOTLOADER_DATA is not an even multiple of MENDER_PARTITION_ALIGNMENT."
     fi
 
-    if [ ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} -gt ${MENDER_STORAGE_RESERVED_RAW_SPACE} ]; then
-        bbfatal "BOOTENV_SIZE (${BOOTENV_SIZE}) is too big to fit two copies inside MENDER_STORAGE_RESERVED_RAW_SPACE (${MENDER_STORAGE_RESERVED_RAW_SPACE}) with proper alignment. Please increase MENDER_STORAGE_RESERVED_RAW_SPACE manually and make sure it is an *even* multiple of MENDER_PARTITION_ALIGNMENT_KB (in bytes)."
+    if [ ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} -gt ${MENDER_RESERVED_SPACE_BOOTLOADER_DATA} ]; then
+        bbfatal "BOOTENV_SIZE (${BOOTENV_SIZE}) is too big to fit two copies inside MENDER_RESERVED_SPACE_BOOTLOADER_DATA (${MENDER_RESERVED_SPACE_BOOTLOADER_DATA}) with proper alignment. Please either: 1. Increase MENDER_RESERVED_SPACE_BOOTLOADER_DATA manually and make sure it is an *even* multiple of MENDER_PARTITION_ALIGNMENT. -or- 2. Decrease BOOTENV_SIZE in the U-Boot recipe so that it can fit two copies inside MENDER_RESERVED_SPACE_BOOTLOADER_DATA."
     fi
 
     if [ -n "${MENDER_BOOT_PART}" ]; then
@@ -280,11 +280,11 @@ mender_create_fw_env_config_file_mender-ubi() {
 EOF
 }
 
-# This should evaluate to the same as MENDER_STORAGE_RESERVED_RAW_SPACE.
+# This should evaluate to the same as MENDER_RESERVED_SPACE_BOOTLOADER_DATA.
 # The only reason it's not evaluated the same way is that we don't have the
 # necessary information (BOOTENV_SIZE and BOOTENV_RANGE) when evaluating
-# MENDER_STORAGE_RESERVED_RAW_SPACE.
-MENDER_BOOTENV_TOTAL_ALIGNED_SIZE = "${@mender_get_env_total_aligned_size(${BOOTENV_SIZE}, d.getVar('BOOTENV_RANGE') or None, ${MENDER_PARTITION_ALIGNMENT_KB})}"
+# MENDER_RESERVED_SPACE_BOOTLOADER_DATA.
+MENDER_BOOTENV_TOTAL_ALIGNED_SIZE = "${@mender_get_env_total_aligned_size(${BOOTENV_SIZE}, d.getVar('BOOTENV_RANGE') or None, ${MENDER_PARTITION_ALIGNMENT})}"
 
 def mender_get_env_offset(start_offset, index, total_aligned_size):
     if index == 1:

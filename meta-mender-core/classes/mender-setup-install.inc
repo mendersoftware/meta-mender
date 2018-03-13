@@ -1,14 +1,16 @@
 # Estimate how much space may be lost due to partitioning alignment. Use a
 # simple heuristic for now - 4 partitions * alignment
-def mender_get_part_overhead(d):
-    align = d.getVar('MENDER_PARTITION_ALIGNMENT_KB', True)
+def mender_get_part_overhead_kb(d):
+    import math
+
+    align = d.getVar('MENDER_PARTITION_ALIGNMENT')
     if align:
-        return 4 * int(align)
+        return 4 * int(math.ceil(align / 1024))
     return 0
 
 # Overhead lost due to partitioning.
 MENDER_PARTITIONING_OVERHEAD_KB ??= "${MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT}"
-MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT ?= "${@mender_get_part_overhead(d)}"
+MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT = "${@mender_get_part_overhead_kb(d)}"
 
 def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, overhead_kb, reserved_space_size):
     # Space left in raw device.
@@ -30,7 +32,7 @@ MENDER_CALC_ROOTFS_SIZE = "${@mender_calculate_rootfs_size_kb(${MENDER_STORAGE_T
                                                               ${MENDER_BOOT_PART_SIZE_MB}, \
                                                               ${MENDER_DATA_PART_SIZE_MB}, \
                                                               ${MENDER_PARTITIONING_OVERHEAD_KB}, \
-                                                              ${MENDER_STORAGE_RESERVED_RAW_SPACE})}"
+                                                              ${MENDER_RESERVED_SPACE_BOOTLOADER_DATA})}"
 
 # Gently apply this as the default image size.
 # But subtract IMAGE_ROOTFS_EXTRA_SPACE, since it will be added automatically

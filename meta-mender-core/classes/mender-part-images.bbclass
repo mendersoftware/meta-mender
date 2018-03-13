@@ -93,11 +93,17 @@ part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/uboot.env" --ondi
 EOF
     fi
 
+    if [ $(expr ${MENDER_PARTITION_ALIGNMENT} % 1024 || true) -ne 0 ]; then
+        bbfatal "MENDER_PARTITION_ALIGNMENT must be KiB aligned when using partition table."
+    fi
+
+    alignment_kb=$(expr ${MENDER_PARTITION_ALIGNMENT} / 1024)
+
     cat >> "$wks" <<EOF
-part --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
-part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
+part --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align $alignment_kb --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
+part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
+part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
+part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label data --align $alignment_kb --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 bootloader --ptable $part_type
 EOF
 

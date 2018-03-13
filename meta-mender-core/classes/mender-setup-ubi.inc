@@ -37,7 +37,7 @@ MENDER_BOOT_PART_SIZE_MB_DEFAULT_mender-ubi = "0"
 MENDER_UBOOT_STORAGE_DEVICE_DEFAULT_mender-ubi = "dummy"
 MENDER_UBOOT_STORAGE_INTERFACE_DEFAULT_mender-ubi = "dummy"
 
-MENDER_PARTITION_ALIGNMENT_KB_DEFAULT_mender-ubi = "1024"
+MENDER_PARTITION_ALIGNMENT_DEFAULT_mender-ubi = "1048576"
 
 # Will be relative to start of first MTD partition, so should be zero.
 IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT_mender-ubi = "0"

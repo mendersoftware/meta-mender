@@ -98,7 +98,7 @@ class TestSdimg:
 
         fdisk.wait()
 
-        alignment = int(bitbake_variables['MENDER_PARTITION_ALIGNMENT_KB']) * 1024
+        alignment = int(bitbake_variables['MENDER_PARTITION_ALIGNMENT'])
         uboot_env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
         total_size = int(bitbake_variables['MENDER_STORAGE_TOTAL_SIZE_MB']) * 1024 * 1024
         part_overhead = int(bitbake_variables['MENDER_PARTITIONING_OVERHEAD_KB']) * 1024

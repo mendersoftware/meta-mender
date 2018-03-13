@@ -3,10 +3,10 @@ require u-boot-mender-common.inc
 inherit deploy
 
 do_compile_append() {
-    alignment_bytes=$(expr ${MENDER_PARTITION_ALIGNMENT_KB} \* 1024)
+    alignment_bytes=${MENDER_PARTITION_ALIGNMENT}
     if [ $(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} % $alignment_bytes) -ne 0 ]; then
         bberror "MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET must be aligned to" \
-                "MENDER_PARTITION_ALIGNMENT_KB"
+                "MENDER_PARTITION_ALIGNMENT"
     fi
 
     if [ ! -e ${WORKDIR}/fw_env.config.default ]; then
