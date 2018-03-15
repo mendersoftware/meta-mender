@@ -14,6 +14,8 @@ SRC_URI_append = " file://0001-Add-missing-header-which-fails-on-recent-GCC.patc
 SRC_URI_append = " file://0002-Generic-boot-code-for-Mender.patch"
 SRC_URI_append = " file://0003-Integration-of-Mender-boot-code-into-U-Boot.patch"
 
+SRC_URI_append_mender-ubi = " file://0004-Set-UBI-erase-size-from-Mender-provided-define.patch"
+
 SRC_URI_append = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
                                        '1', \
                                        ' file://0004-Disable-CONFIG_BOOTCOMMAND-and-enable-CONFIG_MENDER_.patch', \
@@ -124,12 +126,18 @@ EOF
             bbfatal "MENDER_MTDIDS is empty. Please set it to valid value for your board. An example is 'nor0=40000000.flash'."
         fi
 
+        if echo '${SRC_URI}' | fgrep "Set-UBI-erase-size-from-Mender-provided-define" && ! grep -q UBI_IOCEBISMAP ${S}/tools/env/fw_env.c; then
+            bbwarn "Detected U-Boot without support for direct read/write to UBI volumes. Mender normally expects this unless you have a custom setup. Consider backporting the patch at http://git.denx.de/?p=u-boot.git;a=commitdiff;h=34255b92e6e68941ab1134299faa86acc5a1abc8 to your U-Boot sources."
+        fi
+
         MENDER_MTDPARTS=mtdparts=$(mender_get_mtdparts)
 
         cat >> ${S}/include/config_mender_defines.h <<EOF
 #define MENDER_MTD_REQUIRED
 #define MENDER_UBI
 #define MENDER_MTD_UBI_DEVICE_NAME "${MENDER_MTD_UBI_DEVICE_NAME}"
+
+#define MENDER_UBI_LEB_SIZE ${MENDER_UBI_LEB_SIZE}
 EOF
     fi
 }
