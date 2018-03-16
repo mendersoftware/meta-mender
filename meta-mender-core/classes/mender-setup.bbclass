@@ -86,6 +86,8 @@ MENDER_BOOT_PART_SIZE_MB_DEFAULT = "16"
 # 8MB alignment is a safe setting that might waste some space if the erase block
 # is smaller.
 #
+MENDER_FLASH_PEB_SIZE ??= "8388608"
+
 # Historically MENDER_PARTITION_ALIGNMENT was always in KiB, but due to UBI
 # using some bytes for bookkeeping, each block is not always a KiB
 # multiple. Hence it needs to be expressed in bytes in those cases.

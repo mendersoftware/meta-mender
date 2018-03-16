@@ -3,7 +3,7 @@
 def mender_get_part_overhead_kb(d):
     import math
 
-    align = d.getVar('MENDER_PARTITION_ALIGNMENT')
+    align = int(d.getVar('MENDER_PARTITION_ALIGNMENT'))
     if align:
         return 4 * int(math.ceil(align / 1024))
     return 0

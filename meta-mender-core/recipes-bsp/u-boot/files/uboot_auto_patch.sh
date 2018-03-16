@@ -1,5 +1,7 @@
 #!/bin/bash
 
+UBI=0
+
 if [ -z "$1" ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     echo "This script should not be run on its own. Use uboot_auto_configure.sh."
     exit 1
@@ -234,18 +236,17 @@ patch_all_candidates() {
 
     # Remove all of the below entries.
     replace_definition \
-        'CONFIG_SYS_MMC_ENV_DEV'
-    replace_definition \
-        'CONFIG_SYS_MMC_ENV_PART'
-    replace_definition \
         'CONFIG_ENV_OFFSET'
     replace_definition \
         'CONFIG_ENV_OFFSET_REDUND'
-
-    # Make sure the environment is in MMC.
     replace_definition \
-        'CONFIG_ENV_IS_(NOWHERE|IN_[^ ]*)' \
-        'CONFIG_ENV_IS_IN_MMC'
+        'CONFIG_ENV_RANGE'
+
+    if [ $UBI = 1 ]; then
+        patch_all_candidates_ubi
+    else
+        patch_all_candidates_sdimg
+    fi
 
     # There are so many variants of CONFIG_BOOTCOUNT, just remove all of them.
     replace_definition \
@@ -255,11 +256,6 @@ patch_all_candidates() {
         'CONFIG_BOOTCOUNT_LIMIT'
     add_definition \
         'CONFIG_BOOTCOUNT_ENV'
-
-    add_definition \
-        'CONFIG_CMD_EXT4'
-    add_definition \
-        'CONFIG_MMC'
 
     # Patch away "root=/dev/blah" arguments, we will provide our own. Take care
     # to replace an occurrence ending in '\0' first, to avoid losing it if
@@ -309,6 +305,72 @@ patch_all_candidates() {
     fi
 }
 
+patch_all_candidates_sdimg() {
+    # Remove all of the below entries.
+    replace_definition \
+        'CONFIG_SYS_MMC_ENV_DEV'
+    replace_definition \
+        'CONFIG_SYS_MMC_ENV_PART'
+
+    # Make sure the environment is in MMC.
+    replace_definition \
+        'CONFIG_ENV_IS_(NOWHERE|IN_[^ ]*)' \
+        'CONFIG_ENV_IS_IN_MMC'
+
+    add_definition \
+        'CONFIG_CMD_EXT4'
+    add_definition \
+        'CONFIG_MMC'
+}
+
+patch_all_candidates_ubi() {
+    # Prior to commit 43ede0bca7fc in U-Boot, all the mtdids and mtdparts were
+    # in headers. Now they are in the Kconfig, and have the added "CONFIG_"
+    # prefix. Make sure we can handle both.
+    if [ $(grep ^CONFIG_MTDPARTS_DEFAULT= configs/*_defconfig | wc -l) -ge 100 ]; then
+        # Plenty of boards have the definition, we must be on Kconfig style.
+        replace_definition \
+            'CONFIG_MTDIDS_DEFAULT' \
+            'CONFIG_MTDIDS_DEFAULT' \
+            "\"$MTDIDS\""
+        replace_definition \
+            'CONFIG_MTDPARTS_DEFAULT' \
+            'CONFIG_MTDPARTS_DEFAULT' \
+            "\"mtdparts=$MTDPARTS\""
+    else
+        replace_definition \
+            'MTDIDS_DEFAULT' \
+            'MTDIDS_DEFAULT' \
+            "\"$MTDIDS\""
+        replace_definition \
+            'MTDPARTS_DEFAULT' \
+            'MTDPARTS_DEFAULT' \
+            "\"mtdparts=$MTDPARTS\""
+    fi
+
+    # Make sure the environment is in Flash.
+    replace_definition \
+        'CONFIG_ENV_IS_(NOWHERE|IN_[^ ]*)' \
+        'CONFIG_ENV_IS_IN_UBI'
+
+    # And remove volume definitions of environment so Mender can configure them.
+    replace_definition \
+        'CONFIG_ENV_UBI_PART'
+    replace_definition \
+        'CONFIG_ENV_UBI_VOLUME'
+
+    add_definition \
+        'CONFIG_CMD_MTDPARTS'
+    add_definition \
+        'CONFIG_CMD_UBI'
+    add_definition \
+        'CONFIG_CMD_UBIFS'
+    add_definition \
+        'CONFIG_MTD_DEVICE'
+    add_definition \
+        'CONFIG_MTD_PARTITIONS'
+}
+
 if [ "$1" = "--patch-config-file" ]; then
     if [ $# -gt 1 ]; then
         echo "--patch-config-file should be first and only argument."
@@ -340,6 +402,15 @@ while [ -n "$1" ]; do
             ;;
         --env-size=*)
             ENV_SIZE=${1#--env-size=}
+            ;;
+        --ubi)
+            UBI=1
+            ;;
+        --mtdids=*)
+            MTDIDS=${1#--mtdids=}
+            ;;
+        --mtdparts=*)
+            MTDPARTS=${1#--mtdparts=}
             ;;
         *)
             echo "Invalid argument: $1"

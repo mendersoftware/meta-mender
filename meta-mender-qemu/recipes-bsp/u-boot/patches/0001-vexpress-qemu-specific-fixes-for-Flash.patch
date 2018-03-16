@@ -1,0 +1,61 @@
+From 070502bdcb607f1f77f44611c4b6f7caf7f994d9 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@northern.tech>
+Date: Tue, 20 Feb 2018 13:52:07 +0100
+Subject: [PATCH 1/1] vexpress-qemu specific fixes for Flash.
+
+These are only needed because vexpress-qemu is not originally a Flash
+based board.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+---
+ configs/vexpress_ca9x4_defconfig  | 2 ++
+ include/configs/vexpress_ca9x4.h  | 8 ++++++++
+ include/configs/vexpress_common.h | 3 +--
+ 3 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/configs/vexpress_ca9x4_defconfig b/configs/vexpress_ca9x4_defconfig
+index 4cbc962..87c3ee1 100644
+--- a/configs/vexpress_ca9x4_defconfig
++++ b/configs/vexpress_ca9x4_defconfig
+@@ -24,3 +24,5 @@ CONFIG_SMC911X_BASE=0x4e000000
+ CONFIG_SMC911X_32_BIT=y
+ CONFIG_BAUDRATE=38400
+ CONFIG_OF_LIBFDT=y
++CONFIG_RBTREE=y
++CONFIG_LZO=y
+diff --git a/include/configs/vexpress_ca9x4.h b/include/configs/vexpress_ca9x4.h
+index 993398c..86795bf 100644
+--- a/include/configs/vexpress_ca9x4.h
++++ b/include/configs/vexpress_ca9x4.h
+@@ -14,4 +14,14 @@
+ #define CONFIG_VEXPRESS_ORIGINAL_MEMORY_MAP
+ #include "vexpress_common.h"
+ 
++#ifdef CONFIG_SYS_MALLOC_LEN
++#undef CONFIG_SYS_MALLOC_LEN
++#define CONFIG_SYS_MALLOC_LEN (8 * 1024 * 1024)
++#endif
++
++#define CONFIG_SYS_FLASH_BASE 0x40000000
++
++#define CONFIG_MTD_CONCAT
++#define CONFIG_FLASH_CFI_MTD
++
+ #endif /* VEXPRESS_CA9X4_H */
+diff --git a/include/configs/vexpress_common.h b/include/configs/vexpress_common.h
+index ade7ba4..7c53f3f 100644
+--- a/include/configs/vexpress_common.h
++++ b/include/configs/vexpress_common.h
+@@ -215,8 +215,7 @@
+ 		"console=ttyAMA0,38400n8\0" \
+ 		"dram=1024M\0" \
+ 		"root=/dev/sda1 rw\0" \
+-		"mtd=armflash:1M@0x800000(uboot),7M@0x1000000(kernel)," \
+-			"24M@0x2000000(initrd)\0" \
++		"mtdparts=" CONFIG_MTDPARTS_DEFAULT "\0" \
+ 		"flashargs=setenv bootargs root=${root} console=${console} " \
+ 			"mem=${dram} mtdparts=${mtd} mmci.fmax=190000 " \
+ 			"devtmpfs.mount=0  vmalloc=256M\0" \
+-- 
+2.7.4
+

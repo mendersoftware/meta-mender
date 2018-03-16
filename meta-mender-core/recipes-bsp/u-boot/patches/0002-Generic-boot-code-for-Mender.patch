@@ -18,7 +18,7 @@ new file mode 100644
 index 0000000..e4d4e82
 --- /dev/null
 +++ b/include/config_mender.h
-@@ -0,0 +1,99 @@
+@@ -0,0 +1,74 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -45,75 +45,50 @@ index 0000000..e4d4e82
 +
 +#include <config_mender_defines.h>
 +
-+#if !defined(CONFIG_ENV_IS_IN_MMC) && !defined(CONFIG_ENV_IS_IN_NAND) && !defined(CONFIG_ENV_IS_IN_FLASH)
-+# error CONFIG_ENV_IS_IN_MMC, CONFIG_ENV_IS_IN_NAND or CONFIG_ENV_IS_IN_FLASH is required for Mender to work
++#ifdef CONFIG_ENV_IS_NOWHERE
++# error A CONFIG_ENV_IS_IN_<storage-type> define is required for Mender to work. For standard Mender setups this should be CONFIG_ENV_IS_IN_MMC for HD/SSD/MMC/SD storage setup, and CONFIG_ENV_IS_IN_UBI for Flash/UBI storage.
 +#endif
 +
 +#ifndef CONFIG_BOOTCOUNT_LIMIT
-+# error CONFIG_BOOTCOUNT_LIMIT is required for Mender to work
++# error CONFIG_BOOTCOUNT_LIMIT is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#endif
 +
 +/* Currently Mender needs bootcount to reside in environment. */
 +#ifndef CONFIG_BOOTCOUNT_ENV
-+# error CONFIG_BOOTCOUNT_ENV is required for Mender to work
++# error CONFIG_BOOTCOUNT_ENV is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#endif
 +
-+#ifdef CONFIG_SYS_MMC_ENV_DEV
-+# error CONFIG_SYS_MMC_ENV_DEV should not be defined explicitly (will be auto-configured).
++#ifndef MENDER_UBI
++# ifdef CONFIG_SYS_MMC_ENV_DEV
++#  error CONFIG_SYS_MMC_ENV_DEV should not be defined explicitly (will be auto-configured). Make sure that: 1) All the instructions at https://docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++# endif
++# ifdef CONFIG_SYS_MMC_ENV_PART
++#  error CONFIG_SYS_MMC_ENV_PART should not be defined explicitly (will be auto-configured). Make sure that: 1) All the instructions at https://docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++# endif
 +#endif
-+#ifdef CONFIG_SYS_MMC_ENV_PART
-+# error CONFIG_SYS_MMC_ENV_PART should not be defined explicitly (will be auto-configured).
-+#endif
++
 +#ifdef CONFIG_ENV_OFFSET
-+# error CONFIG_ENV_OFFSET should not be defined explicitly (will be auto-configured).
++# error CONFIG_ENV_OFFSET should not be defined explicitly (will be auto-configured). Make sure that: 1) All the instructions at https://docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#endif
 +#ifdef CONFIG_ENV_OFFSET_REDUND
-+# error CONFIG_ENV_OFFSET_REDUND should not be defined explicitly (will be auto-configured).
++# error CONFIG_ENV_OFFSET_REDUND should not be defined explicitly (will be auto-configured). Make sure that: 1) All the instructions at https://docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#endif
-+
 +#if MENDER_BOOTENV_SIZE != CONFIG_ENV_SIZE
 +# error 'CONFIG_ENV_SIZE' define must be equal to bitbake variable 'BOOTENV_SIZE' set in U-Boot build recipe.
 +#endif
 +
-+#ifdef MENDER_BOOTENV_RANGE
-+
-+#ifndef CONFIG_ENV_RANGE
-+#error bitbake variable 'BOOTENV_RANGE' is set U-Boot recipe, but CONFIG_ENV_RANGE is not set in configuration
-+#endif  /* CONFIG_ENV_RANGE */
-+
-+#if MENDER_BOOTENV_RANGE != CONFIG_ENV_RANGE
-+#error 'CONFIG_ENV_RANGE' define must be equal to bitbake variable 'BOOTENV_RANGE' set in U-Boot build recipe.
++#ifndef MENDER_UBI
++# define CONFIG_SYS_MMC_ENV_DEV   MENDER_UBOOT_STORAGE_DEVICE
++  /* Use MMC partition zero to select whole user area of memory card. */
++# define CONFIG_SYS_MMC_ENV_PART  0
 +#endif
 +
-+#else
-+
-+#ifdef CONFIG_ENV_RANGE
-+#error CONFIG_ENV_RANGE is set but BOOTENV_RANGE is not configured in U-Boot build recipe.
-+#endif
-+
-+#if !defined(MENDER_USE_NATIVE_MTDPARTS_DEFAULT) && defined(MENDER_MTD_REQUIRED)
-+# ifdef MTDPARTS_DEFAULT
-+#  error MTDPARTS_DEFAULT should not be defined explicitly (will be auto-configured). If you want to use the default provided by U-Boot, define MENDER_USE_NATIVE_MTDPARTS_DEFAULT=1 in your build configuration for U-Boot, but you have to make sure that the default then matches the Mender configuration.
-+# else
-+#  define MTDPARTS_DEFAULT MENDER_MTDPARTS
-+# endif
-+#endif
-+
-+#if !defined(MENDER_USE_NATIVE_MTDIDS_DEFAULT) && defined(MENDER_MTD_REQUIRED)
-+# ifdef MTDIDS_DEFAULT
-+#  error MTDIDS_DEFAULT should not be defined explicitly (will be auto-configured). If you want to use the default provided by U-Boot, define MENDER_USE_NATIVE_MTDIDS_DEFAULT=1 in your build configuration for U-Boot, but you have to make sure that the default then matches the Mender configuration.
-+# else
-+#  define MTDIDS_DEFAULT MENDER_MTDIDS
-+# endif
-+#endif
-+
-+#endif  /* MENDER_BOOTENV_RANGE */
-+
-+#define CONFIG_SYS_MMC_ENV_DEV   MENDER_UBOOT_STORAGE_DEVICE
-+/* Use MMC partition zero to select whole user area of memory card. */
-+#define CONFIG_SYS_MMC_ENV_PART  0
 +#define CONFIG_ENV_OFFSET        MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
 +#define CONFIG_ENV_OFFSET_REDUND MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
++
++#define CONFIG_ENV_UBI_PART          MENDER_MTD_UBI_DEVICE_NAME
++#define CONFIG_ENV_UBI_VOLUME        "u-boot-env-1"
++#define CONFIG_ENV_UBI_VOLUME_REDUND "u-boot-env-2"
 +
 +#endif /* !MENDER_AUTO_PROBING */
 +
@@ -123,7 +98,7 @@ new file mode 100644
 index 0000000..93ead58
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,123 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -213,20 +188,34 @@ index 0000000..93ead58
 +    "then reset; "                                                      \
 +    "fi\0"
 +
-+#ifdef MENDER_MTD_REQUIRED
-+# define MENDER_BOOTARGS_MTDPARTS "setenv bootargs mtdparts=${mtdparts} ${bootargs}; "
++#ifdef MENDER_UBI
++# define MENDER_BOOTARGS                                                \
++    "setenv bootargs root=${mender_kernel_root_name} "                  \
++    "${mtdparts} "                                                      \
++    "ubi.mtd=${mender_mtd_ubi_dev_name} "                               \
++    "rootfstype=ubifs "                                                 \
++    "${bootargs}; "
++# define MENDER_LOAD_KERNEL_AND_FDT                                     \
++    "ubi part ${mender_mtd_ubi_dev_name}; "                             \
++    "ubifsmount ${mender_uboot_root_name}; "                            \
++    "if test \"${fdt_addr_r}\" != \"\"; then "                          \
++    "ubifsload ${fdt_addr_r} /boot/${mender_dtb_name}; "                \
++    "fi; "                                                              \
++    "ubifsload ${kernel_addr_r} /boot/${mender_kernel_name}; "
 +#else
-+# define MENDER_BOOTARGS_MTDPARTS
++# define MENDER_BOOTARGS                                                \
++    "setenv bootargs root=${mender_kernel_root} ${bootargs}; "
++# define MENDER_LOAD_KERNEL_AND_FDT                                     \
++    "if test \"${fdt_addr_r}\" != \"\"; then "                          \
++    "load ${mender_uboot_root} ${fdt_addr_r} /boot/${mender_dtb_name}; " \
++    "fi; "                                                              \
++    "load ${mender_uboot_root} ${kernel_addr_r} /boot/${mender_kernel_name}; "
 +#endif
 +
 +#define CONFIG_MENDER_BOOTCOMMAND                                       \
 +    "run mender_setup; "                                                \
-+    "setenv bootargs root=${mender_kernel_root} ${bootargs}; "          \
-+    MENDER_BOOTARGS_MTDPARTS                                            \
-+    "if test \"${fdt_addr_r}\" != \"\"; then "                          \
-+    "load ${mender_uboot_root} ${fdt_addr_r} /boot/${mender_dtb_name}; " \
-+    "fi; "                                                              \
-+    "load ${mender_uboot_root} ${kernel_addr_r} /boot/${mender_kernel_name}; " \
++    MENDER_BOOTARGS                                                     \
++    MENDER_LOAD_KERNEL_AND_FDT                                          \
 +    "${mender_boot_kernel_type} ${kernel_addr_r} - ${fdt_addr_r}; "     \
 +    "run mender_try_to_recover"
 +
@@ -235,4 +224,3 @@ index 0000000..93ead58
 +#endif /* HEADER_ENV_MENDER_H */
 -- 
 2.7.4
-

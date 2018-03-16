@@ -40,8 +40,7 @@ do_deploy_append() {
     # Note: We cannot use a sparse file here, even though it's filled with
     # zeros, because the build process uses "du" to determine the size of this
     # file.
-    MENDER_BOOTENV_TOTAL_ALIGNED_SIZE_SECTORS=$(expr ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} / 512)
-    dd if=/dev/zero of=${WORKDIR}/uboot.env count=$MENDER_BOOTENV_TOTAL_ALIGNED_SIZE_SECTORS
+    dd if=/dev/zero of=${WORKDIR}/uboot.env bs=${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} count=1
     install -m 644 ${WORKDIR}/uboot.env ${DEPLOYDIR}/uboot.env
 }
 addtask deploy after do_compile

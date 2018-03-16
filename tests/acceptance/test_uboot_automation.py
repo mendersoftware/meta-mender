@@ -24,51 +24,169 @@ import subprocess
 from common import *
 
 class TestUbootAutomation:
-    def revision_already_checked(self):
-        # ----------------------------------------------------------------------
-        # Update these two to skip the check.
-        expected_poky_rev = "0c537554fc2cf58a9cbfeaf39ed918c607483dce"
-        expected_meta_mender_uboot_rev = "2ba764ce62afb57e4f5d71a494ead93a89988bfa"
-        # ----------------------------------------------------------------------
+    def check_if_should_run(self):
+        # The logic here is this:
+        #
+        # * If any commit in poky, or a commit touching
+        #   meta-mender/meta-mender-core/u-boot, is more recent than a certain
+        #   time, carry out the test.
+        #
+        # * If a commit touching meta-mender/meta-mender-core/u-boot is older
+        #   than the given time, but no upstream branch contains it, carry out
+        #   the test.
+        #
+        # * Else, skip the test.
+        #
+        # The rationale is that the test is extremely time consuming, and
+        # therefore we should try to avoid it if the branch has been stable for
+        # a while. We include the second conditional above so that PRs are
+        # always checked, even if they are old.
 
-        # SHA from poky repository.
-        poky_rev = subprocess.check_output("git rev-parse HEAD", shell=True,
+        # Number of days that must pass for the branch to be considered stable.
+        days_to_be_old = 14
+
+        # SHA from poky repository, limited by date.
+        poky_rev = subprocess.check_output("git log -n1 --format=%%H --after=%d.days.ago HEAD" % days_to_be_old, shell=True,
                                            cwd=os.path.join(os.environ['BUILDDIR'], "..")).strip()
-        # SHA from meta-mender repository.
-        meta_mender_uboot_rev = subprocess.check_output("git rev-list -n1 HEAD -- ../../meta-mender-core/recipes-bsp/u-boot",
+        if poky_rev:
+            print("Running test_uboot_compile because poky commit is more recent than %d days." % days_to_be_old)
+            return
+
+        # SHA from meta-mender repository, limited by date.
+        meta_mender_uboot_rev = subprocess.check_output(("git log -n1 --format=%%H --after=%d.days.ago HEAD -- "
+                                                         + "../../meta-mender-core/recipes-bsp/u-boot")
+                                                        % days_to_be_old,
                                                         shell=True).strip()
-        if expected_poky_rev != poky_rev or expected_meta_mender_uboot_rev != meta_mender_uboot_rev:
-            print("""Need to run test_uboot_compile. Used these SHAs for comparison:
+        if meta_mender_uboot_rev:
+            print("Running test_uboot_compile because u-boot in meta-mender has been modified more recently than %d days ago." % days_to_be_old)
+            return
 
-poky_rev = %s
-meta_mender_uboot_rev = %s
+        # SHA from meta-mender repository, not limited by date.
+        meta_mender_uboot_rev = subprocess.check_output("git log -n1 --format=%H HEAD -- "
+                                                         + "../../meta-mender-core/recipes-bsp/u-boot",
+                                                        shell=True).strip()
+        for remote in subprocess.check_output(["git", "remote"]).split():
+            url = subprocess.check_output("git config --get remote.%s.url" % remote, shell=True)
+            if "mendersoftware" in url:
+                upstream_remote = remote
+        else:
+            pytest.fail("Upstream remote not found! Should not happen.")
 
-If this combination has been verified to pass, you can set the two variables:
+        contained_in = subprocess.check_output("git branch -r --contains %s" % meta_mender_uboot_rev, shell=True).split()
+        is_upstream = False
+        for branch in contained_in:
+            if branch.startswith("%s/" % upstream_remote) and not branch.startswith("%s/pull/" % upstream_remote):
+                is_upstream = True
+                break
 
-expected_poky_rev
-expected_meta_mender_uboot_rev
+        if not is_upstream:
+            print("Running test_uboot_compile because meta-mender commit is not upstream yet.")
+            return
 
-to the values above. This will cause the test to be skipped until the SHAs
-change."""
-                  % (poky_rev, meta_mender_uboot_rev))
-            return False
+        msg = "Skipping test_uboot_compile because u-boot commits are old and already upstream."
+        print(msg)
+        pytest.skip(msg)
 
-        return True
+    def board_not_arm(self, bitbake_variables, config):
+        with open(os.path.join(bitbake_variables['S'], "configs", config)) as fd:
+            for line in fd.readlines():
+                line = line.strip()
+                if line.startswith("CONFIG_TARGET_") and line.endswith("=y"):
+                    # Extract target name.
+                    target = line.split("=", 2)[0]
+                    # Remove "CONFIG_" prefix.
+                    target = target[len("CONFIG_"):]
+                    break
+            else:
+                # We don't know, so we return that it's not definitely not ARM
+                # (yes, double negatives...)
+                return False
 
-    # No need to test this on non-vexpress-qemu. It is a very resource consuming
-    # test, and it is identical on all boards, since it internally tests all
-    # boards.
-    @pytest.mark.only_for_machine('vexpress-qemu')
+        # Look for that config value inside Kconfig files that are not in arm
+        # directory.
+        for walk in os.walk(os.path.join(bitbake_variables['S'], "arch"), topdown=True):
+            walk[1][:] = [dir for dir in walk[1] if dir != "arm"]
+
+            walk[2][:] = [file for file in walk[2] if file == "Kconfig"]
+
+            for file in walk[2]:
+                with open(os.path.join(walk[0], file)) as fd:
+                    if re.search("^config *%s *$" % target, fd.read(), re.MULTILINE):
+                        # Found the target in a non-arm directory. This is not
+                        # an ARM board.
+                        return True
+
+        return False
+
+    def collect_and_prepare_boards_to_test(self, bitbake_variables, env):
+        # Find all the boards we need to test for the configuration in question.
+        # For vexpress-qemu, we test all SD-based boards, for vexpress-qemu-flash
+        # we test all Flash based boards.
+        machine = bitbake_variables["MACHINE"]
+        available_configs = sorted(os.listdir(os.path.join(bitbake_variables['S'], "configs")))
+        configs_to_test = []
+        for config in available_configs:
+            if not config.endswith("_defconfig"):
+                continue
+
+            if self.board_not_arm(bitbake_variables, config):
+                continue
+
+            mtdids = None
+            mtdparts = None
+            extra_patch_args = ""
+            with open(os.path.join(bitbake_variables['S'], "configs", config)) as fd:
+                for line in fd.readlines():
+                    line = line.strip()
+                    if line.startswith("CONFIG_MTDPARTS_DEFAULT="):
+                        mtdparts = line.split("=", 2)[1]
+                    elif line.startswith("CONFIG_MTDIDS_DEFAULT="):
+                        mtdids = line.split("=", 2)[1]
+
+            if mtdparts:
+                # Assume Flash board.
+
+                if machine != "vexpress-qemu-flash":
+                    continue
+
+                if mtdids and mtdids.startswith("\"nand"):
+                    extra_patch_args = "--ubi --mtdids=nand=10000000.flash --mtdparts=10000000.flash:512k(u-boot),255m(ubi)"
+                elif mtdids and mtdids.startswith("\"onenand"):
+                    extra_patch_args = "--ubi --mtdids=onenand=20000000.flash --mtdparts=20000000.flash:512k(u-boot),255m(ubi)"
+                elif mtdids and mtdids.startswith("\"nor"):
+                    extra_patch_args = "--ubi --mtdids=nor=30000000.flash --mtdparts=30000000.flash:512k(u-boot),255m(ubi)"
+                else:
+                    # If board lacks mtdids, or it is unrecognized, treat it as a failed board.
+                    with open(os.path.join(env['LOGS'], config), "w") as fd:
+                        fd.write("test_uboot_compile: Unrecognized mtdids: %s\n" % mtdids)
+                        fd.write("AutoPatchFailed\n")
+            else:
+                # Assume block storage board.
+                if machine != "vexpress-qemu":
+                    continue
+                extra_patch_args = ""
+
+            configs_to_test.append(os.path.join(env['LOGS'], config))
+            # Provide arguments for the board that the patching process will use.
+            with open(os.path.join(env['LOGS'], "%s.params" % config), "w") as fd:
+                fd.write(extra_patch_args)
+
+        return configs_to_test
+
     @pytest.mark.min_mender_version('1.0.0')
-    def test_uboot_compile(self, bitbake_path):
+    def test_uboot_compile(self, bitbake_env, bitbake_variables):
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
 
-        # THIS IS A SLOW RUNNING TEST!
-        # Use the revision inside the function below to optimize and skip
-        # checking based on version.
-        if self.revision_already_checked():
-            pytest.skip("Revision of poky and u-boot already checked")
+        # No need to test this on non-vexpress-qemu. It is a very resource
+        # consuming test, and it is identical on all boards, since it internally
+        # tests all boards.
+        machine = bitbake_variables["MACHINE"]
+        if not machine.startswith("vexpress-qemu"):
+            pytest.skip("Skipping test on non-vexpress-qemu platforms")
+
+        # This is a slow running test. Skip if appropriate.
+        self.check_if_should_run()
 
         for task in ["do_provide_mender_defines", "prepare_recipe_sysroot"]:
             subprocess.check_call("cd %s && bitbake -c %s u-boot" % (os.environ['BUILDDIR'], task),
@@ -79,6 +197,15 @@ change."""
         env['UBOOT_SRC'] = bitbake_variables['S']
         env['TESTS_DIR'] = os.getcwd()
         env['LOGS'] = os.path.join(os.getcwd(), "test_uboot_compile-logs")
+        if os.path.exists(env['LOGS']):
+            print("WARNING: %s already exists. Will use cached logs from there. Recreate to reset." % env['LOGS'])
+        else:
+            os.mkdir(env['LOGS'])
+
+        configs_to_test = self.collect_and_prepare_boards_to_test(bitbake_variables, env)
+
+        env['BOARD_LOGS'] = " ".join(configs_to_test)
+
         sanitized_makeflags = bitbake_variables['EXTRA_OEMAKE']
         sanitized_makeflags = sanitized_makeflags.replace("\\\"", "\"")
         sanitized_makeflags = re.sub(" +", " ", sanitized_makeflags)
@@ -98,14 +225,24 @@ change."""
         failed = 0.0
         total = 0.0
         for file in os.listdir(env['LOGS']):
+            if not file.endswith("_defconfig"):
+                continue
+
             total += 1
             with open(os.path.join(env['LOGS'], file)) as fd:
                 if "AutoPatchFailed\n" in fd.readlines():
                     failed += 1
 
-        # PLEASE UPDATE the version you used to find this number if you update it.
-        # From version: v2017.09
-        measured_failed_ratio = 747.0 / 1176.0
+        assert total == len(configs_to_test), "Number of logs do not match the number of boards we tested? Should not happen"
+
+        if machine == "vexpress-qemu":
+            # PLEASE UPDATE the version you used to find this number if you update it.
+            # From version: v2017.09
+            measured_failed_ratio = 747.0 / 1176.0
+        elif machine == "vexpress-qemu-flash":
+            # PLEASE UPDATE the version you used to find this number if you update it.
+            # From version: v2017.09
+            measured_failed_ratio = 59.0 / 156.0
 
         # We tolerate a certain percentage discrepancy in either direction.
         tolerated_discrepancy = 0.1

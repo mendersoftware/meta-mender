@@ -55,23 +55,6 @@ def mender_make_mtdparts_shell_array(d):
 
     import re
 
-    def convert_units_to_bytes(number, unit):
-        if unit is None or unit.lower() == '':
-            to_return = int(number)
-        elif unit.lower() == 'k':
-            to_return = int(number) * 1024
-        elif unit.lower() == 'm':
-            to_return = int(number) * 1048576
-        elif unit.lower() == 'g':
-            to_return = int(number) * 1073741824
-        else:
-            bb.fatal("Cannot parse number '%s' and unit '%s'" % (number, unit))
-
-        if to_return % 1024 != 0:
-            bb.fatal("Numbers in mtdparts must be aligned to a KiB boundary")
-
-        return to_return
-
     # Breaking up the mtdparts string in shell is tricky, so do it here, and
     # just return a string that can be eval'ed in the shell. Can't use real bash
     # arrays though... sigh.
@@ -109,14 +92,14 @@ def mender_make_mtdparts_shell_array(d):
         if match.group(3) is None:
             offset = total_offset
         else:
-            offset = convert_units_to_bytes(match.group(3), match.group(4))
+            offset = mender_mtdparts_convert_units_to_bytes(match.group(3), match.group(4))
 
         if match.group(1) == '-':
             size = '-'
             kbsize = '-'
             remaining_encountered = True
         else:
-            size = convert_units_to_bytes(match.group(1), match.group(2))
+            size = mender_mtdparts_convert_units_to_bytes(match.group(1), match.group(2))
             kbsize = int(size / 1024)
             total_offset = offset + size
 
@@ -133,3 +116,20 @@ def mender_make_mtdparts_shell_array(d):
     shell_cmd += "local mtd_count=%d\n" % count
 
     return shell_cmd
+
+def mender_mtdparts_convert_units_to_bytes(number, unit):
+    if unit is None or unit.lower() == '':
+        to_return = int(number)
+    elif unit.lower() == 'k':
+        to_return = int(number) * 1024
+    elif unit.lower() == 'm':
+        to_return = int(number) * 1048576
+    elif unit.lower() == 'g':
+        to_return = int(number) * 1073741824
+    else:
+        bb.fatal("Cannot parse number '%s' and unit '%s'" % (number, unit))
+
+    if to_return % 1024 != 0:
+        bb.fatal("Numbers in mtdparts must be aligned to a KiB boundary")
+
+    return to_return

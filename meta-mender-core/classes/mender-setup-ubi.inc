@@ -37,13 +37,18 @@ MENDER_BOOT_PART_SIZE_MB_DEFAULT_mender-ubi = "0"
 MENDER_UBOOT_STORAGE_DEVICE_DEFAULT_mender-ubi = "dummy"
 MENDER_UBOOT_STORAGE_INTERFACE_DEFAULT_mender-ubi = "dummy"
 
-MENDER_PARTITION_ALIGNMENT_DEFAULT_mender-ubi = "1048576"
+# Align UBI partitions to the LEB block size instead of the PEB size, since
+# the bookeeping bytes used by UBI are basically lost as far as storage space
+# is concerned.
+MENDER_PARTITION_ALIGNMENT_DEFAULT_mender-ubi = "${MENDER_UBI_LEB_SIZE}"
 
 # Will be relative to start of first MTD partition, so should be zero.
 IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT_mender-ubi = "0"
 
 # since UBIFS employs compression, disable the max rootfs size checking.
 MENDER_IMAGE_ROOTFS_MAXSIZE_DEFAULT_mender-ubi = ""
+
+MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT_mender-ubi = "${@mender_get_partitioning_overhead_kb_ubi(d)}"
 
 # Definition of mtdids and mtdparts (taken from U-Boot's mtdparts.c):
 #
@@ -93,12 +98,51 @@ MENDER_MTDIDS ??= ""
 MENDER_IS_ON_MTDID ??= "${@mender_default_mender_mtdid('${MENDER_MTDIDS}')}"
 
 # The mtdparts string for the MTD layout. Usually auto-set from MENDER_MTDIDS
-# if possible.
+# if possible. It should contain a "u-boot" label and a "ubi" label.
 MENDER_MTDPARTS ??= "${@mender_make_mtdparts(d)}"
 
 # Usually included in first mtd partition.
 MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT_mender-ubi = "u-boot.${UBOOT_SUFFIX}"
 
+################################################################################
+# Most of the information about various Flash properties below has been grabbed
+# from:
+#   http://linux-mtd.infradead.org/doc/ubi.html
+#     -and-
+#   http://linux-mtd.infradead.org/doc/ubifs.html
+#
+# In particular, the UBI overhead information is very useful:
+#   http://linux-mtd.infradead.org/doc/ubi.html#L_overhead
+################################################################################
+
+# Usually 2KiB, but can be other nearby powers of two.
+MENDER_NAND_FLASH_PAGE_SIZE ??= "2048"
+
+MENDER_UBI_LEB_PEB_BLOCK_OVERHEAD ??= "${@mender_calculate_ubi_leb_peb_block_overhead(d)}"
+
+MENDER_UBI_LEB_SIZE ??= "${@eval('${MENDER_FLASH_PEB_SIZE} - ${MENDER_UBI_LEB_PEB_BLOCK_OVERHEAD}')}"
+
+# Fixed overhead which is the same for all UBI images.
+# 2 PEBs are used to store the volume table;
+# 1 PEB is reserved for wear-leveling purposes;
+# 1 PEB is reserved for the atomic LEB change operation;
+MENDER_UBI_TOTAL_FIXED_OVERHEAD ??= "${@eval('4 * ${MENDER_FLASH_PEB_SIZE}')}"
+# some amount of PEBs is reserved for bad PEB handling; this is applicable for
+# NAND flash, but not for NOR flash; the amount of reserved PEBs is configurable
+# and is equal to 20 blocks per 1024 blocks by default;
+MENDER_UBI_TOTAL_BAD_PEB_OVERHEAD ??= "${@mender_get_ubi_bad_peb_overhead(d)}"
+MENDER_UBI_TOTAL_LEB_PEB_OVERHEAD ??= "${@mender_calculate_ubi_leb_peb_overhead(d)}"
+
+MKUBIFS_ARGS ??= "-m 1 -e ${MENDER_UBI_LEB_SIZE} -c 1024"
+UBINIZE_ARGS ??= "-p ${MENDER_FLASH_PEB_SIZE} -m 1"
+
+# The volume numbers containing the two environment copies. The volume numbers
+# are customizable because the kernel only accepts numbers, but U-boot only
+# accepts names, and these are not currently customizable (see IMAGE_CMD_ubimg).
+# Normally one does not need to set these unless there is a custom ubimg builder
+# involved.
+MENDER_UBOOT_ENV_UBIVOL_NUMBER_1 ??= "3"
+MENDER_UBOOT_ENV_UBIVOL_NUMBER_2 ??= "4"
 
 ################################################################################
 # Functions
@@ -123,14 +167,17 @@ def mender_make_mtdparts(d):
     if not active_mtdid:
         return ""
 
-    alignment = int(d.getVar('MENDER_PARTITION_ALIGNMENT_KB')) * 1024
+    u_boot_part_size = int(d.getVar('MENDER_FLASH_PEB_SIZE'))
+    # Default to at least 512KiB for U-Boot binary. Can be changed by setting
+    # MENDER_MTDPARTS manually.
+    if u_boot_part_size < 524288:
+        u_boot_part_size = 524288
 
     bootloader = ""
     if bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
-        bootloader = "%s(u-boot)ro,%s(u-boot-env)," % (mender_get_bytes_with_unit(alignment),
-                                                       mender_get_bytes_with_unit(alignment * 2))
+        bootloader = "%s(u-boot)ro," % mender_get_bytes_with_unit(u_boot_part_size)
 
-    return "%s:%s-(ubi)" % (active_mtdid, bootloader)
+    return "%s:%s-(%s)" % (active_mtdid, bootloader, d.getVar('MENDER_MTD_UBI_DEVICE_NAME'))
 
 mender_get_mtdparts() {
     if [ -n "${MENDER_MTDPARTS}" ]; then
@@ -144,3 +191,115 @@ mender_get_mtdparts() {
         fi
     fi
 }
+
+def mender_get_flash_type_from_mtdid(d):
+    import re
+
+    mtdid = d.getVar('MENDER_IS_ON_MTDID')
+    match = re.search("([^=]+)=%s" % re.escape(mtdid), d.getVar('MENDER_MTDIDS'))
+    if match is None:
+        bb.warn("Could not find MENDER_IS_ON_MTDID (%s) in MENDER_MTDIDS (%s). Setting UBI overhead to 0."
+                % (mtdid, d.getVar('MENDER_MTDIDS')))
+        return "0"
+    storage = match.group(1)
+    # Get rid of trailing numbers.
+    storage = re.sub("[0-9]*$", "", storage)
+
+    if storage == "onenand":
+        return "nand"
+    else:
+        return storage
+
+def mender_calculate_ubi_leb_peb_block_overhead(d):
+    storage = mender_get_flash_type_from_mtdid(d)
+
+    # See http://linux-mtd.infradead.org/doc/ubi.html#L_overhead
+    if storage == "nor":
+        return "128"
+    elif storage == "nand":
+        return str(int(d.getVar('MENDER_NAND_FLASH_PAGE_SIZE')) * 2)
+    else:
+        bb.warn("Unknown MTDID type %s, setting UBI overhead to 0" % storage)
+        return "0"
+
+def mender_get_ubi_size(d):
+    import re
+
+    mtdid = d.getVar('MENDER_IS_ON_MTDID')
+    mtdparts = d.getVar('MENDER_MTDPARTS')
+    for part in mtdparts.split(";"):
+        if part.startswith("%s:" % mtdid):
+            mtdpart = part
+            break
+    else:
+        bb.warn("Could not find MENDER_IS_ON_MTDID (%s) in MENDER_MTDPARTS (%s). Setting UBI partitioning overhead to 0."
+                % (mtdid, mtdparts))
+
+    # Find all space in mtdimage not occupied by the UBI image.
+    non_ubi_size = 0
+    for part in mtdpart.split(":", 1)[1].split(","):
+        match = re.match("^([0-9]+|-)([kmg]?)(?:@([0-9]+)([kmg]?))?\(([^)]+)\)", part)
+        if match is None:
+            bb.fatal("Unable to parse mtdparts substring '%s'." % part)
+        if match.group(3):
+            non_ubi_size = mender_mtdparts_convert_units_to_bytes(match.group(3), match.group(4))
+        if match.group(1) == "-":
+            vol_size = "-"
+        else:
+            vol_size = mender_mtdparts_convert_units_to_bytes(match.group(1), match.group(2))
+
+        if match.group(5) == "ubi":
+            # UBI space, we are finished.
+            break
+
+        if vol_size != "-":
+            non_ubi_size += vol_size
+    else:
+        bb.fatal("Could not find \"(ubi)\" MTD partition")
+
+    if vol_size == "-":
+        ubi_size = int(d.getVar('MENDER_STORAGE_TOTAL_SIZE_MB')) * 1048576 - non_ubi_size
+    else:
+        ubi_size = vol_size
+
+    return ubi_size
+
+def mender_calculate_ubi_leb_peb_overhead(d):
+    # In addition to the overhead caused by alignment, we also need to take into
+    # account that UBI LEBs (logical erase blocks) are smaller than PEBs
+    # (physical erase blocks), so the whole UBI storage has less capacity than
+    # its actual blocks.
+    ubi_size = mender_get_ubi_size(d)
+    peb_size = int(d.getVar('MENDER_FLASH_PEB_SIZE'))
+    leb_size = int(d.getVar('MENDER_UBI_LEB_SIZE'))
+    overhead = (peb_size - leb_size) * int(ubi_size / peb_size)
+    return str(overhead)
+
+def mender_get_ubi_bad_peb_overhead(d):
+    storage = mender_get_flash_type_from_mtdid(d)
+
+    if storage == "nor":
+        return "0"
+    elif storage == "nand":
+        ubi_size = mender_get_ubi_size(d)
+        blocks = int(ubi_size / int(d.getVar('MENDER_FLASH_PEB_SIZE')))
+        return str(int(20 * blocks / 1024 + 20))
+    else:
+        bb.warn("Unknown MTDID type %s, setting UBI overhead to 0" % storage)
+        return "0"
+
+def mender_get_partitioning_overhead_kb_ubi(d):
+    fixed = int(d.getVar('MENDER_UBI_TOTAL_FIXED_OVERHEAD'))
+    bad = int(d.getVar('MENDER_UBI_TOTAL_BAD_PEB_OVERHEAD'))
+    leb_peb = int(d.getVar('MENDER_UBI_TOTAL_LEB_PEB_OVERHEAD'))
+    ubi_size = mender_get_ubi_size(d)
+    total_size = int(d.getVar('MENDER_STORAGE_TOTAL_SIZE_MB')) * 1048576
+
+    overhead = fixed + bad + leb_peb
+    # Anything which is not in the UBI section is essentially overhead.
+    overhead += total_size - ubi_size
+
+    # Overhead must be rounded to nearest alignment.
+    alignment = int(d.getVar('MENDER_PARTITION_ALIGNMENT'))
+    overhead = alignment * (int((overhead - 1) / alignment) + 1)
+    return str(int(overhead / 1024))

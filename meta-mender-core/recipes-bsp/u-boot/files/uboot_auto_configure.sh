@@ -8,9 +8,7 @@ BUILDCC="${BUILDCC:-gcc}"
 CC=${CC:-${CROSS_COMPILE}gcc}
 MAKE="${MAKE:-make}"
 MAKEFLAGS="${MAKEFLAGS:-}"
-
-echo $CC
-
+MAYBE_UBI=
 
 DEBUG=0
 SCRIPT_DIR="$(readlink -f "$(dirname "$0")")"
@@ -29,6 +27,12 @@ Script to produce a patch for U-Boot so it will work with Mender.
 	is the resulting patch)
 --tmp-dir=<temp dir>"
 	Temporary directory to use while working
+--ubi
+	Enable auto-configuration for Flash/UBI setup
+--mtdids=<mtdids>
+	MENDER_MTDIDS string of the board (--ubi).
+--mtdparts=<mtdparts>
+	MENDER_MTDPARTS string of the board (--ubi).
 --debug
 	Lots of debug output
 
@@ -47,6 +51,15 @@ while [ -n "$1" ]; do
             ;;
         --tmp-dir=*)
             TMP_DIR="$(readlink -f "${1#--tmp-dir=}")"
+            ;;
+        --ubi)
+            MAYBE_UBI="$MAYBE_UBI --ubi"
+            ;;
+        --mtdids=*)
+            MAYBE_UBI="$MAYBE_UBI $1"
+            ;;
+        --mtdparts=*)
+            MAYBE_UBI="$MAYBE_UBI $1"
             ;;
         --debug)
             DEBUG=1
@@ -124,7 +137,8 @@ bash $SUB_X "$SCRIPT_DIR/uboot_auto_patch.sh" \
      --compiled-env="$TMP_DIR/compiled-environment.txt" \
      --config="$CONFIG" \
      --dep-file="$TMP_DIR"/cmd/.version.o.cmd \
-     --env-size="$BOOTENV_SIZE"
+     --env-size="$BOOTENV_SIZE" \
+     $MAYBE_UBI
 
 set +x
 

@@ -46,34 +46,67 @@ IMAGE_CMD_ubimg () {
         ubimg_fatal "Boot partition is not supported for ubimg. MENDER_BOOT_PART_SIZE_MB should be set to 0."
     fi
 
-    rm -f ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
+    if ${@bb.utils.contains("DISTRO_FEATURES", "mender-uboot", "true", "false", d)}; then
+        # U-Boot doesn't allow putting both of the redundant environments on the
+        # same volume, so we must split it and put each half on a separate volume.
+        local uboot_env_vol_size=$(expr $(stat -c %s ${DEPLOY_DIR_IMAGE}/uboot.env) / 2)
+        # Make sure it is divisible by the erase block.
+        local alignment=${MENDER_PARTITION_ALIGNMENT}
+        if [ $(expr $uboot_env_vol_size % $alignment || true) -ne 0 ]; then
+            bbfatal "U-Boot environment size is not an even multiple of MENDER_PARTITION_ALIGNMENT ($alignment)."
+        fi
 
-    echo \[rootfsA\] >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo mode=ubi >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo image=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubifs >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_id=0 >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_size=${MENDER_CALC_ROOTFS_SIZE}KiB >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_type=dynamic >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_name=rootfsa >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo "" >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
+        dd if=${DEPLOY_DIR_IMAGE}/uboot.env of=${WORKDIR}/ubimg-uboot-env-1 bs=$uboot_env_vol_size count=1
+        dd if=${DEPLOY_DIR_IMAGE}/uboot.env of=${WORKDIR}/ubimg-uboot-env-2 bs=$uboot_env_vol_size skip=1 count=1
+    fi
 
-    echo \[rootfsB\] >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo mode=ubi >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo image=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubifs >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_id=1 >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_size=${MENDER_CALC_ROOTFS_SIZE}KiB >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_type=dynamic >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_name=rootfsb >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo "" >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
+    cat > ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg <<EOF
+[rootfsA]
+mode=ubi
+image=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubifs
+vol_id=0
+vol_size=${MENDER_CALC_ROOTFS_SIZE}KiB
+vol_type=dynamic
+vol_name=rootfsa
 
-    echo \[data\] >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo mode=ubi >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo image=${IMGDEPLOYDIR}/data.ubifs >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_id=2 >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_size=${MENDER_DATA_PART_SIZE_MB}MiB >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_type=dynamic >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo vol_name=data >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo "" >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
+[rootfsB]
+mode=ubi
+image=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubifs
+vol_id=1
+vol_size=${MENDER_CALC_ROOTFS_SIZE}KiB
+vol_type=dynamic
+vol_name=rootfsb
+
+[data]
+mode=ubi
+image=${IMGDEPLOYDIR}/data.ubifs
+vol_id=2
+vol_size=${MENDER_DATA_PART_SIZE_MB}MiB
+vol_type=dynamic
+vol_name=data
+
+EOF
+
+    if ${@bb.utils.contains("DISTRO_FEATURES", "mender-uboot", "true", "false", d)}; then
+        cat >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg <<EOF
+[u-boot-env-1]
+mode=ubi
+image=${WORKDIR}/ubimg-uboot-env-1
+vol_id=${MENDER_UBOOT_ENV_UBIVOL_NUMBER_1}
+vol_size=$uboot_env_vol_size
+vol_type=dynamic
+vol_name=u-boot-env-1
+
+[u-boot-env-2]
+mode=ubi
+image=${WORKDIR}/ubimg-uboot-env-2
+vol_id=${MENDER_UBOOT_ENV_UBIVOL_NUMBER_2}
+vol_size=$uboot_env_vol_size
+vol_type=dynamic
+vol_name=u-boot-env-2
+
+EOF
+    fi
 
     cat ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
 

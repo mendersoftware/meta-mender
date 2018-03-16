@@ -1,21 +1,7 @@
 EXTRA_IMAGEDEPENDS_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
 
 
-def mender_get_env_total_aligned_size(bootenv_size, bootenv_range, alignment_bytes):
-    if bootenv_range and type(bootenv_range) is str:
-        base = 16 if bootenv_range.startswith('0x') else 10
-        bootenv_range = int(bootenv_range, base)
-    else:
-        bootenv_range = 0
-
-    if bootenv_range > 0:
-        if bootenv_range < bootenv_size:
-           raise Exception('BOOTENV_RANGE (0x{:x}) is smaller than ' \
-                           'BOOTENV_SIZE (0x{:x})'.format(bootenv_range,
-                                                          bootenv_size))
-        # override bootenv size for further calculations
-        bootenv_size = bootenv_range
-
+def mender_get_env_total_aligned_size(bootenv_size, alignment_bytes):
     env_aligned_size = int((bootenv_size + alignment_bytes - 1) / alignment_bytes) * alignment_bytes
 
     # Total size, original and redundant environment.
@@ -32,7 +18,6 @@ MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET ??= "${MENDER_PARTITION_ALIGNMENT}"
 # produces an error if left to the default.
 MENDER_RESERVED_SPACE_BOOTLOADER_DATA_DEFAULT_mender-uboot = \
     "${@mender_get_env_total_aligned_size(${MENDER_PARTITION_ALIGNMENT}, \
-                                          ${MENDER_PARTITION_ALIGNMENT}, \
                                           ${MENDER_PARTITION_ALIGNMENT})}"
 
 # u-boot environment file

@@ -315,7 +315,7 @@ def latest_build_artifact(builddir, extension):
     print("Found latest image of type '%s' to be: %s" % (extension, output))
     return output
 
-def get_bitbake_variables(target, env_setup="true"):
+def get_bitbake_variables(target, env_setup="true", export_only=False):
     current_dir = os.open(".", os.O_RDONLY)
     os.chdir(os.environ['BUILDDIR'])
 
@@ -323,7 +323,11 @@ def get_bitbake_variables(target, env_setup="true"):
                               stdout=subprocess.PIPE,
                               shell=True,
                               executable="/bin/bash")
-    matcher = re.compile('^(?:export )?([A-Za-z][^=]*)="(.*)"$')
+    if export_only:
+        export_only_expr = ""
+    else:
+        export_only_expr = "?"
+    matcher = re.compile('^(?:export )%s([A-Za-z][^=]*)="(.*)"$' % export_only_expr)
     ret = {}
     for line in output.stdout:
         line = line.strip()

@@ -207,18 +207,18 @@ def bitbake_variables():
     return get_bitbake_variables("core-image-minimal")
 
 @pytest.fixture(scope="session")
-def bitbake_path_string():
-    """Fixture that returns the PATH we need for our testing tools"""
+def mender_test_dependencies_bitbaked():
+    """Fixture that makes sure mender-test-dependencies is bitbaked."""
 
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
-    current_dir = os.open(".", os.O_RDONLY)
-    os.chdir(os.environ['BUILDDIR'])
-
     # See the recipe for details about this call.
-    subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot", "mender-test-dependencies"])
+    subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot", "mender-test-dependencies"],
+                            cwd=os.environ['BUILDDIR'])
 
-    os.fchdir(current_dir)
+@pytest.fixture(scope="session")
+def bitbake_path_string(mender_test_dependencies_bitbaked):
+    """Fixture that returns the PATH we need for our testing tools"""
 
     bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
 
@@ -238,6 +238,44 @@ def bitbake_path(request, bitbake_path_string):
     request.addfinalizer(path_restore)
 
     return os.environ['PATH']
+
+@pytest.fixture(scope="session")
+def bitbake_env_dict(mender_test_dependencies_bitbaked):
+    """Fixture that returns the PATH we need for our testing tools"""
+
+    bb_testing_variables = get_bitbake_variables("mender-test-dependencies", export_only=True)
+
+    return bb_testing_variables
+
+@pytest.fixture(scope="function")
+def bitbake_env(request, bitbake_env_dict):
+    """Fixture that runs the test using entire bitbake environment."""
+
+    old_env = {}
+    # Save all values that have keys in the bitbake_env_dict
+    for key in bitbake_env_dict:
+        if key in os.environ:
+            old_env[key] = os.environ[key]
+        else:
+            old_env[key] = None
+
+    old_path = os.environ['PATH']
+
+    os.environ.update(bitbake_env_dict)
+    # Exception for PATH, keep old path at end.
+    os.environ['PATH'] += ":" + old_path
+
+    def env_restore():
+        # Restore all keys we saved.
+        for key in old_env:
+            if old_env[key] is None:
+                del os.environ[key]
+            else:
+                os.environ[key] = old_env[key]
+
+    request.addfinalizer(env_restore)
+
+    return os.environ
 
 @pytest.fixture(scope="session")
 def clean_image(request, prepared_test_build_base):
