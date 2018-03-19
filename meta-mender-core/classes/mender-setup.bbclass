@@ -173,7 +173,16 @@ python() {
 
 python() {
     if d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True):
-        bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
+        bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. \
+            Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
+
+    if d.getVar('MENDER_DATA_PART_FSTYPE', True):
+        bb.fatal("MENDER_DATA_PART_FSTYPE is deprecated. \
+            Please define MENDER_DATA_PART_FSTAB_ENTRY instead if you want to override the default behaviour.")
+
+    if d.getVar('MENDER_BOOT_PART_FSTYPE', True):
+        bb.fatal("MENDER_BOOT_PART_FSTYPE is deprecated. \
+            Please define MENDER_BOOT_PART_FSTAB_ENTRY instead if you want to override the default behaviour.")
 }
 
 # Including these does not mean that all these features will be enabled, just
