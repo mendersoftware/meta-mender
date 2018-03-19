@@ -1,13 +1,23 @@
 require mender.inc
 
+################################################################################
+#-------------------------------------------------------------------------------
+# THINGS TO CONSIDER FOR EACH RELEASE:
+# - SRC_URI (particularly "branch")
+# - SRCREV
+# - DEFAULT_PREFERENCE
+#-------------------------------------------------------------------------------
+
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=1.4.x"
 
-# Tag: 1.4.0b1
-SRCREV = "d24ea6a7e16327f6c4bb29e80d3b11b7529d5e86"
+# Tag: 1.4.0
+SRCREV = "377320c496be9767ef443175b3d5afed4fb42840"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
-DEFAULT_PREFERENCE = "-1"
+#DEFAULT_PREFERENCE = "-1"
+
+################################################################################
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
