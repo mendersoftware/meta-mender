@@ -185,10 +185,24 @@ do_mender_uboot_auto_configure() {
     rm -rf ${MENDER_UBOOT_OLD_SRC}
     cp -r "${S}" ${MENDER_UBOOT_OLD_SRC}
 
+    # Strip leading and trailing whitespace, then newline divide.
+    MENDER_UBOOT_MACHINE="$(echo "${UBOOT_MACHINE}" | sed -r 's/(^\s*)|(\s*$)//g; s/\s+/\n/g')"
+
+    if [ -z "$MENDER_UBOOT_MACHINE" ]; then
+        bbfatal "Did not find a machine specified in UBOOT_MACHINE"
+        exit 1
+    fi
+
+    MACHINE_COUNT=$(echo "$MENDER_UBOOT_MACHINE" | wc -l)
+    if [ "$MACHINE_COUNT" -ne 1 ]; then
+        bbwarn "Found more than one machine specified in UBOOT_MACHINE. Only one should be specified. Choosing the last one."
+        MENDER_UBOOT_MACHINE="$(echo "$MENDER_UBOOT_MACHINE" | tail -1)"
+    fi
+
     env \
         BUILDCC="${BUILD_CC}" \
         ./uboot_auto_configure.sh \
-        --config=${UBOOT_MACHINE} \
+        --config=$MENDER_UBOOT_MACHINE \
         --src-dir=${S} \
         --tmp-dir=${MENDER_UBOOT_TMP_SRC} \
         ${@bb.utils.contains('DISTRO_FEATURES', 'mender-ubi', '--ubi "--mtdids=${MENDER_MTDIDS}" "--mtdparts=${MENDER_MTDPARTS}"', '', d)} \
