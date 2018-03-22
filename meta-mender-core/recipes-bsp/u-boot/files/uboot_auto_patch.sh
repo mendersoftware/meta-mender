@@ -105,6 +105,13 @@ add_definition() {
         # be almost universally present, so add the new definition next to it.
         patch_candidate_list "\\%^ *# *define *CONFIG_ENV_SIZE\\b% s%^%$c_repl\n%; p"
     fi
+
+    if ! definition_exists "$1"; then
+        # If it STILL doesn't exist, then we failed to add it and the patching
+        # failed.
+        echo "Unable to add definition $1. Patching failed."
+        return 1
+    fi
 }
 
 append_to_definition() {
