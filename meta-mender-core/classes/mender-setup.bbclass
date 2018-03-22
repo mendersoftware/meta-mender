@@ -86,13 +86,17 @@ MENDER_BOOT_PART_SIZE_MB_DEFAULT = "16"
 # 8MB alignment is a safe setting that might waste some space if the erase block
 # is smaller.
 #
-MENDER_FLASH_PEB_SIZE ??= "8388608"
+# For traditional block storage (HDDs, SDDs, etc), in most cases this is 512
+# bytes, often called a sector.
+MENDER_STORAGE_PEB_SIZE ??= "8388608"
 
 # Historically MENDER_PARTITION_ALIGNMENT was always in KiB, but due to UBI
 # using some bytes for bookkeeping, each block is not always a KiB
 # multiple. Hence it needs to be expressed in bytes in those cases.
 MENDER_PARTITION_ALIGNMENT ??= "${MENDER_PARTITION_ALIGNMENT_DEFAULT}"
-MENDER_PARTITION_ALIGNMENT_DEFAULT = "${MENDER_FLASH_PEB_SIZE}"
+# For non-UBI, the alignment should simply be the physical erase block size,
+# but it should not be less than 1KiB (wic won't like that).
+MENDER_PARTITION_ALIGNMENT_DEFAULT = "${@max(${MENDER_STORAGE_PEB_SIZE}, 1024)}"
 
 # The reserved space between the partition table and the first partition.
 # Most people don't need to set this, and it will be automatically overridden

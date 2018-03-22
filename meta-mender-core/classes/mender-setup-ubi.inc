@@ -120,13 +120,13 @@ MENDER_NAND_FLASH_PAGE_SIZE ??= "2048"
 
 MENDER_UBI_LEB_PEB_BLOCK_OVERHEAD ??= "${@mender_calculate_ubi_leb_peb_block_overhead(d)}"
 
-MENDER_UBI_LEB_SIZE ??= "${@eval('${MENDER_FLASH_PEB_SIZE} - ${MENDER_UBI_LEB_PEB_BLOCK_OVERHEAD}')}"
+MENDER_UBI_LEB_SIZE ??= "${@eval('${MENDER_STORAGE_PEB_SIZE} - ${MENDER_UBI_LEB_PEB_BLOCK_OVERHEAD}')}"
 
 # Fixed overhead which is the same for all UBI images.
 # 2 PEBs are used to store the volume table;
 # 1 PEB is reserved for wear-leveling purposes;
 # 1 PEB is reserved for the atomic LEB change operation;
-MENDER_UBI_TOTAL_FIXED_OVERHEAD ??= "${@eval('4 * ${MENDER_FLASH_PEB_SIZE}')}"
+MENDER_UBI_TOTAL_FIXED_OVERHEAD ??= "${@eval('4 * ${MENDER_STORAGE_PEB_SIZE}')}"
 # some amount of PEBs is reserved for bad PEB handling; this is applicable for
 # NAND flash, but not for NOR flash; the amount of reserved PEBs is configurable
 # and is equal to 20 blocks per 1024 blocks by default;
@@ -134,7 +134,7 @@ MENDER_UBI_TOTAL_BAD_PEB_OVERHEAD ??= "${@mender_get_ubi_bad_peb_overhead(d)}"
 MENDER_UBI_TOTAL_LEB_PEB_OVERHEAD ??= "${@mender_calculate_ubi_leb_peb_overhead(d)}"
 
 MKUBIFS_ARGS ??= "-m 1 -e ${MENDER_UBI_LEB_SIZE} -c 1024"
-UBINIZE_ARGS ??= "-p ${MENDER_FLASH_PEB_SIZE} -m 1"
+UBINIZE_ARGS ??= "-p ${MENDER_STORAGE_PEB_SIZE} -m 1"
 
 # The volume numbers containing the two environment copies. The volume numbers
 # are customizable because the kernel only accepts numbers, but U-boot only
@@ -167,7 +167,7 @@ def mender_make_mtdparts(d):
     if not active_mtdid:
         return ""
 
-    u_boot_part_size = int(d.getVar('MENDER_FLASH_PEB_SIZE'))
+    u_boot_part_size = int(d.getVar('MENDER_STORAGE_PEB_SIZE'))
     # Default to at least 512KiB for U-Boot binary. Can be changed by setting
     # MENDER_MTDPARTS manually.
     if u_boot_part_size < 524288:
@@ -270,7 +270,7 @@ def mender_calculate_ubi_leb_peb_overhead(d):
     # (physical erase blocks), so the whole UBI storage has less capacity than
     # its actual blocks.
     ubi_size = mender_get_ubi_size(d)
-    peb_size = int(d.getVar('MENDER_FLASH_PEB_SIZE'))
+    peb_size = int(d.getVar('MENDER_STORAGE_PEB_SIZE'))
     leb_size = int(d.getVar('MENDER_UBI_LEB_SIZE'))
     overhead = (peb_size - leb_size) * int(ubi_size / peb_size)
     return str(overhead)
@@ -282,7 +282,7 @@ def mender_get_ubi_bad_peb_overhead(d):
         return "0"
     elif storage == "nand":
         ubi_size = mender_get_ubi_size(d)
-        blocks = int(ubi_size / int(d.getVar('MENDER_FLASH_PEB_SIZE')))
+        blocks = int(ubi_size / int(d.getVar('MENDER_STORAGE_PEB_SIZE')))
         return str(int(20 * blocks / 1024 + 20))
     else:
         bb.warn("Unknown MTDID type %s, setting UBI overhead to 0" % storage)
