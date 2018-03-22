@@ -101,9 +101,15 @@ add_definition() {
         echo "$kconfig_repl" >> configs/$CONFIG
     else
         # In the pre-Kconfig case, it's more open. We need to add it somewhere
-        # in the source, but it's not obvious where.  CONFIG_ENV_SIZE seems to
-        # be almost universally present, so add the new definition next to it.
-        patch_candidate_list "\\%^ *# *define *CONFIG_ENV_SIZE\\b% s%^%$c_repl\n%; p"
+        # in the source, but it's not obvious where.  Some variables, like the
+        # ones in the list below, seem to be almost universally present, so add
+        # the new definition next to the first we find.
+        for candidate in CONFIG_ENV_SIZE CONFIG_BOOTCOMMAND; do
+            patch_candidate_list "\\%^ *# *define *$candidate\\b% s%^%$c_repl\n%; p"
+            if definition_exists "$1"; then
+                break
+            fi
+        done
     fi
 
     if ! definition_exists "$1"; then
@@ -226,14 +232,6 @@ patch_all_candidates() {
     remove_bootvar \
         "bootcmd"
 
-    # If this file contains a CONFIG_BOOTCOMMAND definition, remove everything
-    # from it up to the next line not ending with '\'. This is actually an
-    # unnecessary step, since CONFIG_MENDER_BOOTCOMMAND is the one that will be
-    # used, but it makes it clearer what the patch is trying to do, if anybody
-    # needs to look at the end result and/or tweak it.
-    replace_definition \
-        'CONFIG_BOOTCOMMAND'
-
     # Replace any definition of CONFIG_ENV_SIZE with our definition.
     replace_definition \
         'CONFIG_ENV_SIZE' \
@@ -309,6 +307,14 @@ patch_all_candidates() {
             # Continue without, some boot commands don't use addresses at all.
         fi
     fi
+
+    # If this file contains a CONFIG_BOOTCOMMAND definition, remove everything
+    # from it up to the next line not ending with '\'. This is actually an
+    # unnecessary step, since CONFIG_MENDER_BOOTCOMMAND is the one that will be
+    # used, but it makes it clearer what the patch is trying to do, if anybody
+    # needs to look at the end result and/or tweak it.
+    replace_definition \
+        'CONFIG_BOOTCOMMAND'
 }
 
 patch_all_candidates_sdimg() {
