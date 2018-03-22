@@ -138,13 +138,12 @@ definition_exists() {
 is_kconfig_option() {
     # Returns whether a config option appears to be a Kconfig option or not.
 
-    # Check Kconfig files.
-    option=${1#CONFIG_}
-    if find -name Kconfig | xargs grep -q "^config *$option\\b"; then
+    # Check .config file for such an option.
+    if egrep -q "^($1=|# $1 is not set)" "$CONFIG_FILE"; then
         return 0
+    else
+        return 1
     fi
-
-    return 1
 }
 
 remove_bootvar() {
@@ -396,6 +395,9 @@ while [ -n "$1" ]; do
                     CONFIG="${CONFIG%_config}_defconfig"
                     ;;
             esac
+            ;;
+        --config-file=*)
+            CONFIG_FILE=${1#--config-file=}
             ;;
         --dep-file=*)
             DEP_FILE=${1#--dep-file=}

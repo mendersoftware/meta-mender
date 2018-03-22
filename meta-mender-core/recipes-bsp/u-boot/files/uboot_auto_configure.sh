@@ -136,6 +136,7 @@ cd "$SRC_DIR"
 bash $SUB_X "$SCRIPT_DIR/uboot_auto_patch.sh" \
      --compiled-env="$TMP_DIR/compiled-environment.txt" \
      --config="$CONFIG" \
+     --config-file="$TMP_DIR/.config" \
      --dep-file="$TMP_DIR"/cmd/.version.o.cmd \
      --env-size="$BOOTENV_SIZE" \
      $MAYBE_UBI
