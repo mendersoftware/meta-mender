@@ -77,7 +77,7 @@ replace_definition() {
         should_exist=0
     fi
 
-    patch_candidate_list "\\%^ *# *define *$1\\b% {:start; /\\\\\$/ {n; b start; }; $c_sed_op; }; p"
+    patch_candidate_list "\\%^[ \t]*#[ \t]*define[ \t]*$1\\b% {:start; /\\\\\$/ {n; b start; }; $c_sed_op; }; p"
 
     # Also patch config file.
     sed -i -re "\\%(^$1=.*)|(^# *$1  *is not set *\$)%s%.*%$kconfig_repl%" configs/$CONFIG
@@ -105,7 +105,7 @@ add_definition() {
         # ones in the list below, seem to be almost universally present, so add
         # the new definition next to the first we find.
         for candidate in CONFIG_ENV_SIZE CONFIG_BOOTCOMMAND; do
-            patch_candidate_list "\\%^ *# *define *$candidate\\b% s%^%$c_repl\n%; p"
+            patch_candidate_list "\\%^[ \t]*#[ \t]*define[ \t]*$candidate\\b% s%^%$c_repl\n%; p"
             if definition_exists "$1"; then
                 break
             fi
@@ -132,7 +132,7 @@ append_to_definition() {
         sed -re "s%^$1=(.*)\"%$1=\1$2\"%" configs/$CONFIG
     else
         # Add it to the last non-backslash-continued line.
-        patch_candidate_list "\\%^ *# *define *$1\\b% {:start; /\\\\$/ {p; n; b start}; s%\$% $2%}; p"
+        patch_candidate_list "\\%^[ \t]*#[ \t]*define[ \t]*$1\\b% {:start; /\\\\$/ {p; n; b start}; s%\$% $2%}; p"
     fi
 }
 
@@ -142,7 +142,7 @@ definition_exists() {
 
     any_success=1
     for file in $(get_candidate_list); do
-        egrep -q "^ *# *define *$1\\b" "$file" && any_success=0 && break
+        egrep -q "^[ \t]*#[ \t]*define[ \t]*$1\\b" "$file" && any_success=0 && break
     done
     egrep -q "(^$1=.*)|(^# *$1  *is not set *\$)" configs/$CONFIG && any_success=0
     return $any_success
@@ -390,7 +390,7 @@ if [ "$1" = "--patch-config-file" ]; then
     fi
     # Patch config file to use a local one instead of absolute path. This means
     # we can use the env tools for probing during the build preparations.
-    sed -i -e 's/^ *# *define *CONFIG_FILE\b.*/#define CONFIG_FILE "fw_env.config"/' tools/env/fw_env*.h
+    sed -i -e 's/^[ \t]*#[ \t]*define[ \t]*CONFIG_FILE\b.*/#define CONFIG_FILE "fw_env.config"/' tools/env/fw_env*.h
     exit 0
 fi
 
