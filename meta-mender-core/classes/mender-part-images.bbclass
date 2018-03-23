@@ -68,8 +68,10 @@ mender_part_image() {
     dd if=/dev/zero of="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
     mkfs.${ARTIFACTIMG_FSTYPE} -F "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" -d "${WORKDIR}/data" -L data
 
-    # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
-    install -m 0644 "${DEPLOY_DIR_IMAGE}/uboot.env" "${WORKDIR}/"
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)}; then
+        # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
+        install -m 0644 "${DEPLOY_DIR_IMAGE}/uboot.env" "${WORKDIR}/"
+    fi
 
     wks="${WORKDIR}/mender-$suffix.wks"
     rm -f "$wks"
