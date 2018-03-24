@@ -198,7 +198,7 @@ class TestUpdates:
 
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
-        if board or use_s3:
+        if "qemu" not in board or use_s3:
             Helpers.upload_to_s3()
             s3_address = pytest.config.getoption("--s3-address")
             http_server_location = "{}/mender/temp".format(s3_address)
