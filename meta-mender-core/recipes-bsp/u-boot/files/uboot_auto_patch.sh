@@ -308,6 +308,8 @@ patch_all_candidates_sdimg() {
     add_definition \
         'CONFIG_CMD_EXT4'
     add_definition \
+        'CONFIG_CMD_FS_GENERIC'
+    add_definition \
         'CONFIG_MMC'
 }
 
