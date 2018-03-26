@@ -259,6 +259,8 @@ patch_all_candidates() {
     add_definition \
         'CONFIG_CMD_EXT4'
     add_definition \
+        'CONFIG_CMD_FS_GENERIC'
+    add_definition \
         'CONFIG_MMC'
 
     # Patch away "root=/dev/blah" arguments, we will provide our own. Take care
