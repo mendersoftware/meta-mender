@@ -14,8 +14,6 @@ SRC_URI_append = " file://0001-Add-missing-header-which-fails-on-recent-GCC.patc
 SRC_URI_append = " file://0002-Generic-boot-code-for-Mender.patch"
 SRC_URI_append = " file://0003-Integration-of-Mender-boot-code-into-U-Boot.patch"
 
-SRC_URI_append_mender-ubi = " file://0004-Set-UBI-erase-size-from-Mender-provided-define.patch"
-
 SRC_URI_append = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
                                        '1', \
                                        ' file://0004-Disable-CONFIG_BOOTCOMMAND-and-enable-CONFIG_MENDER_.patch', \
@@ -136,8 +134,6 @@ EOF
 #define MENDER_MTD_REQUIRED
 #define MENDER_UBI
 #define MENDER_MTD_UBI_DEVICE_NAME "${MENDER_MTD_UBI_DEVICE_NAME}"
-
-#define MENDER_UBI_LEB_SIZE ${MENDER_UBI_LEB_SIZE}
 EOF
     fi
 }
@@ -249,8 +245,8 @@ mender_create_fw_env_config_file_mender-ubi() {
 
     # create fw_env.config file
     cat > $1 <<EOF
-/dev/${MENDER_STORAGE_DEVICE}_${MENDER_UBOOT_ENV_UBIVOL_NUMBER_1} 0 $HEX_BOOTENV_SIZE
-/dev/${MENDER_STORAGE_DEVICE}_${MENDER_UBOOT_ENV_UBIVOL_NUMBER_2} 0 $HEX_BOOTENV_SIZE
+/dev/${MENDER_STORAGE_DEVICE}_${MENDER_UBOOT_ENV_UBIVOL_NUMBER_1} 0 $HEX_BOOTENV_SIZE ${MENDER_UBI_LEB_SIZE}
+/dev/${MENDER_STORAGE_DEVICE}_${MENDER_UBOOT_ENV_UBIVOL_NUMBER_2} 0 $HEX_BOOTENV_SIZE ${MENDER_UBI_LEB_SIZE}
 EOF
 }
 
