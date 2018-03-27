@@ -35,16 +35,6 @@ patch_candidate_list() {
     done
 }
 
-definition_for_c_files() {
-    if [ -n "${2:-}" ]; then
-        echo "#define $1 $2"
-    elif [ -n "${1:-}" ]; then
-        echo "#define $1"
-    else
-        echo ""
-    fi
-}
-
 definition_for_kconfig_files() {
     if [ -n "${2:-}" ]; then
         echo "$1=$2"
@@ -62,29 +52,13 @@ replace_definition() {
     # given two, it replaces it with that definition, if given three, it gives
     # the new definition that value.
 
-    # c_repl refers to replacement text in C files.
-    # c_sed_op refers to operation on C files.
-    # kconfig_repl refers to replacement text in Kbuild files.
-    c_repl="$(definition_for_c_files "${2:-}" "${3:-}")"
-    kconfig_repl="$(definition_for_kconfig_files "${2:-}" "${3:-}")"
-    if [ -n "${2:-}" ]; then
-        # Replace.
-        c_sed_op="s%.*%$c_repl%"
-        should_exist=1
-    else
-        # Branch to end (omit line and move to next cycle).
-        c_sed_op="b"
-        should_exist=0
-    fi
-
-    patch_candidate_list "\\%^[ \t]*#[ \t]*define[ \t]*$1\\b% {:start; /\\\\\$/ {n; b start; }; $c_sed_op; }; p"
+    patch_candidate_list "\\%^[ \t]*#[ \t]*define[ \t]*$1\\b% {:start; /\\\\\$/ {n; b start; }; b; }; p"
 
     # Also patch config file.
-    sed -i -re "\\%(^$1=.*)|(^# *$1  *is not set *\$)%s%.*%$kconfig_repl%" configs/$CONFIG
+    sed -i -re "\\%(^$1=.*)|(^# *$1  *is not set *\$)%d" configs/$CONFIG
 
-    if [ $should_exist = 1 ] && ! definition_exists "$2"; then
-        # If the definition still isn't there, because no previous variant
-        # existed, we need to add it somewhere from scratch.
+    # Add definition.
+    if [ -n "${2:-}" ]; then
         shift
         add_definition "$@"
     fi
@@ -93,7 +67,6 @@ replace_definition() {
 add_definition() {
     # Adds a definition in the most appropriate place, if it doesn't exist.
 
-    c_repl="$(definition_for_c_files "$@")"
     kconfig_repl="$(definition_for_kconfig_files "$@")"
 
     if is_kconfig_option "$1"; then
@@ -101,15 +74,9 @@ add_definition() {
         echo "$kconfig_repl" >> configs/$CONFIG
     else
         # In the pre-Kconfig case, it's more open. We need to add it somewhere
-        # in the source, but it's not obvious where.  Some variables, like the
-        # ones in the list below, seem to be almost universally present, so add
-        # the new definition next to the first we find.
-        for candidate in CONFIG_ENV_SIZE CONFIG_BOOTCOMMAND; do
-            patch_candidate_list "\\%^[ \t]*#[ \t]*define[ \t]*$candidate\\b% s%^%$c_repl\n%; p"
-            if definition_exists "$1"; then
-                break
-            fi
-        done
+        # in the source, but it's not obvious where. Add it to
+        # config_defaults.h.
+        echo "#define $1${2:+ $2}" >> include/config_defaults.h
     fi
 
     if ! definition_exists "$1"; then
@@ -231,6 +198,15 @@ patch_all_candidates() {
     # If this file contains a bootcmd definition, remove it.
     remove_bootvar \
         "bootcmd"
+
+    if definition_exists CONFIG_BOOTCOMMAND; then
+        # CONFIG_ENV_SIZE is often surrounded by ifdefs that render changes to
+        # it ineffective. Since CONFIG_BOOTCOMMAND is present, and it is usually
+        # outside ifdefs, remove CONFIG_ENV_SIZE, and it will be added next to
+        # that one instead.
+        replace_definition \
+            'CONFIG_ENV_SIZE'
+    fi
 
     # Replace any definition of CONFIG_ENV_SIZE with our definition.
     replace_definition \
