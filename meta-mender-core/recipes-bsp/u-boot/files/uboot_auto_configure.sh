@@ -3,8 +3,8 @@
 set -e
 
 BOOTENV_SIZE="${BOOTENV_SIZE:-0x20000}"
-BUILDAR="${BUILDAR:-ar}"
-BUILDCC="${BUILDCC:-gcc}"
+BUILD_AR="${BUILD_AR:-ar}"
+BUILD_CC="${BUILD_CC:-gcc}"
 CC=${CC:-${CROSS_COMPILE}gcc}
 MAKE="${MAKE:-make}"
 MAKEFLAGS="${MAKEFLAGS:-}"
@@ -93,12 +93,12 @@ cp -r "$SRC_DIR" "$TMP_DIR"
 cd "$TMP_DIR"
 
 # Prepare build.
-# Just so that the terminology is clear: BUILDCC refers to the compiler for the
+# Just so that the terminology is clear: BUILD_CC refers to the compiler for the
 # host that is building the program. CC refers to the compiler for the target
-# device. HOSTCC, which is used by U-Boot, is the same as BUILDCC, but this
+# device. HOSTCC, which is used by U-Boot, is the same as BUILD_CC, but this
 # doesn't follow gcc's terminology, where "host" is the target device. Hence, we
-# stick to gcc's convention, and just reassign BUILDCC to HOSTCC here.
-$MAKE HOSTCC="$BUILDCC -DMENDER_AUTO_PROBING" CC="$CC -DMENDER_AUTO_PROBING" "$CONFIG"
+# stick to gcc's convention, and just reassign BUILD_CC to HOSTCC here.
+$MAKE HOSTCC="$BUILD_CC -DMENDER_AUTO_PROBING" CC="$CC -DMENDER_AUTO_PROBING" "$CONFIG"
 
 # Detect what the build target to the environment tools is. It changed from
 # "env" to "envtools" in v2017.09.
@@ -111,7 +111,7 @@ fi
 
 # Prepare env tools for host platform.
 bash $SUB_X "$SCRIPT_DIR/uboot_auto_patch.sh" --patch-config-file
-$MAKE HOSTCC="$BUILDCC -DMENDER_AUTO_PROBING" CC="$BUILDCC -DMENDER_AUTO_PROBING" $ENV_TARGET
+$MAKE HOSTCC="$BUILD_CC -DMENDER_AUTO_PROBING" CC="$BUILD_CC -DMENDER_AUTO_PROBING" $ENV_TARGET
 
 # Prepare a fake environment to make work fw_printenv properly. Doesn't have
 # to be valid, just existing.
@@ -129,7 +129,7 @@ tools/env/fw_printenv > "$TMP_DIR/compiled-environment.txt"
 # for using this instead of simply going through all files, is that we want to
 # patch exactly the files that are used in the build, not a lot of unrelated
 # files.
-$MAKE HOSTCC="$BUILDCC -DMENDER_AUTO_PROBING" CC="$CC -DMENDER_AUTO_PROBING" cmd/version.o
+$MAKE HOSTCC="$BUILD_CC -DMENDER_AUTO_PROBING" CC="$CC -DMENDER_AUTO_PROBING" cmd/version.o
 
 # We now have all the information we need from the build. Start patching!
 cd "$SRC_DIR"
