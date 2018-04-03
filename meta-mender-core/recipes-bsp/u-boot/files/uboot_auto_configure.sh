@@ -108,7 +108,9 @@ fake-env.txt 0 $BOOTENV_SIZE
 fake-env.txt 0 $BOOTENV_SIZE
 EOF
 # Save compiled U-Boot environment
-tools/env/fw_printenv > "$TMP_DIR/compiled-environment.txt"
+mkdir -p fw_printenv.lock
+tools/env/fw_printenv -l fw_printenv.lock > "$TMP_DIR/compiled-environment.txt"
+rm -rf fw_printenv.lock
 
 # cmd/.version.o.cmd is automatically built by the build system and contains all
 # dependencies for the given source file. We use this to go through all the
