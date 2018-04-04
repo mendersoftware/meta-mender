@@ -201,7 +201,7 @@ index 0000000..93ead58
 +    "if test \"${fdt_addr_r}\" != \"\"; then "                          \
 +    "ubifsload ${fdt_addr_r} /boot/${mender_dtb_name}; "                \
 +    "fi; "                                                              \
-+    "ubifsload ${kernel_addr_r} /boot/${mender_kernel_name}; "
++    "ubifsload ${loadaddr} /boot/${mender_kernel_name}; "
 +#else
 +# define MENDER_BOOTARGS                                                \
 +    "setenv bootargs root=${mender_kernel_root} ${bootargs}; "
@@ -209,14 +209,14 @@ index 0000000..93ead58
 +    "if test \"${fdt_addr_r}\" != \"\"; then "                          \
 +    "load ${mender_uboot_root} ${fdt_addr_r} /boot/${mender_dtb_name}; " \
 +    "fi; "                                                              \
-+    "load ${mender_uboot_root} ${kernel_addr_r} /boot/${mender_kernel_name}; "
++    "load ${mender_uboot_root} ${loadaddr} /boot/${mender_kernel_name}; "
 +#endif
 +
 +#define CONFIG_MENDER_BOOTCOMMAND                                       \
 +    "run mender_setup; "                                                \
 +    MENDER_BOOTARGS                                                     \
 +    MENDER_LOAD_KERNEL_AND_FDT                                          \
-+    "${mender_boot_kernel_type} ${kernel_addr_r} - ${fdt_addr_r}; "     \
++    "${mender_boot_kernel_type} ${loadaddr} - ${fdt_addr_r}; "     \
 +    "run mender_try_to_recover"
 +
 +#endif /* !MENDER_AUTO_PROBING */

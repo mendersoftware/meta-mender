@@ -87,22 +87,6 @@ add_definition() {
     fi
 }
 
-append_to_definition() {
-    # Appends something to a string definition.
-
-    if ! definition_exists "$1"; then
-        echo "Tried to append to definition $1, but it doesn't exist!" 1>&2
-        exit 1
-    fi
-
-    if is_kconfig_option "$1"; then
-        sed -re "s%^$1=(.*)\"%$1=\1$2\"%" configs/$CONFIG
-    else
-        # Add it to the last non-backslash-continued line.
-        patch_candidate_list "\\%^[ \t]*#[ \t]*define[ \t]*$1\\b% {:start; /\\\\$/ {p; n; b start}; s%\$% $2%}; p"
-    fi
-}
-
 definition_exists() {
     # Returns 0 if the definition is found either in the source code or in the
     # config definition.
@@ -255,15 +239,15 @@ patch_all_candidates() {
             "fdt_addr_r"
     fi
 
-    # Find load address for kernel and make sure it's in kernel_addr_r.
+    # Find load address for kernel and make sure it's in loadaddr.
     if kernel_addr="$(extract_kernel_addr)"; then
-        if [ "$kernel_addr" != "kernel_addr_r" ]; then
+        if [ "$kernel_addr" != "loadaddr" ]; then
             remove_bootvar \
-                "kernel_addr_r"
+                "loadaddr"
         fi
         rename_bootvar \
             "$kernel_addr" \
-            "kernel_addr_r"
+            "loadaddr"
     else
         # Alright, no dedicated address. Let's try the second best, find it by
         # looking at existing boot commands.
@@ -271,11 +255,10 @@ patch_all_candidates() {
 
         # Using the :- syntax is because "set -u" is in effect.
         if [ -n "${addr:-}" ]; then
-            if definition_exists "CONFIG_EXTRA_ENV_SETTINGS"; then
-                append_to_definition "CONFIG_EXTRA_ENV_SETTINGS" "\"kernel_addr_r=$addr\\\\0\""
-            else
-                add_definition "CONFIG_EXTRA_ENV_SETTINGS" "\"kernel_addr_r=$addr\\\\0\""
-            fi
+            replace_definition \
+                'CONFIG_LOADADDR' \
+                'CONFIG_LOADADDR' \
+                "$addr"
         else
             echo "Could not find kernel load address!" 1>&2
             echo "This is the obtained environment:"
