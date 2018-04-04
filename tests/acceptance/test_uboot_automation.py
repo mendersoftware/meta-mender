@@ -241,8 +241,8 @@ class TestUbootAutomation:
             measured_failed_ratio = 747.0 / 1176.0
         elif machine == "vexpress-qemu-flash":
             # PLEASE UPDATE the version you used to find this number if you update it.
-            # From version: v2017.09
-            measured_failed_ratio = 59.0 / 156.0
+            # From version: v2018.01
+            measured_failed_ratio = 47.0 / 156.0
 
         # We tolerate a certain percentage discrepancy in either direction.
         tolerated_discrepancy = 0.1
