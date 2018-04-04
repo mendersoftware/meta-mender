@@ -1,3 +1,5 @@
+inherit uboot-config
+
 DEPENDS += "coreutils-native"
 
 BOOTENV_SIZE ??= "0x20000"
