@@ -1,6 +1,6 @@
 # Class that creates an UBI image with an Mender layout
 
-# The UBI volyume scheme is:
+# The UBI volume scheme is:
 #    ubi0: first rootfs, active
 #    ubi1: second rootfs, inactive, mirror of first,
 #           available as failsafe for when some update fails
