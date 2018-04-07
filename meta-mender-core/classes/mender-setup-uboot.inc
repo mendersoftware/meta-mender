@@ -37,11 +37,6 @@ MENDER_STORAGE_RESERVED_RAW_SPACE_DEFAULT_mender-uboot = \
                                           ${MENDER_PARTITION_ALIGNMENT_KB}, \
                                           ${MENDER_PARTITION_ALIGNMENT_KB})}"
 
-# u-boot environment file
-IMAGE_UENV_TXT_FILE ?= ""
-
-IMAGE_BOOT_FILES_append_mender-uboot = " ${IMAGE_UENV_TXT_FILE}"
-
 # make sure to provide a weak default
 UBOOT_SUFFIX ??= "bin"
 
