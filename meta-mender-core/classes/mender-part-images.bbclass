@@ -111,8 +111,13 @@ part --source rawcopy --sourceparams="file=${WORKDIR}/uboot.env" --ondisk mmcblk
 EOF
     fi
 
-    cat >> "$wks" <<EOF
+    if [ "${MENDER_BOOT_PART_SIZE_MB}" -ne "0" ]; then
+        cat >> "$wks" <<EOF
 part --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --size ${MENDER_BOOT_PART_SIZE_MB}
+EOF
+    fi
+
+    cat >> "$wks" <<EOF
 part --source fsimage --sourceparams=file="${WORKDIR}/active" --ondisk mmcblk0 --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB}
 part --source fsimage --sourceparams=file="${WORKDIR}/inactive" --ondisk mmcblk0 --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB}
 part --source fsimage --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB}
