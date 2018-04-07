@@ -27,8 +27,8 @@ class TestUbootAutomation:
     def revision_already_checked(self):
         # ----------------------------------------------------------------------
         # Update these two to skip the check.
-        expected_poky_rev = "0c537554fc2cf58a9cbfeaf39ed918c607483dce"
-        expected_meta_mender_uboot_rev = "2ba764ce62afb57e4f5d71a494ead93a89988bfa"
+        expected_poky_rev = "1b7a9d4f63d07d61d53daac12da275e8ef2feb24"
+        expected_meta_mender_uboot_rev = "bd336ce30b457669ef1e9ca1967efa3e15414e0c"
         # ----------------------------------------------------------------------
 
         # SHA from poky repository.
