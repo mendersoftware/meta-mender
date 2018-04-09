@@ -27,6 +27,8 @@ def mender_get_env_total_aligned_size(bootenv_size, bootenv_range, alignment_kb)
 
 MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET ??= "${@eval('${MENDER_PARTITION_ALIGNMENT_KB} * 1024')}"
 
+MENDER_SPL_OFFSET_KB ??= ""
+
 # The total occupied length of the environment on disk, after alignment has been
 # taken into account. This is a guesstimate, and will be matched against the
 # real size in the U-Boot recipe later. Must be an *even* multiple of the
