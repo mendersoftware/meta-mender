@@ -7,6 +7,7 @@ IMAGE_FEATURES_remove = "splash"
 IMAGE_FEATURES_append = " \
                       debug-tweaks \
                       package-management \
+                      read-only-rootfs \
                       "
 
 # need SSH client
