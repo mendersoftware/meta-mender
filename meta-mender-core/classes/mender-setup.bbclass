@@ -37,10 +37,10 @@ MENDER_MTD_UBI_DEVICE_NAME_DEFAULT = ""
 # Filesystem type of data partition. This configuration is used in fstab. Most
 # filesystems can be auto detected, but some can not and hence we allow the
 # user to override this.
-MENDER_DATA_PART_FSTYPE ??= "${MENDER_DATA_PART_FSTYPE_DEFAULT}"
-MENDER_DATA_PART_FSTYPE_DEFAULT = "auto"
-MENDER_BOOT_PART_FSTYPE ??= "${MENDER_BOOT_PART_FSTYPE_DEFAULT}"
-MENDER_BOOT_PART_FSTYPE_DEFAULT = "auto"
+MENDER_DATA_PART_FSTAB_ENTRY ??= "${MENDER_DATA_PART_FSTAB_ENTRY_DEFAULT}"
+MENDER_DATA_PART_FSTAB_ENTRY_DEFAULT = "${MENDER_DATA_PART}    /data    auto    defaults    0 0"
+MENDER_BOOT_PART_FSTAB_ENTRY ??= "${MENDER_BOOT_PART_FSTAB_ENTRY_DEFAULT}"
+MENDER_BOOT_PART_FSTAB_ENTRY_DEFAULT = "${MENDER_BOOT_PART}    /uboot     auto    defaults,sync    0 0"
 
 # Device type of device when making an initial partitioned image.
 MENDER_DEVICE_TYPE ??= "${MENDER_DEVICE_TYPE_DEFAULT}"
@@ -173,7 +173,16 @@ python() {
 
 python() {
     if d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True):
-        bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
+        bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. \
+            Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
+
+    if d.getVar('MENDER_DATA_PART_FSTYPE', True):
+        bb.fatal("MENDER_DATA_PART_FSTYPE is deprecated. \
+            Please define MENDER_DATA_PART_FSTAB_ENTRY instead if you want to override the default behaviour.")
+
+    if d.getVar('MENDER_BOOT_PART_FSTYPE', True):
+        bb.fatal("MENDER_BOOT_PART_FSTYPE is deprecated. \
+            Please define MENDER_BOOT_PART_FSTAB_ENTRY instead if you want to override the default behaviour.")
 }
 
 # Including these does not mean that all these features will be enabled, just

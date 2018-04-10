@@ -21,12 +21,12 @@ mender_update_fstab_file() {
     echo "# Where the U-Boot environment resides; for devices with SD card support ONLY!" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
 
     if [ -n "${MENDER_BOOT_PART}" ]; then
-        echo "${MENDER_BOOT_PART}   /uboot               ${MENDER_BOOT_PART_FSTYPE}       defaults,sync    0  0" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+        echo "${MENDER_BOOT_PART_FSTAB_ENTRY}" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
     else
         bbdebug 2 "MENDER_BOOT_PART not set. Not adding to fstab..."
     fi
 
-    echo "${MENDER_DATA_PART}   /data                ${MENDER_DATA_PART_FSTYPE}       defaults         0  0" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    echo "${MENDER_DATA_PART_FSTAB_ENTRY}" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
 }
 
 # Setup state script version file.
