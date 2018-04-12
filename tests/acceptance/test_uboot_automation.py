@@ -83,8 +83,9 @@ change."""
         sanitized_makeflags = sanitized_makeflags.replace("\\\"", "\"")
         sanitized_makeflags = re.sub(" +", " ", sanitized_makeflags)
         # Compile all boards. The reason for using a makefile is to get easy
-        # parallelization.
-        subprocess.check_call("make -j %d -f %s %s" % (multiprocessing.cpu_count() + 1,
+        # parallelization. However, run maximum 8 jobs in parallel to avoid
+        # I/O saturation, which actually makes it run slower.
+        subprocess.check_call("make -j %d -f %s %s" % (min(8, multiprocessing.cpu_count() + 1),
                                                        os.path.join(env['TESTS_DIR'],
                                                                     "files/Makefile.test_uboot_automation"),
                                                        sanitized_makeflags),
