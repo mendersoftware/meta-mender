@@ -21,9 +21,7 @@ B = "${WORKDIR}/build"
 
 inherit go
 
-SRC_URI_append = " file://mender.service \
-                   file://0001-Allow-multiple-digit-partition-numbers.patch \
-                 "
+SRC_URI_append = " file://mender.service"
 
 inherit systemd
 
