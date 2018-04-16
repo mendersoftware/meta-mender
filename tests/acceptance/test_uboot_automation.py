@@ -24,6 +24,25 @@ import subprocess
 from common import *
 
 class TestUbootAutomation:
+    @staticmethod
+    def parallel_job_count():
+        # Due to our extensive copying of sources, we are constrained by both
+        # I/O and CPU during compiling. Therefore we use the RAM disk to to
+        # store the temporary sources. So pick a parallel job number that
+        # doesn't exhaust neither memory nor CPU.
+
+        # Rough estimate, we assume that each source directory needs
+        # approximately 1G, and that we can use half of the memory for that.
+        with open("/proc/meminfo") as fd:
+            for line in fd.readlines():
+                match = re.match("^MemTotal:\s+([0-9]+)\s*kB", line)
+                if match:
+                    memory_kb = int(match.group(1))
+                    break
+        memory_jobs = int(memory_kb / 2 / 1048576)
+
+        return min(memory_jobs, multiprocessing.cpu_count())
+
     def revision_already_checked(self):
         # ----------------------------------------------------------------------
         # Update these two to skip the check.
@@ -75,56 +94,63 @@ change."""
                                   shell=True)
         bitbake_variables = get_bitbake_variables("u-boot")
 
+        shutil.rmtree("/dev/shm/test_uboot_compile", ignore_errors=True)
+
         env = copy.copy(os.environ)
         env['UBOOT_SRC'] = bitbake_variables['S']
         env['TESTS_DIR'] = os.getcwd()
         env['LOGS'] = os.path.join(os.getcwd(), "test_uboot_compile-logs")
-        sanitized_makeflags = bitbake_variables['EXTRA_OEMAKE']
-        sanitized_makeflags = sanitized_makeflags.replace("\\\"", "\"")
-        sanitized_makeflags = re.sub(" +", " ", sanitized_makeflags)
-        # Compile all boards. The reason for using a makefile is to get easy
-        # parallelization.
-        subprocess.check_call("make -j %d -f %s %s" % (multiprocessing.cpu_count() + 1,
-                                                       os.path.join(env['TESTS_DIR'],
-                                                                    "files/Makefile.test_uboot_automation"),
-                                                       sanitized_makeflags),
-                              shell=True,
-                              env=env,
-                              stderr=subprocess.STDOUT)
-
-        # Now check that the ratio of compiled boards is as expected. This
-        # number may change over time as U-Boot changes, but big discrepancies
-        # should be checked out.
-        failed = 0.0
-        total = 0.0
-        for file in os.listdir(env['LOGS']):
-            total += 1
-            with open(os.path.join(env['LOGS'], file)) as fd:
-                if "AutoPatchFailed\n" in fd.readlines():
-                    failed += 1
-
-        # PLEASE UPDATE the version you used to find this number if you update it.
-        # From version: v2017.09
-        measured_failed_ratio = 747.0 / 1176.0
-
-        # We tolerate a certain percentage discrepancy in either direction.
-        tolerated_discrepancy = 0.1
-
-        lower_bound = measured_failed_ratio * (1.0 - tolerated_discrepancy)
-        upper_bound = measured_failed_ratio * (1.0 + tolerated_discrepancy)
         try:
-            assert failed / total >= lower_bound, "Less boards failed than expected. Good? Or a mistake somewhere? Failed: %d, Total: %d" % (failed, total)
-            assert failed / total <= upper_bound, "More boards failed than expected. Failed: %d, Total: %d" % (failed, total)
-        except AssertionError:
-            for file in os.listdir(env['LOGS']):
-                with open(os.path.join(env['LOGS'], file)) as fd:
-                    log = fd.readlines()
-                    if "AutoPatchFailed\n" in log:
-                        print("Last 50 lines of output from failed board: " + file)
-                        print("".join(log[-50:]))
-            raise
+            sanitized_makeflags = bitbake_variables['EXTRA_OEMAKE']
+            sanitized_makeflags = sanitized_makeflags.replace("\\\"", "\"")
+            sanitized_makeflags = re.sub(" +", " ", sanitized_makeflags)
+            # Compile all boards. The reason for using a makefile is to get easy
+            # parallelization.
+            subprocess.check_call("make -j %d -f %s TMP=/dev/shm/test_uboot_compile %s"
+                                  % (self.parallel_job_count(),
+                                     os.path.join(env['TESTS_DIR'],
+                                                  "files/Makefile.test_uboot_automation"),
+                                     sanitized_makeflags),
+                                  shell=True,
+                                  env=env,
+                                  stderr=subprocess.STDOUT)
 
-        shutil.rmtree(env['LOGS'])
+            # Now check that the ratio of compiled boards is as expected. This
+            # number may change over time as U-Boot changes, but big discrepancies
+            # should be checked out.
+            failed = 0.0
+            total = 0.0
+            for file in os.listdir(env['LOGS']):
+                total += 1
+                with open(os.path.join(env['LOGS'], file)) as fd:
+                    if "AutoPatchFailed\n" in fd.readlines():
+                        failed += 1
+
+            # PLEASE UPDATE the version you used to find this number if you update it.
+            # From version: v2017.09
+            measured_failed_ratio = 747.0 / 1176.0
+
+            # We tolerate a certain percentage discrepancy in either direction.
+            tolerated_discrepancy = 0.1
+
+            lower_bound = measured_failed_ratio * (1.0 - tolerated_discrepancy)
+            upper_bound = measured_failed_ratio * (1.0 + tolerated_discrepancy)
+            try:
+                assert failed / total >= lower_bound, "Less boards failed than expected. Good? Or a mistake somewhere? Failed: %d, Total: %d" % (failed, total)
+                assert failed / total <= upper_bound, "More boards failed than expected. Failed: %d, Total: %d" % (failed, total)
+            except AssertionError:
+                for file in os.listdir(env['LOGS']):
+                    with open(os.path.join(env['LOGS'], file)) as fd:
+                        log = fd.readlines()
+                        if "AutoPatchFailed\n" in log:
+                            print("Last 50 lines of output from failed board: " + file)
+                            print("".join(log[-50:]))
+                raise
+
+            shutil.rmtree(env['LOGS'])
+
+        finally:
+            shutil.rmtree("/dev/shm/test_uboot_compile", ignore_errors=True)
 
     @pytest.mark.only_with_image('sdimg')
     @pytest.mark.min_mender_version('1.0.0')
