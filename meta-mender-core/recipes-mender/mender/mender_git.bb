@@ -52,7 +52,7 @@ SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=${MENDER
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
 def mender_license(branch):
-    if branch == "1.2.x" or branch == "1.3.x" or branch == "1.4.x":
+    if branch == "1.2.x":
         return {
                    "md5": "13741fb0210ea8a11a3e8e0247c9429c",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
