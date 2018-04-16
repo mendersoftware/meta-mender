@@ -176,6 +176,69 @@ python() {
         bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
 }
 
+addhandler mender_vars_handler
+mender_vars_handler[eventmask] = "bb.event.ParseCompleted"
+python mender_vars_handler() {
+    from bb import data
+    import os
+    import re
+    import json
+
+    path = d.getVar("LAYERDIR_MENDER")
+    path = os.path.join(path, "conf/mender-vars.json")
+
+    if os.path.isfile(path):
+        mender_vars = {}
+        with open(path, "r") as f:
+            mender_vars = json.load(f)
+
+        for k in d.keys():
+            if k.startswith("MENDER_"):
+                if re.search("_[-a-z0-9][-\w]*$", k) != None:
+                    # skip variable overrides
+                    continue;
+
+                if k not in mender_vars.keys():
+                    # Warn if user has defined some new (unused) MENDER_.* variables
+                    bb.warn("\"%s\" is not a recognized MENDER_ variable. Typo?" % k)
+
+                elif mender_vars[k] != "":
+                    # If certain keys should have associated some restricted value
+                    # (expressed in regular expression in the .json-file)
+                    # NOTE: empty strings (json-values) are only compared by key, 
+                    #       whereas the value is arbitrary
+                    expected_expressions = []
+                    val = d.getVar(k)
+
+                    if isinstance (mender_vars[k], list):
+                        # item is a list of strings
+                        for regex in mender_vars[k]: # (can be a list of items)
+                            if re.search(regex, val) == None:
+                                expected_expressions += [regex]
+                        if len(expected_expressions) > 0: 
+                            bb.note("Variable \"%s\" does not contain suggested value(s): {%s}" %\
+                                    (k, ', '.join(expected_expressions)))
+
+                    else: 
+                        # item is a single string
+                        regex = mender_vars[k]
+                        if re.search(regex, val) == None: 
+                            bb.note("%s initialized with value \"%s\"" % (k, val),\
+                                    " | Expected[regex]: \"%s\"" % regex)
+
+    else: ## if !os.path.isfile(path): ##
+        # This should never run, but left it in here in case we #
+        # need to generate new json file template in the future #
+        mender_vars = {}
+        for k in d.keys():
+            if k.startswith("MENDER_"):
+                if re.search("_[-a-z0-9][-\w]*$", k) == None:
+                    mender_vars[k] = ""
+                    #mender_vars[k] = d.getVar(k) might be useful for inspection
+        with open (path, 'w') as f:
+            json.dump(mender_vars, f, sort_keys=True, indent=4)
+}
+
 # Including these does not mean that all these features will be enabled, just
 # that their configuration will be considered. Use DISTRO_FEATURES to enable and
 # disable features.
