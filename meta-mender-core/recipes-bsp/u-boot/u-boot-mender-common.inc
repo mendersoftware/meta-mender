@@ -43,7 +43,7 @@ do_provide_mender_defines() {
     fi
 
     if [ ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} -gt ${MENDER_RESERVED_SPACE_BOOTLOADER_DATA} ]; then
-        bbfatal "BOOTENV_SIZE (${BOOTENV_SIZE}) is too big to fit two copies inside MENDER_RESERVED_SPACE_BOOTLOADER_DATA (${MENDER_RESERVED_SPACE_BOOTLOADER_DATA}) with proper alignment. Please either: 1. Increase MENDER_RESERVED_SPACE_BOOTLOADER_DATA manually and make sure it is an *even* multiple of MENDER_PARTITION_ALIGNMENT. -or- 2. Decrease BOOTENV_SIZE in the U-Boot recipe so that it can fit two copies inside MENDER_RESERVED_SPACE_BOOTLOADER_DATA."
+        bbfatal "BOOTENV_SIZE (${BOOTENV_SIZE}) is too big to fit two copies inside MENDER_RESERVED_SPACE_BOOTLOADER_DATA (${MENDER_RESERVED_SPACE_BOOTLOADER_DATA}) with proper alignment. Please either: 1. Increase MENDER_RESERVED_SPACE_BOOTLOADER_DATA manually and make sure it is an *even* multiple of MENDER_PARTITION_ALIGNMENT (${MENDER_PARTITION_ALIGNMENT}). -or- 2. Decrease BOOTENV_SIZE in the U-Boot recipe so that it can fit two copies inside MENDER_RESERVED_SPACE_BOOTLOADER_DATA. Please see https://docs.mender.io/troubleshooting/yocto-project-build for more information."
     fi
 
     if [ -n "${MENDER_BOOT_PART}" ]; then
