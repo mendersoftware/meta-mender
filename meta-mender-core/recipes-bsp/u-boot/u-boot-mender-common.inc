@@ -125,7 +125,7 @@ EOF
             bbfatal "MENDER_MTDIDS is empty. Please set it to valid value for your board. An example is 'nor0=40000000.flash'."
         fi
 
-        if echo '${SRC_URI}' | fgrep "Set-UBI-erase-size-from-Mender-provided-define" && ! grep -q UBI_IOCEBISMAP ${S}/tools/env/fw_env.c; then
+        if ! grep -q UBI_IOCVOLUP ${S}/tools/env/fw_env.c; then
             bbwarn "Detected U-Boot without support for direct read/write to UBI volumes. Mender normally expects this unless you have a custom setup. Consider backporting the patch at http://git.denx.de/?p=u-boot.git;a=commitdiff;h=34255b92e6e68941ab1134299faa86acc5a1abc8 to your U-Boot sources."
         fi
 
