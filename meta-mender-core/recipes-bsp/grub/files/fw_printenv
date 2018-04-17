@@ -2,8 +2,37 @@
 
 # This script mimicks the behavior of fw_printenv/fw_setenv from U-Boot.
 
-ENV1=/boot/efi/EFI/BOOT/mender_grubenv1
-ENV2=/boot/efi/EFI/BOOT/mender_grubenv2
+# Here is how the environment works. We've got three problems to overcome:
+#   1. GRUB doesn't support checksumming the environment.
+#   2. There is a hashsum command, but it can only be used to verify checksums,
+#      not generate them.
+#   3. We want to store the environment on the boot partition, which is FAT, and
+#      can therefore be corrupted.
+
+# For problem 1 and 2, we need to solve them together. We can have multiple
+# environment files, so the solution is to use an environment file with a known
+# checksum as the lock file for the other non-checksummed file that holds the
+# payload. While we edit, we give the lock content that won't pass the checksum.
+
+# Regarding problem 3, storing the environment on the data partition was
+# considered, since it is typically ext4, but it seems wrong to store this very
+# boot specific information here, especially if we consider things like being
+# able to factory reset the data partition without losing which partition should
+# boot. So what we do is to put two redundant environment files in two different
+# directories on the boot partition. This should ensure that even if the Linux
+# vfat driver updates the modification time of the file, and the system crashes
+# in the middle of writing that sector, only that directory gets corrupted. The
+# other one should be fine. It can't be guaranteed this will help against
+# absolutely all forms of corruption, but should cover the vast majority of
+# cases, and one would have to be really unlucky to still get an unusable
+# environment.
+
+ENV1=/boot/efi/EFI/BOOT/mender_grubenv1/env
+LOCK1=/boot/efi/EFI/BOOT/mender_grubenv1/lock
+LOCKSUM1=/boot/efi/EFI/BOOT/mender_grubenv1/lock.sha256sum
+ENV2=/boot/efi/EFI/BOOT/mender_grubenv2/env
+LOCK2=/boot/efi/EFI/BOOT/mender_grubenv2/lock
+LOCKSUM2=/boot/efi/EFI/BOOT/mender_grubenv2/lock.sha256sum
 
 if [ "`basename $0`" = "fw_setenv" ]; then
     FW_SETENV=1
@@ -38,12 +67,35 @@ EOF
     fi
 }
 
-. /etc/grub/mender_grubenv_defines.inc
-. /etc/grub/mender_grubenv_check.inc
-
 make_evalable() {
     # Make string appropriate for eval'ing.
     sed -e 's/'\''/'\'\\\\\'\''/g; s/\\\$/\\\$/g; s/=/='\''/; s/$/'\''/'
+}
+
+check_and_restore_env() {
+    # Check that both environments are valid, and if not, restore one using the
+    # other.
+    if ! ( cd `dirname $LOCKSUM2` && sha256sum -c $LOCKSUM2 > /dev/null ); then
+        dd if=$ENV1 of=$ENV2 conv=notrunc > /dev/null 2>&1
+        sync $ENV2
+        grub-editenv $LOCK2 create
+        grub-editenv $LOCK2 set editing=0
+        sync $LOCK2
+        if ! ( cd `dirname $LOCKSUM2` && sha256sum -c $LOCKSUM2 > /dev/null ); then
+            echo "Unable to restore environment 2." 1>&2
+            exit 2
+        fi
+    elif ! ( cd `dirname $LOCKSUM1` && sha256sum -c $LOCKSUM1 > /dev/null ); then
+        dd if=$ENV2 of=$ENV1 conv=notrunc > /dev/null 2>&1
+        sync $ENV1
+        grub-editenv $LOCK1 create
+        grub-editenv $LOCK1 set editing=0
+        sync $LOCK1
+        if ! ( cd `dirname $LOCKSUM1` && sha256sum -c $LOCKSUM1 > /dev/null ); then
+            echo "Unable to restore environment 1." 1>&2
+            exit 2
+        fi
+    fi
 }
 
 setenv() {
@@ -94,15 +146,30 @@ setenv() {
     VARS="`echo "$VARS" | sed -ne '/^#/n; s/  */=/; p' | make_evalable`"
 
     set -e
+
+    check_and_restore_env
+
+    grub-editenv $LOCK2 set editing=1
+    sync $LOCK2
     eval grub-editenv $ENV2 set $VARS
-    # Make string appropriate for eval'ing.
-    eval "`grub-editenv $ENV2 list | make_evalable`"
-    if ! mender_check_grubenv_valid; then
-        echo "Environment not valid after update."
-        exit 1
+    sync $ENV2
+    grub-editenv $LOCK2 set editing=0
+    sync $LOCK2
+    if ! ( cd `dirname $LOCKSUM2` && sha256sum -c $LOCKSUM2 > /dev/null ); then
+        echo "Environment 2 unexpectedly corrupt after update." 1>&2
+        exit 2
     fi
-    # Update both redundant copies of the environment.
+
+    grub-editenv $LOCK1 set editing=1
+    sync $LOCK1
     eval grub-editenv $ENV1 set $VARS
+    sync $ENV1
+    grub-editenv $LOCK1 set editing=0
+    sync $LOCK1
+    if ! ( cd `dirname $LOCKSUM1` && sha256sum -c $LOCKSUM1 > /dev/null ); then
+        echo "Environment 1 unexpectedly corrupt after update." 1>&2
+        exit 2
+    fi
 }
 
 printenv() {
@@ -120,23 +187,16 @@ printenv() {
         esac
     done
 
-    # Try both redundant copies of the environment.
+    check_and_restore_env
+
     VARS="`grub-editenv $ENV1 list`"
     eval "`echo "$VARS" | make_evalable`"
-    if ! mender_check_grubenv_valid; then
-        VARS="`grub-editenv $ENV2 list`"
-        eval "`echo "$VARS" | make_evalable`"
-        if ! mender_check_grubenv_valid; then
-            echo "Both environments corrupt."
-            exit 1
-        fi
-    fi
 
     if [ $NO_ARGS = 1 ]; then
         echo "$VARS"
     else
         for var in "$@"; do
-            eval echo $var=\${$var}
+            eval echo \"$var=\${$var}\"
         done
     fi
 }

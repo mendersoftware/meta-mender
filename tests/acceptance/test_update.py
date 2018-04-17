@@ -705,30 +705,29 @@ class TestUpdates:
         run("dd if=/dev/zero of=%s bs=1024 count=1024" % passive)
 
         # Now try to corrupt the environment, and make sure it doesn't get booted into.
-        corruptions =  [
-            "s/mender_boot_part=.*/mender_boot_part=/",
-            "s/mender_boot_part=.*/mender_boot_part=9/",
-            "s/mender_boot_part=.*/mender_boot_part='/",
-            "s/mender_boot_part=.*/mender_boot_part=%s/; /upgrade_available=.*/d" % passive[-1],
-        ]
-        for corruption in corruptions:
-            for env_num in [1, 2]:
-                # Make a copy of the two environments.
-                run("cp /boot/efi/EFI/BOOT/{mender_grubenv1,mender_grubenv1.backup}")
-                run("cp /boot/efi/EFI/BOOT/{mender_grubenv2,mender_grubenv2.backup}")
+        for env_num in [1, 2]:
+            # Make a copy of the two environments.
+            run("cp /boot/efi/EFI/BOOT/{mender_grubenv1/env,mender_grubenv1/env.backup}")
+            run("cp /boot/efi/EFI/BOOT/{mender_grubenv1/lock,mender_grubenv1/lock.backup}")
+            run("cp /boot/efi/EFI/BOOT/{mender_grubenv2/env,mender_grubenv2/env.backup}")
+            run("cp /boot/efi/EFI/BOOT/{mender_grubenv2/lock,mender_grubenv2/lock.backup}")
 
-                try:
-                    env_file = "/boot/efi/EFI/BOOT/mender_grubenv%d" % env_num
-                    run('sed -ie "%s" %s' % (corruption, env_file))
+            try:
+                env_file = "/boot/efi/EFI/BOOT/mender_grubenv%d/env" % env_num
+                lock_file = "/boot/efi/EFI/BOOT/mender_grubenv%d/lock" % env_num
+                run('sed -e "s/editing=.*/editing=1/" %s' % lock_file)
+                run('sed -e "s/mender_boot_part=.*/mender_boot_part=%s/" %s' % (passive[-1], lock_file))
 
-                    reboot()
-                    run_after_connect("true")
+                reboot()
+                run_after_connect("true")
 
-                    (new_active, new_passive) = determine_active_passive_part(bitbake_variables)
-                    assert new_active == active
-                    assert new_passive == passive
+                (new_active, new_passive) = determine_active_passive_part(bitbake_variables)
+                assert new_active == active
+                assert new_passive == passive
 
-                finally:
-                    # Restore the two environments.
-                    run("mv /boot/efi/EFI/BOOT/{mender_grubenv1.backup,mender_grubenv1}")
-                    run("mv /boot/efi/EFI/BOOT/{mender_grubenv2.backup,mender_grubenv2}")
+            finally:
+                # Restore the two environments.
+                run("mv /boot/efi/EFI/BOOT/{mender_grubenv1/env.backup,mender_grubenv1/env}")
+                run("mv /boot/efi/EFI/BOOT/{mender_grubenv1/lock.backup,mender_grubenv1/lock}")
+                run("mv /boot/efi/EFI/BOOT/{mender_grubenv2/env.backup,mender_grubenv2/env}")
+                run("mv /boot/efi/EFI/BOOT/{mender_grubenv2/lock.backup,mender_grubenv2/lock}")

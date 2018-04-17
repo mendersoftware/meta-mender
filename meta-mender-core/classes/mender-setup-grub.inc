@@ -9,6 +9,10 @@ MENDER_GRUB_STORAGE_DEVICE_DEFAULT = ""
 IMAGE_BOOT_FILES_append_mender-grub = " \
     grub-efi-bootx64.efi;EFI/BOOT/bootx64.efi \
     grub.cfg;EFI/BOOT/grub.cfg \
-    mender_grubenv1;EFI/BOOT/mender_grubenv1 \
-    mender_grubenv2;EFI/BOOT/mender_grubenv2 \
+    mender_grubenv1/env;EFI/BOOT/mender_grubenv1/env \
+    mender_grubenv1/lock;EFI/BOOT/mender_grubenv1/lock \
+    mender_grubenv1/lock.sha256sum;EFI/BOOT/mender_grubenv1/lock.sha256sum \
+    mender_grubenv2/env;EFI/BOOT/mender_grubenv2/env \
+    mender_grubenv2/lock;EFI/BOOT/mender_grubenv2/lock \
+    mender_grubenv2/lock.sha256sum;EFI/BOOT/mender_grubenv2/lock.sha256sum \
 "
