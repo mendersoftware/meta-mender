@@ -99,9 +99,9 @@ def start_qemu(qenv=None):
     return proc
 
 
-def start_qemu_sdimg(latest_sdimg):
-    """Start qemu instance running *.sdimg"""
-    fh, img_path = tempfile.mkstemp(suffix=".sdimg", prefix="test-image")
+def start_qemu_block_storage(latest_sdimg, suffix):
+    """Start qemu instance running block storage"""
+    fh, img_path = tempfile.mkstemp(suffix=suffix, prefix="test-image")
     # don't need an open fd to temp file
     os.close(fh)
 
@@ -110,8 +110,7 @@ def start_qemu_sdimg(latest_sdimg):
 
     # pass QEMU drive directly
     qenv = {}
-    qenv["VEXPRESS_IMG"] = img_path
-    qenv["MACHNE"] = "vexpress-qemu"
+    qenv["DISK_IMG"] = img_path
 
     try:
         qemu = start_qemu(qenv)
@@ -142,7 +141,7 @@ def start_qemu_flash(latest_vexpress_nor):
 
     qenv = {}
     # pass QEMU drive directly
-    qenv["VEXPRESS_IMG"] = img_path
+    qenv["DISK_IMG"] = img_path
     qenv["MACHINE"] = "vexpress-qemu-flash"
 
     try:

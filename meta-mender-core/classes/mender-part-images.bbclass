@@ -39,6 +39,7 @@ IMAGE_NAME_SUFFIX_sdimg = ""
 mender_part_image() {
     suffix="$1"
     part_type="$2"
+    boot_part_params="$3"
 
     set -ex
 
@@ -73,6 +74,8 @@ mender_part_image() {
         install -m 0644 "${DEPLOY_DIR_IMAGE}/uboot.env" "${WORKDIR}/"
     fi
 
+    ondisk_dev="$(basename "${MENDER_STORAGE_DEVICE}")"
+
     wks="${WORKDIR}/mender-$suffix.wks"
     rm -f "$wks"
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
@@ -94,22 +97,22 @@ mender_part_image() {
         fi
         cat >> "$wks" <<EOF
 # embed bootloader
-part --source rawcopy --sourceparams="file=${WORKDIR}/${IMAGE_BOOTLOADER_FILE}" --ondisk mmcblk0 --align $bootloader_align_kb --no-table
+part --source rawcopy --sourceparams="file=${WORKDIR}/${IMAGE_BOOTLOADER_FILE}" --ondisk "$ondisk_dev" --align $bootloader_align_kb --no-table
 EOF
     fi
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)} && [ -n "${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}" ]; then
         boot_env_align_kb=$(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} / 1024)
         cat >> "$wks" <<EOF
-part --source rawcopy --sourceparams="file=${WORKDIR}/uboot.env" --ondisk mmcblk0 --align $boot_env_align_kb --no-table
+part --source rawcopy --sourceparams="file=${WORKDIR}/uboot.env" --ondisk "$ondisk_dev" --align $boot_env_align_kb --no-table
 EOF
     fi
 
     cat >> "$wks" <<EOF
-part --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
-part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
+part $boot_part_params --ondisk "$ondisk_dev" --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
+part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
+part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
+part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 bootloader --ptable $part_type
 EOF
 
@@ -129,17 +132,31 @@ EOF
 }
 
 IMAGE_CMD_sdimg() {
-    mender_part_image sdimg msdos
+    mender_part_image sdimg msdos "--source bootimg-partition"
 }
 IMAGE_CMD_uefiimg() {
-    mender_part_image uefiimg gpt
+    mender_part_image uefiimg gpt "--source bootimg-partition --part-type EF00"
 }
 
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
 addtask do_rootfs_wicenv after do_image before do_image_uefiimg
 
-do_image_sdimg[depends] += "${@d.getVarFlag('do_image_wic', 'depends', False)} wic-tools:do_populate_sysroot dosfstools-native:do_populate_sysroot mtools-native:do_populate_sysroot rsync-native:do_populate_sysroot"
-do_image_uefiimg[depends] += "${@d.getVarFlag('do_image_wic', 'depends', False)} wic-tools:do_populate_sysroot dosfstools-native:do_populate_sysroot mtools-native:do_populate_sysroot rsync-native:do_populate_sysroot"
+do_image_sdimg[depends] += " \
+    ${@d.getVarFlag('do_image_wic', 'depends', False)} \
+    wic-tools:do_populate_sysroot \
+    dosfstools-native:do_populate_sysroot \
+    mtools-native:do_populate_sysroot \
+    rsync-native:do_populate_sysroot \
+"
+
+do_image_uefiimg[depends] += " \
+    ${@d.getVarFlag('do_image_wic', 'depends', False)} \
+    wic-tools:do_populate_sysroot \
+    dosfstools-native:do_populate_sysroot \
+    mtools-native:do_populate_sysroot \
+    rsync-native:do_populate_sysroot \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'mender-grub', 'grub-efi:do_deploy', '', d)} \
+"
 do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-bootfiles:do_populate_sysroot', '', d)}"
 
 # This isn't actually a dependency, but a way to avoid sdimg and uefiimg

@@ -46,42 +46,70 @@ else
     BUILDTMP=${BUILDDIR}/tmp-glibc
 fi
 
-MACHINE=${MACHINE:-"vexpress-qemu"}
-UBOOT_ELF=${UBOOT_ELF:-"${BUILDTMP}/deploy/images/${MACHINE}/u-boot.elf"}
-VEXPRESS_IMG=${VEXPRESS_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.sdimg"}
-QEMU_SYSTEM_ARM=${QEMU_SYSTEM_ARM:-"qemu-system-arm"}
+QEMU_ARGS=""
+
+# Extract MACHINE definition from local.conf.
+eval "$(sed -nre '/^MACHINE *\??\??= */{s/^MACHINE *\??\??= */EXTRACTED_MACHINE=/;p}' $BUILDDIR/conf/local.conf)"
+MACHINE=${MACHINE:-"$EXTRACTED_MACHINE"}
+case "$MACHINE" in
+    *x86*)
+        case "$MACHINE" in
+            *x86-64*)
+                QEMU_SYSTEM=${QEMU_SYSTEM:-"qemu-system-x86_64"}
+                ;;
+            *86*)
+                QEMU_SYSTEM=${QEMU_SYSTEM:-"qemu-system-i386"}
+                ;;
+        esac
+        BOOTLOADER="${BOOTLOADER:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.qcow2}"
+        BOOTLOADER_DATA="${BOOTLOADER_DATA:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.vars.qcow2}"
+        BOOTLOADER_ARG="${BOOTLOADER_ARG:--drive file=${BOOTLOADER},if=pflash,format=qcow2,unit=0,readonly=on -drive file=${BOOTLOADER_DATA},if=pflash,format=qcow2,unit=1}"
+        DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.uefiimg"}
+        if [ -w /dev/kvm ]; then
+            QEMU_ARGS="$QEMU_ARGS -enable-kvm"
+        fi
+        ;;
+    *)
+        QEMU_SYSTEM=${QEMU_SYSTEM:-"qemu-system-arm"}
+        QEMU_ARGS="$QEMU_ARGS -M vexpress-a9"
+        BOOTLOADER="${BOOTLOADER:-${BUILDTMP}/deploy/images/${MACHINE}/u-boot.elf}"
+        BOOTLOADER_ARG="${BOOTLOADER_ARG:--kernel ${BOOTLOADER}}"
+        DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.sdimg"}
+        ;;
+esac
 RANDOM_MAC="52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"
 # use to pass -drive .. parameters directly
 QEMU_DRIVE=${QEMU_DRIVE:-""}
 
-QEMU_ARGS=""
-case $VEXPRESS_IMG in
+case $DISK_IMG in
+    *.uefiimg)
+        QEMU_ARGS="$QEMU_ARGS -drive file=$DISK_IMG,if=ide,format=raw "
+        ;;
     *.sdimg)
-        QEMU_ARGS="$QEMU_ARGS -drive file=$VEXPRESS_IMG,if=sd,format=raw,file.locking=off "
+        QEMU_ARGS="$QEMU_ARGS -drive file=$DISK_IMG,if=sd,format=raw,file.locking=off "
         ;;
     *.vexpress-nor)
-        tar -C $TMPDIR -xvf $VEXPRESS_IMG
+        tar -C $TMPDIR -xvf $DISK_IMG
         QEMU_ARGS="$QEMU_ARGS -drive file=${TMPDIR}/nor0,if=pflash,format=raw -drive file=${TMPDIR}/nor1,if=pflash,format=raw "
         ;;
     *)
         if [ -n "$QEMU_DRIVE" ]; then
             QEMU_ARGS="$QEMU_ARGS $QEMU_DRIVE "
         else
-            echo "unsupported image $VEXPRESS_IMG"
+            echo "unsupported image $DISK_IMG"
             exit 1
         fi
 esac
 
 echo "--- qemu version"
-$QEMU_SYSTEM_ARM --version
+$QEMU_SYSTEM --version
 
 echo "--- starting qemu"
 
 QEMU_AUDIO_DRV=none \
-    $QEMU_SYSTEM_ARM \
-    -M vexpress-a9 \
+    $QEMU_SYSTEM \
     -m 256M \
-    -kernel "$UBOOT_ELF" \
+    $BOOTLOADER_ARG \
     -net nic,macaddr="$RANDOM_MAC" \
     -net user,hostfwd=tcp::8822-:22 \
     -display vnc=:23 \

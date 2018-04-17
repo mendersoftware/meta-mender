@@ -1,0 +1,148 @@
+#!/bin/sh
+
+# This script mimicks the behavior of fw_printenv/fw_setenv from U-Boot.
+
+ENV1=/boot/efi/EFI/BOOT/mender_grubenv1
+ENV2=/boot/efi/EFI/BOOT/mender_grubenv2
+
+if [ "`basename $0`" = "fw_setenv" ]; then
+    FW_SETENV=1
+else
+    FW_SETENV=0
+fi
+
+usage() {
+    if [ $FW_SETENV = 1 ]; then
+        cat <<EOF
+`basename $0` [VARIABLES ...]
+Sets variables in the mender-grubenv environment.
+
+ -h, --help     Display help
+ -s, --script   Batch mode to write multiple variables
+
+Script Syntax:
+  key [space] value
+  lines starting with '#' are treated as comment
+
+  A variable without value will be deleted. Any number of spaces are
+  allowed between key and value. Space inside of the value is treated
+  as part of the value itself.
+EOF
+    else
+        cat <<EOF
+`basename $0` [VARIABLE ...]
+Print variables from the mender-grubenv environment.
+
+ -h, --help     Display help
+EOF
+    fi
+}
+
+. /etc/grub/mender_grubenv_defines.inc
+. /etc/grub/mender_grubenv_check.inc
+
+make_evalable() {
+    # Make string appropriate for eval'ing.
+    sed -e 's/'\''/'\'\\\\\'\''/g; s/\\\$/\\\$/g; s/=/='\''/; s/$/'\''/'
+}
+
+setenv() {
+    while [ -n "$1" ]; do
+        if [ -n "$SCRIPT" ]; then
+            echo "--script used together with variables." 1>&2
+            exit 1
+        fi
+        case "$1" in
+            -s|--script)
+                shift
+                SCRIPT="$1"
+                if [ -z "$SCRIPT" ]; then
+                    echo "No script given to --script option." 1>&2
+                    exit 1
+                fi
+                ;;
+            -h|--help)
+                usage
+                exit 1
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift
+    done
+
+    if [ -z "$SCRIPT" ]; then
+        VARS="$1"
+        shift
+        for arg in "$@"; do
+            VARS="$VARS $arg"
+        done
+    elif [ "$SCRIPT" = "-" ]; then
+        # Read from stdin.
+        VARS="`cat`"
+    else
+        # Read from a file.
+        VARS="`cat $SCRIPT`"
+    fi
+
+    # Split in newlines, not spaces.
+    IFS='
+'
+
+    # Make string appropriate for eval'ing.
+    VARS="`echo "$VARS" | sed -ne '/^#/n; s/  */=/; p' | make_evalable`"
+
+    set -e
+    eval grub-editenv $ENV2 set $VARS
+    # Make string appropriate for eval'ing.
+    eval "`grub-editenv $ENV2 list | make_evalable`"
+    if ! mender_check_grubenv_valid; then
+        echo "Environment not valid after update."
+        exit 1
+    fi
+    # Update both redundant copies of the environment.
+    eval grub-editenv $ENV1 set $VARS
+}
+
+printenv() {
+    NO_ARGS=1
+    while [ -n "$1" ]; do
+        case "$1" in
+            -h|--help)
+                usage
+                exit 1
+                ;;
+            *)
+                NO_ARGS=0
+                break
+                ;;
+        esac
+    done
+
+    # Try both redundant copies of the environment.
+    VARS="`grub-editenv $ENV1 list`"
+    eval "`echo "$VARS" | make_evalable`"
+    if ! mender_check_grubenv_valid; then
+        VARS="`grub-editenv $ENV2 list`"
+        eval "`echo "$VARS" | make_evalable`"
+        if ! mender_check_grubenv_valid; then
+            echo "Both environments corrupt."
+            exit 1
+        fi
+    fi
+
+    if [ $NO_ARGS = 1 ]; then
+        echo "$VARS"
+    else
+        for var in "$@"; do
+            eval echo $var=\${$var}
+        done
+    fi
+}
+
+if [ $FW_SETENV = 1 ]; then
+    setenv "$@"
+else
+    printenv "$@"
+fi
