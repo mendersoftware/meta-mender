@@ -1,9 +1,9 @@
 # Usage of Docker image.
 #
 # While building:
-# --build-arg VEXPRESS_IMAGE=<sdimg|vexpress-nor>
+# --build-arg DISK_IMAGE=<sdimg>
 #       image to add to the Docker image
-# --build-arg UBOOT_ELF=<u-boot.elf>
+# --build-arg BOOTLOADER=<u-boot.elf>
 #       U-Boot ELF image to add to Docker image.
 #
 # While launching:
@@ -106,20 +106,22 @@ RUN apk update && apk add --virtual build-dependencies \
             so:libz.so.1 \
     rm -rf /var/cache/apk/*
 
-ARG VEXPRESS_IMAGE=scripts/docker/empty-file
-ARG UBOOT_ELF=scripts/docker/empty-file
+RUN echo vexpress-qemu > /machine.txt
 
-COPY $UBOOT_ELF ./u-boot.elf
-COPY $VEXPRESS_IMAGE .
+ARG DISK_IMAGE=scripts/docker/empty-file
+ARG BOOTLOADER=scripts/docker/empty-file
+
+COPY $BOOTLOADER ./u-boot.elf
+COPY $DISK_IMAGE .
 
 ADD scripts/mender-qemu ./
 ADD scripts/docker/entrypoint.sh ./
 ADD scripts/docker/setup-mender-configuration.py ./
+ADD env.txt ./
 
 # Delete images if they are empty. This is to save space if the artifacts are
 # mounted on /mnt/build instead.
 RUN if [ `stat -c %s core-image-full-cmdline-vexpress-qemu.sdimg` -eq 0 ]; then rm -f core-image-full-cmdline-vexpress-qemu.sdimg; fi
-RUN if [ `stat -c %s core-image-full-cmdline-vexpress-qemu.vexpress-nor` -eq 0 ]; then rm -f core-image-full-cmdline-vexpress-qemu.vexpress-nor; fi
 RUN if [ `stat -c %s u-boot.elf` -eq 0 ]; then rm -f u-boot.elf; fi
 
 RUN chmod +x entrypoint.sh mender-qemu

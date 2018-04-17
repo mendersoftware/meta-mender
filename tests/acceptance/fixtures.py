@@ -76,12 +76,13 @@ def setup_rpi3(request):
 @pytest.fixture(scope="module")
 def qemu_running(request, clean_image):
     latest_sdimg = latest_build_artifact(clean_image['build_dir'], ".sdimg")
+    latest_uefiimg = latest_build_artifact(clean_image['build_dir'], ".uefiimg")
     latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], ".vexpress-nor")
 
-    print("sdimg: {} vexpress-nor: {}".format(latest_sdimg, latest_vexpress_nor))
-
     if latest_sdimg:
-        qemu, img_path = start_qemu_sdimg(latest_sdimg)
+        qemu, img_path = start_qemu_block_storage(latest_sdimg, suffix=".sdimg")
+    elif latest_uefiimg:
+        qemu, img_path = start_qemu_block_storage(latest_uefiimg, suffix=".uefiimg")
     elif latest_vexpress_nor:
         qemu, img_path = start_qemu_flash(latest_vexpress_nor)
     else:
@@ -175,6 +176,17 @@ def latest_mender_image():
 
     # Find latest built rootfs.
     return latest_build_artifact(os.environ['BUILDDIR'], ".mender")
+
+@pytest.fixture(scope="session")
+def latest_part_image():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    # Find latest built rootfs.
+    latest_sdimg = latest_build_artifact(os.environ['BUILDDIR'], ".sdimg")
+    if latest_sdimg:
+        return latest_sdimg
+    else:
+        return latest_build_artifact(os.environ['BUILDDIR'], ".uefiimg")
 
 @pytest.fixture(scope="function")
 def successful_image_update_mender(request, clean_image):
@@ -366,3 +378,24 @@ def only_with_image(request, bitbake_variables):
             pytest.skip('no supported filesystem in {} ' \
                         '(supports {})'.format(', '.join(current),
                                                ', '.join(images)))
+
+@pytest.fixture(autouse=True)
+def only_with_distro_feature(request, bitbake_variables):
+    """Fixture that enables use of `only_with_distro_feature(feature1, feature2)` mark.
+    Example::
+
+       @pytest.mark.only_with_distro_feature('mender-uboot')
+       def test_foo():
+           # executes only if mender-uboot feature is enabled
+           pass
+
+    """
+
+    mark = request.node.get_marker('only_with_distro_feature')
+    if mark is not None:
+        features = mark.args
+        current = bitbake_variables.get('DISTRO_FEATURES', '').strip().split(' ')
+        if not any([feature in current for feature in features]):
+            pytest.skip('no supported distro feature in {} ' \
+                        '(supports {})'.format(', '.join(current),
+                                               ', '.join(features)))
