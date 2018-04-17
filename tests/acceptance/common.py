@@ -156,7 +156,14 @@ def start_qemu_flash(latest_vexpress_nor):
 
 def reboot(wait = 120):
     with settings(warn_only = True):
-        run("reboot")
+        try:
+            run("reboot")
+        except:
+            # qemux86-64 is so fast that sometimes the above call fails with
+            # an exception because the connection was broken before we returned.
+            # So catch everything, even though it might hide real errors (but
+            # those will probably be caught below after the timeout).
+            pass
 
     # Make sure reboot has had time to take effect.
     time.sleep(5)
