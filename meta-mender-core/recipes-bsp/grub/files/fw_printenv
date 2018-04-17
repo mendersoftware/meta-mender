@@ -138,12 +138,17 @@ setenv() {
         VARS="`cat $SCRIPT`"
     fi
 
+    if [ -z "$VARS" ]; then
+        echo "Must specify at least one variable assignment." 1>&2
+        exit 1
+    fi
+
     # Split in newlines, not spaces.
     IFS='
 '
 
     # Make string appropriate for eval'ing.
-    VARS="`echo "$VARS" | sed -ne '/^#/n; s/  */=/; p' | make_evalable`"
+    VARS="`echo "$VARS" | sed -ne '/^#/n; s/  */=/; /=/!s/$/=/; p' | make_evalable`"
 
     set -e
 
