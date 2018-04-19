@@ -1,0 +1,53 @@
+From 3b0825296aeba69c2cbfd3e179db2e9cbe5e70d7 Mon Sep 17 00:00:00 2001
+From: Masahiro Yamada <yamada.masahiro@socionext.com>
+Date: Mon, 13 Mar 2017 17:43:16 +0900
+Subject: [PATCH 1/1] tools: fix cross-compiling tools when HOSTCC is
+ overridden
+
+Richard reported U-Boot tools issues in OpenEmbedded/Yocto project.
+
+OE needs to be able to change the default compiler. If we pass in
+HOSTCC through the make command, it overwrites all HOSTCC instances,
+including ones in tools/Makefile and tools/env/Makefile, which breaks
+"make cross_tools" and "make env", respectively.
+
+Add "override" directives to avoid overriding HOSTCC instances that
+really need to point to the cross-compiler.
+
+Signed-off-by: Masahiro Yamada <yamada.masahiro@socionext.com>
+Reported-by: Richard Purdie <richard.purdie@linuxfoundation.org>
+Reviewed-by: Simon Glass <sjg@chromium.org>
+---
+ tools/Makefile     | 2 +-
+ tools/env/Makefile | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/Makefile b/tools/Makefile
+index 1c840d7..a894b5c 100644
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@ -262,7 +262,7 @@ $(LOGO_DATA_H):	$(obj)/bmp_logo $(LOGO_BMP)
+ subdir- += env
+ 
+ ifneq ($(CROSS_BUILD_TOOLS),)
+-HOSTCC = $(CC)
++override HOSTCC = $(CC)
+ 
+ quiet_cmd_crosstools_strip = STRIP   $^
+       cmd_crosstools_strip = $(STRIP) $^; touch $@
+diff --git a/tools/env/Makefile b/tools/env/Makefile
+index 38ad118..95b28c0 100644
+--- a/tools/env/Makefile
++++ b/tools/env/Makefile
+@@ -8,7 +8,7 @@
+ # fw_printenv is supposed to run on the target system, which means it should be
+ # built with cross tools. Although it may look weird, we only replace "HOSTCC"
+ # with "CC" here for the maximum code reuse of scripts/Makefile.host.
+-HOSTCC = $(CC)
++override HOSTCC = $(CC)
+ 
+ # Compile for a hosted environment on the target
+ HOST_EXTRACFLAGS  = $(patsubst -I%,-idirafter%, $(filter -I%, $(UBOOTINCLUDE))) \
+-- 
+2.7.4
+
