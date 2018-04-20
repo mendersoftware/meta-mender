@@ -20,8 +20,10 @@ in addition to `meta-mender` dependencies.
 - Set MACHINE to one of the following
     - raspberrypi
     - raspberrypi0
+    - raspberrypi0-wifi
     - raspberrypi2
     - raspberrypi3
+    - raspberrypi-cm
 - Add following to your local.conf (including configuration required by meta-mender-core)
 
         RPI_USE_U_BOOT = "1"
@@ -40,5 +42,9 @@ in addition to `meta-mender` dependencies.
         # Mender will build an image called `sdimg` which shall be used instead
         # of the `rpi-sdimg`.
         IMAGE_FSTYPES_remove += " rpi-sdimg"
+
+        # Use the same type here as specified in IMAGE_FSTYPES to avoid
+        # building an unneeded image file.
+        SDIMG_ROOTFS_TYPE = "ext4"
 
 - Run `bitbake <image name>`

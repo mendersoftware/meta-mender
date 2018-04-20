@@ -23,7 +23,11 @@ S = "${WORKDIR}/git"
 def mender_preferred_uboot(d):
     pref_uboot = d.getVar('PREFERRED_PROVIDER_u-boot')
     if pref_uboot in [None, ""]:
-        return "u-boot"
+        pref_bootloader = d.getVar('PREFERRED_PROVIDER_virtual/bootloader')
+        if pref_bootloader and pref_bootloader.startswith("u-boot"):
+            return pref_bootloader
+        else:
+            return "u-boot"
     else:
         return pref_uboot
 MENDER_PREFERRED_UBOOT = "${@mender_preferred_uboot(d)}"

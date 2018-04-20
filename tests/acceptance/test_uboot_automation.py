@@ -212,6 +212,8 @@ class TestUbootAutomation:
                                   shell=True)
         bitbake_variables = get_bitbake_variables("u-boot")
 
+        shutil.rmtree("/dev/shm/test_uboot_compile", ignore_errors=True)
+
         env = copy.copy(os.environ)
         env['UBOOT_SRC'] = bitbake_variables['S']
         env['TESTS_DIR'] = os.getcwd()
@@ -224,8 +226,6 @@ class TestUbootAutomation:
         configs_to_test = self.collect_and_prepare_boards_to_test(bitbake_variables, env)
 
         env['BOARD_LOGS'] = " ".join(configs_to_test)
-
-        shutil.rmtree("/dev/shm/test_uboot_compile", ignore_errors=True)
 
         try:
             sanitized_makeflags = bitbake_variables['EXTRA_OEMAKE']

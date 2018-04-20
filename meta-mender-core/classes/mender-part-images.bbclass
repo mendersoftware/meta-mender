@@ -22,13 +22,30 @@ python() {
 inherit image
 inherit image_types
 
+# This normally defaults to .rootfs which is misleading as this is not a simple
+# rootfs image and causes problems if one wants to use something like this:
+#
+#    IMAGE_FSTYPES += "sdimg.gz"
+#
+# Above assumes that the image name is:
+#
+#    ${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${type}
+#
+# Which results in a empty "gz" archive when using the default value, in our
+# case IMAGE_NAME_SUFFIX should be empty as we do not use it when naming
+# our image.
+IMAGE_NAME_SUFFIX_sdimg = ""
+
 mender_get_bootloader_offset() {
+    # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
+    install -m 0644 "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" "${WORKDIR}/"
+
     if [ $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
         bbfatal "IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET must be aligned to kB" \
                 "boundary (an even number)."
     fi
     local bootloader_offset_kb=$(expr $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
-    local bootloader_size=$(stat -c '%s' "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}")
+    local bootloader_size=$(stat -c '%s' "${WORKDIR}/${IMAGE_BOOTLOADER_FILE}")
     local bootloader_end=$(expr $bootloader_offset_kb \* 1024 + $bootloader_size)
     if [ $bootloader_end -gt ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} ]; then
         bbfatal "Size of bootloader specified in IMAGE_BOOTLOADER_FILE" \
@@ -76,20 +93,24 @@ mender_part_image() {
 
     dd if=/dev/zero of="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
     mkfs.${ARTIFACTIMG_FSTYPE} -F "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" -d "${WORKDIR}/data" -L data
+    install -m 0644 "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" "${DEPLOY_DIR_IMAGE}/"
+
+    # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
+    install -m 0644 "${DEPLOY_DIR_IMAGE}/uboot.env" "${WORKDIR}/"
 
     wks="${WORKDIR}/mender-$suffix.wks"
     rm -f "$wks"
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
         cat >> "$wks" <<EOF
 # embed bootloader
-part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" --ondisk mmcblk0 --align $(mender_get_bootloader_offset) --no-table
+part --source rawcopy --sourceparams="file=${WORKDIR}/${IMAGE_BOOTLOADER_FILE}" --ondisk mmcblk0 --align $(mender_get_bootloader_offset) --no-table
 EOF
     fi
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)} && [ -n "${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}" ]; then
         boot_env_align_kb=$(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} / 1024)
         cat >> "$wks" <<EOF
-part --source rawcopy --sourceparams="file=${DEPLOY_DIR_IMAGE}/uboot.env" --ondisk mmcblk0 --align $boot_env_align_kb --no-table
+part --source rawcopy --sourceparams="file=${WORKDIR}/uboot.env" --ondisk mmcblk0 --align $boot_env_align_kb --no-table
 EOF
     fi
 
@@ -99,8 +120,13 @@ EOF
 
     alignment_kb=$(expr ${MENDER_PARTITION_ALIGNMENT} / 1024)
 
-    cat >> "$wks" <<EOF
+    if [ "${MENDER_BOOT_PART_SIZE_MB}" -ne "0" ]; then
+        cat >> "$wks" <<EOF
 part --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align $alignment_kb --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
+EOF
+    fi
+
+    cat >> "$wks" <<EOF
 part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
 part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
 part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label data --align $alignment_kb --fixed-size ${MENDER_DATA_PART_SIZE_MB}
@@ -116,6 +142,7 @@ EOF
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-$suffix"
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/$(basename "${wks%.wks}")"*.direct "$outimgname"
+    ln -sfn "${IMAGE_NAME}.$suffix" "${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.$suffix"
     rm -rf "$wicout/"
 
     ln -sfn "${IMAGE_NAME}.$suffix" "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.$suffix"
