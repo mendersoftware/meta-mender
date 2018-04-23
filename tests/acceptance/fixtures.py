@@ -75,9 +75,9 @@ def setup_rpi3(request):
 
 @pytest.fixture(scope="module")
 def qemu_running(request, clean_image):
-    latest_sdimg = latest_build_artifact(clean_image['build_dir'], ".sdimg")
-    latest_uefiimg = latest_build_artifact(clean_image['build_dir'], ".uefiimg")
-    latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], ".vexpress-nor")
+    latest_sdimg = latest_build_artifact(clean_image['build_dir'], "core-image*.sdimg")
+    latest_uefiimg = latest_build_artifact(clean_image['build_dir'], "core-image*.uefiimg")
+    latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], "core-image*.vexpress-nor")
 
     if latest_sdimg:
         qemu, img_path = start_qemu_block_storage(latest_sdimg, suffix=".sdimg")
@@ -138,21 +138,21 @@ def latest_rootfs():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    return latest_build_artifact(os.environ['BUILDDIR'], ".ext[234]")
+    return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.ext[234]")
 
 @pytest.fixture(scope="session")
 def latest_sdimg():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    return latest_build_artifact(os.environ['BUILDDIR'], ".sdimg")
+    return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.sdimg")
 
 @pytest.fixture(scope="session")
 def latest_ubimg():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built ubimg.
-    return latest_build_artifact(os.environ['BUILDDIR'], ".ubimg")
+    return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.ubimg")
 
 @pytest.fixture(scope="session")
 def latest_ubifs():
@@ -160,7 +160,7 @@ def latest_ubifs():
 
     # Find latest built ubifs. NOTE: need to include *core-image* otherwise
     # we'll likely match data partition file - data.ubifs
-    return latest_build_artifact(os.environ['BUILDDIR'], "*core-image*.ubifs")
+    return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.ubifs")
 
 @pytest.fixture(scope="session")
 def latest_vexpress_nor():
@@ -168,32 +168,32 @@ def latest_vexpress_nor():
 
     # Find latest built ubifs. NOTE: need to include *core-image* otherwise
     # we'll likely match data partition file - data.ubifs
-    return latest_build_artifact(os.environ['BUILDDIR'], ".vexpress-nor")
+    return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.vexpress-nor")
 
 @pytest.fixture(scope="session")
 def latest_mender_image():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    return latest_build_artifact(os.environ['BUILDDIR'], ".mender")
+    return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.mender")
 
 @pytest.fixture(scope="session")
 def latest_part_image():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    latest_sdimg = latest_build_artifact(os.environ['BUILDDIR'], ".sdimg")
+    latest_sdimg = latest_build_artifact(os.environ['BUILDDIR'], "core-image*.sdimg")
     if latest_sdimg:
         return latest_sdimg
     else:
-        return latest_build_artifact(os.environ['BUILDDIR'], ".uefiimg")
+        return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.uefiimg")
 
 @pytest.fixture(scope="function")
 def successful_image_update_mender(request, clean_image):
     """Provide a 'successful_image_update.mender' file in the current directory that
     contains the latest built update."""
 
-    latest_mender_image = latest_build_artifact(clean_image['build_dir'], ".mender")
+    latest_mender_image = latest_build_artifact(clean_image['build_dir'], "core-image*.mender")
 
     if os.path.lexists("successful_image_update.mender"):
         print("Using existing 'successful_image_update.mender' in current directory")

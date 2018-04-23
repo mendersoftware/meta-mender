@@ -105,10 +105,12 @@ mender_part_image() {
 
     wks="${WORKDIR}/mender-$suffix.wks"
     rm -f "$wks"
+
     if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
+        alignment_kb=$(mender_get_bootloader_offset)
         cat >> "$wks" <<EOF
 # embed bootloader
-part --source rawcopy --sourceparams="file=${WORKDIR}/${IMAGE_BOOTLOADER_FILE}" --ondisk "$ondisk_dev" --align $(mender_get_bootloader_offset) --no-table
+part --source rawcopy --sourceparams="file=${WORKDIR}/${IMAGE_BOOTLOADER_FILE}" --ondisk "$ondisk_dev" --align $alignment_kb --no-table
 EOF
     fi
 

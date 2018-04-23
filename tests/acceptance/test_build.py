@@ -70,7 +70,7 @@ class TestBuild:
 
         run_bitbake(prepared_test_build)
 
-        built_sdimg = latest_build_artifact(prepared_test_build['build_dir'], ".sdimg")
+        built_sdimg = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.sdimg")
 
         original = os.open(loader_path, os.O_RDONLY)
         embedded = os.open(built_sdimg, os.O_RDONLY)
@@ -102,7 +102,7 @@ class TestBuild:
 
         run_bitbake(prepared_test_build)
 
-        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext4")
+        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")
 
         assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
 
@@ -117,7 +117,7 @@ class TestBuild:
 
         run_bitbake(prepared_test_build)
 
-        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
+        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
 
         subprocess.check_call(["debugfs", "-R",
                                    "dump -p /etc/mender/mender.conf mender.conf", built_rootfs])
@@ -145,14 +145,14 @@ class TestBuild:
 
         run_bitbake(prepared_test_build)
 
-        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
+        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
         # Copy out the key we just added from the image and use that to
         # verify instead of the original, just to be sure.
         subprocess.check_call(["debugfs", "-R",
                                "dump -p /etc/mender/artifact-verify-key.pem artifact-verify-key.pem",
                                built_rootfs])
         try:
-            built_artifact = latest_build_artifact(prepared_test_build['build_dir'], ".mender")
+            built_artifact = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender")
             output = subprocess.check_output(["mender-artifact", "read", "-k",
                                               os.path.join(os.getcwd(), "artifact-verify-key.pem"),
                                               built_artifact])
@@ -215,7 +215,7 @@ class TestBuild:
             }
 
             # Check new rootfs.
-            built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
+            built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
             output = subprocess.check_output(["debugfs", "-R", "ls -p /etc/mender/scripts", built_rootfs])
             for line in output.split('\n'):
                 if len(line) == 0:
@@ -233,7 +233,7 @@ class TestBuild:
                 assert found_rootfs_scripts[script], "%s not found in rootfs script list" % script
 
             # Check new artifact.
-            built_mender_image = latest_build_artifact(prepared_test_build['build_dir'], ".mender")
+            built_mender_image = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender")
             output = subprocess.check_output("tar xOf %s header.tar.gz| tar tz scripts"
                                              % built_mender_image, shell=True)
             for line in output.strip().split('\n'):
@@ -293,7 +293,7 @@ class TestBuild:
         add_to_local_conf(prepared_test_build, 'MENDER_DEVICE_TYPES_COMPATIBLE = "machine1 machine2"')
         run_bitbake(prepared_test_build)
 
-        image = latest_build_artifact(prepared_test_build['build_dir'], '.mender')
+        image = latest_build_artifact(prepared_test_build['build_dir'], 'core-image*.mender')
 
         output = run_verbose("mender-artifact read %s" % image, capture=True)
         assert "Compatible devices: '[machine1 machine2]'" in output

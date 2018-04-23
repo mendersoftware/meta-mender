@@ -197,7 +197,7 @@ index 0000000..93ead58
 +
 +#ifdef MENDER_UBI
 +# define MENDER_BOOTARGS                                                \
-+    "setenv bootargs root=${mender_kernel_root_name} "                  \
++    "setenv bootargs root=${mender_kernel_root} "                       \
 +    "${mtdparts} "                                                      \
 +    "ubi.mtd=${mender_mtd_ubi_dev_name} "                               \
 +    "rootfstype=ubifs "                                                 \

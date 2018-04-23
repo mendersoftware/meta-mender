@@ -265,7 +265,7 @@ class TestUbootAutomation:
             elif machine == "vexpress-qemu-flash":
                 # PLEASE UPDATE the version you used to find this number if you update it.
                 # From version: v2018.01
-                measured_failed_ratio = 47.0 / 156.0
+                measured_failed_ratio = 56.0 / 156.0
 
             # We tolerate a certain percentage discrepancy in either direction.
             tolerated_discrepancy = 0.1
@@ -305,9 +305,10 @@ class TestUbootAutomation:
             os.unlink("fw_setenv.tmp")
 
         add_to_local_conf(prepared_test_build, 'PREFERRED_PROVIDER_u-boot = "u-boot-testing"')
+        add_to_local_conf(prepared_test_build, 'PREFERRED_RPROVIDER_u-boot = "u-boot-testing"')
         run_bitbake(prepared_test_build)
 
-        new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
+        new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
         subprocess.check_call(["debugfs", "-R", "dump /sbin/fw_setenv fw_setenv.tmp", new_rootfs])
 
         try:

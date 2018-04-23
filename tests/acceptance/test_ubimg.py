@@ -144,7 +144,7 @@ def ubimg_without_uboot_env(request, prepared_test_build_base):
     add_to_local_conf(prepared_test_build_base, 'MENDER_FEATURES_DISABLE_append = " mender-uboot"')
     run_bitbake(prepared_test_build_base)
 
-    ubimg = latest_build_artifact(prepared_test_build_base['build_dir'], ".ubimg")
+    ubimg = latest_build_artifact(prepared_test_build_base['build_dir'], "core-image*.ubimg")
     imgdir = tempfile.mkdtemp()
     tmpimg = os.path.join(imgdir, os.path.basename(ubimg))
     shutil.copyfile(ubimg, tmpimg)
