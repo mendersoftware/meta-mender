@@ -15,9 +15,11 @@
 
 from fabric.api import *
 
-import pytest
-import subprocess
 import os
+import pytest
+import shutil
+import subprocess
+import tempfile
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
@@ -131,13 +133,36 @@ def extract_ubimg_info(path):
     return data
 
 
+@pytest.fixture(scope="session")
+def ubimg_without_uboot_env(request, prepared_test_build_base):
+    """The ubireader_utils_info tool and friends don't support our UBI volumes
+    that contain the U-Boot environment and hence not valid UBIFS structures.
+    Therefore, make a new temporary image that doesn't contain U-Boot."""
+
+    reset_local_conf(prepared_test_build_base)
+
+    add_to_local_conf(prepared_test_build_base, 'MENDER_FEATURES_DISABLE_append = " mender-uboot"')
+    run_bitbake(prepared_test_build_base)
+
+    ubimg = latest_build_artifact(prepared_test_build_base['build_dir'], ".ubimg")
+    imgdir = tempfile.mkdtemp()
+    tmpimg = os.path.join(imgdir, os.path.basename(ubimg))
+    shutil.copyfile(ubimg, tmpimg)
+
+    def remove_ubimg():
+        os.unlink(tmpimg)
+    request.addfinalizer(remove_ubimg)
+
+    return tmpimg
+
+
 @pytest.mark.only_with_image('ubimg')
 @pytest.mark.min_mender_version('1.2.0')
 class TestUbimg:
-    def test_total_size(self, bitbake_variables, latest_ubimg):
+    def test_total_size(self, bitbake_variables, ubimg_without_uboot_env):
         """Test that the size of the ubimg and its volumes are correct."""
 
-        total_size_file = os.stat(latest_ubimg).st_size
+        total_size_file = os.stat(ubimg_without_uboot_env).st_size
         total_size_max_expected = int(bitbake_variables['MENDER_STORAGE_TOTAL_SIZE_MB']) * 1024 * 1024
 
         assert total_size_file <= total_size_max_expected
@@ -163,11 +188,11 @@ class TestUbimg:
             # 10% of rootfs size
             assert total_size_file >= 0.1 * expected_total
 
-    def test_volumes(self, bitbake_variables, latest_ubimg):
+    def test_volumes(self, bitbake_variables, ubimg_without_uboot_env):
         """Test that ubimg has correnct number of volumes, each with correct size &
         config"""
 
-        ubinfo = extract_ubimg_info(latest_ubimg)
+        ubinfo = extract_ubimg_info(ubimg_without_uboot_env)
 
         # we're expecting 3 volumes, rootfsa, rootfsb and data
         assert len(ubinfo) == 3
@@ -183,11 +208,11 @@ class TestUbimg:
         assert int(ubinfo['rootfsa']['ubinize']['vol_size']) <= 1.02 * rootfs_size
         assert int(ubinfo['rootfsb']['ubinize']['vol_size']) <= 1.02 * rootfs_size
 
-    def test_volume_contents(self, bitbake_variables, latest_ubimg):
+    def test_volume_contents(self, bitbake_variables, ubimg_without_uboot_env):
         """Test that data volume has correct contents"""
 
         with make_tempdir() as tmpdir:
-            rootdir = extract_ubimg(latest_ubimg, tmpdir)
+            rootdir = extract_ubimg(ubimg_without_uboot_env, tmpdir)
 
             assert os.path.exists(os.path.join(rootdir, 'rootfsa/usr/bin/mender'))
             assert os.path.exists(os.path.join(rootdir, 'rootfsb/usr/bin/mender'))
