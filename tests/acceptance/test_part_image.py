@@ -29,11 +29,11 @@ def align_up(bytes, alignment):
     return (int(bytes) + int(alignment) - 1) / int(alignment) * int(alignment)
 
 
-def extract_partition(sdimg, number):
-    output = subprocess.Popen(["fdisk", "-l", "-o", "device,start,end", sdimg],
+def extract_partition(img, number):
+    output = subprocess.Popen(["fdisk", "-l", "-o", "device,start,end", img],
                               stdout=subprocess.PIPE)
     for line in output.stdout:
-        if re.search("sdimg%d" % number, line) is None:
+        if re.search("img%d" % number, line) is None:
             continue
 
         match = re.match("\s*\S+\s+(\S+)\s+(\S+)", line)
@@ -42,13 +42,13 @@ def extract_partition(sdimg, number):
         end = (int(match.group(2)) + 1)
     output.wait()
 
-    subprocess.check_call(["dd", "if=" + sdimg, "of=sdimg%d.fs" % number,
+    subprocess.check_call(["dd", "if=" + img, "of=img%d.fs" % number,
                            "skip=%d" % start, "count=%d" % (end - start)])
 
 
-@pytest.mark.only_with_image('sdimg')
+@pytest.mark.only_with_image('sdimg', 'uefiimg')
 @pytest.mark.min_mender_version("1.0.0")
-class TestSdimg:
+class TestPartitionImage:
 
     @staticmethod
     def verify_fstab(data):
@@ -64,21 +64,21 @@ class TestSdimg:
             assert occurred.get(cols[1]) is None, "%s appeared twice in fstab:\n%s" % (cols[1], data)
             occurred[cols[1]] = True
 
-    def test_total_size(self, bitbake_variables, latest_sdimg):
-        """Test that the total size of the sdimg is correct."""
+    def test_total_size(self, bitbake_variables, latest_part_image):
+        """Test that the total size of the img is correct."""
 
-        total_size_actual = os.stat(latest_sdimg).st_size
+        total_size_actual = os.stat(latest_part_image).st_size
         total_size_max_expected = int(bitbake_variables['MENDER_STORAGE_TOTAL_SIZE_MB']) * 1024 * 1024
         total_overhead = int(bitbake_variables['MENDER_PARTITIONING_OVERHEAD_KB']) * 1024
 
         assert(total_size_actual <= total_size_max_expected)
         assert(total_size_actual >= total_size_max_expected - total_overhead)
 
-    def test_partition_alignment(self, bitbake_path, bitbake_variables, latest_sdimg):
-        """Test that partitions inside the sdimg are aligned correctly, and
+    def test_partition_alignment(self, bitbake_path, bitbake_variables, latest_part_image):
+        """Test that partitions inside the img are aligned correctly, and
         correct sizes."""
 
-        fdisk = subprocess.Popen(["fdisk", "-l", "-o", "start,end", latest_sdimg], stdout=subprocess.PIPE)
+        fdisk = subprocess.Popen(["fdisk", "-l", "-o", "start,end", latest_part_image], stdout=subprocess.PIPE)
         payload = False
         parts_start = []
         parts_end = []
@@ -99,14 +99,17 @@ class TestSdimg:
         fdisk.wait()
 
         alignment = int(bitbake_variables['MENDER_PARTITION_ALIGNMENT_KB']) * 1024
-        uboot_env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
         total_size = int(bitbake_variables['MENDER_STORAGE_TOTAL_SIZE_MB']) * 1024 * 1024
         part_overhead = int(bitbake_variables['MENDER_PARTITIONING_OVERHEAD_KB']) * 1024
         boot_part_size = int(bitbake_variables['MENDER_BOOT_PART_SIZE_MB']) * 1024 * 1024
         data_part_size = int(bitbake_variables['MENDER_DATA_PART_SIZE_MB']) * 1024 * 1024
 
-        # Uboot environment should be aligned.
-        assert(uboot_env_size % alignment == 0)
+        if "mender-uboot" in bitbake_variables['DISTRO_FEATURES']:
+            uboot_env_size = os.stat(os.path.join(bitbake_variables["DEPLOY_DIR_IMAGE"], "uboot.env")).st_size
+            # Uboot environment should be aligned.
+            assert(uboot_env_size % alignment == 0)
+        else:
+            uboot_env_size = 0
 
         # First partition should start after exactly one alignment, plus the
         # U-Boot environment.
@@ -130,13 +133,13 @@ class TestSdimg:
         assert(parts_end[3] >= total_size - part_overhead)
 
 
-    def test_device_type(self, latest_sdimg, bitbake_variables, bitbake_path):
+    def test_device_type(self, latest_part_image, bitbake_variables, bitbake_path):
         """Test that device type file is correctly embedded."""
 
         try:
-            extract_partition(latest_sdimg, 4)
+            extract_partition(latest_part_image, 4)
 
-            subprocess.check_call(["debugfs", "-R", "dump -p /mender/device_type device_type", "sdimg4.fs"])
+            subprocess.check_call(["debugfs", "-R", "dump -p /mender/device_type device_type", "img4.fs"])
 
             assert(os.stat("device_type").st_mode & 0777 == 0444)
 
@@ -157,19 +160,19 @@ class TestSdimg:
 
         finally:
             try:
-                os.remove("sdimg4.fs")
+                os.remove("img4.fs")
                 os.remove("device_type")
             except:
                 pass
 
-    def test_data_ownership(self, latest_sdimg, bitbake_variables, bitbake_path):
+    def test_data_ownership(self, latest_part_image, bitbake_variables, bitbake_path):
         """Test that the owner of files on the data partition is root."""
 
         try:
-            extract_partition(latest_sdimg, 4)
+            extract_partition(latest_part_image, 4)
 
             def check_dir(dir):
-                ls = subprocess.Popen(["debugfs", "-R" "ls -l -p %s" % dir, "sdimg4.fs"], stdout=subprocess.PIPE)
+                ls = subprocess.Popen(["debugfs", "-R" "ls -l -p %s" % dir, "img4.fs"], stdout=subprocess.PIPE)
                 entries = ls.stdout.readlines()
                 ls.wait()
 
@@ -198,20 +201,39 @@ class TestSdimg:
 
         finally:
             try:
-                os.remove("sdimg4.fs")
+                os.remove("img4.fs")
             except:
                 pass
 
-    def test_fstab_correct(self, bitbake_path, latest_sdimg):
+    def test_fstab_correct(self, bitbake_path, latest_part_image):
         with make_tempdir() as tmpdir:
             old_cwd_fd = os.open(".", os.O_RDONLY)
             os.chdir(tmpdir)
             try:
-                extract_partition(latest_sdimg, 2)
-                subprocess.check_call(["debugfs", "-R", "dump -p /etc/fstab fstab", "sdimg2.fs"])
+                extract_partition(latest_part_image, 2)
+                subprocess.check_call(["debugfs", "-R", "dump -p /etc/fstab fstab", "img2.fs"])
                 with open("fstab") as fd:
                     data = fd.read()
-                TestSdimg.verify_fstab(data)
+                TestPartitionImage.verify_fstab(data)
+            finally:
+                os.fchdir(old_cwd_fd)
+                os.close(old_cwd_fd)
+
+    @pytest.mark.only_with_distro_feature('mender-grub')
+    def test_mender_grubenv(self, bitbake_path, latest_part_image, bitbake_variables):
+        with make_tempdir() as tmpdir:
+            old_cwd_fd = os.open(".", os.O_RDONLY)
+            os.chdir(tmpdir)
+            try:
+                extract_partition(latest_part_image, 1)
+                for env_name in ["mender_grubenv1", "mender_grubenv2"]:
+                    subprocess.check_call(["mcopy", "-i", "img1.fs", "::/EFI/BOOT/%s/env" % env_name, "."])
+                    with open("env") as fd:
+                        data = fd.read()
+                    os.unlink("env")
+                    assert "mender_boot_part=%s" % bitbake_variables['MENDER_ROOTFS_PART_A'][-1] in data
+                    assert "upgrade_available=0" in data
+                    assert "bootcount=0" in data
             finally:
                 os.fchdir(old_cwd_fd)
                 os.close(old_cwd_fd)

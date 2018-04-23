@@ -198,7 +198,7 @@ class TestUpdates:
 
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
-        if board or use_s3:
+        if "qemu" not in board or use_s3:
             Helpers.upload_to_s3()
             s3_address = pytest.config.getoption("--s3-address")
             http_server_location = "{}/mender/temp".format(s3_address)
@@ -225,7 +225,7 @@ class TestUpdates:
         # Delete kernel and associated files from currently running partition,
         # so that the boot will fail if U-Boot for any reason tries to grab the
         # kernel from the wrong place.
-        run("rm -rf /boot/*")
+        run("rm -f /boot/* || true")
 
         reboot()
 
@@ -683,3 +683,51 @@ class TestUpdates:
             # Cleanup.
             os.remove("image.mender")
             os.remove("image.dat")
+
+    @pytest.mark.only_for_machine('qemux86-64')
+    @pytest.mark.min_mender_version('1.0.0')
+    def test_redundant_grub_env(self, successful_image_update_mender, bitbake_variables):
+        """This tests pretty much the same thing as the test_redundant_uboot_env
+        above, but the details differ. U-Boot maintains a counter in each
+        environment, and then only updates one of them. However, the GRUB
+        variant we have implemented in the GRUB scripting language, where we
+        cannot do this, so instead we update both, and use the validity of the
+        variables instead as a crude checksum."""
+
+        if not env.host_string:
+            # This means we are not inside execute(). Recurse into it!
+            execute(self.test_redundant_grub_env, successful_image_update_mender, bitbake_variables)
+            return
+
+        (active, passive) = determine_active_passive_part(bitbake_variables)
+
+        # Corrupt the passive partition.
+        run("dd if=/dev/zero of=%s bs=1024 count=1024" % passive)
+
+        # Now try to corrupt the environment, and make sure it doesn't get booted into.
+        for env_num in [1, 2]:
+            # Make a copy of the two environments.
+            run("cp /boot/efi/EFI/BOOT/{mender_grubenv1/env,mender_grubenv1/env.backup}")
+            run("cp /boot/efi/EFI/BOOT/{mender_grubenv1/lock,mender_grubenv1/lock.backup}")
+            run("cp /boot/efi/EFI/BOOT/{mender_grubenv2/env,mender_grubenv2/env.backup}")
+            run("cp /boot/efi/EFI/BOOT/{mender_grubenv2/lock,mender_grubenv2/lock.backup}")
+
+            try:
+                env_file = "/boot/efi/EFI/BOOT/mender_grubenv%d/env" % env_num
+                lock_file = "/boot/efi/EFI/BOOT/mender_grubenv%d/lock" % env_num
+                run('sed -e "s/editing=.*/editing=1/" %s' % lock_file)
+                run('sed -e "s/mender_boot_part=.*/mender_boot_part=%s/" %s' % (passive[-1], lock_file))
+
+                reboot()
+                run_after_connect("true")
+
+                (new_active, new_passive) = determine_active_passive_part(bitbake_variables)
+                assert new_active == active
+                assert new_passive == passive
+
+            finally:
+                # Restore the two environments.
+                run("mv /boot/efi/EFI/BOOT/{mender_grubenv1/env.backup,mender_grubenv1/env}")
+                run("mv /boot/efi/EFI/BOOT/{mender_grubenv1/lock.backup,mender_grubenv1/lock}")
+                run("mv /boot/efi/EFI/BOOT/{mender_grubenv2/env.backup,mender_grubenv2/env}")
+                run("mv /boot/efi/EFI/BOOT/{mender_grubenv2/lock.backup,mender_grubenv2/lock}")

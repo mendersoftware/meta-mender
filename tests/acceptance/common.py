@@ -99,9 +99,9 @@ def start_qemu(qenv=None):
     return proc
 
 
-def start_qemu_sdimg(latest_sdimg):
-    """Start qemu instance running *.sdimg"""
-    fh, img_path = tempfile.mkstemp(suffix=".sdimg", prefix="test-image")
+def start_qemu_block_storage(latest_sdimg, suffix):
+    """Start qemu instance running block storage"""
+    fh, img_path = tempfile.mkstemp(suffix=suffix, prefix="test-image")
     # don't need an open fd to temp file
     os.close(fh)
 
@@ -110,8 +110,7 @@ def start_qemu_sdimg(latest_sdimg):
 
     # pass QEMU drive directly
     qenv = {}
-    qenv["VEXPRESS_IMG"] = img_path
-    qenv["MACHNE"] = "vexpress-qemu"
+    qenv["DISK_IMG"] = img_path
 
     try:
         qemu = start_qemu(qenv)
@@ -142,7 +141,7 @@ def start_qemu_flash(latest_vexpress_nor):
 
     qenv = {}
     # pass QEMU drive directly
-    qenv["VEXPRESS_IMG"] = img_path
+    qenv["DISK_IMG"] = img_path
     qenv["MACHINE"] = "vexpress-qemu-flash"
 
     try:
@@ -156,7 +155,14 @@ def start_qemu_flash(latest_vexpress_nor):
 
 def reboot(wait = 120):
     with settings(warn_only = True):
-        run("reboot")
+        try:
+            run("reboot")
+        except:
+            # qemux86-64 is so fast that sometimes the above call fails with
+            # an exception because the connection was broken before we returned.
+            # So catch everything, even though it might hide real errors (but
+            # those will probably be caught below after the timeout).
+            pass
 
     # Make sure reboot has had time to take effect.
     time.sleep(5)
