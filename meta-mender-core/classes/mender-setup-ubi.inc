@@ -148,6 +148,10 @@ MENDER_UBOOT_ENV_UBIVOL_NUMBER_2 ??= "4"
 # Functions
 ################################################################################
 
+def mender_warn_only_if_ubi(d, msg):
+    if bb.utils.contains('DISTRO_FEATURES', 'mender-ubi', True, False, d):
+        bb.warn(msg)
+
 def mender_default_mender_mtdid(mtdids):
     if len(mtdids.split(",")) == 1 and len(mtdids.split("=")) == 2:
         return mtdids.split("=")[1]
@@ -156,9 +160,6 @@ def mender_default_mender_mtdid(mtdids):
         return ""
 
 def mender_make_mtdparts(d):
-    if not bb.utils.contains('DISTRO_FEATURES', 'mender-ubi', True, False, d):
-        return ""
-
     mtdids = d.getVar('MENDER_MTDIDS')
     if not mtdids or len(mtdids.split(",")) > 1:
         return ""
@@ -198,9 +199,9 @@ def mender_get_flash_type_from_mtdid(d):
     mtdid = d.getVar('MENDER_IS_ON_MTDID')
     match = re.search("([^=]+)=%s" % re.escape(mtdid), d.getVar('MENDER_MTDIDS'))
     if match is None:
-        bb.warn("Could not find MENDER_IS_ON_MTDID (%s) in MENDER_MTDIDS (%s). Setting UBI overhead to 0."
-                % (mtdid, d.getVar('MENDER_MTDIDS')))
-        return "0"
+        mender_warn_only_if_ubi(d, "Could not find MENDER_IS_ON_MTDID (%s) in MENDER_MTDIDS (%s)."
+                                % (mtdid, d.getVar('MENDER_MTDIDS')))
+        return ""
     storage = match.group(1)
     # Get rid of trailing numbers.
     storage = re.sub("[0-9]*$", "", storage)
@@ -219,7 +220,7 @@ def mender_calculate_ubi_leb_peb_block_overhead(d):
     elif storage == "nand":
         return str(int(d.getVar('MENDER_NAND_FLASH_PAGE_SIZE')) * 2)
     else:
-        bb.warn("Unknown MTDID type %s, setting UBI overhead to 0" % storage)
+        mender_warn_only_if_ubi(d, "Unknown MTDID type %s, setting UBI block overhead to 0" % storage)
         return "0"
 
 def mender_get_ubi_size(d):
@@ -232,8 +233,9 @@ def mender_get_ubi_size(d):
             mtdpart = part
             break
     else:
-        bb.warn("Could not find MENDER_IS_ON_MTDID (%s) in MENDER_MTDPARTS (%s). Setting UBI partitioning overhead to 0."
-                % (mtdid, mtdparts))
+        mender_warn_only_if_ubi(d, "Could not find MENDER_IS_ON_MTDID (%s) in MENDER_MTDPARTS (%s). Returning UBI size of zero."
+                                % (mtdid, mtdparts))
+        return 0
 
     # Find all space in mtdimage not occupied by the UBI image.
     non_ubi_size = 0
@@ -285,7 +287,7 @@ def mender_get_ubi_bad_peb_overhead(d):
         blocks = int(ubi_size / int(d.getVar('MENDER_STORAGE_PEB_SIZE')))
         return str(int(20 * blocks / 1024 + 20))
     else:
-        bb.warn("Unknown MTDID type %s, setting UBI overhead to 0" % storage)
+        mender_warn_only_if_ubi(d, "Unknown MTDID type %s, setting UBI overhead to 0" % storage)
         return "0"
 
 def mender_get_partitioning_overhead_kb_ubi(d):

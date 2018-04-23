@@ -77,7 +77,11 @@ index 0000000..e4d4e82
 +# error 'CONFIG_ENV_SIZE' define must be equal to bitbake variable 'BOOTENV_SIZE' set in U-Boot build recipe.
 +#endif
 +
-+#ifndef MENDER_UBI
++#ifdef MENDER_UBI
++# define CONFIG_ENV_UBI_PART          MENDER_MTD_UBI_DEVICE_NAME
++# define CONFIG_ENV_UBI_VOLUME        "u-boot-env-1"
++# define CONFIG_ENV_UBI_VOLUME_REDUND "u-boot-env-2"
++#else
 +# define CONFIG_SYS_MMC_ENV_DEV   MENDER_UBOOT_STORAGE_DEVICE
 +  /* Use MMC partition zero to select whole user area of memory card. */
 +# define CONFIG_SYS_MMC_ENV_PART  0
@@ -85,10 +89,6 @@ index 0000000..e4d4e82
 +
 +#define CONFIG_ENV_OFFSET        MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
 +#define CONFIG_ENV_OFFSET_REDUND MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
-+
-+#define CONFIG_ENV_UBI_PART          MENDER_MTD_UBI_DEVICE_NAME
-+#define CONFIG_ENV_UBI_VOLUME        "u-boot-env-1"
-+#define CONFIG_ENV_UBI_VOLUME_REDUND "u-boot-env-2"
 +
 +#endif /* !MENDER_AUTO_PROBING */
 +
@@ -98,7 +98,7 @@ new file mode 100644
 index 0000000..93ead58
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,123 @@
+@@ -0,0 +1,130 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -134,14 +134,21 @@ index 0000000..93ead58
 +    "run bootcmd\0"
 +#endif
 +
++#ifdef MENDER_UBI
++# define MENDER_UBI_SETTINGS \
++    "mender_mtd_ubi_dev_name=" MENDER_MTD_UBI_DEVICE_NAME "\0"
++#else
++# define MENDER_UBI_SETTINGS
++#endif
++
 +#define MENDER_ENV_SETTINGS                                             \
 +    MENDER_DEFAULT_ALTBOOTCMD                                           \
++    MENDER_UBI_SETTINGS                                                 \
++                                                                        \
 +    "bootlimit=1\0"                                                     \
 +    "bootcount=0\0"                                                     \
 +                                                                        \
 +    "upgrade_available=0\0"                                             \
-+                                                                        \
-+    "mender_mtd_ubi_dev_name=" MENDER_MTD_UBI_DEVICE_NAME "\0"          \
 +                                                                        \
 +    "mender_boot_part=" __stringify(MENDER_ROOTFS_PART_A_NUMBER) "\0"   \
 +                                                                        \

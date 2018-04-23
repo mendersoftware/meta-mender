@@ -154,7 +154,7 @@ EOF
 }
 addtask do_provide_mender_defines after do_patch before do_configure
 
-do_compile_append() {
+do_compile_append_mender-ubi() {
     # Doing this in do_compile instead of do_configure is actually a bit late,
     # but the U-Boot recipe doesn't separate between the stages.
 
