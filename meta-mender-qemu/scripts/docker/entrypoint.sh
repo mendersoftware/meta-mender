@@ -2,6 +2,9 @@
 
 set -x -e
 
+# For SaaS platform.
+[ -x /saas/extensions.sh ] && /saas/extensions.sh
+
 MACHINE=${MACHINE:-"vexpress-qemu"}
 IMAGE=${IMAGE:-"core-image-full-cmdline"}
 
