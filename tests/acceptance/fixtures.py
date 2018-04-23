@@ -76,12 +76,13 @@ def setup_rpi3(request):
 @pytest.fixture(scope="module")
 def qemu_running(request, clean_image):
     latest_sdimg = latest_build_artifact(clean_image['build_dir'], ".sdimg")
+    latest_uefiimg = latest_build_artifact(clean_image['build_dir'], ".uefiimg")
     latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], ".vexpress-nor")
 
-    print("sdimg: {} vexpress-nor: {}".format(latest_sdimg, latest_vexpress_nor))
-
     if latest_sdimg:
-        qemu, img_path = start_qemu_sdimg(latest_sdimg)
+        qemu, img_path = start_qemu_block_storage(latest_sdimg, suffix=".sdimg")
+    elif latest_uefiimg:
+        qemu, img_path = start_qemu_block_storage(latest_uefiimg, suffix=".uefiimg")
     elif latest_vexpress_nor:
         qemu, img_path = start_qemu_flash(latest_vexpress_nor)
     else:
@@ -175,6 +176,17 @@ def latest_mender_image():
 
     # Find latest built rootfs.
     return latest_build_artifact(os.environ['BUILDDIR'], ".mender")
+
+@pytest.fixture(scope="session")
+def latest_part_image():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    # Find latest built rootfs.
+    latest_sdimg = latest_build_artifact(os.environ['BUILDDIR'], ".sdimg")
+    if latest_sdimg:
+        return latest_sdimg
+    else:
+        return latest_build_artifact(os.environ['BUILDDIR'], ".uefiimg")
 
 @pytest.fixture(scope="function")
 def successful_image_update_mender(request, clean_image):
@@ -291,11 +303,19 @@ def clean_image(request, prepared_test_build_base):
 def prepared_test_build_base(request, bitbake_variables):
     """Base fixture for prepared_test_build. Returns the same as that one."""
 
-    build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
+    if pytest.config.getoption('--no-tmp-build-dir'):
+        build_dir = os.environ['BUILDDIR']
+    else:
+        build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
+
+    local_conf = os.path.join(build_dir, "conf", "local.conf")
+    local_conf_orig = local_conf + ".orig"
 
     def cleanup_test_build():
-        if not pytest.config.getoption('--keep-build-dir'):
+        if not pytest.config.getoption('--no-tmp-build-dir'):
             run_verbose("rm -rf %s" % build_dir)
+        if os.path.exists(local_conf_orig):
+            run_verbose("mv %s %s" % (local_conf_orig, local_conf))
 
     cleanup_test_build()
     request.addfinalizer(cleanup_test_build)
@@ -304,14 +324,13 @@ def prepared_test_build_base(request, bitbake_variables):
 
     run_verbose(env_setup)
 
-    run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
-    local_conf = os.path.join(build_dir, "conf", "local.conf")
-    local_conf_orig = local_conf + ".orig"
-    with open(local_conf, "a") as fd:
-        fd.write('SSTATE_MIRRORS = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
-    run_verbose("cp %s %s" % (local_conf, local_conf_orig))
+    if not pytest.config.getoption('--no-tmp-build-dir'):
+        run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
+        with open(local_conf, "a") as fd:
+            fd.write('SSTATE_MIRRORS = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
+        os.symlink(os.path.join(os.environ['BUILDDIR'], "downloads"), os.path.join(build_dir, "downloads"))
 
-    os.symlink(os.path.join(os.environ['BUILDDIR'], "downloads"), os.path.join(build_dir, "downloads"))
+    run_verbose("cp %s %s" % (local_conf, local_conf_orig))
 
     image_name = pytest.config.getoption("--bitbake-image")
 
@@ -397,3 +416,24 @@ def only_with_image(request, bitbake_variables):
             pytest.skip('no supported filesystem in {} ' \
                         '(supports {})'.format(', '.join(current),
                                                ', '.join(images)))
+
+@pytest.fixture(autouse=True)
+def only_with_distro_feature(request, bitbake_variables):
+    """Fixture that enables use of `only_with_distro_feature(feature1, feature2)` mark.
+    Example::
+
+       @pytest.mark.only_with_distro_feature('mender-uboot')
+       def test_foo():
+           # executes only if mender-uboot feature is enabled
+           pass
+
+    """
+
+    mark = request.node.get_marker('only_with_distro_feature')
+    if mark is not None:
+        features = mark.args
+        current = bitbake_variables.get('DISTRO_FEATURES', '').strip().split(' ')
+        if not any([feature in current for feature in features]):
+            pytest.skip('no supported distro feature in {} ' \
+                        '(supports {})'.format(', '.join(current),
+                                               ', '.join(features)))

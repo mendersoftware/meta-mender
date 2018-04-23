@@ -5,11 +5,15 @@ inherit mender-helpers
 # The storage device that holds the device partitions.
 MENDER_STORAGE_DEVICE ??= "${MENDER_STORAGE_DEVICE_DEFAULT}"
 MENDER_STORAGE_DEVICE_DEFAULT = "/dev/mmcblk0"
+MENDER_STORAGE_DEVICE_DEFAULT_x86 = "/dev/hda"
+MENDER_STORAGE_DEVICE_DEFAULT_x86-64 = "/dev/hda"
 
 # The base name of the devices that hold individual partitions.
 # This is often MENDER_STORAGE_DEVICE + "p".
 MENDER_STORAGE_DEVICE_BASE ??= "${MENDER_STORAGE_DEVICE_BASE_DEFAULT}"
 MENDER_STORAGE_DEVICE_BASE_DEFAULT = "${MENDER_STORAGE_DEVICE}p"
+MENDER_STORAGE_DEVICE_BASE_DEFAULT_x86 = "${MENDER_STORAGE_DEVICE}"
+MENDER_STORAGE_DEVICE_BASE_DEFAULT_x86-64 = "${MENDER_STORAGE_DEVICE}"
 
 # The partition number holding the boot partition.
 MENDER_BOOT_PART ??= "${MENDER_BOOT_PART_DEFAULT}"
@@ -143,6 +147,9 @@ python() {
     # Each one will also define the same string in OVERRIDES.
     mender_features = {
 
+        # Integration with GRUB.
+        'mender-grub',
+
         # Install of Mender, with the minimum components. This includes no
         # references to specific partition layouts.
         'mender-install',
@@ -156,6 +163,9 @@ python() {
 
         # Include components for generating a UBI image.
         'mender-image-ubi',
+
+        # Include components for generating a UEFI image.
+        'mender-image-uefi',
 
         # Include Mender as a systemd service.
         'mender-systemd',
@@ -268,6 +278,7 @@ python mender_vars_handler() {
 # Including these does not mean that all these features will be enabled, just
 # that their configuration will be considered. Use DISTRO_FEATURES to enable and
 # disable features.
+include mender-setup-grub.inc
 include mender-setup-image.inc
 include mender-setup-install.inc
 include mender-setup-systemd.inc

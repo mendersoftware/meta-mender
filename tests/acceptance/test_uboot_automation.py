@@ -337,19 +337,22 @@ class TestUbootAutomation:
             pass
 
     @pytest.mark.min_mender_version('1.0.0')
-    def test_save_mender_auto_configured_patch(self, prepared_test_build):
+    def test_save_mender_auto_configured_patch(self, bitbake_variables, prepared_test_build):
         """Test that we can invoke the save_mender_auto_configured_patch task,
         and that it produces a patch file."""
 
-        bitbake_vars = get_bitbake_variables("u-boot", env_setup=prepared_test_build['env_setup'])
+        if "mender-uboot" not in bitbake_variables['DISTRO_FEATURES']:
+            pytest.skip("Only relevant for U-Boot configurations")
+
+        bitbake_variables = get_bitbake_variables("u-boot", env_setup=prepared_test_build['env_setup'])
 
         # Only run if auto-configuration is on.
-        if bitbake_vars['MENDER_UBOOT_AUTO_CONFIGURE'] == "0":
+        if bitbake_variables['MENDER_UBOOT_AUTO_CONFIGURE'] == "0":
             pytest.skip("Test is not applicable when MENDER_UBOOT_AUTO_CONFIGURE is off")
 
         run_bitbake(prepared_test_build, "-c save_mender_auto_configured_patch u-boot")
 
-        with open(os.path.join(bitbake_vars['WORKDIR'], 'mender_auto_configured.patch')) as fd:
+        with open(os.path.join(bitbake_variables['WORKDIR'], 'mender_auto_configured.patch')) as fd:
             content = fd.read()
             # Make sure it looks like a patch.
             assert "---" in content

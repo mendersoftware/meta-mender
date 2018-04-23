@@ -37,8 +37,8 @@ def pytest_addoption(parser):
     parser.addoption("--bitbake-image", action="store",
                      default='core-image-full-cmdline',
                      help="image to build during the tests")
-    parser.addoption("--keep-build-dir", action="store_true", default=False,
-                     help="do not remove Yocto build directory after each test")
+    parser.addoption("--no-tmp-build-dir", action="store_true", default=False,
+                     help="Do not use a temporary build directory. Faster, but may mess with your build directory.")
     parser.addoption("--board-type", action="store", default='qemu',
                      help="type of board to use in testing, supported types: qemu, bbb, colibri-imx7")
     parser.addoption("--use-s3", action="store_true", default=False,
