@@ -169,7 +169,6 @@ do_image_sdimg[depends] += " \
     dosfstools-native:do_populate_sysroot \
     mtools-native:do_populate_sysroot \
     rsync-native:do_populate_sysroot \
-    virtual/bootloader:do_deploy \
 "
 
 do_image_uefiimg[depends] += " \
@@ -178,7 +177,6 @@ do_image_uefiimg[depends] += " \
     dosfstools-native:do_populate_sysroot \
     mtools-native:do_populate_sysroot \
     rsync-native:do_populate_sysroot \
-    virtual/bootloader:do_deploy \
     ${@bb.utils.contains('DISTRO_FEATURES', 'mender-grub', 'grub-efi:do_deploy', '', d)} \
 "
 do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-bootfiles:do_populate_sysroot', '', d)}"
