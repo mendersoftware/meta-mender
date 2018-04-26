@@ -17,7 +17,7 @@ IMAGE_TYPEDEP_ubimg_append = "ubifs"
 inherit image
 inherit image_types
 
-do_image_ubimg[depends] += "mtd-utils-native:do_populate_sysroot"
+do_image_ubimg[depends] += "mtd-utils-native:do_populate_sysroot rsync-native:do_populate_sysroot"
 
 IMAGE_CMD_ubimg () {
     # For some reason, logging is not working correctly inside IMAGE_CMD bodies,
@@ -71,7 +71,8 @@ IMAGE_CMD_ubimg () {
     mkdir -p "${WORKDIR}/data"
 
     if [ -n "${MENDER_DATA_PART_DIR}" ]; then
-        find "${MENDER_DATA_PART_DIR}" -not -name . -exec cp -a '{}' "${WORKDIR}/data" \;
+        rsync -a --no-owner --no-group ${MENDER_DATA_PART_DIR}/* "${WORKDIR}/data"
+        chown -R root:root "${WORKDIR}/data"
     fi
 
     if [ -f "${DEPLOY_DIR_IMAGE}/data.tar" ]; then

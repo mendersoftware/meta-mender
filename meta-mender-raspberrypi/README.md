@@ -20,8 +20,10 @@ in addition to `meta-mender` dependencies.
 - Set MACHINE to one of the following
     - raspberrypi
     - raspberrypi0
+    - raspberrypi0-wifi
     - raspberrypi2
     - raspberrypi3
+    - raspberrypi-cm
 - Add following to your local.conf (including configuration required by meta-mender-core)
 
         RPI_USE_U_BOOT = "1"

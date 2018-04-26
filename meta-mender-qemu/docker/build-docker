@@ -1,0 +1,94 @@
+#!/bin/bash
+
+cd "$(dirname "$0")"
+
+usage() {
+    cat <<EOF
+$(basename "$0") [options] MACHINE [docker build options]
+
+Builds the docker container for the specified MACHINE target.
+All options after MACHINE are given to "docker build".
+
+--no-defaults
+	Do not automatically copy over needed directories and pass needed
+	arguments. If you use this you must pass the arguments and prepare the
+	files yourself.
+EOF
+}
+
+BUILD_DEFAULTS=1
+
+while [ -n "$1" ]; do
+    case "$1" in
+        --no-defaults)
+            BUILD_DEFAULTS=0
+            ;;
+        -h|--help)
+            usage
+            exit 1
+            ;;
+        -*)
+            echo "Unrecognized option: $1"
+            exit 1
+            ;;
+        *)
+            MACHINE="$1"
+            shift
+            break
+            ;;
+    esac
+    shift
+done
+
+if [ -z "$MACHINE" ]; then
+    usage
+    exit 1
+fi
+
+if [ ! -d "$MACHINE" ]; then
+    echo "$MACHINE configuration does not exist."
+    exit 1
+fi
+
+set -e
+
+DOCKER_ARGS=
+if [ $BUILD_DEFAULTS = 1 ]; then
+    if [ ! -d "$BUILDDIR" ]; then
+        echo "BUILDDIR must be to a valid build directory (use oe-init-build-env)."
+        exit 1
+    fi
+
+    case "$MACHINE" in
+        qemux86-64)
+            DISK_IMG="core-image-full-cmdline-$MACHINE.uefiimg"
+            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$MACHINE/"
+            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.qcow2" "$MACHINE/"
+            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.vars.qcow2" "$MACHINE/"
+            DOCKER_ARGS="--build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=ovmf.qcow2 --build-arg BOOTLOADER_DATA=ovmf.vars.qcow2"
+            cat > "$MACHINE/env.txt" <<EOF
+export MACHINE=$MACHINE
+export BOOTLOADER=/ovmf.qcow2
+export BOOTLOADER_DATA=/ovmf.vars.qcow2
+export DISK_IMG=/$DISK_IMG
+EOF
+            ;;
+        vexpress-qemu)
+            DISK_IMG="core-image-full-cmdline-$MACHINE.sdimg"
+            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$MACHINE/"
+            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/u-boot.elf" "$MACHINE/"
+            DOCKER_ARGS="--build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=u-boot.elf"
+            cat > "$MACHINE/env.txt" <<EOF
+export MACHINE=$MACHINE
+export BOOTLOADER=/u-boot.elf
+export DISK_IMG=/$DISK_IMG
+EOF
+            ;;
+    esac
+
+    # Copy needed dirs to docker context.
+    cp -rLlf ../scripts "$MACHINE/"
+fi
+
+docker build $DOCKER_ARGS "$@" "$MACHINE"
+exit $?

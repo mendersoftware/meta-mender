@@ -20,13 +20,13 @@ def put(local_path, remote_path, rootfs):
     ret = proc.wait()
     assert ret == 0
 
-def extract_ext4(sdimg, rootfs):
-    return manipulate_ext4(sdimg=sdimg, rootfs=rootfs, write=False)
+def extract_ext4(img, rootfs):
+    return manipulate_ext4(img=img, rootfs=rootfs, write=False)
 
-def insert_ext4(sdimg, rootfs):
-    return manipulate_ext4(sdimg=sdimg, rootfs=rootfs, write=True)
+def insert_ext4(img, rootfs):
+    return manipulate_ext4(img=img, rootfs=rootfs, write=True)
 
-def manipulate_ext4(sdimg, rootfs, write):
+def manipulate_ext4(img, rootfs, write):
     # calls partx with --show --bytes --noheadings, sample output:
     #
     # $ partx -sbg core-image-full-cmdline-vexpress-qemu.sdimg
@@ -35,29 +35,29 @@ def manipulate_ext4(sdimg, rootfs, write):
     # 2  81920 294911  212992 109051904      a38e337d-02
     # 3 294912 507903  212992 109051904      a38e337d-03
     # 4 507904 770047  262144 134217728      a38e337d-04
-    output = subprocess.check_output(["partx", "-sbg", sdimg])
+    output = subprocess.check_output(["partx", "-sbg", img])
     for line in output.decode().split('\n'):
         columns = line.split()
         # This blindly assumes that rootfs is on partition 2.
         if columns[0] == "2":
             if write:
-                subprocess.check_call(["dd", "if=%s" % rootfs, "of=%s" % sdimg,
+                subprocess.check_call(["dd", "if=%s" % rootfs, "of=%s" % img,
                                        "seek=%s" % columns[1],
                                        "count=%d" % (int(columns[3])),
                                        "conv=notrunc"],
                                       stderr=subprocess.STDOUT)
             else:
-                subprocess.check_call(["dd", "if=%s" % sdimg, "of=%s" % rootfs,
+                subprocess.check_call(["dd", "if=%s" % img, "of=%s" % rootfs,
                                        "skip=%s" % columns[1],
                                        "count=%d" % (int(columns[3]))],
                                       stderr=subprocess.STDOUT)
             break
     else:
-        raise Exception("%s not found in fdisk output: %s" % (sdimg, output))
+        raise Exception("%s not found in fdisk output: %s" % (img, output))
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sdimg", help="Sdimg to modify", required=True)
+    parser.add_argument("--img", help="Img to modify", required=True)
     parser.add_argument("--tenant-token", help="tenant token to use by client")
     parser.add_argument("--server-crt", help="server.crt file to put in image")
     parser.add_argument("--server-url", help="Server address to put in configuration")
@@ -68,9 +68,9 @@ def main():
         parser.print_help()
         return
 
-    # Extract ext4 image from sdimg.
-    rootfs = "%s.ext4" % args.sdimg
-    extract_ext4(sdimg=args.sdimg, rootfs=rootfs)
+    # Extract ext4 image from img.
+    rootfs = "%s.ext4" % args.img
+    extract_ext4(img=args.img, rootfs=rootfs)
 
     if args.tenant_token:
         get(local_path="mender.conf",
@@ -106,18 +106,18 @@ def main():
         os.unlink("mender.conf")
 
     if args.verify_key:
-        key_sdimg_location = "/etc/mender/artifact-verify-key.pem"
+        key_img_location = "/etc/mender/artifact-verify-key.pem"
         if not os.path.exists(args.verify_key):
             raise SystemExit("failed to load file: " + args.verify_key)
         get(local_path="mender.conf",
             remote_path="/etc/mender/mender.conf",
             rootfs=rootfs)
         put(local_path=args.verify_key,
-            remote_path=key_sdimg_location,
+            remote_path=key_img_location,
             rootfs=rootfs)
         with open("mender.conf") as fd:
             conf = json.load(fd)
-            conf['ArtifactVerifyKey'] = key_sdimg_location
+            conf['ArtifactVerifyKey'] = key_img_location
         with open("mender.conf", "w") as fd:
             json.dump(conf, fd, indent=4, sort_keys=True)
         put(local_path="mender.conf",
@@ -126,8 +126,8 @@ def main():
         os.unlink("mender.conf")
 
 
-    # Put back ext4 image into sdimg.
-    insert_ext4(sdimg=args.sdimg, rootfs=rootfs)
+    # Put back ext4 image into img.
+    insert_ext4(img=args.img, rootfs=rootfs)
     os.unlink(rootfs)
 
 main()
