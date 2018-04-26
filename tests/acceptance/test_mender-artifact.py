@@ -52,7 +52,7 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image):
         add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version)
         run_bitbake(prepared_test_build)
         LAST_BUILD_VERSION = version
-    return (version, latest_build_artifact(prepared_test_build['build_dir'], ".mender"))
+    return (version, latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender"))
 
 
 @pytest.mark.only_with_image('mender')
