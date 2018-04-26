@@ -168,6 +168,7 @@ change."""
             os.unlink("fw_setenv.tmp")
 
         add_to_local_conf(prepared_test_build, 'PREFERRED_PROVIDER_u-boot = "u-boot-testing"')
+        add_to_local_conf(prepared_test_build, 'PREFERRED_RPROVIDER_u-boot = "u-boot-testing"')
         run_bitbake(prepared_test_build)
 
         new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
