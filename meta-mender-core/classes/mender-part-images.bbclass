@@ -66,9 +66,12 @@ mender_part_image() {
     echo "device_type=${MENDER_DEVICE_TYPE}" > "${WORKDIR}/data/mender/device_type"
     chmod 0444 "${WORKDIR}/data/mender/device_type"
 
-    dd if=/dev/zero of="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
-    mkfs.${ARTIFACTIMG_FSTYPE} -F "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" -d "${WORKDIR}/data" -L data
-    install -m 0644 "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" "${DEPLOY_DIR_IMAGE}/"
+    # Use rootfs FSTYPE unless stated otherwise
+    ARTIFACTIMG_DATA_FSTYPE ?= "${ARTIFACTIMG_FSTYPE}"
+
+    dd if=/dev/zero of="${WORKDIR}/data.${ARTIFACTIMG_DATA_FSTYPE}" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
+    mkfs.${ARTIFACTIMG_FSTYPE} -F "${WORKDIR}/data.${ARTIFACTIMG_DATA_FSTYPE}" -d "${WORKDIR}/data" -L data
+    install -m 0644 "${WORKDIR}/data.${ARTIFACTIMG_DATA_FSTYPE}" "${DEPLOY_DIR_IMAGE}/"
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)}; then
         # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
@@ -118,7 +121,7 @@ EOF
     cat >> "$wks" <<EOF
 part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
 part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
+part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_DATA_FSTYPE}" --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 bootloader --ptable $part_type
 EOF
 
