@@ -142,7 +142,7 @@ class TestUpdates:
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
             subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
-            run("mender -rootfs /var/tmp/image.mender")
+            run("mender -rootfs /var/tmp/image.mender -f")
             reboot()
 
             # Now qemu is auto-rebooted twice; once to boot the dummy image,
@@ -175,7 +175,7 @@ class TestUpdates:
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=1024", shell=True)
             subprocess.call("mender-artifact write rootfs-image -t %s -n test-update-too-big -u image.dat -o image-too-big.mender" % image_type, shell=True)
             put("image-too-big.mender", remote_path="/var/tmp/image-too-big.mender")
-            output = run("mender -rootfs /var/tmp/image-too-big.mender ; echo 'ret_code=$?'")
+            output = run("mender -rootfs /var/tmp/image-too-big.mender -f ; echo 'ret_code=$?'")
 
             assert(output.find("no space left on device") >= 0)
             assert(output.find("ret_code=0") < 0)
@@ -207,7 +207,7 @@ class TestUpdates:
             assert(http_server)
 
         try:
-            output = run("mender -rootfs http://%s/successful_image_update.mender" % (http_server_location))
+            output = run("mender -rootfs http://%s/successful_image_update.mender -f" % (http_server_location))
             print("output from rootfs update: ", output)
         finally:
             if not board and not use_s3:
@@ -553,7 +553,7 @@ class TestUpdates:
                 run('echo "%s" | dd of=%s' % (old_content, passive))
 
             with settings(warn_only=True):
-                result = run("mender -rootfs image.mender")
+                result = run("mender -rootfs image.mender -f")
 
             if sig_case.success:
                 if result.return_code != 0:
@@ -640,7 +640,7 @@ class TestUpdates:
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
             subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
-            run("mender -rootfs /var/tmp/image.mender")
+            run("mender -rootfs /var/tmp/image.mender -f")
 
             new_checksums = Helpers.get_env_checksums(bitbake_variables)
 
