@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2017 Northern.tech AS
+# Copyright 2017, 2018 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -206,31 +206,14 @@ def bitbake_variables():
 
     return get_bitbake_variables("core-image-minimal")
 
-@pytest.fixture(scope="session")
-def bitbake_path_string():
-    """Fixture that returns the PATH we need for our testing tools"""
-
-    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
-
-    current_dir = os.open(".", os.O_RDONLY)
-    os.chdir(os.environ['BUILDDIR'])
-
-    # See the recipe for details about this call.
-    subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot", "mender-test-dependencies"])
-
-    os.fchdir(current_dir)
-
-    bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
-
-    return bb_testing_variables['PATH'] + ":" + os.environ['PATH']
-
 @pytest.fixture(scope="function")
-def bitbake_path(request, bitbake_path_string):
-    """Fixture that enables the PATH we need for our testing tools."""
+def bitbake_path(request, bitbake_variables):
+    """Fixture that enables the same PATH as bitbake does when it builds for the
+    test that invokes it."""
 
     old_path = os.environ['PATH']
 
-    os.environ['PATH'] = bitbake_path_string
+    os.environ['PATH'] = bitbake_variables['PATH']
 
     def path_restore():
         os.environ['PATH'] = old_path
