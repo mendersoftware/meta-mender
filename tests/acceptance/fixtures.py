@@ -270,10 +270,9 @@ def prepared_test_build_base(request, bitbake_variables):
     local_conf = os.path.join(build_dir, "conf", "local.conf")
     local_conf_orig = local_conf + ".orig"
     with open(local_conf, "a") as fd:
-        fd.write('SSTATE_MIRRORS = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
+        fd.write('SSTATE_MIRRORS = " file://.* file://%s/PATH"\n' % bitbake_variables['SSTATE_DIR'])
+        fd.write('DL_DIR = "%s"\n' % bitbake_variables['DL_DIR'])
     run_verbose("cp %s %s" % (local_conf, local_conf_orig))
-
-    os.symlink(os.path.join(os.environ['BUILDDIR'], "downloads"), os.path.join(build_dir, "downloads"))
 
     image_name = pytest.config.getoption("--bitbake-image")
 
