@@ -208,8 +208,8 @@ class TestUpdates:
 
         try:
             output = run("mender -rootfs http://%s/successful_image_update.mender" % (http_server_location))
-        finally:
             print("output from rootfs update: ", output)
+        finally:
             if not board and not use_s3:
                 http_server.terminate()
 

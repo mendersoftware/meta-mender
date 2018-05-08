@@ -34,4 +34,8 @@ in addition to `meta-mender` dependencies.
         IMAGE_INSTALL_append = " kernel-image kernel-devicetree"
         IMAGE_FSTYPES_remove += " rpi-sdimg"
 
+        # Use the same type here as specified in IMAGE_FSTYPES to avoid
+        # building an unneeded image file.
+        SDIMG_ROOTFS_TYPE = "ext4"
+
 - Run `bitbake <image name>`

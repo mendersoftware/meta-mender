@@ -40,8 +40,7 @@ if [ -f /mnt/config/artifact-verify-key.pem ]; then
 fi
 
 if [ "$MACHINE" = "vexpress-qemu" ]; then
-    ./setup-mender-configuration.py --pregen-ssh-keys \
-                                    --sdimg=core-image-full-cmdline-vexpress-qemu.sdimg \
+    ./setup-mender-configuration.py --sdimg=core-image-full-cmdline-vexpress-qemu.sdimg \
                                     --server-url=$SERVER_URL \
                                     --tenant-token=$TENANT_TOKEN $CONFIG_ARGS
 else

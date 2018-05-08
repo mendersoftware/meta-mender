@@ -1,0 +1,26 @@
+#!/bin/sh
+
+TIME_SYNC_COMPLETE="no"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+    if [ "$(date '+%Y')" -lt "2017" ]; then
+        # The time must not be synced yet.
+        echo "System time not yet synchronized; try #${i}" >&2
+        sleep 5
+    else
+        TIME_SYNC_COMPLETE="yes"
+        break
+    fi
+done
+
+if [ "${TIME_SYNC_COMPLETE}" = "no" ]; then
+    echo "Timeout waiting for time synchronization to complete." >&2
+else
+    echo "System time now properly synchronized; try #${i}" >&2
+fi
+
+echo "Exiting $0 at $(date)" >&2
+
+# Always return 0. If the time is not synchronized, the update will
+# likely fail since the certificates are "not yet valid" and the TLS
+# connection to the server will be rejected.
+exit 0

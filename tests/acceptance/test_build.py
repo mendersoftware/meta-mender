@@ -177,14 +177,14 @@ class TestBuild:
             entry = line.split('/')
             if entry[5] == "scripts":
                 # The scripts directory exists. That is fine in itself, but it
-                # should be empty.
+                # should not contain any script files ("version" is allowed).
                 output = subprocess.check_output(["debugfs", "-R", "ls -p /etc/mender/scripts", latest_rootfs])
                 for line in output.split('\n'):
                     if len(line) == 0:
                         continue
 
                     entry = line.split('/')
-                    assert entry[5] == "." or entry[5] == "..", "There should be no file in /etc/mender/scripts"
+                    assert entry[5] == "." or entry[5] == ".." or entry[5] == "version", "There should be no script file in /etc/mender/scripts"
                 break
 
         # Check artifact.
@@ -196,52 +196,60 @@ class TestBuild:
                                                  % latest_mender_image, shell=True)
                 assert len(output.strip()) == 0, "Unexpected scripts in base image: %s" % output
 
-        # Alright, now build a new image containing scripts.
-        add_to_local_conf(prepared_test_build, 'IMAGE_INSTALL_append = " example-state-scripts"')
-        run_bitbake(prepared_test_build)
+        try:
+            # Alright, now build a new image containing scripts.
+            add_to_local_conf(prepared_test_build, 'IMAGE_INSTALL_append = " example-state-scripts"')
+            run_bitbake(prepared_test_build)
 
-        found_rootfs_scripts = {
-            "version": False,
-            "Idle_Enter_00": False,
-            "Sync_Enter_10": False,
-            "Sync_Leave_90": False,
-        }
-        found_artifact_scripts = {
-            "ArtifactInstall_Enter_00": False,
-            "ArtifactInstall_Leave_99": False,
-            "ArtifactReboot_Leave_50": False,
-            "ArtifactCommit_Enter_50": False,
-        }
+            found_rootfs_scripts = {
+                "version": False,
+                "Idle_Enter_00": False,
+                "Sync_Enter_10": False,
+                "Sync_Leave_90": False,
+            }
+            found_artifact_scripts = {
+                "ArtifactInstall_Enter_00": False,
+                "ArtifactInstall_Leave_99": False,
+                "ArtifactReboot_Leave_50": False,
+                "ArtifactCommit_Enter_50": False,
+            }
 
-        # Check new rootfs.
-        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
-        output = subprocess.check_output(["debugfs", "-R", "ls -p /etc/mender/scripts", built_rootfs])
-        for line in output.split('\n'):
-            if len(line) == 0:
-                continue
+            # Check new rootfs.
+            built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], ".ext[234]")
+            output = subprocess.check_output(["debugfs", "-R", "ls -p /etc/mender/scripts", built_rootfs])
+            for line in output.split('\n'):
+                if len(line) == 0:
+                    continue
 
-            entry = line.split('/')
+                entry = line.split('/')
 
-            if entry[5] == "." or entry[5] == "..":
-                continue
+                if entry[5] == "." or entry[5] == "..":
+                    continue
 
-            assert found_rootfs_scripts.get(entry[5]) is not None, "Unexpected script in rootfs %s" % entry[5]
-            found_rootfs_scripts[entry[5]] = True
+                assert found_rootfs_scripts.get(entry[5]) is not None, "Unexpected script in rootfs %s" % entry[5]
+                found_rootfs_scripts[entry[5]] = True
 
-        for script in found_rootfs_scripts:
-            assert found_rootfs_scripts[script], "%s not found in rootfs script list" % script
+            for script in found_rootfs_scripts:
+                assert found_rootfs_scripts[script], "%s not found in rootfs script list" % script
 
-        # Check new artifact.
-        built_mender_image = latest_build_artifact(prepared_test_build['build_dir'], ".mender")
-        output = subprocess.check_output("tar xOf %s header.tar.gz| tar tz scripts"
-                                         % built_mender_image, shell=True)
-        for line in output.strip().split('\n'):
-            script = os.path.basename(line)
-            assert found_artifact_scripts.get(script) is not None, "Unexpected script in image: %s" % script
-            found_artifact_scripts[script] = True
+            # Check new artifact.
+            built_mender_image = latest_build_artifact(prepared_test_build['build_dir'], ".mender")
+            output = subprocess.check_output("tar xOf %s header.tar.gz| tar tz scripts"
+                                             % built_mender_image, shell=True)
+            for line in output.strip().split('\n'):
+                script = os.path.basename(line)
+                assert found_artifact_scripts.get(script) is not None, "Unexpected script in image: %s" % script
+                found_artifact_scripts[script] = True
 
-        for script in found_artifact_scripts:
-            assert found_artifact_scripts[script], "%s not found in artifact script list" % script
+            for script in found_artifact_scripts:
+                assert found_artifact_scripts[script], "%s not found in artifact script list" % script
+
+        finally:
+            # Clean up the state scripts directory. Ideally this wouldn't be
+            # necessary, but unfortunately bitbake does not clean up deployment
+            # files from recipes that are not included in the current build, so
+            # we have to do it manually.
+            run_bitbake(prepared_test_build, "-c clean example-state-scripts")
 
     @pytest.mark.min_mender_version('1.0.0')
     # The extra None elements are to check for no preferred version,

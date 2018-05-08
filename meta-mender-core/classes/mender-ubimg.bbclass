@@ -40,13 +40,6 @@ IMAGE_CMD_ubimg () {
     # exist.
     mkdir -p "${IMAGE_ROOTFS}"
 
-    # Make sure that we are creating a supported filesystem image
-    FSTYPE="${@bb.utils.contains('IMAGE_FSTYPES', 'ubifs', 'ubifs', '', d)}"
-    if [ -z "$FSTYPE" ]
-    then
-        ubimg_fatal "No filesystem appropriate for ubimg image was found in IMAGE_FSTYPES = '${IMAGE_FSTYPES}'."
-    fi
-
     echo \[rootfsA\] >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo mode=ubi >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo image=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubifs >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
@@ -78,7 +71,8 @@ IMAGE_CMD_ubimg () {
     mkdir -p "${WORKDIR}/data"
 
     if [ -n "${MENDER_DATA_PART_DIR}" ]; then
-        find "${MENDER_DATA_PART_DIR}" -not -name . -exec cp -a '{}' "${WORKDIR}/data" \;
+        rsync -a --no-owner --no-group ${MENDER_DATA_PART_DIR}/* "${WORKDIR}/data"
+        chown -R root:root "${WORKDIR}/data"
     fi
 
     if [ -f "${DEPLOY_DIR_IMAGE}/data.tar" ]; then
@@ -90,7 +84,7 @@ IMAGE_CMD_ubimg () {
     chmod 0444 "${WORKDIR}/data/mender/device_type"
 
     # Create data UBIFS image
-    mkfs.ubifs -o "${IMGDEPLOYDIR}/data.$FSTYPE" -r "${WORKDIR}/data" ${MKUBIFS_ARGS}
+    mkfs.ubifs -o "${IMGDEPLOYDIR}/data.ubifs" -r "${WORKDIR}/data" ${MKUBIFS_ARGS}
 
     ubinize -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.ubimg ${UBINIZE_ARGS} ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
 
@@ -98,3 +92,7 @@ IMAGE_CMD_ubimg () {
     mv ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg ${IMGDEPLOYDIR}/
 
 }
+
+IMAGE_TYPEDEP_ubimg_append = " ubifs"
+
+IMAGE_DEPENDS_ubimg += "rsync-native"
