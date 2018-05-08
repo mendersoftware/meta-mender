@@ -9,7 +9,9 @@ For instructions on using this meta layer as part of a Yocto build environment, 
 The following layers in this repository are officially supported by Mender:
 
 * `meta-mender-core` (Core components of Mender)
+* `meta-mender-demo` (Demo layer. Not intended for production)
 * `meta-mender-raspberrypi` (Raspberry Pi 3 board support)
+* `meta-mender-raspberrypi-demo` (Raspberry Pi 3 demo-board modifications)
 * `meta-mender-qemu` (QEMU emulator board support)
 
 The rest of the layers are community supported, and the response to issues may vary.
