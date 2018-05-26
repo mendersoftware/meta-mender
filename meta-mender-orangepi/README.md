@@ -21,9 +21,9 @@ in addition to `meta-mender` dependencies.
 
 - Add following to your local.conf (including configuration required by meta-mender-core)
 	# to install correct bootloader to SD card
-	IMAGE_BOOTLOADER_FILE="u-boot-sunxi-with-spl.bin"
+	MENDER_IMAGE_BOOTLOADER_FILE="u-boot-sunxi-with-spl.bin"
 
-	IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET="16"
+	MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET="16"
 	
 	# add u-boot to boot partition 
 	IMAGE_BOOT_FILES ?= "u-boot.bin"

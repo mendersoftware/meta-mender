@@ -79,26 +79,26 @@ mender_part_image() {
 
     wks="${WORKDIR}/mender-$suffix.wks"
     rm -f "$wks"
-    if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
+    if [ -n "${MENDER_IMAGE_BOOTLOADER_FILE}" ]; then
         # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
-        install -m 0644 "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" "${WORKDIR}/"
+        install -m 0644 "${DEPLOY_DIR_IMAGE}/${MENDER_IMAGE_BOOTLOADER_FILE}" "${WORKDIR}/"
 
-        if [ $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
-            bbfatal "IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET must be aligned to kB" \
+        if [ $(expr ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
+            bbfatal "MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET must be aligned to kB" \
                     "boundary (an even number)."
         fi
-        bootloader_align_kb=$(expr $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
-        bootloader_size=$(stat -c '%s' "${WORKDIR}/${IMAGE_BOOTLOADER_FILE}")
+        bootloader_align_kb=$(expr $(expr ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
+        bootloader_size=$(stat -c '%s' "${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE}")
         bootloader_end=$(expr $bootloader_align_kb \* 1024 + $bootloader_size)
         if [ $bootloader_end -gt ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} ]; then
-            bberror "Size of bootloader specified in IMAGE_BOOTLOADER_FILE" \
+            bberror "Size of bootloader specified in MENDER_IMAGE_BOOTLOADER_FILE" \
                     "exceeds MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET, which is" \
                     "reserved for U-Boot environment storage. Please raise it" \
                     "manually."
         fi
         cat >> "$wks" <<EOF
 # embed bootloader
-part --source rawcopy --sourceparams="file=${WORKDIR}/${IMAGE_BOOTLOADER_FILE}" --ondisk "$ondisk_dev" --align $bootloader_align_kb --no-table
+part --source rawcopy --sourceparams="file=${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE}" --ondisk "$ondisk_dev" --align $bootloader_align_kb --no-table
 EOF
     fi
 
