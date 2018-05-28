@@ -29,6 +29,7 @@ inherit systemd
 SYSTEMD_SERVICE_${PN} = "mender.service"
 FILES_${PN} += "${systemd_unitdir}/system/mender.service \
                 ${sysconfdir}/mender.conf \
+                /data/mender/device_type \
                "
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
@@ -70,6 +71,7 @@ do_compile() {
     # run verbose build, we should see which dependencies are pulled in
     oe_runmake V=1 install
 
+    echo "device_type=${MENDER_DEVICE_TYPE}" > ${B}/device_type
 }
 
 python do_prepare_mender_conf() {
@@ -173,5 +175,8 @@ do_install() {
         # symlink /var/lib/mender to /data/mender
         rm -rf ${D}/${localstatedir}/lib/mender
         ln -s /data/mender ${D}/${localstatedir}/lib/mender
+
+        install -m 755 -d ${D}/data/mender
+        install -m 444 ${B}/device_type ${D}/data/mender/
     fi
 }

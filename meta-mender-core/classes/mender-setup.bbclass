@@ -66,12 +66,6 @@ MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT_append_beaglebone-yocto = " beaglebone"
 MENDER_STORAGE_TOTAL_SIZE_MB ??= "${MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT}"
 MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT = "1024"
 
-# Optional location where a directory can be specified with content that should
-# be included on the data partition. Some of Mender's own files will be added to
-# this (e.g. OpenSSL certificates).
-MENDER_DATA_PART_DIR ??= "${MENDER_DATA_PART_DIR_DEFAULT}"
-MENDER_DATA_PART_DIR_DEFAULT = ""
-
 # Size of the data partition, which is preserved across updates.
 MENDER_DATA_PART_SIZE_MB ??= "${MENDER_DATA_PART_SIZE_MB_DEFAULT}"
 MENDER_DATA_PART_SIZE_MB_DEFAULT = "128"
@@ -182,12 +176,14 @@ python() {
 }
 
 python() {
-    if d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True):
+    if d.getVar('MENDER_PARTITION_ALIGNMENT_MB'):
         bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
     if d.getVar('IMAGE_BOOTLOADER_FILE', True):
         bb.fatal("IMAGE_BOOTLOADER_FILE is deprecated. Please define MENDER_IMAGE_BOOTLOADER_FILE instead.")
     if d.getVar('IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET', True):
         bb.fatal("IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET is deprecated. Please define MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET instead.")
+    if d.getVar('MENDER_DATA_PART_DIR'):
+        bb.fatal("MENDER_DATA_PART_DIR is deprecated. Please use recipes to add files directly to /data instead.")
 }
 
 addhandler mender_vars_handler

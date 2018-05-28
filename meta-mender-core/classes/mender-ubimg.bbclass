@@ -67,24 +67,8 @@ IMAGE_CMD_ubimg () {
     echo vol_name=data >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo "" >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
 
-    rm -rf "${WORKDIR}/data" || true
-    mkdir -p "${WORKDIR}/data"
-
-    if [ -n "${MENDER_DATA_PART_DIR}" ]; then
-        rsync -a --no-owner --no-group ${MENDER_DATA_PART_DIR}/* "${WORKDIR}/data"
-        chown -R root:root "${WORKDIR}/data"
-    fi
-
-    if [ -f "${DEPLOY_DIR_IMAGE}/data.tar" ]; then
-        ( cd "${WORKDIR}" && tar xf "${DEPLOY_DIR_IMAGE}/data.tar" )
-    fi
-
-    mkdir -p "${WORKDIR}/data/mender"
-    echo "device_type=${MENDER_DEVICE_TYPE}" > "${WORKDIR}/data/mender/device_type"
-    chmod 0444 "${WORKDIR}/data/mender/device_type"
-
     # Create data UBIFS image
-    mkfs.ubifs -o "${IMGDEPLOYDIR}/data.ubifs" -r "${WORKDIR}/data" ${MKUBIFS_ARGS}
+    mkfs.ubifs -o "${IMGDEPLOYDIR}/data.ubifs" -r "${IMAGE_ROOTFS}/data" ${MKUBIFS_ARGS}
 
     ubinize -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.ubimg ${UBINIZE_ARGS} ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
 
@@ -94,3 +78,6 @@ IMAGE_CMD_ubimg () {
 }
 
 IMAGE_TYPEDEP_ubimg_append = " ubifs"
+
+# So that we can use the files from excluded paths in the full images.
+do_image_ubimg[respect_exclude_path] = "0"

@@ -50,26 +50,6 @@ mender_part_image() {
     # exist.
     mkdir -p "${IMAGE_ROOTFS}"
 
-    rm -rf "${WORKDIR}/data" || true
-    mkdir -p "${WORKDIR}/data"
-
-    if [ -n "${MENDER_DATA_PART_DIR}" ]; then
-        rsync -a --no-owner --no-group ${MENDER_DATA_PART_DIR}/* "${WORKDIR}/data"
-        chown -R root:root "${WORKDIR}/data"
-    fi
-
-    if [ -f "${DEPLOY_DIR_IMAGE}/data.tar" ]; then
-        ( cd "${WORKDIR}" && tar xf "${DEPLOY_DIR_IMAGE}/data.tar" )
-    fi
-
-    mkdir -p "${WORKDIR}/data/mender"
-    echo "device_type=${MENDER_DEVICE_TYPE}" > "${WORKDIR}/data/mender/device_type"
-    chmod 0444 "${WORKDIR}/data/mender/device_type"
-
-    dd if=/dev/zero of="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
-    mkfs.${ARTIFACTIMG_FSTYPE} -F "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" -d "${WORKDIR}/data" -L data
-    install -m 0644 "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" "${DEPLOY_DIR_IMAGE}/"
-
     if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)}; then
         # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
         install -m 0644 "${DEPLOY_DIR_IMAGE}/uboot.env" "${WORKDIR}/"
@@ -115,10 +95,12 @@ part $boot_part_params --ondisk "$ondisk_dev" --fstype=vfat --label boot --align
 EOF
     fi
 
+    exclude_dirs_options="${@" ".join(["--exclude-path %s" % dir for dir in (d.getVar("IMAGE_ROOTFS_EXCLUDE_PATH") or "").split()])}"
+
     cat >> "$wks" <<EOF
-part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
+part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_dirs_options
+part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_dirs_options
+part --source rootfs --rootfs-dir ${IMAGE_ROOTFS}/data --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 bootloader --ptable $part_type
 EOF
 
@@ -150,7 +132,6 @@ do_image_sdimg[depends] += " \
     wic-tools:do_populate_sysroot \
     dosfstools-native:do_populate_sysroot \
     mtools-native:do_populate_sysroot \
-    rsync-native:do_populate_sysroot \
 "
 
 do_image_uefiimg[depends] += " \
@@ -158,7 +139,6 @@ do_image_uefiimg[depends] += " \
     wic-tools:do_populate_sysroot \
     dosfstools-native:do_populate_sysroot \
     mtools-native:do_populate_sysroot \
-    rsync-native:do_populate_sysroot \
     ${@bb.utils.contains('DISTRO_FEATURES', 'mender-grub', 'grub-efi:do_deploy', '', d)} \
 "
 do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-bootfiles:do_populate_sysroot', '', d)}"
@@ -167,3 +147,7 @@ do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-
 # building simultaneously, since wic will use the same file names in both, and
 # in parallel builds this is a recipe for disaster.
 IMAGE_TYPEDEP_uefiimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"
+
+# So that we can use the files from excluded paths in the full images.
+do_image_sdimg[respect_exclude_path] = "0"
+do_image_uefiimg[respect_exclude_path] = "0"
