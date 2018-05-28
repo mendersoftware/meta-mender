@@ -112,10 +112,10 @@ MENDER_UBOOT_STORAGE_DEVICE_DEFAULT = ""
 # This will be embedded into the boot sector, or close to the boot sector, where
 # exactly depends on the offset variable. Since it is a machine specific
 # setting, the default value is an empty string.
-IMAGE_BOOTLOADER_FILE ??= ""
+MENDER_IMAGE_BOOTLOADER_FILE ??= ""
 
 # Offset of bootloader, in sectors (512 bytes).
-IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "2"
+MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "2"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
@@ -184,6 +184,10 @@ python() {
 python() {
     if d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True):
         bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
+    if d.getVar('IMAGE_BOOTLOADER_FILE', True):
+        bb.fatal("IMAGE_BOOTLOADER_FILE is deprecated. Please define MENDER_IMAGE_BOOTLOADER_FILE instead.")
+    if d.getVar('IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET', True):
+        bb.fatal("IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET is deprecated. Please define MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET instead.")
 }
 
 addhandler mender_vars_handler
