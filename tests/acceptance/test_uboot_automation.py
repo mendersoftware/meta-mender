@@ -43,36 +43,70 @@ class TestUbootAutomation:
 
         return min(memory_jobs, multiprocessing.cpu_count())
 
-    def revision_already_checked(self):
-        # ----------------------------------------------------------------------
-        # Update these two to skip the check.
-        expected_poky_rev = "21ba45aa77e4d43a93cd96d859707a4758e8b64b"
-        expected_meta_mender_uboot_rev = "4d246c2c6d8b7b79b54f2ffd5ba087e5d2fb7467"
-        # ----------------------------------------------------------------------
+    def check_if_should_run(self):
+        # The logic here is this:
+        #
+        # * If any commit in poky, or a commit touching
+        #   meta-mender/meta-mender-core/u-boot, is more recent than a certain
+        #   time, carry out the test.
+        #
+        # * If a commit touching meta-mender/meta-mender-core/u-boot is older
+        #   than the given time, but no upstream branch contains it, carry out
+        #   the test.
+        #
+        # * Else, skip the test.
+        #
+        # The rationale is that the test is extremely time consuming, and
+        # therefore we should try to avoid it if the branch has been stable for
+        # a while. We include the second conditional above so that PRs are
+        # always checked, even if they are old.
 
-        # SHA from poky repository.
-        poky_rev = subprocess.check_output("git rev-parse HEAD", shell=True,
+        # Number of days that must pass for the branch to be considered stable.
+        days_to_be_old = 7
+
+        # SHA from poky repository, limited by date.
+        poky_rev = subprocess.check_output("git log -n1 --format=%%H --after=%d.days.ago HEAD" % days_to_be_old, shell=True,
                                            cwd=os.path.join(os.environ['BUILDDIR'], "..")).strip()
-        # SHA from meta-mender repository.
-        meta_mender_uboot_rev = subprocess.check_output("git rev-list -n1 HEAD -- ../../meta-mender-core/recipes-bsp/u-boot",
+        if poky_rev:
+            print("Running test_uboot_compile because poky commit is more recent than %d days." % days_to_be_old)
+            return
+
+        # SHA from meta-mender repository, limited by date.
+        meta_mender_uboot_rev = subprocess.check_output(("git log -n1 --format=%%H --after=%d.days.ago HEAD -- "
+                                                         + "../../meta-mender-core/recipes-bsp/u-boot")
+                                                        % days_to_be_old,
                                                         shell=True).strip()
-        if expected_poky_rev != poky_rev or expected_meta_mender_uboot_rev != meta_mender_uboot_rev:
-            print("""Need to run test_uboot_compile. Used these SHAs for comparison:
+        if meta_mender_uboot_rev:
+            print("Running test_uboot_compile because u-boot in meta-mender has been modified more recently than %d days ago." % days_to_be_old)
+            return
 
-poky_rev = %s
-meta_mender_uboot_rev = %s
+        # SHA from meta-mender repository, not limited by date.
+        meta_mender_uboot_rev = subprocess.check_output("git log -n1 --format=%H HEAD -- "
+                                                         + "../../meta-mender-core/recipes-bsp/u-boot",
+                                                        shell=True).strip()
+        for remote in subprocess.check_output(["git", "remote"]).split():
+            url = subprocess.check_output("git config --get remote.%s.url" % remote, shell=True)
+            if "mendersoftware" in url:
+                upstream_remote = remote
+                break
+        else:
+            pytest.fail("Upstream remote not found! Should not happen.")
 
-If this combination has been verified to pass, you can set the two variables:
+        contained_in = subprocess.check_output("git branch -r --contains %s" % meta_mender_uboot_rev, shell=True).split()
+        is_upstream = False
+        for branch in contained_in:
+            if branch.startswith("%s/" % upstream_remote) and not branch.startswith("%s/pull/" % upstream_remote):
+                is_upstream = True
+                break
 
-expected_poky_rev
-expected_meta_mender_uboot_rev
+        if not is_upstream:
+            print("Running test_uboot_compile because meta-mender commit is not upstream yet.")
+            return
 
-to the values above. This will cause the test to be skipped until the SHAs
-change."""
-                  % (poky_rev, meta_mender_uboot_rev))
-            return False
+        msg = "Skipping test_uboot_compile because u-boot commits are old and already upstream."
+        print(msg)
+        pytest.skip(msg)
 
-        return True
 
     # No need to test this on non-vexpress-qemu. It is a very resource consuming
     # test, and it is identical on all boards, since it internally tests all
@@ -83,11 +117,8 @@ change."""
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
 
-        # THIS IS A SLOW RUNNING TEST!
-        # Use the revision inside the function below to optimize and skip
-        # checking based on version.
-        if self.revision_already_checked():
-            pytest.skip("Revision of poky and u-boot already checked")
+        # This is a slow running test. Skip if appropriate.
+        self.check_if_should_run()
 
         for task in ["do_provide_mender_defines", "prepare_recipe_sysroot"]:
             subprocess.check_call("cd %s && bitbake -c %s u-boot" % (os.environ['BUILDDIR'], task),
