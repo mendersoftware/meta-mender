@@ -1,4 +1,4 @@
-From 920a9a1e8d4c9517c73134a42abaafb52e8a638d Mon Sep 17 00:00:00 2001
+From be2873d6583bf64499f330b6be27a64d8630ca09 Mon Sep 17 00:00:00 2001
 From: Drew Moseley <drew.moseley@northern.tech>
 Date: Wed, 20 Dec 2017 09:53:16 -0500
 Subject: [PATCH] Generic boot code for Mender.
@@ -7,9 +7,9 @@ Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
 Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
 Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
 ---
- include/config_mender.h |  83 +++++++++++++++++++++++++++++++++++++
- include/env_mender.h    | 108 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 191 insertions(+)
+ include/config_mender.h |  83 +++++++++++++++++++++++++++++++++++
+ include/env_mender.h    | 114 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 197 insertions(+)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
@@ -104,10 +104,10 @@ index 0000000..63a32a6
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000..ae601f8
+index 0000000..0c3c509
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,114 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -168,6 +168,8 @@ index 0000000..ae601f8
 +                                                                        \
 +    "mender_pre_setup_commands=" MENDER_PRE_SETUP_COMMANDS "\0"         \
 +                                                                        \
++    "mender_post_setup_commands=" MENDER_POST_SETUP_COMMANDS "\0"       \
++                                                                        \
 +    "mender_setup="                                                     \
 +    "if test \"${mender_pre_setup_commands}\" != \"\"; "                \
 +    "then "                                                             \
@@ -185,7 +187,11 @@ index 0000000..ae601f8
 +    "setenv mender_uboot_root_name ${mender_boot_part_name}; "          \
 +    "setenv expand_bootargs \"setenv bootargs \\\\\"${bootargs}\\\\\"\"; "              \
 +    "run expand_bootargs; "                                             \
-+    "setenv expand_bootargs\0"                                          \
++    "setenv expand_bootargs; "                                          \
++    "if test \"${mender_post_setup_commands}\" != \"\"; "               \
++    "then "                                                             \
++    "run mender_post_setup_commands; "                                  \
++    "fi\0"                                                              \
 +                                                                        \
 +    "mender_altbootcmd="                                                \
 +    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "     \
