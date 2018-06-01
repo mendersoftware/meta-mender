@@ -7,6 +7,8 @@ S = "${WORKDIR}"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+FILES_${PN} += "/data/mender_grubenv.config"
+
 # TODO: We should probably move some of these into a repository.
 SRC_URI = " \
     file://LICENSE \
@@ -66,6 +68,12 @@ do_compile() {
         cat $script
         echo "# End of ---------- $(basename $script) ----------"
     done > ${WORKDIR}/mender_grub.cfg
+
+    # Environment directory, which is root of boot partition for BIOS platforms,
+    # and inside EFI/BOOT on UEFI platforms (the default).
+    cat > ${B}/mender_grubenv.config <<EOF
+ENV_DIR = ${MENDER_BOOT_PART_MOUNT_LOCATION}${@bb.utils.contains('DISTRO_FEATURES', 'mender-bios', '', '/EFI/BOOT', d)}
+EOF
 }
 
 do_install() {
@@ -74,6 +82,11 @@ do_install() {
     mkdir -p ${D}/${bindir}
     install -m 755 ${WORKDIR}/fw_printenv ${D}/${bindir}/fw_printenv
     ln -fs fw_printenv ${D}/${bindir}/fw_setenv
+
+    mkdir -p ${D}/data
+    install -m 444 ${B}/mender_grubenv.config ${D}/data/
+    mkdir -p ${D}${sysconfdir}
+    ln -fs /data/mender_grubenv.config ${D}${sysconfdir}/mender_grubenv.config
 }
 
 do_deploy() {

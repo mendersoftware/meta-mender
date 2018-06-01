@@ -48,9 +48,15 @@ fi
 
 QEMU_ARGS=""
 
-# Extract MACHINE definition from local.conf.
+# Extract certain variables from build, with "EXTRACTED_" prefix.
+eval "$(bitbake -e core-image-minimal | egrep '^(MACHINE|DISTRO_FEATURES)=' | sed -e 's/^/EXTRACTED_/')"
+
+# MACHINE is special, it can't be extracted from bitbake, so extract from local.conf.
 eval "$(sed -nre '/^MACHINE *\??\??= */{s/^MACHINE *\??\??= */EXTRACTED_MACHINE=/;p}' $BUILDDIR/conf/local.conf)"
-MACHINE=${MACHINE:-"$EXTRACTED_MACHINE"}
+
+MACHINE="${MACHINE:-$EXTRACTED_MACHINE}"
+DISTRO_FEATURES="${DISTRO_FEATURES:-$EXTRACTED_DISTRO_FEATURES}"
+
 case "$MACHINE" in
     *x86*)
         case "$MACHINE" in
@@ -61,10 +67,15 @@ case "$MACHINE" in
                 QEMU_SYSTEM=${QEMU_SYSTEM:-"qemu-system-i386"}
                 ;;
         esac
-        BOOTLOADER="${BOOTLOADER:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.qcow2}"
-        BOOTLOADER_DATA="${BOOTLOADER_DATA:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.vars.qcow2}"
-        BOOTLOADER_ARG="${BOOTLOADER_ARG:--drive file=${BOOTLOADER},if=pflash,format=qcow2,unit=0,readonly=on -drive file=${BOOTLOADER_DATA},if=pflash,format=qcow2,unit=1}"
-        DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.uefiimg"}
+        if echo "$DISTRO_FEATURES" | grep -q mender-bios; then
+            BOOTLOADER_ARG=""
+            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.biosimg"}
+        else
+            BOOTLOADER="${BOOTLOADER:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.qcow2}"
+            BOOTLOADER_DATA="${BOOTLOADER_DATA:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.vars.qcow2}"
+            BOOTLOADER_ARG="${BOOTLOADER_ARG:--drive file=${BOOTLOADER},if=pflash,format=qcow2,unit=0,readonly=on -drive file=${BOOTLOADER_DATA},if=pflash,format=qcow2,unit=1}"
+            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.uefiimg"}
+        fi
         if [ -w /dev/kvm ]; then
             QEMU_ARGS="$QEMU_ARGS -enable-kvm"
         fi
@@ -82,7 +93,7 @@ RANDOM_MAC="52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"
 QEMU_DRIVE=${QEMU_DRIVE:-""}
 
 case $DISK_IMG in
-    *.uefiimg)
+    *.uefiimg|*.biosimg)
         QEMU_ARGS="$QEMU_ARGS -drive file=$DISK_IMG,if=ide,format=raw "
         ;;
     *.sdimg)

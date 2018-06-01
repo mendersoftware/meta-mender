@@ -106,10 +106,20 @@ MENDER_UBOOT_STORAGE_DEVICE_DEFAULT = ""
 # This will be embedded into the boot sector, or close to the boot sector, where
 # exactly depends on the offset variable. Since it is a machine specific
 # setting, the default value is an empty string.
-MENDER_IMAGE_BOOTLOADER_FILE ??= ""
+MENDER_IMAGE_BOOTLOADER_FILE ??= "${MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT}"
+MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT = ""
 
 # Offset of bootloader, in sectors (512 bytes).
-MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "2"
+MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT}"
+MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT = "2"
+
+# File to flash into MBR (Master Boot Record) on partitioned images
+MENDER_MBR_BOOTLOADER_FILE ??= "${MENDER_MBR_BOOTLOADER_FILE_DEFAULT}"
+MENDER_MBR_BOOTLOADER_FILE_DEFAULT = ""
+# How many bytes of the MBR to flash.
+# 446 avoids the partition table structure. See this link:
+# https://pete.akeo.ie/2014/05/compiling-and-installing-grub2-for.html
+MENDER_MBR_BOOTLOADER_LENGTH ??= "446"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
@@ -128,6 +138,9 @@ python() {
     # Each one will also define the same string in OVERRIDES.
     mender_features = {
 
+        # For GRUB, use BIOS for booting, instead of the default, UEFI.
+        'mender-bios',
+
         # Integration with GRUB.
         'mender-grub',
 
@@ -138,6 +151,9 @@ python() {
         # Include components for Mender-partitioned images. This will create
         # files that rely on the Mender partition layout.
         'mender-image',
+
+        # Include components for generating a BIOS image.
+        'mender-image-bios',
 
         # Include components for generating an SD image.
         'mender-image-sd',
@@ -252,6 +268,7 @@ python mender_vars_handler() {
 # Including these does not mean that all these features will be enabled, just
 # that their configuration will be considered. Use DISTRO_FEATURES to enable and
 # disable features.
+include mender-setup-bios.inc
 include mender-setup-grub.inc
 include mender-setup-image.inc
 include mender-setup-install.inc

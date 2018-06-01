@@ -64,11 +64,20 @@ mender_part_image() {
         install -m 0644 "${DEPLOY_DIR_IMAGE}/${MENDER_IMAGE_BOOTLOADER_FILE}" "${WORKDIR}/"
 
         if [ $(expr ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
-            bbfatal "MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET must be aligned to kB" \
-                    "boundary (an even number)."
+            # wic doesn't support fractions of kiB, so we need to do some tricks
+            # when we are at an odd sector: Create a new bootloader file that
+            # lacks the first 512 bytes, write that at the next even sector,
+            # which coincides with a whole kiB, and then write the missing
+            # sector manually afterwards.
+            bootloader_sector=$(expr ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} + 1)
+            bootloader_file=${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE}-partial
+            dd if=${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE} of=$bootloader_file skip=1
+        else
+            bootloader_sector=${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET}
+            bootloader_file=${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE}
         fi
-        bootloader_align_kb=$(expr $(expr ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
-        bootloader_size=$(stat -c '%s' "${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE}")
+        bootloader_align_kb=$(expr $(expr $bootloader_sector \* 512) / 1024)
+        bootloader_size=$(stat -c '%s' "$bootloader_file")
         bootloader_end=$(expr $bootloader_align_kb \* 1024 + $bootloader_size)
         if [ $bootloader_end -gt ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} ]; then
             bberror "Size of bootloader specified in MENDER_IMAGE_BOOTLOADER_FILE" \
@@ -78,7 +87,7 @@ mender_part_image() {
         fi
         cat >> "$wks" <<EOF
 # embed bootloader
-part --source rawcopy --sourceparams="file=${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE}" --ondisk "$ondisk_dev" --align $bootloader_align_kb --no-table
+part --source rawcopy --sourceparams="file=$bootloader_file" --ondisk "$ondisk_dev" --align $bootloader_align_kb --no-table
 EOF
     fi
 
@@ -113,6 +122,17 @@ EOF
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-$suffix"
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/$(basename "${wks%.wks}")"*.direct "$outimgname"
+
+    if [ -n "${MENDER_IMAGE_BOOTLOADER_FILE}" ] && [ ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} -ne $bootloader_sector ]; then
+        # We need to write the first sector of the bootloader. See comment above
+        # where bootloader_sector is set.
+        dd if=${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE} of="$outimgname" seek=${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} count=1 conv=notrunc
+    fi
+
+    if [ -n "${MENDER_MBR_BOOTLOADER_FILE}" ]; then
+        dd if="${DEPLOY_DIR_IMAGE}/${MENDER_MBR_BOOTLOADER_FILE}" of="$outimgname" bs=${MENDER_MBR_BOOTLOADER_LENGTH} count=1 conv=notrunc
+    fi
+
     rm -rf "$wicout/"
 
 }
@@ -123,31 +143,40 @@ IMAGE_CMD_sdimg() {
 IMAGE_CMD_uefiimg() {
     mender_part_image uefiimg gpt "--source bootimg-partition --part-type EF00"
 }
+IMAGE_CMD_biosimg() {
+    mender_part_image biosimg msdos "--source bootimg-partition"
+}
 
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
 addtask do_rootfs_wicenv after do_image before do_image_uefiimg
+addtask do_rootfs_wicenv after do_image before do_image_biosimg
 
-do_image_sdimg[depends] += " \
+_MENDER_PART_IMAGE_DEPENDS = " \
     ${@d.getVarFlag('do_image_wic', 'depends', False)} \
     wic-tools:do_populate_sysroot \
     dosfstools-native:do_populate_sysroot \
     mtools-native:do_populate_sysroot \
 "
 
-do_image_uefiimg[depends] += " \
-    ${@d.getVarFlag('do_image_wic', 'depends', False)} \
-    wic-tools:do_populate_sysroot \
-    dosfstools-native:do_populate_sysroot \
-    mtools-native:do_populate_sysroot \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'mender-grub', 'grub-efi:do_deploy', '', d)} \
-"
+_MENDER_PART_IMAGE_DEPENDS_append_mender-uboot = " u-boot:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS_append_mender-grub = " grub-efi:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS_append_mender-grub_mender-bios = " grub:do_deploy"
+
+do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-bootfiles:do_populate_sysroot', '', d)}"
+
+do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
+
+do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
 # This isn't actually a dependency, but a way to avoid sdimg and uefiimg
 # building simultaneously, since wic will use the same file names in both, and
 # in parallel builds this is a recipe for disaster.
 IMAGE_TYPEDEP_uefiimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"
+# And same here.
+IMAGE_TYPEDEP_biosimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)}"
 
 # So that we can use the files from excluded paths in the full images.
 do_image_sdimg[respect_exclude_path] = "0"
 do_image_uefiimg[respect_exclude_path] = "0"
+do_image_biosimg[respect_exclude_path] = "0"

@@ -2,6 +2,7 @@ IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', 
 IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-sd', ' sdimg sdimg.bmap', '', d)}"
 IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', ' ubimg ubimg.bmap', '', d)}"
 IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-uefi', ' uefiimg uefiimg.bmap', '', d)}"
+IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-bios', ' biosimg biosimg.bmap', '', d)}"
 
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_x86 = " kernel-image"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_x86-64 = " kernel-image"
@@ -14,8 +15,10 @@ python() {
                      % dep)
 }
 
-MENDER_BOOT_PART_MOUNT_LOCATION = "/uboot"
-MENDER_BOOT_PART_MOUNT_LOCATION_mender-image-uefi = "/boot/efi"
+MENDER_BOOT_PART_MOUNT_LOCATION = ""
+MENDER_BOOT_PART_MOUNT_LOCATION_mender-uboot = "/uboot"
+MENDER_BOOT_PART_MOUNT_LOCATION_mender-grub = "/boot/efi"
+MENDER_BOOT_PART_MOUNT_LOCATION_mender-grub_mender-bios = "/boot/grub"
 
 # Update fstab for Mender
 ROOTFS_POSTPROCESS_COMMAND_append += " mender_update_fstab_file ; "

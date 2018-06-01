@@ -704,17 +704,22 @@ class TestUpdates:
         # Corrupt the passive partition.
         run("dd if=/dev/zero of=%s bs=1024 count=1024" % passive)
 
+        if "mender-bios" in bitbake_variables['DISTRO_FEATURES'].split():
+            env_dir = "/boot/grub"
+        else:
+            env_dir = "/boot/efi/EFI/BOOT"
+
         # Now try to corrupt the environment, and make sure it doesn't get booted into.
         for env_num in [1, 2]:
             # Make a copy of the two environments.
-            run("cp /boot/efi/EFI/BOOT/{mender_grubenv1/env,mender_grubenv1/env.backup}")
-            run("cp /boot/efi/EFI/BOOT/{mender_grubenv1/lock,mender_grubenv1/lock.backup}")
-            run("cp /boot/efi/EFI/BOOT/{mender_grubenv2/env,mender_grubenv2/env.backup}")
-            run("cp /boot/efi/EFI/BOOT/{mender_grubenv2/lock,mender_grubenv2/lock.backup}")
+            run("cp %s/{mender_grubenv1/env,mender_grubenv1/env.backup}" % env_dir)
+            run("cp %s/{mender_grubenv1/lock,mender_grubenv1/lock.backup}" % env_dir)
+            run("cp %s/{mender_grubenv2/env,mender_grubenv2/env.backup}" % env_dir)
+            run("cp %s/{mender_grubenv2/lock,mender_grubenv2/lock.backup}" % env_dir)
 
             try:
-                env_file = "/boot/efi/EFI/BOOT/mender_grubenv%d/env" % env_num
-                lock_file = "/boot/efi/EFI/BOOT/mender_grubenv%d/lock" % env_num
+                env_file = "%s/mender_grubenv%d/env" % (env_dir, env_num)
+                lock_file = "%s/mender_grubenv%d/lock" % (env_dir, env_num)
                 run('sed -e "s/editing=.*/editing=1/" %s' % lock_file)
                 run('sed -e "s/mender_boot_part=.*/mender_boot_part=%s/" %s' % (passive[-1], lock_file))
 
@@ -727,7 +732,7 @@ class TestUpdates:
 
             finally:
                 # Restore the two environments.
-                run("mv /boot/efi/EFI/BOOT/{mender_grubenv1/env.backup,mender_grubenv1/env}")
-                run("mv /boot/efi/EFI/BOOT/{mender_grubenv1/lock.backup,mender_grubenv1/lock}")
-                run("mv /boot/efi/EFI/BOOT/{mender_grubenv2/env.backup,mender_grubenv2/env}")
-                run("mv /boot/efi/EFI/BOOT/{mender_grubenv2/lock.backup,mender_grubenv2/lock}")
+                run("mv %s/{mender_grubenv1/env.backup,mender_grubenv1/env}" % env_dir)
+                run("mv %s/{mender_grubenv1/lock.backup,mender_grubenv1/lock}" % env_dir)
+                run("mv %s/{mender_grubenv2/env.backup,mender_grubenv2/env}" % env_dir)
+                run("mv %s/{mender_grubenv2/lock.backup,mender_grubenv2/lock}" % env_dir)

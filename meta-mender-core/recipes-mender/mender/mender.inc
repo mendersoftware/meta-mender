@@ -44,7 +44,7 @@ PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-grub', '
 
 PACKAGECONFIG[mender-install] = ",,,mender-artifact-info ca-certificates"
 PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
-PACKAGECONFIG[grub] = ",,,grub-editenv grub-efi-mender-grubenv"
+PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
 
 do_compile() {
     GOPATH="${B}:${S}"
