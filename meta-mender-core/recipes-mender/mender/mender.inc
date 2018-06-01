@@ -118,6 +118,17 @@ python do_prepare_mender_conf() {
     fd.close()
 }
 addtask do_prepare_mender_conf after do_compile before do_install
+do_prepare_mender_conf[vardeps] = " \
+    MENDER_ARTIFACT_VERIFY_KEY \
+    MENDER_CERT_LOCATION \
+    MENDER_INVENTORY_POLL_INTERVAL_SECONDS \
+    MENDER_RETRY_POLL_INTERVAL_SECONDS \
+    MENDER_ROOTFS_PART_A \
+    MENDER_ROOTFS_PART_B \
+    MENDER_SERVER_URL \
+    MENDER_TENANT_TOKEN \
+    MENDER_UPDATE_POLL_INTERVAL_SECONDS \
+"
 
 do_install() {
     install -d ${D}/${bindir}
