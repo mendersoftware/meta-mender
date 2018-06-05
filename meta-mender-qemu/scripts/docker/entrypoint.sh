@@ -5,7 +5,7 @@ set -x -e
 . /env.txt
 
 # For SaaS platform.
-[ -x /saas/extensions.sh ] && /saas/extensions.sh
+[ -s /saas/extensions.sh ] && source /saas/extensions.sh
 
 for file in "$BOOTLOADER" "$BOOTLOADER_DATA" "$DISK_IMG"; do
     file="$(basename "$file")"

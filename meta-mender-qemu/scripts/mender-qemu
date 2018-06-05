@@ -77,7 +77,7 @@ case "$MACHINE" in
         DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.sdimg"}
         ;;
 esac
-RANDOM_MAC="52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"
+RANDOM_MAC=${RANDOM_MAC:-"52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"}
 # use to pass -drive .. parameters directly
 QEMU_DRIVE=${QEMU_DRIVE:-""}
 
