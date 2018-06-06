@@ -124,7 +124,7 @@ MENDER_MBR_BOOTLOADER_LENGTH ??= "446"
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 IMAGE_INSTALL_append = " mender"
-IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg"
+IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg"
 
 # MENDER_FEATURES_ENABLE and MENDER_FEATURES_DISABLE map to
 # DISTRO_FEATURES_BACKFILL and DISTRO_FEATURES_BACKFILL_CONSIDERED,
