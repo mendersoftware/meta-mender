@@ -117,6 +117,14 @@ MENDER_IMAGE_BOOTLOADER_FILE ??= ""
 # Offset of bootloader, in sectors (512 bytes).
 MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "2"
 
+# Board specific U-Boot commands to be run prior to mender_setup
+MENDER_PRE_SETUP_COMMANDS ??= "${MENDER_PRE_SETUP_COMMANDS_DEFAULT}"
+MENDER_PRE_SETUP_COMMANDS_DEFAULT = ""
+
+# Board specific U-Boot commands to be run after mender_setup
+MENDER_POST_SETUP_COMMANDS ??= "${MENDER_POST_SETUP_COMMANDS_DEFAULT}"
+MENDER_POST_SETUP_COMMANDS_DEFAULT = ""
+
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 IMAGE_INSTALL_append = " mender"
