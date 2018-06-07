@@ -27,6 +27,7 @@ import tempfile
 import errno
 import shutil
 import signal
+import sys
 
 from contextlib import contextmanager
 
@@ -376,8 +377,15 @@ def signing_key(key_type):
 
     return KeyPair()
 
+# `capture` can be a bool, meaning the captured output is returned, or a stream,
+# in which case the output is redirected there, and the process handle is
+# returned instead.
 def run_verbose(cmd, capture=False):
-    if capture:
+    if type(capture) is not bool:
+        print("subprocess.Popen(\"%s\")" % cmd)
+        return subprocess.Popen(cmd, shell=True, executable="/bin/bash",
+                                stderr=subprocess.STDOUT, stdout=capture)
+    elif capture:
         print("subprocess.check_output(\"%s\")" % cmd)
         return subprocess.check_output(cmd, shell=True, executable="/bin/bash",
                                        stderr=subprocess.STDOUT)
@@ -385,12 +393,38 @@ def run_verbose(cmd, capture=False):
         print(cmd)
         return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
 
+# Capture is true or false and conditonally returns output.
 def run_bitbake(prepared_test_build, target=None, capture=False):
     if target is None:
         target = prepared_test_build['image_name']
-    run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'],
-                                      target),
-                capture=capture)
+    cmd = "%s && bitbake %s" % (prepared_test_build['env_setup'], target)
+    ps = run_verbose(cmd, capture=subprocess.PIPE)
+    output = ""
+    try:
+        # Cannot use for loop here due to buffering and iterators.
+        while True:
+            line = ps.stdout.readline()
+            if not line:
+                break
+
+            if line.find("is not a recognized MENDER_ variable") >= 0:
+                pytest.fail("Found variable which is not in mender-vars.json: %s" % line.strip())
+
+            if capture:
+                output += line
+            else:
+                sys.stdout.write(line)
+    finally:
+        # Empty any remaining lines.
+        try:
+            ps.stdout.readlines()
+        except:
+            pass
+        ps.wait()
+        if ps.returncode != 0:
+            raise subprocess.CalledProcessError(ps.returncode, cmd)
+
+    return output
 
 
 def add_to_local_conf(prepared_test_build, string):
