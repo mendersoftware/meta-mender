@@ -1,7 +1,5 @@
 inherit image_types
 
-NORIMG = "${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.vexpress-nor"
-
 # we need ubimg to be present
 IMAGE_TYPEDEP_vexpress-nor = "mtdimg"
 
@@ -22,6 +20,5 @@ IMAGE_CMD_vexpress-nor() {
     # split into 2 * 64MB files, output files are named nor0 & nor1
     split -b 67108864 -a 1 -d ${WORKDIR}/vexpress-nor ${WORKDIR}/nor
 
-    tar -C ${WORKDIR} -c nor0 nor1 > ${IMGDEPLOYDIR}/${IMAGE_NAME}.vexpress-nor
-    ln -sfn "${IMAGE_NAME}.vexpress-nor" "${NORIMG}"
+    tar -C ${WORKDIR} -c nor0 nor1 > ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.vexpress-nor
 }
