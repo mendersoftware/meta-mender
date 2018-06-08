@@ -8,6 +8,9 @@ set -x -e
 [ -s /saas/extensions.sh ] && source /saas/extensions.sh
 
 for file in "$BOOTLOADER" "$BOOTLOADER_DATA" "$DISK_IMG"; do
+    if [ -z "$file" ]; then
+        continue
+    fi
     file="$(basename "$file")"
     if [ -e "/mnt/build/tmp/deploy/images/$MACHINE/$file" ]; then
         cp "/mnt/build/tmp/deploy/images/$MACHINE/$file" /
