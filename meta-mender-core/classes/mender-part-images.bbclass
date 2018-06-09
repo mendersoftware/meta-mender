@@ -49,6 +49,13 @@ mender_part_image() {
     # exist.
     mkdir -p "${IMAGE_ROOTFS}"
 
+    # create rootfs
+    mender_calc_rootfs_size_mb=$(expr ${MENDER_CALC_ROOTFS_SIZE} / 1024)
+    dd if=/dev/zero of=${WORKDIR}/rootfs.${ARTIFACTIMG_FSTYPE} count=0 seek=$mender_calc_rootfs_size_mb bs=1M
+    mkfs.${ARTIFACTIMG_FSTYPE} -F -i 4096 ${WORKDIR}/rootfs.${ARTIFACTIMG_FSTYPE} -d ${IMAGE_ROOTFS}
+    ln -sf ${WORKDIR}/rootfs.${ARTIFACTIMG_FSTYPE} ${WORKDIR}/active
+        ln -sf ${WORKDIR}/rootfs.${ARTIFACTIMG_FSTYPE} ${WORKDIR}/inactive
+
     rm -rf "${WORKDIR}/data" || true
     mkdir -p "${WORKDIR}/data"
 
@@ -105,9 +112,9 @@ EOF
 
     cat >> "$wks" <<EOF
 part --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --size ${MENDER_BOOT_PART_SIZE_MB}
-part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rootfs --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --size ${MENDER_DATA_PART_SIZE_MB}
+part --source fsimage --sourceparams=file="${WORKDIR}/active" --ondisk mmcblk0 --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB}
+part --source fsimage --sourceparams=file="${WORKDIR}/inactive" --ondisk mmcblk0 --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB}
+part --source fsimage --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk mmcblk0 --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB}
 bootloader --ptable $part_type
 EOF
 
