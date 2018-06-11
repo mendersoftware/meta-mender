@@ -141,6 +141,10 @@ env HOSTCC="$BUILD_CC -DMENDER_AUTO_PROBING" CC="$CC -DMENDER_AUTO_PROBING" \
 
 set +x
 
+if [ $DEBUG = 1 ]; then
+    git --no-pager diff
+fi
+
 cat <<EOF
 
 ********************************************************************************
