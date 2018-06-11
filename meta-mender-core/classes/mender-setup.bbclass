@@ -123,12 +123,12 @@ MENDER_UBOOT_STORAGE_DEVICE_DEFAULT = ""
 # This will be embedded into the boot sector, or close to the boot sector, where
 # exactly depends on the offset variable. Since it is a machine specific
 # setting, the default value is an empty string.
-IMAGE_BOOTLOADER_FILE ??= "${MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT}"
+MENDER_IMAGE_BOOTLOADER_FILE ??= "${MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT}"
 MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT = ""
 
 # Offset of bootloader, in sectors (512 bytes).
-IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT}"
-IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT = "2"
+MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT}"
+MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT = "2"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
@@ -201,6 +201,10 @@ python() {
         bb.fatal("MENDER_PARTITION_ALIGNMENT_KB is deprecated. Please define MENDER_PARTITION_ALIGNMENT instead.")
     if d.getVar('MENDER_STORAGE_RESERVED_RAW_SPACE', True):
         bb.fatal("MENDER_STORAGE_RESERVED_RAW_SPACE is deprecated. Please define MENDER_RESERVED_SPACE_BOOTLOADER_DATA instead.")
+    if d.getVar('IMAGE_BOOTLOADER_FILE', True):
+        bb.fatal("IMAGE_BOOTLOADER_FILE is deprecated. Please define MENDER_IMAGE_BOOTLOADER_FILE instead.")
+    if d.getVar('IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET', True):
+        bb.fatal("IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET is deprecated. Please define MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET instead.")
 }
 
 

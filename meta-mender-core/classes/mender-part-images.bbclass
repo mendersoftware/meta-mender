@@ -34,21 +34,21 @@ inherit image_types
 # Which results in a empty "gz" archive when using the default value, in our
 # case IMAGE_NAME_SUFFIX should be empty as we do not use it when naming
 # our image.
-IMAGE_NAME_SUFFIX_sdimg = ""
+IMAGE_NAME_SUFFIX = ""
 
 mender_get_bootloader_offset() {
     # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
-    install -m 0644 "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" "${WORKDIR}/"
+    install -m 0644 "${DEPLOY_DIR_IMAGE}/${MENDER_IMAGE_BOOTLOADER_FILE}" "${WORKDIR}/"
 
-    if [ $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
-        bbfatal "IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET must be aligned to kB" \
+    if [ $(expr ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
+        bbfatal "MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET must be aligned to kB" \
                 "boundary (an even number)."
     fi
-    local bootloader_offset_kb=$(expr $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
-    local bootloader_size=$(stat -c '%s' "${WORKDIR}/${IMAGE_BOOTLOADER_FILE}")
+    local bootloader_offset_kb=$(expr $(expr ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
+    local bootloader_size=$(stat -c '%s' "${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE}")
     local bootloader_end=$(expr $bootloader_offset_kb \* 1024 + $bootloader_size)
     if [ $bootloader_end -gt ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} ]; then
-        bbfatal "Size of bootloader specified in IMAGE_BOOTLOADER_FILE" \
+        bbfatal "Size of bootloader specified in MENDER_IMAGE_BOOTLOADER_FILE" \
                 "exceeds MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET, which is" \
                 "reserved for U-Boot environment storage. Please raise it" \
                 "manually."
@@ -106,11 +106,11 @@ mender_part_image() {
     wks="${WORKDIR}/mender-$suffix.wks"
     rm -f "$wks"
 
-    if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
+    if [ -n "${MENDER_IMAGE_BOOTLOADER_FILE}" ]; then
         alignment_kb=$(mender_get_bootloader_offset)
         cat >> "$wks" <<EOF
 # embed bootloader
-part --source rawcopy --sourceparams="file=${WORKDIR}/${IMAGE_BOOTLOADER_FILE}" --ondisk "$ondisk_dev" --align $alignment_kb --no-table
+part --source rawcopy --sourceparams="file=${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE}" --ondisk "$ondisk_dev" --align $alignment_kb --no-table
 EOF
     fi
 
@@ -149,10 +149,8 @@ EOF
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-$suffix"
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/$(basename "${wks%.wks}")"*.direct "$outimgname"
-    ln -sfn "${IMAGE_NAME}.$suffix" "${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.$suffix"
     rm -rf "$wicout/"
 
-    ln -sfn "${IMAGE_NAME}.$suffix" "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.$suffix"
 }
 
 IMAGE_CMD_sdimg() {

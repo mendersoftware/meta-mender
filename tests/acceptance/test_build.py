@@ -52,13 +52,13 @@ class TestBuild:
     @pytest.mark.only_with_image('sdimg')
     @pytest.mark.min_mender_version("1.0.0")
     def test_bootloader_embed(self, prepared_test_build):
-        """Test that IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
+        """Test that MENDER_IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
         correctly in the resulting sdimg."""
 
         loader_file = "bootloader.bin"
         loader_offset = 4
-        add_to_local_conf(prepared_test_build, 'IMAGE_BOOTLOADER_FILE = "%s"' % loader_file)
-        add_to_local_conf(prepared_test_build, 'IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET = "%d"' % loader_offset)
+        add_to_local_conf(prepared_test_build, 'MENDER_IMAGE_BOOTLOADER_FILE = "%s"' % loader_file)
+        add_to_local_conf(prepared_test_build, 'MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET = "%d"' % loader_offset)
 
         new_bb_vars = get_bitbake_variables("core-image-minimal", prepared_test_build['env_setup'])
 
@@ -83,7 +83,7 @@ class TestBuild:
             org_read_size = len(org_read)
             emb_read = os.read(embedded, org_read_size)
 
-            assert(org_read == emb_read), "Embedded bootloader is not identical to the file specified in IMAGE_BOOTLOADER_FILE"
+            assert(org_read == emb_read), "Embedded bootloader is not identical to the file specified in MENDER_IMAGE_BOOTLOADER_FILE"
 
             if org_read_size < block_size:
                 break

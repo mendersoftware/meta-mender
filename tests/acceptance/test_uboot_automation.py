@@ -88,6 +88,7 @@ class TestUbootAutomation:
             url = subprocess.check_output("git config --get remote.%s.url" % remote, shell=True)
             if "mendersoftware" in url:
                 upstream_remote = remote
+                break
         else:
             pytest.fail("Upstream remote not found! Should not happen.")
 
