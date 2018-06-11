@@ -255,6 +255,7 @@ def prepared_test_build_base(request, bitbake_variables):
     with open(local_conf, "a") as fd:
         fd.write('SSTATE_MIRRORS = " file://.* file://%s/PATH"\n' % bitbake_variables['SSTATE_DIR'])
         fd.write('DL_DIR = "%s"\n' % bitbake_variables['DL_DIR'])
+        fd.write('RM_WORK_EXCLUDE_append = " core-image-full-cmdline core-image-base"\n')
     run_verbose("cp %s %s" % (local_conf, local_conf_orig))
 
     image_name = pytest.config.getoption("--bitbake-image")
