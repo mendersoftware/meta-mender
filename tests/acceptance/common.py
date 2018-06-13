@@ -341,19 +341,13 @@ def get_bitbake_variables(target, env_setup="true"):
     output.wait()
     os.fchdir(current_dir)
 
-    # For some unknown reason, 'MACHINE' is not included in the above list. Add
-    # it automagically by looking in environment and local.conf, in that order,
-    # if it doesn't exist already.
+    # For some unknown reason, 'MACHINE' is not included in the 'bitbake -e' output.
+    # We set MENDER_TEST_MACHINE in mender-setup.bbclass as a proxy so look for that instead.
     if ret.get('MACHINE') is None:
-        if os.environ.get('MACHINE'):
-            ret['MACHINE'] = os.environ.get('MACHINE')
+        if ret.get('MENDER_TEST_MACHINE') is not None:
+            ret['MACHINE'] = ret.get('MENDER_TEST_MACHINE')
         else:
-            local_fd = open(os.path.join(os.environ['BUILDDIR'], "conf", "local.conf"))
-            for line in local_fd:
-                match = re.match('^ *MACHINE *\?*= *"([^"]*)" *$', line)
-                if match is not None:
-                    ret['MACHINE'] = match.group(1)
-            local_fd.close()
+            raise Exception("Could not determine MACHINE or MENDER_TEST_MACHINE value.")
 
     return ret
 

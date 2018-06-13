@@ -48,8 +48,19 @@ fi
 
 QEMU_ARGS=""
 
-# Extract MACHINE definition from local.conf.
-eval "$(sed -nre '/^MACHINE *\??\??= */{s/^MACHINE *\??\??= */EXTRACTED_MACHINE=/;p}' $BUILDDIR/conf/local.conf)"
+# Extract MACHINE definition from bitbake config files.
+# Process them in the order specified in bitbake.conf.
+# Note: it's possible this will miss some other possible configurations
+# but we don't want to have to run a full bitbake parse here.
+
+# Determine MACHINE if set with '='
+EXTRACTED_MACHINE="${EXTRACTED_MACHINE:-$(cat $BUILDDIR/conf/site.conf $BUILDDIR/conf/auto.conf $BUILDDIR/conf/local.conf 2>/dev/null | grep 'MACHINE *=' | grep -v '#' | tail -1 | cut -d= -f2 | tr -d \" | tr -d \ )}"
+# Determine MACHINE if set with '?='
+EXTRACTED_MACHINE="${EXTRACTED_MACHINE:-$(cat $BUILDDIR/conf/site.conf $BUILDDIR/conf/auto.conf $BUILDDIR/conf/local.conf 2>/dev/null | grep 'MACHINE *?=' | grep -v '#' | tail -1 | cut -d= -f2 | tr -d \" | tr -d \ )}"
+# Determine MACHINE if set with '??='
+EXTRACTED_MACHINE="${EXTRACTED_MACHINE:-$(cat $BUILDDIR/conf/site.conf $BUILDDIR/conf/auto.conf $BUILDDIR/conf/local.conf 2>/dev/null | grep 'MACHINE *??=' | grep -v '#' | tail -1 | cut -d= -f2 | tr -d \" | tr -d \ )}"
+echo "HIDREW.EXTRACTED_MACHINE=${EXTRACTED_MACHINE}"
+
 MACHINE=${MACHINE:-"$EXTRACTED_MACHINE"}
 case "$MACHINE" in
     *x86*)
@@ -69,13 +80,16 @@ case "$MACHINE" in
             QEMU_ARGS="$QEMU_ARGS -enable-kvm"
         fi
         ;;
-    *)
+    *vexpress*)
         QEMU_SYSTEM=${QEMU_SYSTEM:-"qemu-system-arm"}
         QEMU_ARGS="$QEMU_ARGS -M vexpress-a9"
         BOOTLOADER="${BOOTLOADER:-${BUILDTMP}/deploy/images/${MACHINE}/u-boot.elf}"
         BOOTLOADER_ARG="${BOOTLOADER_ARG:--kernel ${BOOTLOADER}}"
         DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.sdimg"}
         ;;
+    *)
+        echo "Unable to determine proper MACHINE"
+        exit 1
 esac
 RANDOM_MAC=${RANDOM_MAC:-"52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"}
 # use to pass -drive .. parameters directly
