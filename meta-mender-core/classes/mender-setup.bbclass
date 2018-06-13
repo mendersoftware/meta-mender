@@ -66,12 +66,6 @@ MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT_append_beaglebone-yocto = " beaglebone"
 MENDER_STORAGE_TOTAL_SIZE_MB ??= "${MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT}"
 MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT = "1024"
 
-# Optional location where a directory can be specified with content that should
-# be included on the data partition. Some of Mender's own files will be added to
-# this (e.g. OpenSSL certificates).
-MENDER_DATA_PART_DIR ??= "${MENDER_DATA_PART_DIR_DEFAULT}"
-MENDER_DATA_PART_DIR_DEFAULT = ""
-
 # Size of the data partition, which is preserved across updates.
 MENDER_DATA_PART_SIZE_MB ??= "${MENDER_DATA_PART_SIZE_MB_DEFAULT}"
 MENDER_DATA_PART_SIZE_MB_DEFAULT = "128"
@@ -112,15 +106,25 @@ MENDER_UBOOT_STORAGE_DEVICE_DEFAULT = ""
 # This will be embedded into the boot sector, or close to the boot sector, where
 # exactly depends on the offset variable. Since it is a machine specific
 # setting, the default value is an empty string.
-MENDER_IMAGE_BOOTLOADER_FILE ??= ""
+MENDER_IMAGE_BOOTLOADER_FILE ??= "${MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT}"
+MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT = ""
 
 # Offset of bootloader, in sectors (512 bytes).
-MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "2"
+MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT}"
+MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT = "2"
+
+# File to flash into MBR (Master Boot Record) on partitioned images
+MENDER_MBR_BOOTLOADER_FILE ??= "${MENDER_MBR_BOOTLOADER_FILE_DEFAULT}"
+MENDER_MBR_BOOTLOADER_FILE_DEFAULT = ""
+# How many bytes of the MBR to flash.
+# 446 avoids the partition table structure. See this link:
+# https://pete.akeo.ie/2014/05/compiling-and-installing-grub2-for.html
+MENDER_MBR_BOOTLOADER_LENGTH ??= "446"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 IMAGE_INSTALL_append = " mender"
-IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg"
+IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg"
 
 # MENDER_FEATURES_ENABLE and MENDER_FEATURES_DISABLE map to
 # DISTRO_FEATURES_BACKFILL and DISTRO_FEATURES_BACKFILL_CONSIDERED,
@@ -134,6 +138,9 @@ python() {
     # Each one will also define the same string in OVERRIDES.
     mender_features = {
 
+        # For GRUB, use BIOS for booting, instead of the default, UEFI.
+        'mender-bios',
+
         # Integration with GRUB.
         'mender-grub',
 
@@ -144,6 +151,9 @@ python() {
         # Include components for Mender-partitioned images. This will create
         # files that rely on the Mender partition layout.
         'mender-image',
+
+        # Include components for generating a BIOS image.
+        'mender-image-bios',
 
         # Include components for generating an SD image.
         'mender-image-sd',
@@ -182,12 +192,14 @@ python() {
 }
 
 python() {
-    if d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True):
+    if d.getVar('MENDER_PARTITION_ALIGNMENT_MB'):
         bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
     if d.getVar('IMAGE_BOOTLOADER_FILE', True):
         bb.fatal("IMAGE_BOOTLOADER_FILE is deprecated. Please define MENDER_IMAGE_BOOTLOADER_FILE instead.")
     if d.getVar('IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET', True):
         bb.fatal("IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET is deprecated. Please define MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET instead.")
+    if d.getVar('MENDER_DATA_PART_DIR'):
+        bb.fatal("MENDER_DATA_PART_DIR is deprecated. Please use recipes to add files directly to /data instead.")
 }
 
 addhandler mender_vars_handler
@@ -256,6 +268,7 @@ python mender_vars_handler() {
 # Including these does not mean that all these features will be enabled, just
 # that their configuration will be considered. Use DISTRO_FEATURES to enable and
 # disable features.
+include mender-setup-bios.inc
 include mender-setup-grub.inc
 include mender-setup-image.inc
 include mender-setup-install.inc

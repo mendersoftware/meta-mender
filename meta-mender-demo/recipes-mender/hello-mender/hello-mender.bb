@@ -1,7 +1,7 @@
 DESCRIPTION = "Mender test recipe for persistent data files"
 LICENSE = "Apache-2.0"
 
-inherit deploy
+FILES_${PN} += "/data/persistent.txt"
 
 do_compile() {
     echo 'Hello Mender config file' > hello-mender.cfg
@@ -11,10 +11,7 @@ do_compile() {
 do_install() {
     install -d ${D}${sysconfdir}
     install -m 0644 hello-mender.cfg ${D}${sysconfdir}
-}
 
-do_deploy() {
-    install -d ${DEPLOYDIR}/persist
-    install -m 0644 persistent.txt ${DEPLOYDIR}/persist
+    install -d ${D}/data/
+    install -m 0644 persistent.txt ${D}/data/
 }
-addtask do_deploy after do_compile before do_build
