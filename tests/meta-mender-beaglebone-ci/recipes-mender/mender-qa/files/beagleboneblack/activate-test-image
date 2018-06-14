@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -e -x
+
+. ${DATADIR}/common
+maybe_verbose
+
+MOUNT_DEV=${MOUNT_DEV:-/dev/mmcblk0p1}
+if [ -d /uboot ]; then
+    MOUNTPOINT=/uboot
+else
+    MOUNTPOINT=/mnt
+fi
+
+if ! mount | grep $MOUNT_DEV; then
+    mount $MOUNT_DEV $MOUNTPOINT
+fi
+
+case "$1" in
+    status)
+        if [ -e ${MOUNTPOINT}/uEnv.txt ]; then
+            log "test image is disabled"
+        else
+            log "test image is enabled"
+        fi
+        ;;
+    off)
+        log "deactivating test image"
+        cp ${DATADIR}/uEnv.txt ${MOUNTPOINT}
+        ;;
+    on|'')
+        log "activating test image"
+        rm -f $MOUNTPOINT/uEnv.txt
+        ;;
+esac

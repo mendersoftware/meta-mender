@@ -1,0 +1,17 @@
+[Unit]
+# Use this condition to avoid launching the service unless we are doing tests.
+ConditionPathExists=/data/mender/test.mender-reboot-detector.txt
+Requires=data.mount network-online.target sshd.socket
+After=data.mount network-online.target sshd.socket
+Before=mender.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Use bash /dev/tcp/host/port trick to tell test host that we are starting up or
+# shutting down.
+ExecStart=/bin/bash -c 'echo startup > /dev/tcp/$(sed -e 's,:,/,' /data/mender/test.mender-reboot-detector.txt) || true'
+ExecStop=/bin/bash -c 'echo shutdown > /dev/tcp/$(sed -e 's,:,/,' /data/mender/test.mender-reboot-detector.txt) || true'
+
+[Install]
+WantedBy=multi-user.target
