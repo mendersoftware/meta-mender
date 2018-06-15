@@ -421,12 +421,18 @@ def run_bitbake(prepared_test_build, target=None, capture=False):
     finally:
         # Empty any remaining lines.
         try:
-            ps.stdout.readlines()
+            if capture:
+                output += ps.stdout.readlines()
+            else:
+                ps.stdout.readlines()
         except:
             pass
         ps.wait()
         if ps.returncode != 0:
-            raise subprocess.CalledProcessError(ps.returncode, cmd)
+            e = subprocess.CalledProcessError(ps.returncode, cmd)
+            if capture:
+                e.output = output
+            raise e
 
     return output
 
