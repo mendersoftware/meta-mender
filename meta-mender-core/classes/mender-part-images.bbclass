@@ -236,10 +236,10 @@ IMAGE_CMD_mtdimg() {
         eval local kboffset="\"\$mtd_kboffsets_$i\""
 
         if [ "$name" = "u-boot" ]; then
-            if [ -n "${IMAGE_BOOTLOADER_FILE}" ]; then
-                mender_flash_mtdpart "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" $size $kbsize $kboffset $name
+            if [ -n "${MENDER_IMAGE_BOOTLOADER_FILE}" ]; then
+                mender_flash_mtdpart "${DEPLOY_DIR_IMAGE}/${MENDER_IMAGE_BOOTLOADER_FILE}" $size $kbsize $kboffset $name
             else
-                bbwarn "There is a 'u-boot' mtdpart, but IMAGE_BOOTLOADER_FILE is undefined. Filling with zeros."
+                bbwarn "There is a 'u-boot' mtdpart, but MENDER_IMAGE_BOOTLOADER_FILE is undefined. Filling with zeros."
                 mender_flash_mtdpart "/dev/zero" $size $kbsize $kboffset $name
             fi
         elif [ "$name" = "u-boot-env" ]; then
