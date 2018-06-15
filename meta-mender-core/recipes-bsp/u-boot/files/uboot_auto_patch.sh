@@ -2,6 +2,8 @@
 
 UBI=0
 
+SCRIPT_DIR="$(readlink -f "$(dirname "$0")")"
+
 if [ -z "$1" ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     echo "This script should not be run on its own. Use uboot_auto_configure.sh."
     exit 1
@@ -71,7 +73,7 @@ add_definition() {
 
     if is_kconfig_option "$1"; then
         # In the Kconfig case it's easy, just add it to the defconfig file.
-        echo "$kconfig_repl" >> configs/$CONFIG
+        python3 $SCRIPT_DIR/add_kconfig_option_with_depends.py --src-dir=. --defconfig-file=configs/$CONFIG "$kconfig_repl"
     else
         # In the pre-Kconfig case, it's more open. We need to add it somewhere
         # in the source, but it's not obvious where. Add it to
@@ -102,12 +104,44 @@ definition_exists() {
 is_kconfig_option() {
     # Returns whether a config option appears to be a Kconfig option or not.
 
-    # Check .config file for such an option.
-    if egrep -q "^($1=|# $1 is not set)" "$CONFIG_FILE"; then
-        return 0
-    else
-        return 1
+    # Doing this checking is really tricky though. We can't look in Kconfig
+    # files because they have if-statements that mean we can easily misdetect
+    # that something is supported when it really isn't. We also cannot look
+    # directly in .config, because other options that the option we're trying to
+    # add depends on, may hide the option as well.
+    #
+    # So what we do is this: We use the temporary build directory, make a copy
+    # of the _defconfig file, and then use the
+    # add_kconfig_option_with_depends.py tool to try to add the option with all
+    # its dependencies. Then we check .config file for the presence of the
+    # option, since all of the option's dependencies should have been resolved
+    # now, and the Kconfig if-statements also respected. If the option still
+    # isn't there, then we conclude it is not a Kconfig option.
+
+    # Special case for CONFIG_BOOTCOUNT_ENV: Due to conditional selection, ENV
+    # may be missing from the .config file. However, it is in Kconfig if
+    # CONFIG_BOOTCOUNT_LIMIT is.
+    if [ "$1" = "CONFIG_BOOTCOUNT_ENV" ]; then
+        is_kconfig_option CONFIG_BOOTCOUNT_LIMIT || return $?
+        return $?
     fi
+
+    cp $BUILD_DIR/configs/$CONFIG $BUILD_DIR/configs/$CONFIG.backup
+    python3 $SCRIPT_DIR/add_kconfig_option_with_depends.py --src-dir=$BUILD_DIR --defconfig-file=$BUILD_DIR/configs/$CONFIG "$kconfig_repl"
+
+    # Update .config
+    make HOSTCC="$HOSTCC" CC="$CC" -C $BUILD_DIR $CONFIG
+
+    # Check .config file for such the option.
+    if egrep -q "^($1=|# $1 is not set)" "$BUILD_DIR/.config"; then
+        ret=0
+    else
+        ret=1
+    fi
+
+    mv $BUILD_DIR/configs/$CONFIG.backup $BUILD_DIR/configs/$CONFIG
+
+    return $ret
 }
 
 remove_bootvar() {
@@ -183,26 +217,12 @@ patch_all_candidates() {
     remove_bootvar \
         "bootcmd"
 
-    if definition_exists CONFIG_BOOTCOMMAND; then
-        # CONFIG_ENV_SIZE is often surrounded by ifdefs that render changes to
-        # it ineffective. Since CONFIG_BOOTCOMMAND is present, and it is usually
-        # outside ifdefs, remove CONFIG_ENV_SIZE, and it will be added next to
-        # that one instead.
-        replace_definition \
-            'CONFIG_ENV_SIZE'
-    fi
-
-    # Replace any definition of CONFIG_ENV_SIZE with our definition.
     replace_definition \
         'CONFIG_ENV_SIZE' \
         'CONFIG_ENV_SIZE' \
-        "$ENV_SIZE"
+        "$CONFIG_ENV_SIZE"
 
-    # Remove all of the below entries.
-    replace_definition \
-        'CONFIG_ENV_OFFSET'
-    replace_definition \
-        'CONFIG_ENV_OFFSET_REDUND'
+    # Remove this entry.
     replace_definition \
         'CONFIG_ENV_RANGE'
 
@@ -277,11 +297,24 @@ patch_all_candidates() {
 }
 
 patch_all_candidates_sdimg() {
+    replace_definition \
+        'CONFIG_ENV_OFFSET' \
+        'CONFIG_ENV_OFFSET' \
+        "$CONFIG_ENV_OFFSET"
+    replace_definition \
+        'CONFIG_ENV_OFFSET_REDUND' \
+        'CONFIG_ENV_OFFSET_REDUND' \
+        "$CONFIG_ENV_OFFSET_REDUND"
+
     # Remove all of the below entries.
     replace_definition \
-        'CONFIG_SYS_MMC_ENV_DEV'
+        'CONFIG_SYS_MMC_ENV_DEV' \
+        'CONFIG_SYS_MMC_ENV_DEV' \
+        "$CONFIG_SYS_MMC_ENV_DEV"
     replace_definition \
-        'CONFIG_SYS_MMC_ENV_PART'
+        'CONFIG_SYS_MMC_ENV_PART' \
+        'CONFIG_SYS_MMC_ENV_PART' \
+        "$CONFIG_SYS_MMC_ENV_PART"
 
     # Make sure the environment is in MMC.
     replace_definition \
@@ -297,29 +330,14 @@ patch_all_candidates_sdimg() {
 }
 
 patch_all_candidates_ubi() {
-    # Prior to commit 43ede0bca7fc in U-Boot, all the mtdids and mtdparts were
-    # in headers. Now they are in the Kconfig, and have the added "CONFIG_"
-    # prefix. Make sure we can handle both.
-    if [ $(grep ^CONFIG_MTDPARTS_DEFAULT= configs/*_defconfig | wc -l) -ge 100 ]; then
-        # Plenty of boards have the definition, we must be on Kconfig style.
-        replace_definition \
-            'CONFIG_MTDIDS_DEFAULT' \
-            'CONFIG_MTDIDS_DEFAULT' \
-            "\"$MTDIDS\""
-        replace_definition \
-            'CONFIG_MTDPARTS_DEFAULT' \
-            'CONFIG_MTDPARTS_DEFAULT' \
-            "\"mtdparts=$MTDPARTS\""
-    else
-        replace_definition \
-            'MTDIDS_DEFAULT' \
-            'MTDIDS_DEFAULT' \
-            "\"$MTDIDS\""
-        replace_definition \
-            'MTDPARTS_DEFAULT' \
-            'MTDPARTS_DEFAULT' \
-            "\"mtdparts=$MTDPARTS\""
-    fi
+    replace_definition \
+        'CONFIG_MTDIDS_DEFAULT' \
+        'CONFIG_MTDIDS_DEFAULT' \
+        "$CONFIG_MTDIDS_DEFAULT"
+    replace_definition \
+        'CONFIG_MTDPARTS_DEFAULT' \
+        'CONFIG_MTDPARTS_DEFAULT' \
+        "$CONFIG_MTDPARTS_DEFAULT"
 
     # Make sure the environment is in Flash.
     replace_definition \
@@ -328,9 +346,13 @@ patch_all_candidates_ubi() {
 
     # And remove volume definitions of environment so Mender can configure them.
     replace_definition \
-        'CONFIG_ENV_UBI_PART'
+        'CONFIG_ENV_UBI_PART' \
+        'CONFIG_ENV_UBI_PART' \
+        "$CONFIG_ENV_UBI_PART"
     replace_definition \
-        'CONFIG_ENV_UBI_VOLUME'
+        'CONFIG_ENV_UBI_VOLUME' \
+        'CONFIG_ENV_UBI_VOLUME' \
+        "$CONFIG_ENV_UBI_VOLUME"
 
     add_definition \
         'CONFIG_CMD_MTDPARTS'
@@ -370,23 +392,28 @@ while [ -n "$1" ]; do
                     ;;
             esac
             ;;
-        --config-file=*)
-            CONFIG_FILE=${1#--config-file=}
+        --build-dir=*)
+            BUILD_DIR=${1#--build-dir=}
             ;;
         --dep-file=*)
             DEP_FILE=${1#--dep-file=}
             ;;
-        --env-size=*)
-            ENV_SIZE=${1#--env-size=}
+        --kconfig-fragment=*)
+            # Read in all the definitions from that file into variables.
+            # Use only line separator as delimiter.
+            IFS='
+'
+            for line in $(cat "${1#--kconfig-fragment=}"); do
+                # Replace existing " with \".
+                line="${line//\"/\\\"}"
+                # Add quotes around value of assignment.
+                line="${line/=/=\"}\""
+                eval "$line"
+            done
+            unset IFS
             ;;
         --ubi)
             UBI=1
-            ;;
-        --mtdids=*)
-            MTDIDS=${1#--mtdids=}
-            ;;
-        --mtdparts=*)
-            MTDPARTS=${1#--mtdparts=}
             ;;
         *)
             echo "Invalid argument: $1"

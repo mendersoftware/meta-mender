@@ -1,5 +1,6 @@
 TMP ?= /tmp
 LOGS ?= test_uboot_compile-logs
+MAYBE_UBI ?=
 
 # BOARD_LOGS should be set already by the test.
 all: $(BOARD_LOGS)
@@ -28,8 +29,10 @@ $(LOGS)/%_defconfig:
 	$(TESTS_DIR)/../../meta-mender-core/recipes-bsp/u-boot/files/uboot_auto_configure.sh \
 			--config=`basename $@` \
 			--src-dir="$(TMP)/`basename $@`/orig" \
-			--tmp-dir="$(TMP)/`basename $@`/work" --debug \
-                        `cat $@.params` \
+			--tmp-dir="$(TMP)/`basename $@`/work" \
+			--kconfig-fragment="$(TMP)/`basename $@`/orig/mender_Kconfig_fragment" \
+			$(MAYBE_UBI) \
+			--debug \
 			>> $@ 2>&1 \
 		|| ( echo AutoPatchFailed >> $@ )
 

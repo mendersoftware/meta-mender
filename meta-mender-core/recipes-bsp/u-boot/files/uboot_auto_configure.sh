@@ -2,7 +2,6 @@
 
 set -e
 
-BOOTENV_SIZE="${BOOTENV_SIZE:-0x20000}"
 BUILD_AR="${BUILD_AR:-ar}"
 BUILD_CC="${BUILD_CC:-gcc}"
 CC=${CC:-${CROSS_COMPILE}gcc}
@@ -22,6 +21,9 @@ Script to produce a patch for U-Boot so it will work with Mender.
 --config=<U-Boot machine config>
 	The U-Boot config specification that corresponds to your board. This
 	usually ends with "_defconfig".
+--kconfig-fragment=<kconfig-options-file>
+	File containing Kconfig definitions. Note that this is used even on
+	U-Boot versions that do not keep all the settings in Kconfig.
 --src-dir=<U-Boot src dir>
 	Source directory of U-Boot (will be modified, the diff from the original
 	is the resulting patch)
@@ -29,10 +31,6 @@ Script to produce a patch for U-Boot so it will work with Mender.
 	Temporary directory to use while working
 --ubi
 	Enable auto-configuration for Flash/UBI setup
---mtdids=<mtdids>
-	MENDER_MTDIDS string of the board (--ubi).
---mtdparts=<mtdparts>
-	MENDER_MTDPARTS string of the board (--ubi).
 --debug
 	Lots of debug output
 
@@ -46,6 +44,9 @@ while [ -n "$1" ]; do
         --config=*)
             CONFIG="${1#--config=}"
             ;;
+        --kconfig-fragment=*)
+            KCONFIG_FRAGMENT="${1#--kconfig-fragment=}"
+            ;;
         --src-dir=*)
             SRC_DIR="$(readlink -f "${1#--src-dir=}")"
             ;;
@@ -54,12 +55,6 @@ while [ -n "$1" ]; do
             ;;
         --ubi)
             MAYBE_UBI="$MAYBE_UBI --ubi"
-            ;;
-        --mtdids=*)
-            MAYBE_UBI="$MAYBE_UBI $1"
-            ;;
-        --mtdparts=*)
-            MAYBE_UBI="$MAYBE_UBI $1"
             ;;
         --debug)
             DEBUG=1
@@ -115,10 +110,10 @@ $MAKE HOSTCC="$BUILD_CC -DMENDER_AUTO_PROBING" CC="$BUILD_CC -DMENDER_AUTO_PROBI
 
 # Prepare a fake environment to make work fw_printenv properly. Doesn't have
 # to be valid, just existing.
-dd if=/dev/zero of=fake-env.txt count=1 bs=$(printf %d "$BOOTENV_SIZE")
+dd if=/dev/zero of=fake-env.txt count=1 bs=$(printf %d "0x20000")
 cat > fw_env.config <<EOF
-fake-env.txt 0 $BOOTENV_SIZE
-fake-env.txt 0 $BOOTENV_SIZE
+fake-env.txt 0 0x20000
+fake-env.txt 0 0x20000
 EOF
 # Save compiled U-Boot environment
 mkdir -p fw_printenv.lock
@@ -135,13 +130,14 @@ $MAKE HOSTCC="$BUILD_CC -DMENDER_AUTO_PROBING" CC="$CC -DMENDER_AUTO_PROBING" cm
 
 # We now have all the information we need from the build. Start patching!
 cd "$SRC_DIR"
-bash $SUB_X "$SCRIPT_DIR/uboot_auto_patch.sh" \
-     --compiled-env="$TMP_DIR/compiled-environment.txt" \
-     --config="$CONFIG" \
-     --config-file="$TMP_DIR/.config" \
-     --dep-file="$TMP_DIR"/cmd/.version.o.cmd \
-     --env-size="$BOOTENV_SIZE" \
-     $MAYBE_UBI
+env HOSTCC="$BUILD_CC -DMENDER_AUTO_PROBING" CC="$CC -DMENDER_AUTO_PROBING" \
+    bash $SUB_X "$SCRIPT_DIR/uboot_auto_patch.sh" \
+        --build-dir="$TMP_DIR" \
+        --dep-file="$TMP_DIR"/cmd/.version.o.cmd \
+        --compiled-env="$TMP_DIR/compiled-environment.txt" \
+        --config="$CONFIG" \
+        --kconfig-fragment="$KCONFIG_FRAGMENT" \
+        $MAYBE_UBI
 
 set +x
 
