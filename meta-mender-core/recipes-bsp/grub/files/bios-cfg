@@ -1,0 +1,2 @@
+search.file /grub.cfg root
+set prefix=($root)/

@@ -1,6 +1,6 @@
 require u-boot-mender-common.inc
 
-inherit deploy
+FILES_${PN} += "/data/u-boot/fw_env.config"
 
 do_compile_append() {
     alignment_bytes=${MENDER_PARTITION_ALIGNMENT}
@@ -19,16 +19,7 @@ do_compile_append() {
 do_install_append() {
     install -d -m 755 ${D}${sysconfdir}
     ln -sf /data/u-boot/fw_env.config ${D}${sysconfdir}/fw_env.config
-}
 
-do_deploy() {
-    install -d ${WORKDIR}/data/u-boot
-    install -m 0644 ${WORKDIR}/fw_env.config ${WORKDIR}/data/u-boot/fw_env.config
-    # We need to keep the permissions in a tar file, because they are not
-    # remembered by bitbake's fakeroot mechanism if we put it directly in the
-    # deploy directory.
-    ( cd ${WORKDIR} && tar cf ${WORKDIR}/data.tar --owner=root --group=root data )
-
-    cp ${WORKDIR}/data.tar ${DEPLOYDIR}
+    install -d ${D}/data/u-boot
+    install -m 0644 ${WORKDIR}/fw_env.config ${D}/data/u-boot/fw_env.config
 }
-addtask deploy after do_compile

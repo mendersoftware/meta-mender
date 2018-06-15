@@ -1,4 +1,4 @@
-EXTRA_IMAGEDEPENDS_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-grub', ' grub-efi', '', d)}"
+EXTRA_IMAGEDEPENDS_append_mender-grub = " grub-efi"
 
 # The device number of the interface to load partitions from. This is normally
 # empty, in which case it is deduced from MENDER_STORAGE_DEVICE. Only use this
@@ -6,7 +6,10 @@ EXTRA_IMAGEDEPENDS_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-gru
 MENDER_GRUB_STORAGE_DEVICE ??= "${MENDER_GRUB_STORAGE_DEVICE_DEFAULT}"
 MENDER_GRUB_STORAGE_DEVICE_DEFAULT = ""
 
-IMAGE_BOOT_FILES_append_mender-grub = " \
+IMAGE_BOOT_FILES_append_mender-grub = "${_MENDER_GRUB_BOOT_FILES}"
+
+_MENDER_GRUB_BOOT_FILES = ""
+_MENDER_GRUB_BOOT_FILES_mender-grub = " \
     grub-efi-bootx64.efi;EFI/BOOT/bootx64.efi \
     grub.cfg;EFI/BOOT/grub.cfg \
     mender_grubenv1/env;EFI/BOOT/mender_grubenv1/env \

@@ -77,12 +77,15 @@ def setup_rpi3(request):
 def qemu_running(request, clean_image):
     latest_sdimg = latest_build_artifact(clean_image['build_dir'], "core-image*.sdimg")
     latest_uefiimg = latest_build_artifact(clean_image['build_dir'], "core-image*.uefiimg")
+    latest_biosimg = latest_build_artifact(clean_image['build_dir'], "core-image*.biosimg")
     latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], "core-image*.vexpress-nor")
 
     if latest_sdimg:
         qemu, img_path = start_qemu_block_storage(latest_sdimg, suffix=".sdimg")
     elif latest_uefiimg:
         qemu, img_path = start_qemu_block_storage(latest_uefiimg, suffix=".uefiimg")
+    elif latest_biosimg:
+        qemu, img_path = start_qemu_block_storage(latest_biosimg, suffix=".biosimg")
     elif latest_vexpress_nor:
         qemu, img_path = start_qemu_flash(latest_vexpress_nor)
     else:
@@ -183,10 +186,18 @@ def latest_part_image():
 
     # Find latest built rootfs.
     latest_sdimg = latest_build_artifact(os.environ['BUILDDIR'], "core-image*.sdimg")
+    latest_uefiimg = latest_build_artifact(os.environ['BUILDDIR'], "core-image*.uefiimg")
+    latest_biosimg = latest_build_artifact(os.environ['BUILDDIR'], "core-image*.biosimg")
     if latest_sdimg:
         return latest_sdimg
+    elif latest_uefiimg:
+        return latest_uefiimg
+    elif latest_biosimg:
+        return latest_biosimg
     else:
-        return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.uefiimg")
+        # Tempting to throw an exception here, but this runs even for platforms
+        # that skip the test, so we should return None instead.
+        return None
 
 @pytest.fixture(scope="function")
 def successful_image_update_mender(request, clean_image):

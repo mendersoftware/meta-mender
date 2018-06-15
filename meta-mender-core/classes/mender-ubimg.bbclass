@@ -7,13 +7,6 @@
 #    ubi2: persistent data partition
 
 
-########## CONFIGURATION START - you can override these default
-##########                       values in your local.conf
-
-IMAGE_TYPEDEP_ubimg_append = "ubifs"
-
-########## CONFIGURATION END ##########
-
 inherit image
 inherit image_types
 
@@ -79,7 +72,7 @@ vol_name=rootfsb
 
 [data]
 mode=ubi
-image=${IMGDEPLOYDIR}/data.ubifs
+image=${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg
 vol_id=2
 vol_size=${MENDER_DATA_PART_SIZE_MB}MiB
 vol_type=dynamic
@@ -110,25 +103,6 @@ EOF
 
     cat ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
 
-    rm -rf "${WORKDIR}/data" || true
-    mkdir -p "${WORKDIR}/data"
-
-    if [ -n "${MENDER_DATA_PART_DIR}" ]; then
-        rsync -a --no-owner --no-group ${MENDER_DATA_PART_DIR}/* "${WORKDIR}/data"
-        chown -R root:root "${WORKDIR}/data"
-    fi
-
-    if [ -f "${DEPLOY_DIR_IMAGE}/data.tar" ]; then
-        ( cd "${WORKDIR}" && tar xf "${DEPLOY_DIR_IMAGE}/data.tar" )
-    fi
-
-    mkdir -p "${WORKDIR}/data/mender"
-    echo "device_type=${MENDER_DEVICE_TYPE}" > "${WORKDIR}/data/mender/device_type"
-    chmod 0444 "${WORKDIR}/data/mender/device_type"
-
-    # Create data UBIFS image
-    mkfs.ubifs -o "${IMGDEPLOYDIR}/data.ubifs" -r "${WORKDIR}/data" ${MKUBIFS_ARGS}
-
     ubinize -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.ubimg ${UBINIZE_ARGS} ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
 
     # Cleanup cfg file
@@ -136,4 +110,7 @@ EOF
 
 }
 
-IMAGE_TYPEDEP_ubimg_append = " ubifs"
+IMAGE_TYPEDEP_ubimg_append = " ubifs dataimg"
+
+# So that we can use the files from excluded paths in the full images.
+do_image_ubimg[respect_exclude_path] = "0"

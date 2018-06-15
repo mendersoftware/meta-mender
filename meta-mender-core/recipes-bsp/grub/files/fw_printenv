@@ -27,12 +27,19 @@
 # cases, and one would have to be really unlucky to still get an unusable
 # environment.
 
-ENV1=/boot/efi/EFI/BOOT/mender_grubenv1/env
-LOCK1=/boot/efi/EFI/BOOT/mender_grubenv1/lock
-LOCKSUM1=/boot/efi/EFI/BOOT/mender_grubenv1/lock.sha256sum
-ENV2=/boot/efi/EFI/BOOT/mender_grubenv2/env
-LOCK2=/boot/efi/EFI/BOOT/mender_grubenv2/lock
-LOCKSUM2=/boot/efi/EFI/BOOT/mender_grubenv2/lock.sha256sum
+if [ -r /etc/mender_grubenv.config ]; then
+    ENV_DIR="$(egrep '^ENV_DIR *= *' /etc/mender_grubenv.config | sed -e 's/^ENV_DIR *= *//' | tail -n 1)"
+fi
+if [ -z "$ENV_DIR" ]; then
+    ENV_DIR=/boot/efi/EFI/BOOT
+fi
+
+ENV1="$ENV_DIR/mender_grubenv1/env"
+LOCK1="$ENV_DIR/mender_grubenv1/lock"
+LOCKSUM1="$ENV_DIR/mender_grubenv1/lock.sha256sum"
+ENV2="$ENV_DIR/mender_grubenv2/env"
+LOCK2="$ENV_DIR/mender_grubenv2/lock"
+LOCKSUM2="$ENV_DIR/mender_grubenv2/lock.sha256sum"
 
 if [ "`basename $0`" = "fw_setenv" ]; then
     FW_SETENV=1
