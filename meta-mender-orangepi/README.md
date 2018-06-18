@@ -31,6 +31,8 @@ in addition to `meta-mender` dependencies.
 	# enable for all orangepi machines
 	MACHINEOVERRIDES =. "orangepi:"
 
+- Integrate Mender into the Orange Pi u-boot fork (u-boot-opi) using [the Mender documentation on Integrating with U-Boot](https://docs.mender.io/1.5/devices/integrating-with-u-boot#forks-of-u-boot).
+
 - Run `bitbake <image name>` where options are
      - opipc-minimal (minimal image for orange pi pc)
      - opipcplus-minimal (minimal image for orange pi pc plus)
