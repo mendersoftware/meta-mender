@@ -1,7 +1,7 @@
 # This is a dummy recipe, only meant to populate a sysroot that the tests can
 # use, and not meant for real building.
 
-DEPENDS = "mender-artifact-native e2fsprogs-native util-linux-native mtools-native"
+DEPENDS = "mender-artifact-native e2fsprogs-native util-linux-native mtools-native swig-native"
 
 LICENSE = "Apache-2.0"
 
