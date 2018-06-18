@@ -134,10 +134,17 @@ def extract_ubimg_info(path):
 
 
 @pytest.fixture(scope="session")
-def ubimg_without_uboot_env(request, prepared_test_build_base):
+def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build_base):
     """The ubireader_utils_info tool and friends don't support our UBI volumes
     that contain the U-Boot environment and hence not valid UBIFS structures.
     Therefore, make a new temporary image that doesn't contain U-Boot."""
+
+    # The tests are marked with "only_with_image('ubimg')", but that is checked
+    # using a function fixture, and this is a session fixture, which cannot
+    # depend on that. So we need this check here to bail out if we don't find a
+    # ubimg.
+    if not latest_ubimg:
+        pytest.skip("No ubimg found")
 
     reset_local_conf(prepared_test_build_base)
 
