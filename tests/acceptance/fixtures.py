@@ -444,7 +444,7 @@ def only_with_distro_feature(request, bitbake_variables):
     if mark is not None:
         features = mark.args
         current = bitbake_variables.get('DISTRO_FEATURES', '').strip().split(' ')
-        if not any([feature in current for feature in features]):
+        if not all([feature in current for feature in features]):
             pytest.skip('no supported distro feature in {} ' \
                         '(supports {})'.format(', '.join(current),
                                                ', '.join(features)))
