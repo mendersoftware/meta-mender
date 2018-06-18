@@ -366,6 +366,11 @@ class TestUbootAutomation:
             run_bitbake(prepared_test_build, "-c clean u-boot")
             os.unlink(new_patch_name)
 
+    # Would be nice to test this with non-UBI, but we don't currently have any
+    # non-boolean values inside Kconfig that we can test for. Boolean settings
+    # can't be tested because of the limitations listed in
+    # do_check_mender_defines.
+    @pytest.mark.only_with_distro_feature('mender-ubi')
     @pytest.mark.min_mender_version('1.0.0')
     def test_incorrect_Kconfig_setting(self, bitbake_variables, prepared_test_build):
         """First produce a patch using the auto-patcher, then disable
@@ -385,10 +390,7 @@ class TestUbootAutomation:
             new_patch_name = "../../meta-mender-core/recipes-bsp/u-boot/patches/mender_broken_definition.patch"
             with open(patch_name) as patch, open(new_patch_name, "w") as new_patch:
                 for line in patch.readlines():
-                    if line.startswith("+CONFIG_SYS_MMC_ENV_DEV="):
-                        # Change to a wrong value:
-                        new_patch.write("+CONFIG_SYS_MMC_ENV_DEV=99\n")
-                    elif line.startswith("+CONFIG_MTDIDS_DEFAULT="):
+                    if line.startswith("+CONFIG_MTDIDS_DEFAULT="):
                         # Change to a wrong value:
                         new_patch.write('+CONFIG_MTDIDS_DEFAULT="nand0-wrongvalue=00000000.flash"\n')
                     else:
