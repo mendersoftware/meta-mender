@@ -24,8 +24,11 @@ if [ -f /mnt/config/artifact-verify-key.pem ]; then
     CONFIG_ARGS="$CONFIG_ARGS --verify-key=/mnt/config/artifact-verify-key.pem"
 fi
 
-./setup-mender-configuration.py --img="$DISK_IMG" \
-                                --server-url=$SERVER_URL \
-                                --tenant-token=$TENANT_TOKEN $CONFIG_ARGS
+if [ ! -e /mender-setup-complete ]; then
+    ./setup-mender-configuration.py --img="$DISK_IMG" \
+                                    --server-url=$SERVER_URL \
+                                    --tenant-token=$TENANT_TOKEN $CONFIG_ARGS
+    touch /mender-setup-complete
+fi
 
 ./mender-qemu "$@"
