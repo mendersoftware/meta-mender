@@ -98,7 +98,7 @@ class TestPartitionImage:
 
         fdisk.wait()
 
-        alignment = int(bitbake_variables['MENDER_PARTITION_ALIGNMENT_KB']) * 1024
+        alignment = int(bitbake_variables['MENDER_PARTITION_ALIGNMENT'])
         total_size = int(bitbake_variables['MENDER_STORAGE_TOTAL_SIZE_MB']) * 1024 * 1024
         part_overhead = int(bitbake_variables['MENDER_PARTITIONING_OVERHEAD_KB']) * 1024
         boot_part_size = int(bitbake_variables['MENDER_BOOT_PART_SIZE_MB']) * 1024 * 1024

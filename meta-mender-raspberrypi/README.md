@@ -30,7 +30,7 @@ in addition to `meta-mender` dependencies.
 
         # These are simply to align with how the "stock" RPi machines are
         # configured.
-        MENDER_PARTITION_ALIGNMENT_KB = "4096"
+        MENDER_PARTITION_ALIGNMENT = "4194304"
         MENDER_BOOT_PART_SIZE_MB = "40"
 
         # rpi-base.inc removes these as they are normally installed on to the

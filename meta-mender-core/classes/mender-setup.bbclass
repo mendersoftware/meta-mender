@@ -1,3 +1,5 @@
+inherit mender-helpers
+
 # ------------------------------ CONFIGURATION ---------------------------------
 
 # The storage device that holds the device partitions.
@@ -74,22 +76,31 @@ MENDER_DATA_PART_SIZE_MB_DEFAULT = "128"
 MENDER_BOOT_PART_SIZE_MB ??= "${MENDER_BOOT_PART_SIZE_MB_DEFAULT}"
 MENDER_BOOT_PART_SIZE_MB_DEFAULT = "16"
 
-# For performance reasons, we try to align the partitions to the SD
-# card's erase block. It is impossible to know this information with
-# certainty, but one way to find out is to run the "flashbench" tool on
-# your SD card and study the results. If you do, feel free to override
-# this default.
+# For performance reasons, we try to align the partitions to the SD card's erase
+# block (PEB). It is impossible to know this information with certainty, but one
+# way to find out is to run the "flashbench" tool on your SD card and study the
+# results. If you do, feel free to override this default.
 #
-# 8MB alignment is a safe setting that might waste some space if the
-# erase block is smaller.
-MENDER_PARTITION_ALIGNMENT_KB ??= "${MENDER_PARTITION_ALIGNMENT_KB_DEFAULT}"
-MENDER_PARTITION_ALIGNMENT_KB_DEFAULT = "8192"
+# 8MB alignment is a safe setting that might waste some space if the erase block
+# is smaller.
+#
+# For traditional block storage (HDDs, SDDs, etc), in most cases this is 512
+# bytes, often called a sector.
+MENDER_STORAGE_PEB_SIZE ??= "8388608"
+
+# Historically MENDER_PARTITION_ALIGNMENT was always in KiB, but due to UBI
+# using some bytes for bookkeeping, each block is not always a KiB
+# multiple. Hence it needs to be expressed in bytes in those cases.
+MENDER_PARTITION_ALIGNMENT ??= "${MENDER_PARTITION_ALIGNMENT_DEFAULT}"
+# For non-UBI, the alignment should simply be the physical erase block size,
+# but it should not be less than 1KiB (wic won't like that).
+MENDER_PARTITION_ALIGNMENT_DEFAULT = "${@max(${MENDER_STORAGE_PEB_SIZE}, 1024)}"
 
 # The reserved space between the partition table and the first partition.
 # Most people don't need to set this, and it will be automatically overridden
 # by mender-uboot distro feature.
-MENDER_STORAGE_RESERVED_RAW_SPACE ??= "${MENDER_STORAGE_RESERVED_RAW_SPACE_DEFAULT}"
-MENDER_STORAGE_RESERVED_RAW_SPACE_DEFAULT = "0"
+MENDER_RESERVED_SPACE_BOOTLOADER_DATA ??= "${MENDER_RESERVED_SPACE_BOOTLOADER_DATA_DEFAULT}"
+MENDER_RESERVED_SPACE_BOOTLOADER_DATA_DEFAULT = "0"
 
 # The interface to load partitions from. This is normally empty, in which case
 # it is deduced from MENDER_STORAGE_DEVICE. Only use this if the interface
@@ -192,8 +203,12 @@ python() {
 }
 
 python() {
-    if d.getVar('MENDER_PARTITION_ALIGNMENT_MB'):
-        bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT_KB instead.")
+    if d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True):
+        bb.fatal("MENDER_PARTITION_ALIGNMENT_MB is deprecated. Please define MENDER_PARTITION_ALIGNMENT instead.")
+    if d.getVar('MENDER_PARTITION_ALIGNMENT_KB', True):
+        bb.fatal("MENDER_PARTITION_ALIGNMENT_KB is deprecated. Please define MENDER_PARTITION_ALIGNMENT instead.")
+    if d.getVar('MENDER_STORAGE_RESERVED_RAW_SPACE', True):
+        bb.fatal("MENDER_STORAGE_RESERVED_RAW_SPACE is deprecated. Please define MENDER_RESERVED_SPACE_BOOTLOADER_DATA instead.")
     if d.getVar('IMAGE_BOOTLOADER_FILE', True):
         bb.fatal("IMAGE_BOOTLOADER_FILE is deprecated. Please define MENDER_IMAGE_BOOTLOADER_FILE instead.")
     if d.getVar('IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET', True):
@@ -201,6 +216,15 @@ python() {
     if d.getVar('MENDER_DATA_PART_DIR'):
         bb.fatal("MENDER_DATA_PART_DIR is deprecated. Please use recipes to add files directly to /data instead.")
 }
+
+
+def mender_get_bytes_with_unit(bytes):
+    if bytes % 1048576 == 0:
+        return "%dm" % (bytes / 1048576)
+    if bytes % 1024 == 0:
+        return "%dk" % (bytes / 1024)
+    return "%d" % bytes
+
 
 addhandler mender_vars_handler
 mender_vars_handler[eventmask] = "bb.event.ParseCompleted"

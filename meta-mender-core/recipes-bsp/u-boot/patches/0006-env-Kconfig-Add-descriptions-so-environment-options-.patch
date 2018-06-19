@@ -1,0 +1,39 @@
+From f083052dd16a09c51a9426aa008b0c20878a7c30 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@northern.tech>
+Date: Mon, 23 Apr 2018 23:10:33 +0200
+Subject: [PATCH 6/6] env/Kconfig: Add descriptions so environment options can
+ be modified.
+
+Without a description they always revert to their defaults regardless
+of what is in the defconfig file.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+---
+ env/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/env/Kconfig b/env/Kconfig
+index bef6e89..f8d5ddb 100644
+--- a/env/Kconfig
++++ b/env/Kconfig
+@@ -430,7 +430,7 @@ endif
+ if ARCH_ROCKCHIP
+ 
+ config ENV_OFFSET
+-	hex
++	hex "Environment offset"
+ 	depends on !ENV_IS_IN_UBI
+ 	depends on !ENV_IS_NOWHERE
+ 	default 0x3f8000
+@@ -438,7 +438,7 @@ config ENV_OFFSET
+ 	  Offset from the start of the device (or partition)
+ 
+ config ENV_SIZE
+-	hex
++	hex "Environment size"
+ 	default 0x8000
+ 	help
+ 	  Size of the environment storage area
+-- 
+2.7.4
+

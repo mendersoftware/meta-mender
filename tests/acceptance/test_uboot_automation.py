@@ -23,6 +23,7 @@ import subprocess
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
+@pytest.mark.only_with_distro_feature('mender-uboot')
 class TestUbootAutomation:
     @staticmethod
     def parallel_job_count():
@@ -107,15 +108,87 @@ class TestUbootAutomation:
         print(msg)
         pytest.skip(msg)
 
+    def board_not_arm(self, bitbake_variables, config):
+        with open(os.path.join(bitbake_variables['S'], "configs", config)) as fd:
+            for line in fd.readlines():
+                line = line.strip()
+                if line.startswith("CONFIG_TARGET_") and line.endswith("=y"):
+                    # Extract target name.
+                    target = line.split("=", 2)[0]
+                    # Remove "CONFIG_" prefix.
+                    target = target[len("CONFIG_"):]
+                    break
+            else:
+                # We don't know, so we return that it's not definitely not ARM
+                # (yes, double negatives...)
+                return False
 
-    # No need to test this on non-vexpress-qemu. It is a very resource consuming
-    # test, and it is identical on all boards, since it internally tests all
-    # boards.
-    @pytest.mark.only_for_machine('vexpress-qemu')
+        # Look for that config value inside Kconfig files that are not in arm
+        # directory.
+        for walk in os.walk(os.path.join(bitbake_variables['S'], "arch"), topdown=True):
+            walk[1][:] = [dir for dir in walk[1] if dir != "arm"]
+
+            walk[2][:] = [file for file in walk[2] if file == "Kconfig"]
+
+            for file in walk[2]:
+                with open(os.path.join(walk[0], file)) as fd:
+                    if re.search("^config *%s *$" % target, fd.read(), re.MULTILINE):
+                        # Found the target in a non-arm directory. This is not
+                        # an ARM board.
+                        return True
+
+        return False
+
+    def collect_and_prepare_boards_to_test(self, bitbake_variables, env):
+        # Find all the boards we need to test for the configuration in question.
+        # For vexpress-qemu, we test all SD-based boards, for vexpress-qemu-flash
+        # we test all Flash based boards.
+        machine = bitbake_variables["MACHINE"]
+        available_configs = sorted(os.listdir(os.path.join(bitbake_variables['S'], "configs")))
+        configs_to_test = []
+        for config in available_configs:
+            if not config.endswith("_defconfig"):
+                continue
+
+            if self.board_not_arm(bitbake_variables, config):
+                continue
+
+            mtdids = None
+            mtdparts = None
+            with open(os.path.join(bitbake_variables['S'], "configs", config)) as fd:
+                for line in fd.readlines():
+                    line = line.strip()
+                    if line.startswith("CONFIG_MTDPARTS_DEFAULT="):
+                        mtdparts = line.split("=", 2)[1]
+                    elif line.startswith("CONFIG_MTDIDS_DEFAULT="):
+                        mtdids = line.split("=", 2)[1]
+
+            if mtdparts:
+                # Assume Flash board.
+
+                if machine != "vexpress-qemu-flash":
+                    continue
+
+            else:
+                # Assume block storage board.
+                if machine != "vexpress-qemu":
+                    continue
+
+            configs_to_test.append(os.path.join(env['LOGS'], config))
+
+        return configs_to_test
+
     @pytest.mark.min_mender_version('1.0.0')
-    def test_uboot_compile(self, bitbake_path):
+    def test_uboot_compile(self, bitbake_env, bitbake_variables):
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
+
+        # No need to test this on non-vexpress-qemu. It is a very resource
+        # consuming test, and it is identical on all boards, since it internally
+        # tests all boards.
+        machine = bitbake_variables["MACHINE"]
+        if not machine.startswith("vexpress-qemu"):
+            pytest.skip("Skipping test on non-vexpress-qemu platforms")
 
         # This is a slow running test. Skip if appropriate.
         self.check_if_should_run()
@@ -131,10 +204,20 @@ class TestUbootAutomation:
         env['UBOOT_SRC'] = bitbake_variables['S']
         env['TESTS_DIR'] = os.getcwd()
         env['LOGS'] = os.path.join(os.getcwd(), "test_uboot_compile-logs")
+        if os.path.exists(env['LOGS']):
+            print("WARNING: %s already exists. Will use cached logs from there. Recreate to reset." % env['LOGS'])
+        else:
+            os.mkdir(env['LOGS'])
+
+        configs_to_test = self.collect_and_prepare_boards_to_test(bitbake_variables, env)
+
+        env['BOARD_LOGS'] = " ".join(configs_to_test)
+
         try:
             sanitized_makeflags = bitbake_variables['EXTRA_OEMAKE']
             sanitized_makeflags = sanitized_makeflags.replace("\\\"", "\"")
             sanitized_makeflags = re.sub(" +", " ", sanitized_makeflags)
+            env['MAYBE_UBI'] = "--ubi" if machine == "vexpress-qemu-flash" else ""
             # Compile all boards. The reason for using a makefile is to get easy
             # parallelization.
             subprocess.check_call("make -j %d -f %s TMP=/dev/shm/test_uboot_compile %s"
@@ -152,14 +235,24 @@ class TestUbootAutomation:
             failed = 0.0
             total = 0.0
             for file in os.listdir(env['LOGS']):
+                if not file.endswith("_defconfig"):
+                    continue
+
                 total += 1
                 with open(os.path.join(env['LOGS'], file)) as fd:
                     if "AutoPatchFailed\n" in fd.readlines():
                         failed += 1
 
-            # PLEASE UPDATE the version you used to find this number if you update it.
-            # From version: v2017.09
-            measured_failed_ratio = 747.0 / 1176.0
+            assert total == len(configs_to_test), "Number of logs do not match the number of boards we tested? Should not happen"
+
+            if machine == "vexpress-qemu":
+                # PLEASE UPDATE the version you used to find this number if you update it.
+                # From version: v2018.05
+                measured_failed_ratio = 198.0 / 664.0
+            elif machine == "vexpress-qemu-flash":
+                # PLEASE UPDATE the version you used to find this number if you update it.
+                # From version: v2018.05
+                measured_failed_ratio = 36.0 / 159.0
 
             # We tolerate a certain percentage discrepancy in either direction.
             tolerated_discrepancy = 0.1
@@ -234,10 +327,8 @@ class TestUbootAutomation:
     @pytest.mark.min_mender_version('1.0.0')
     def test_save_mender_auto_configured_patch(self, bitbake_variables, prepared_test_build):
         """Test that we can invoke the save_mender_auto_configured_patch task,
-        and that it produces a patch file."""
-
-        if "mender-uboot" not in bitbake_variables['DISTRO_FEATURES']:
-            pytest.skip("Only relevant for U-Boot configurations")
+        that it produces a patch file, and that this patch file can be used
+        instead of MENDER_UBOOT_AUTO_CONFIGURE."""
 
         bitbake_variables = get_bitbake_variables("u-boot", env_setup=prepared_test_build['env_setup'])
 
@@ -247,8 +338,83 @@ class TestUbootAutomation:
 
         run_bitbake(prepared_test_build, "-c save_mender_auto_configured_patch u-boot")
 
-        with open(os.path.join(bitbake_variables['WORKDIR'], 'mender_auto_configured.patch')) as fd:
+        patch_name = os.path.join(bitbake_variables['WORKDIR'], 'mender_auto_configured.patch')
+        with open(patch_name) as fd:
             content = fd.read()
             # Make sure it looks like a patch.
             assert "---" in content
             assert "+++" in content
+
+        # Now check if we can use the patch.
+        new_patch_name = "../../meta-mender-core/recipes-bsp/u-boot/patches/mender_auto_configured.patch"
+        shutil.copyfile(patch_name, new_patch_name)
+
+        try:
+            add_to_local_conf(prepared_test_build, 'MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"')
+            # We need to add the code using TEST_SRC_URI_APPEND make sure it is
+            # absolutely last, otherwise platform specific layers may add
+            # patches after us.
+            add_to_local_conf(prepared_test_build, 'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"' % os.path.basename(new_patch_name))
+            # Normally changes to SRC_URI are picked up automatically, but since
+            # we are sneaking it in via the TEST_SRC_URI_APPEND and its
+            # associated python snippet, we need to clean the build manually.
+            run_bitbake(prepared_test_build, "-c clean u-boot")
+
+            run_bitbake(prepared_test_build, "u-boot")
+
+        finally:
+            run_bitbake(prepared_test_build, "-c clean u-boot")
+            os.unlink(new_patch_name)
+
+    # Would be nice to test this with non-UBI, but we don't currently have any
+    # non-boolean values inside Kconfig that we can test for. Boolean settings
+    # can't be tested because of the limitations listed in
+    # do_check_mender_defines.
+    @pytest.mark.only_with_distro_feature('mender-ubi')
+    @pytest.mark.min_mender_version('1.0.0')
+    def test_incorrect_Kconfig_setting(self, bitbake_variables, prepared_test_build):
+        """First produce a patch using the auto-patcher, then disable
+        auto-patching and apply the patch with a slight modification that makes
+        its settings incompatible, and check that this is detected."""
+
+        bitbake_variables = get_bitbake_variables("u-boot", env_setup=prepared_test_build['env_setup'])
+
+        # Only run if auto-configuration is on.
+        if bitbake_variables['MENDER_UBOOT_AUTO_CONFIGURE'] == "0":
+            pytest.skip("Test is not applicable when MENDER_UBOOT_AUTO_CONFIGURE is off")
+
+        run_bitbake(prepared_test_build, "-c save_mender_auto_configured_patch u-boot")
+
+        try:
+            patch_name = os.path.join(bitbake_variables['WORKDIR'], 'mender_auto_configured.patch')
+            new_patch_name = "../../meta-mender-core/recipes-bsp/u-boot/patches/mender_broken_definition.patch"
+            with open(patch_name) as patch, open(new_patch_name, "w") as new_patch:
+                for line in patch.readlines():
+                    if line.startswith("+CONFIG_MTDIDS_DEFAULT="):
+                        # Change to a wrong value:
+                        new_patch.write('+CONFIG_MTDIDS_DEFAULT="nand0-wrongvalue=00000000.flash"\n')
+                    else:
+                        new_patch.write(line)
+
+            add_to_local_conf(prepared_test_build, 'MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"')
+            # We need to add the code using TEST_SRC_URI_APPEND make sure it is
+            # absolutely last, otherwise platform specific layers may add
+            # patches after us.
+            add_to_local_conf(prepared_test_build, 'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"' % os.path.basename(new_patch_name))
+            # Normally changes to SRC_URI are picked up automatically, but since
+            # we are sneaking it in via the TEST_SRC_URI_APPEND and its
+            # associated python snippet, we need to clean the build manually.
+            run_bitbake(prepared_test_build, "-c clean u-boot")
+
+            try:
+                run_bitbake(prepared_test_build, "-c compile u-boot", capture=True)
+
+                # Should never get here.
+                pytest.fail("Bitbake succeeded even though we intentionally broke the patch!")
+
+            except subprocess.CalledProcessError as e:
+                assert e.output.find("Please fix U-Boot's configuration file") >= 0
+
+        finally:
+            run_bitbake(prepared_test_build, "-c clean u-boot")
+            os.unlink(new_patch_name)

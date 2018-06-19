@@ -1,5 +1,9 @@
 #!/bin/bash
 
+UBI=0
+
+SCRIPT_DIR="$(readlink -f "$(dirname "$0")")"
+
 if [ -z "$1" ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     echo "This script should not be run on its own. Use uboot_auto_configure.sh."
     exit 1
@@ -33,16 +37,6 @@ patch_candidate_list() {
     done
 }
 
-definition_for_c_files() {
-    if [ -n "${2:-}" ]; then
-        echo "#define $1 $2"
-    elif [ -n "${1:-}" ]; then
-        echo "#define $1"
-    else
-        echo ""
-    fi
-}
-
 definition_for_kconfig_files() {
     if [ -n "${2:-}" ]; then
         echo "$1=$2"
@@ -60,29 +54,13 @@ replace_definition() {
     # given two, it replaces it with that definition, if given three, it gives
     # the new definition that value.
 
-    # c_repl refers to replacement text in C files.
-    # c_sed_op refers to operation on C files.
-    # kconfig_repl refers to replacement text in Kbuild files.
-    c_repl="$(definition_for_c_files "${2:-}" "${3:-}")"
-    kconfig_repl="$(definition_for_kconfig_files "${2:-}" "${3:-}")"
-    if [ -n "${2:-}" ]; then
-        # Replace.
-        c_sed_op="s%.*%$c_repl%"
-        should_exist=1
-    else
-        # Branch to end (omit line and move to next cycle).
-        c_sed_op="b"
-        should_exist=0
-    fi
-
-    patch_candidate_list "\\%^ *# *define *$1\\b% {:start; /\\\\\$/ {n; b start; }; $c_sed_op; }; p"
+    patch_candidate_list "\\%^[ \t]*#[ \t]*define[ \t]*$1\\b% {:start; /\\\\\$/ {n; b start; }; b; }; p"
 
     # Also patch config file.
-    sed -i -re "\\%(^$1=.*)|(^# *$1  *is not set *\$)%s%.*%$kconfig_repl%" configs/$CONFIG
+    sed -i -re "\\%(^$1=.*)|(^# *$1  *is not set *\$)%d" configs/$CONFIG
 
-    if [ $should_exist = 1 ] && ! definition_exists "$2"; then
-        # If the definition still isn't there, because no previous variant
-        # existed, we need to add it somewhere from scratch.
+    # Add definition.
+    if [ -n "${2:-}" ]; then
         shift
         add_definition "$@"
     fi
@@ -91,33 +69,23 @@ replace_definition() {
 add_definition() {
     # Adds a definition in the most appropriate place, if it doesn't exist.
 
-    c_repl="$(definition_for_c_files "$@")"
     kconfig_repl="$(definition_for_kconfig_files "$@")"
 
     if is_kconfig_option "$1"; then
         # In the Kconfig case it's easy, just add it to the defconfig file.
-        echo "$kconfig_repl" >> configs/$CONFIG
+        python3 $SCRIPT_DIR/add_kconfig_option_with_depends.py --src-dir=. --defconfig-file=configs/$CONFIG "$kconfig_repl"
     else
         # In the pre-Kconfig case, it's more open. We need to add it somewhere
-        # in the source, but it's not obvious where.  CONFIG_ENV_SIZE seems to
-        # be almost universally present, so add the new definition next to it.
-        patch_candidate_list "\\%^ *# *define *CONFIG_ENV_SIZE\\b% s%^%$c_repl\n%; p"
+        # in the source, but it's not obvious where. Add it to
+        # config_defaults.h.
+        echo "#define $1${2:+ $2}" >> include/config_defaults.h
     fi
-}
-
-append_to_definition() {
-    # Appends something to a string definition.
 
     if ! definition_exists "$1"; then
-        echo "Tried to append to definition $1, but it doesn't exist!" 1>&2
-        exit 1
-    fi
-
-    if is_kconfig_option "$1"; then
-        sed -re "s%^$1=(.*)\"%$1=\1$2\"%" configs/$CONFIG
-    else
-        # Add it to the last non-backslash-continued line.
-        patch_candidate_list "\\%^ *# *define *$1\\b% {:start; /\\\\$/ {p; n; b start}; s%\$% $2%}; p"
+        # If it STILL doesn't exist, then we failed to add it and the patching
+        # failed.
+        echo "Unable to add definition $1. Patching failed."
+        return 1
     fi
 }
 
@@ -127,7 +95,7 @@ definition_exists() {
 
     any_success=1
     for file in $(get_candidate_list); do
-        egrep -q "^ *# *define *$1\\b" "$file" && any_success=0 && break
+        egrep -q "^[ \t]*#[ \t]*define[ \t]*$1\\b" "$file" && any_success=0 && break
     done
     egrep -q "(^$1=.*)|(^# *$1  *is not set *\$)" configs/$CONFIG && any_success=0
     return $any_success
@@ -136,13 +104,44 @@ definition_exists() {
 is_kconfig_option() {
     # Returns whether a config option appears to be a Kconfig option or not.
 
-    # Check Kconfig files.
-    option=${1#CONFIG_}
-    if find -name Kconfig | xargs grep -q "^config *$option\\b"; then
-        return 0
+    # Doing this checking is really tricky though. We can't look in Kconfig
+    # files because they have if-statements that mean we can easily misdetect
+    # that something is supported when it really isn't. We also cannot look
+    # directly in .config, because other options that the option we're trying to
+    # add depends on, may hide the option as well.
+    #
+    # So what we do is this: We use the temporary build directory, make a copy
+    # of the _defconfig file, and then use the
+    # add_kconfig_option_with_depends.py tool to try to add the option with all
+    # its dependencies. Then we check .config file for the presence of the
+    # option, since all of the option's dependencies should have been resolved
+    # now, and the Kconfig if-statements also respected. If the option still
+    # isn't there, then we conclude it is not a Kconfig option.
+
+    # Special case for CONFIG_BOOTCOUNT_ENV: Due to conditional selection, ENV
+    # may be missing from the .config file. However, it is in Kconfig if
+    # CONFIG_BOOTCOUNT_LIMIT is.
+    if [ "$1" = "CONFIG_BOOTCOUNT_ENV" ]; then
+        is_kconfig_option CONFIG_BOOTCOUNT_LIMIT || return $?
+        return $?
     fi
 
-    return 1
+    cp $BUILD_DIR/configs/$CONFIG $BUILD_DIR/configs/$CONFIG.backup
+    python3 $SCRIPT_DIR/add_kconfig_option_with_depends.py --src-dir=$BUILD_DIR --defconfig-file=$BUILD_DIR/configs/$CONFIG "$kconfig_repl"
+
+    # Update .config
+    make HOSTCC="$HOSTCC" CC="$CC" -C $BUILD_DIR $CONFIG
+
+    # Check .config file for such the option.
+    if egrep -q "^($1=|# $1 is not set)" "$BUILD_DIR/.config"; then
+        ret=0
+    else
+        ret=1
+    fi
+
+    mv $BUILD_DIR/configs/$CONFIG.backup $BUILD_DIR/configs/$CONFIG
+
+    return $ret
 }
 
 remove_bootvar() {
@@ -218,34 +217,20 @@ patch_all_candidates() {
     remove_bootvar \
         "bootcmd"
 
-    # If this file contains a CONFIG_BOOTCOMMAND definition, remove everything
-    # from it up to the next line not ending with '\'. This is actually an
-    # unnecessary step, since CONFIG_MENDER_BOOTCOMMAND is the one that will be
-    # used, but it makes it clearer what the patch is trying to do, if anybody
-    # needs to look at the end result and/or tweak it.
-    replace_definition \
-        'CONFIG_BOOTCOMMAND'
-
-    # Replace any definition of CONFIG_ENV_SIZE with our definition.
     replace_definition \
         'CONFIG_ENV_SIZE' \
         'CONFIG_ENV_SIZE' \
-        "$ENV_SIZE"
+        "$CONFIG_ENV_SIZE"
 
-    # Remove all of the below entries.
+    # Remove this entry.
     replace_definition \
-        'CONFIG_SYS_MMC_ENV_DEV'
-    replace_definition \
-        'CONFIG_SYS_MMC_ENV_PART'
-    replace_definition \
-        'CONFIG_ENV_OFFSET'
-    replace_definition \
-        'CONFIG_ENV_OFFSET_REDUND'
+        'CONFIG_ENV_RANGE'
 
-    # Make sure the environment is in MMC.
-    replace_definition \
-        'CONFIG_ENV_IS_(NOWHERE|IN_[^ ]*)' \
-        'CONFIG_ENV_IS_IN_MMC'
+    if [ $UBI = 1 ]; then
+        patch_all_candidates_ubi
+    else
+        patch_all_candidates_sdimg
+    fi
 
     # There are so many variants of CONFIG_BOOTCOUNT, just remove all of them.
     replace_definition \
@@ -255,11 +240,6 @@ patch_all_candidates() {
         'CONFIG_BOOTCOUNT_LIMIT'
     add_definition \
         'CONFIG_BOOTCOUNT_ENV'
-
-    add_definition \
-        'CONFIG_CMD_EXT4'
-    add_definition \
-        'CONFIG_MMC'
 
     # Patch away "root=/dev/blah" arguments, we will provide our own. Take care
     # to replace an occurrence ending in '\0' first, to avoid losing it if
@@ -279,15 +259,15 @@ patch_all_candidates() {
             "fdt_addr_r"
     fi
 
-    # Find load address for kernel and make sure it's in kernel_addr_r.
+    # Find load address for kernel and make sure it's in loadaddr.
     if kernel_addr="$(extract_kernel_addr)"; then
-        if [ "$kernel_addr" != "kernel_addr_r" ]; then
+        if [ "$kernel_addr" != "loadaddr" ]; then
             remove_bootvar \
-                "kernel_addr_r"
+                "loadaddr"
         fi
         rename_bootvar \
             "$kernel_addr" \
-            "kernel_addr_r"
+            "loadaddr"
     else
         # Alright, no dedicated address. Let's try the second best, find it by
         # looking at existing boot commands.
@@ -295,11 +275,10 @@ patch_all_candidates() {
 
         # Using the :- syntax is because "set -u" is in effect.
         if [ -n "${addr:-}" ]; then
-            if definition_exists "CONFIG_EXTRA_ENV_SETTINGS"; then
-                append_to_definition "CONFIG_EXTRA_ENV_SETTINGS" "\"kernel_addr_r=$addr\\\\0\""
-            else
-                add_definition "CONFIG_EXTRA_ENV_SETTINGS" "\"kernel_addr_r=$addr\\\\0\""
-            fi
+            replace_definition \
+                'CONFIG_LOADADDR' \
+                'CONFIG_LOADADDR' \
+                "$addr"
         else
             echo "Could not find kernel load address!" 1>&2
             echo "This is the obtained environment:"
@@ -307,6 +286,84 @@ patch_all_candidates() {
             # Continue without, some boot commands don't use addresses at all.
         fi
     fi
+
+    # If this file contains a CONFIG_BOOTCOMMAND definition, remove everything
+    # from it up to the next line not ending with '\'. This is actually an
+    # unnecessary step, since CONFIG_MENDER_BOOTCOMMAND is the one that will be
+    # used, but it makes it clearer what the patch is trying to do, if anybody
+    # needs to look at the end result and/or tweak it.
+    replace_definition \
+        'CONFIG_BOOTCOMMAND'
+}
+
+patch_all_candidates_sdimg() {
+    replace_definition \
+        'CONFIG_ENV_OFFSET' \
+        'CONFIG_ENV_OFFSET' \
+        "$CONFIG_ENV_OFFSET"
+    replace_definition \
+        'CONFIG_ENV_OFFSET_REDUND' \
+        'CONFIG_ENV_OFFSET_REDUND' \
+        "$CONFIG_ENV_OFFSET_REDUND"
+
+    # Remove all of the below entries.
+    replace_definition \
+        'CONFIG_SYS_MMC_ENV_DEV' \
+        'CONFIG_SYS_MMC_ENV_DEV' \
+        "$CONFIG_SYS_MMC_ENV_DEV"
+    replace_definition \
+        'CONFIG_SYS_MMC_ENV_PART' \
+        'CONFIG_SYS_MMC_ENV_PART' \
+        "$CONFIG_SYS_MMC_ENV_PART"
+
+    # Make sure the environment is in MMC.
+    replace_definition \
+        'CONFIG_ENV_IS_(NOWHERE|IN_[^ ]*)' \
+        'CONFIG_ENV_IS_IN_MMC'
+
+    add_definition \
+        'CONFIG_CMD_EXT4'
+    add_definition \
+        'CONFIG_CMD_FS_GENERIC'
+    add_definition \
+        'CONFIG_MMC'
+}
+
+patch_all_candidates_ubi() {
+    replace_definition \
+        'CONFIG_MTDIDS_DEFAULT' \
+        'CONFIG_MTDIDS_DEFAULT' \
+        "$CONFIG_MTDIDS_DEFAULT"
+    replace_definition \
+        'CONFIG_MTDPARTS_DEFAULT' \
+        'CONFIG_MTDPARTS_DEFAULT' \
+        "$CONFIG_MTDPARTS_DEFAULT"
+
+    # Make sure the environment is in Flash.
+    replace_definition \
+        'CONFIG_ENV_IS_(NOWHERE|IN_[^ ]*)' \
+        'CONFIG_ENV_IS_IN_UBI'
+
+    # And remove volume definitions of environment so Mender can configure them.
+    replace_definition \
+        'CONFIG_ENV_UBI_PART' \
+        'CONFIG_ENV_UBI_PART' \
+        "$CONFIG_ENV_UBI_PART"
+    replace_definition \
+        'CONFIG_ENV_UBI_VOLUME' \
+        'CONFIG_ENV_UBI_VOLUME' \
+        "$CONFIG_ENV_UBI_VOLUME"
+
+    add_definition \
+        'CONFIG_CMD_MTDPARTS'
+    add_definition \
+        'CONFIG_CMD_UBI'
+    add_definition \
+        'CONFIG_CMD_UBIFS'
+    add_definition \
+        'CONFIG_MTD_DEVICE'
+    add_definition \
+        'CONFIG_MTD_PARTITIONS'
 }
 
 if [ "$1" = "--patch-config-file" ]; then
@@ -316,7 +373,7 @@ if [ "$1" = "--patch-config-file" ]; then
     fi
     # Patch config file to use a local one instead of absolute path. This means
     # we can use the env tools for probing during the build preparations.
-    sed -i -e 's/^ *# *define *CONFIG_FILE\b.*/#define CONFIG_FILE "fw_env.config"/' tools/env/fw_env*.h
+    sed -i -e 's/^[ \t]*#[ \t]*define[ \t]*CONFIG_FILE\b.*/#define CONFIG_FILE "fw_env.config"/' tools/env/fw_env*.h
     exit 0
 fi
 
@@ -335,11 +392,28 @@ while [ -n "$1" ]; do
                     ;;
             esac
             ;;
+        --build-dir=*)
+            BUILD_DIR=${1#--build-dir=}
+            ;;
         --dep-file=*)
             DEP_FILE=${1#--dep-file=}
             ;;
-        --env-size=*)
-            ENV_SIZE=${1#--env-size=}
+        --kconfig-fragment=*)
+            # Read in all the definitions from that file into variables.
+            # Use only line separator as delimiter.
+            IFS='
+'
+            for line in $(cat "${1#--kconfig-fragment=}"); do
+                # Replace existing " with \".
+                line="${line//\"/\\\"}"
+                # Add quotes around value of assignment.
+                line="${line/=/=\"}\""
+                eval "$line"
+            done
+            unset IFS
+            ;;
+        --ubi)
+            UBI=1
             ;;
         *)
             echo "Invalid argument: $1"

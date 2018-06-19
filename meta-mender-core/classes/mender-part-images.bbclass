@@ -36,6 +36,11 @@ inherit image_types
 # our image.
 IMAGE_NAME_SUFFIX = ""
 
+
+################################################################################
+# Block storage
+################################################################################
+
 mender_part_image() {
     suffix="$1"
     part_type="$2"
@@ -98,18 +103,24 @@ part --source rawcopy --sourceparams="file=${WORKDIR}/uboot.env" --ondisk "$ondi
 EOF
     fi
 
+    if [ $(expr ${MENDER_PARTITION_ALIGNMENT} % 1024 || true) -ne 0 ]; then
+        bbfatal "MENDER_PARTITION_ALIGNMENT must be KiB aligned when using partition table."
+    fi
+
+    alignment_kb=$(expr ${MENDER_PARTITION_ALIGNMENT} / 1024)
+
     if [ "${MENDER_BOOT_PART_SIZE_MB}" -ne "0" ]; then
         cat >> "$wks" <<EOF
-part $boot_part_params --ondisk "$ondisk_dev" --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
+part $boot_part_params --ondisk "$ondisk_dev" --fstype=vfat --label boot --align $alignment_kb --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
 EOF
     fi
 
     exclude_dirs_options="${@" ".join(["--exclude-path %s" % dir for dir in (d.getVar("IMAGE_ROOTFS_EXCLUDE_PATH") or "").split()])}"
 
     cat >> "$wks" <<EOF
-part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_dirs_options
-part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_dirs_options
-part --source rootfs --rootfs-dir ${IMAGE_ROOTFS}/data --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}
+part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_dirs_options
+part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_dirs_options
+part --source rootfs --rootfs-dir ${IMAGE_ROOTFS}/data --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label data --align $alignment_kb --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 bootloader --ptable $part_type
 EOF
 
@@ -180,3 +191,76 @@ IMAGE_TYPEDEP_biosimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', '
 do_image_sdimg[respect_exclude_path] = "0"
 do_image_uefiimg[respect_exclude_path] = "0"
 do_image_biosimg[respect_exclude_path] = "0"
+
+
+################################################################################
+# Flash storage
+################################################################################
+
+mender_flash_mtdpart() {
+    local file="$1"
+    local size="$2"
+    local kbsize="$3"
+    local kboffset="$4"
+    local name="$5"
+
+    if [ "$size" = "-" ]; then
+        # Remaining space.
+        local total_space_kb=$(expr ${MENDER_STORAGE_TOTAL_SIZE_MB} \* 1024)
+        kbsize=$(expr $total_space_kb - $kboffset)
+        size=$(expr $kbsize \* 1024)
+    fi
+
+    if [ "$file" != "/dev/zero" ]; then
+        local file_size=$(stat -Lc '%s' "$file")
+        if [ $file_size -gt $size ]; then
+            bbfatal "$file is too big to fit inside '$name' mtdpart of size $size."
+        fi
+    fi
+    dd if="$file" \
+        of="${IMGDEPLOYDIR}/${IMAGE_NAME}.mtdimg" \
+        bs=1024 \
+        seek=$kboffset \
+        count=$kbsize
+}
+
+IMAGE_CMD_mtdimg() {
+    set -ex
+
+    # We don't actually use the result from this one, it's only to trigger a
+    # warning or error if the variable is not correctly set.
+    mender_get_mtdparts
+
+    ${@mender_make_mtdparts_shell_array(d)}
+
+    local remaining_encountered=0
+    local i=0
+    while [ $i -lt $mtd_count ]; do
+        eval local name="\"\$mtd_names_$i\""
+        eval local size="\"\$mtd_sizes_$i\""
+        eval local kbsize="\"\$mtd_kbsizes_$i\""
+        eval local kboffset="\"\$mtd_kboffsets_$i\""
+
+        if [ "$name" = "u-boot" ]; then
+            if [ -n "${MENDER_IMAGE_BOOTLOADER_FILE}" ]; then
+                mender_flash_mtdpart "${DEPLOY_DIR_IMAGE}/${MENDER_IMAGE_BOOTLOADER_FILE}" $size $kbsize $kboffset $name
+            else
+                bbwarn "There is a 'u-boot' mtdpart, but MENDER_IMAGE_BOOTLOADER_FILE is undefined. Filling with zeros."
+                mender_flash_mtdpart "/dev/zero" $size $kbsize $kboffset $name
+            fi
+        elif [ "$name" = "u-boot-env" ]; then
+            mender_flash_mtdpart "${DEPLOY_DIR_IMAGE}/uboot.env" $size $kbsize $kboffset $name
+        elif [ "$name" = "ubi" ]; then
+            mender_flash_mtdpart "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubimg" $size $kbsize $kboffset $name
+        else
+            bbwarn "Don't know how to flash mtdparts '$name'. Filling with zeros."
+            mender_flash_mtdpart "/dev/zero" $size $kbsize $kboffset $name
+        fi
+
+        i=$(expr $i + 1)
+    done
+
+    ln -sfn "${IMAGE_NAME}.mtdimg" "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.mtdimg"
+}
+
+IMAGE_TYPEDEP_mtdimg_append = " ubimg"
