@@ -338,6 +338,7 @@ def only_with_image(request, bitbake_variables):
     if mark is not None:
         images = mark.args
         current = bitbake_variables.get('IMAGE_FSTYPES', '').strip().split(' ')
+        current.append(bitbake_variables.get('ARTIFACTIMG_FSTYPE', ''))
         if not any([img in current for img in images]):
             pytest.skip('no supported filesystem in {} ' \
                         '(supports {})'.format(', '.join(current),
