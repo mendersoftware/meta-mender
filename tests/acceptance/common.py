@@ -316,7 +316,7 @@ def common_boot_from_internal():
 
 
 def latest_build_artifact(builddir, extension):
-    output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | head -n 1" % (builddir, extension)])
+    output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
     output = output.rstrip('\r\n')
     print("Found latest image of type '%s' to be: %s" % (extension, output))
     return output
