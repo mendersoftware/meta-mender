@@ -49,8 +49,7 @@ fi
 QEMU_ARGS=""
 
 # Extract certain variables from build, with "EXTRACTED_" prefix.
-eval "$(bitbake -e core-image-minimal | egrep '^(export )?(MENDER_MACHINE|DISTRO_FEATURES)=' | sed -e 's/^\(export \)*/EXTRACTED_/')"
-
+eval "$(cd $BUILDDIR && bitbake -e core-image-minimal | egrep '^(export )?(MENDER_MACHINE|DISTRO_FEATURES)=' | sed -e 's/^\(export \)*/EXTRACTED_/')"
 MACHINE="${MACHINE:-$EXTRACTED_MENDER_MACHINE}"
 DISTRO_FEATURES="${DISTRO_FEATURES:-$EXTRACTED_DISTRO_FEATURES}"
 
