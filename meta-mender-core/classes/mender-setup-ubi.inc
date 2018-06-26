@@ -43,7 +43,7 @@ MENDER_UBOOT_STORAGE_INTERFACE_DEFAULT_mender-ubi = "dummy"
 MENDER_PARTITION_ALIGNMENT_DEFAULT_mender-ubi = "${MENDER_UBI_LEB_SIZE}"
 
 # Will be relative to start of first MTD partition, so should be zero.
-IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT_mender-ubi = "0"
+MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT_mender-ubi = "0"
 
 # since UBIFS employs compression, disable the max rootfs size checking.
 MENDER_IMAGE_ROOTFS_MAXSIZE_DEFAULT_mender-ubi = ""
