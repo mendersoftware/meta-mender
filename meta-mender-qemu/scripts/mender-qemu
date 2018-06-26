@@ -49,12 +49,8 @@ fi
 QEMU_ARGS=""
 
 # Extract certain variables from build, with "EXTRACTED_" prefix.
-eval "$(bitbake -e core-image-minimal | egrep '^(MACHINE|DISTRO_FEATURES)=' | sed -e 's/^/EXTRACTED_/')"
-
-# MACHINE is special, it can't be extracted from bitbake, so extract from local.conf.
-eval "$(sed -nre '/^MACHINE *\??\??= */{s/^MACHINE *\??\??= */EXTRACTED_MACHINE=/;p}' $BUILDDIR/conf/local.conf)"
-
-MACHINE="${MACHINE:-$EXTRACTED_MACHINE}"
+eval "$(cd $BUILDDIR && bitbake -e core-image-minimal | egrep '^(export )?(MENDER_MACHINE|DISTRO_FEATURES)=' | sed -e 's/^\(export \)*/EXTRACTED_/')"
+MACHINE="${MACHINE:-$EXTRACTED_MENDER_MACHINE}"
 DISTRO_FEATURES="${DISTRO_FEATURES:-$EXTRACTED_DISTRO_FEATURES}"
 
 case "$MACHINE" in
@@ -80,13 +76,16 @@ case "$MACHINE" in
             QEMU_ARGS="$QEMU_ARGS -enable-kvm"
         fi
         ;;
-    *)
+    *vexpress*)
         QEMU_SYSTEM=${QEMU_SYSTEM:-"qemu-system-arm"}
         QEMU_ARGS="$QEMU_ARGS -M vexpress-a9"
         BOOTLOADER="${BOOTLOADER:-${BUILDTMP}/deploy/images/${MACHINE}/u-boot.elf}"
         BOOTLOADER_ARG="${BOOTLOADER_ARG:--kernel ${BOOTLOADER}}"
         DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.sdimg"}
         ;;
+    *)
+        echo "Unable to determine proper MACHINE"
+        exit 1
 esac
 RANDOM_MAC=${RANDOM_MAC:-"52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"}
 # use to pass -drive .. parameters directly

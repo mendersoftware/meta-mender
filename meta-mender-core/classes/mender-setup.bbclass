@@ -2,6 +2,11 @@ inherit mender-helpers
 
 # ------------------------------ CONFIGURATION ---------------------------------
 
+# The machine to be used for Mender.
+# For some reason 'bitbake -e' does not report the MACHINE value so
+# we use this as a proxy in case it is not available when needed.
+export MENDER_MACHINE = "${MACHINE}"
+
 # The storage device that holds the device partitions.
 MENDER_STORAGE_DEVICE ??= "${MENDER_STORAGE_DEVICE_DEFAULT}"
 MENDER_STORAGE_DEVICE_DEFAULT = "/dev/mmcblk0"
@@ -131,6 +136,14 @@ MENDER_MBR_BOOTLOADER_FILE_DEFAULT = ""
 # 446 avoids the partition table structure. See this link:
 # https://pete.akeo.ie/2014/05/compiling-and-installing-grub2-for.html
 MENDER_MBR_BOOTLOADER_LENGTH ??= "446"
+
+# Board specific U-Boot commands to be run prior to mender_setup
+MENDER_UBOOT_PRE_SETUP_COMMANDS ??= "${MENDER_UBOOT_PRE_SETUP_COMMANDS_DEFAULT}"
+MENDER_UBOOT_PRE_SETUP_COMMANDS_DEFAULT = ""
+
+# Board specific U-Boot commands to be run after mender_setup
+MENDER_UBOOT_POST_SETUP_COMMANDS ??= "${MENDER_UBOOT_POST_SETUP_COMMANDS_DEFAULT}"
+MENDER_UBOOT_POST_SETUP_COMMANDS_DEFAULT = ""
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 

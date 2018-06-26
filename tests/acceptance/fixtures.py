@@ -339,8 +339,8 @@ def prepared_test_build_base(request, bitbake_variables):
     if not pytest.config.getoption('--no-tmp-build-dir'):
         run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
         with open(local_conf, "a") as fd:
-            fd.write('SSTATE_MIRRORS = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
-        os.symlink(os.path.join(os.environ['BUILDDIR'], "downloads"), os.path.join(build_dir, "downloads"))
+            fd.write('SSTATE_MIRRORS = " file://.* file://%s/PATH"\n' % bitbake_variables['SSTATE_DIR'])
+            fd.write('DL_DIR = "%s"\n' % bitbake_variables['DL_DIR'])
 
     run_verbose("cp %s %s" % (local_conf, local_conf_orig))
 
@@ -424,6 +424,7 @@ def only_with_image(request, bitbake_variables):
     if mark is not None:
         images = mark.args
         current = bitbake_variables.get('IMAGE_FSTYPES', '').strip().split(' ')
+        current.append(bitbake_variables.get('ARTIFACTIMG_FSTYPE', ''))
         if not any([img in current for img in images]):
             pytest.skip('no supported filesystem in {} ' \
                         '(supports {})'.format(', '.join(current),
