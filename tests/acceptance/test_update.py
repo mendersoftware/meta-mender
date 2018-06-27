@@ -575,6 +575,7 @@ class TestUpdates:
         finally:
             # Reset environment to what it was.
             run("fw_setenv mender_boot_part %s" % active[-1:])
+            run("fw_setenv mender_boot_part_hex %x" % int(active[-1:]))
             run("fw_setenv upgrade_available 0")
             run("mv /etc/mender/mender.conf.bak /etc/mender/mender.conf")
             if sig_key:
