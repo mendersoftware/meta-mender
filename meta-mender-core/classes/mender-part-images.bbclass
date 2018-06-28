@@ -34,7 +34,7 @@ inherit image_types
 # Which results in a empty "gz" archive when using the default value, in our
 # case IMAGE_NAME_SUFFIX should be empty as we do not use it when naming
 # our image.
-IMAGE_NAME_SUFFIX_sdimg = ""
+IMAGE_NAME_SUFFIX = ""
 
 mender_part_image() {
     suffix="$1"
@@ -74,6 +74,7 @@ mender_part_image() {
 
     dd if=/dev/zero of="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" count=0 bs=1M seek=${MENDER_DATA_PART_SIZE_MB}
     mkfs.${ARTIFACTIMG_FSTYPE} -F "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" -d "${WORKDIR}/data" -L data
+    install -m 0644 "${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" "${DEPLOY_DIR_IMAGE}/"
 
     # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
     install -m 0644 "${DEPLOY_DIR_IMAGE}/uboot.env" "${WORKDIR}/"
@@ -127,10 +128,8 @@ EOF
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-$suffix"
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/build/$(basename "${wks%.wks}")"*.direct "$outimgname"
-    ln -sfn "${IMAGE_NAME}.$suffix" "${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.$suffix"
     rm -rf "$wicout/"
 
-    ln -sfn "${IMAGE_NAME}.$suffix" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$suffix"
 }
 
 IMAGE_CMD_sdimg() {

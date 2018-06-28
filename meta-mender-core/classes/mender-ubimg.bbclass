@@ -1,18 +1,11 @@
 # Class that creates an UBI image with an Mender layout
 
-# The UBI volyume scheme is:
+# The UBI volume scheme is:
 #    ubi0: first rootfs, active
 #    ubi1: second rootfs, inactive, mirror of first,
 #           available as failsafe for when some update fails
 #    ubi2: persistent data partition
 
-
-########## CONFIGURATION START - you can override these default
-##########                       values in your local.conf
-
-IMAGE_TYPEDEP_ubimg_append = "ubifs"
-
-########## CONFIGURATION END ##########
 
 inherit image
 inherit image_types

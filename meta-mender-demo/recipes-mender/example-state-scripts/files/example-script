@@ -1,3 +1,4 @@
 #!/bin/sh
 
 echo "$(cat /etc/mender/artifact_info): $(basename "$0") was called!" >&2
+exit 0
