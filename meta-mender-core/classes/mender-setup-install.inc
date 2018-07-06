@@ -12,7 +12,7 @@ def mender_get_part_overhead_kb(d):
 MENDER_PARTITIONING_OVERHEAD_KB ??= "${MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT}"
 MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT = "${@mender_get_part_overhead_kb(d)}"
 
-def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, alignment, overhead_kb, reserved_space_size):
+def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, alignment, overhead_kb, reserved_space_size, rootfs_alignment):
     import math
 
     # Space used by each of the partitions, aligned to partition alignment
@@ -34,6 +34,11 @@ def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, alignment, overh
     # Turn into kiB.
     calc_space_kb = calc_space / 1024
 
+    # Align with rootfs
+    calc_space_kb = int(calc_space_kb)
+    calc_space_kb += rootfs_alignment - 1
+    calc_space_kb -= calc_space_kb % rootfs_alignment
+
     return int(calc_space_kb)
 
 # Auto detect image size from other settings.
@@ -42,7 +47,8 @@ MENDER_CALC_ROOTFS_SIZE = "${@mender_calculate_rootfs_size_kb(${MENDER_STORAGE_T
                                                               ${MENDER_DATA_PART_SIZE_MB}, \
                                                               ${MENDER_PARTITION_ALIGNMENT}, \
                                                               ${MENDER_PARTITIONING_OVERHEAD_KB}, \
-                                                              ${MENDER_RESERVED_SPACE_BOOTLOADER_DATA})}"
+                                                              ${MENDER_RESERVED_SPACE_BOOTLOADER_DATA}, \
+                                                              ${IMAGE_ROOTFS_ALIGNMENT})}"
 
 # Gently apply this as the default image size.
 # But subtract IMAGE_ROOTFS_EXTRA_SPACE, since it will be added automatically
