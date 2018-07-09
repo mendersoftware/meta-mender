@@ -253,6 +253,7 @@ def bitbake_path(request, bitbake_path_string):
 
 @pytest.fixture(scope="session")
 def clean_image(request, prepared_test_build_base):
+    reset_local_conf(prepared_test_build_base)
     add_to_local_conf(prepared_test_build_base,
                       'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
     add_to_local_conf(prepared_test_build_base,
@@ -289,8 +290,8 @@ def prepared_test_build_base(request, bitbake_variables):
     if not pytest.config.getoption('--no-tmp-build-dir'):
         run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
         with open(local_conf, "a") as fd:
-            fd.write('SSTATE_MIRRORS = " file://.* file://%s/sstate-cache/PATH"\n' % os.environ['BUILDDIR'])
-        os.symlink(os.path.join(os.environ['BUILDDIR'], "downloads"), os.path.join(build_dir, "downloads"))
+            fd.write('SSTATE_MIRRORS = " file://.* file://%s/PATH"\n' % bitbake_variables['SSTATE_DIR'])
+            fd.write('DL_DIR = "%s"\n' % bitbake_variables['DL_DIR'])
 
     run_verbose("cp %s %s" % (local_conf, local_conf_orig))
 
@@ -374,6 +375,7 @@ def only_with_image(request, bitbake_variables):
     if mark is not None:
         images = mark.args
         current = bitbake_variables.get('IMAGE_FSTYPES', '').strip().split(' ')
+        current.append(bitbake_variables.get('ARTIFACTIMG_FSTYPE', ''))
         if not any([img in current for img in images]):
             pytest.skip('no supported filesystem in {} ' \
                         '(supports {})'.format(', '.join(current),
@@ -395,7 +397,7 @@ def only_with_distro_feature(request, bitbake_variables):
     if mark is not None:
         features = mark.args
         current = bitbake_variables.get('DISTRO_FEATURES', '').strip().split(' ')
-        if not any([feature in current for feature in features]):
+        if not all([feature in current for feature in features]):
             pytest.skip('no supported distro feature in {} ' \
                         '(supports {})'.format(', '.join(current),
                                                ', '.join(features)))

@@ -1,5 +1,10 @@
 # ------------------------------ CONFIGURATION ---------------------------------
 
+# The machine to be used for Mender.
+# For some reason 'bitbake -e' does not report the MACHINE value so
+# we use this as a proxy in case it is not available when needed.
+export MENDER_MACHINE = "${MACHINE}"
+
 # The storage device that holds the device partitions.
 MENDER_STORAGE_DEVICE ??= "${MENDER_STORAGE_DEVICE_DEFAULT}"
 MENDER_STORAGE_DEVICE_DEFAULT = "/dev/mmcblk0"

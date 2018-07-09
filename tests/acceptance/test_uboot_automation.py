@@ -64,17 +64,23 @@ class TestUbootAutomation:
         # Number of days that must pass for the branch to be considered stable.
         days_to_be_old = 7
 
+        # Find the repository directories we need
+        [ poky_dir, meta_mender_core_dir, rest ] = subprocess.check_output(
+            "bitbake-layers show-layers | awk '$1~/(^meta$|^meta-mender-core$)/ {print $2}' | xargs -n 1 dirname",
+            cwd=os.environ['BUILDDIR'], shell=True).split("\n")
+
         # SHA from poky repository, limited by date.
         poky_rev = subprocess.check_output("git log -n1 --format=%%H --after=%d.days.ago HEAD" % days_to_be_old, shell=True,
-                                           cwd=os.path.join(os.environ['BUILDDIR'], "..")).strip()
+                                           cwd=poky_dir).strip()
         if poky_rev:
             print("Running test_uboot_compile because poky commit is more recent than %d days." % days_to_be_old)
             return
 
         # SHA from meta-mender repository, limited by date.
         meta_mender_uboot_rev = subprocess.check_output(("git log -n1 --format=%%H --after=%d.days.ago HEAD -- "
-                                                         + "../../meta-mender-core/recipes-bsp/u-boot")
+                                                         + "recipes-bsp/u-boot")
                                                         % days_to_be_old,
+                                                        cwd=meta_mender_core_dir,
                                                         shell=True).strip()
         if meta_mender_uboot_rev:
             print("Running test_uboot_compile because u-boot in meta-mender has been modified more recently than %d days ago." % days_to_be_old)
@@ -82,7 +88,8 @@ class TestUbootAutomation:
 
         # SHA from meta-mender repository, not limited by date.
         meta_mender_uboot_rev = subprocess.check_output("git log -n1 --format=%H HEAD -- "
-                                                         + "../../meta-mender-core/recipes-bsp/u-boot",
+                                                        + "recipes-bsp/u-boot",
+                                                        cwd=meta_mender_core_dir,
                                                         shell=True).strip()
         for remote in subprocess.check_output(["git", "remote"]).split():
             url = subprocess.check_output("git config --get remote.%s.url" % remote, shell=True)

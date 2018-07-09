@@ -1,4 +1,5 @@
 inherit mender-helpers
+inherit uboot-config
 
 DEPENDS += "coreutils-native"
 

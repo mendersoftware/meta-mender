@@ -34,7 +34,7 @@ inherit image_types
 # Which results in a empty "gz" archive when using the default value, in our
 # case IMAGE_NAME_SUFFIX should be empty as we do not use it when naming
 # our image.
-IMAGE_NAME_SUFFIX_sdimg = ""
+IMAGE_NAME_SUFFIX = ""
 
 mender_part_image() {
     suffix="$1"
@@ -126,10 +126,8 @@ EOF
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-$suffix"
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/$(basename "${wks%.wks}")"*.direct "$outimgname"
-    ln -sfn "${IMAGE_NAME}.$suffix" "${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.$suffix"
     rm -rf "$wicout/"
 
-    ln -sfn "${IMAGE_NAME}.$suffix" "${DEPLOY_DIR_IMAGE}/${IMAGE_BASENAME}-${MACHINE}.$suffix"
 }
 
 IMAGE_CMD_sdimg() {
