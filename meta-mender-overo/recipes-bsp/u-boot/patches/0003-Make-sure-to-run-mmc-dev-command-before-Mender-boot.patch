@@ -1,0 +1,35 @@
+From 8b3e45eeb4699714dcb0ff542e7ef85363f1d20f Mon Sep 17 00:00:00 2001
+From: Drew Moseley <drew.moseley@northern.tech>
+Date: Fri, 23 Feb 2018 09:53:05 -0500
+Subject: [PATCH 3/3] Make sure to run mmc dev command before Mender boot.
+
+For some inexplicable reason, without this, certain things in the
+Linux environment simply don't work.  Notably, it seems that no
+linux-firmware is loaded and the wifi driver does not come up.
+
+I cannot explain this behavior but simply running the "mmc dev"
+command effectively negates this behavior.
+
+It is completely reproducible so I'm confident this is a
+viable workaround.  I guess there is a bug elsewhere in U-Boot.
+
+Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
+---
+ include/configs/omap3_overo.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/configs/omap3_overo.h b/include/configs/omap3_overo.h
+index 0f07ed2666..da34283f13 100644
+--- a/include/configs/omap3_overo.h
++++ b/include/configs/omap3_overo.h
+@@ -158,6 +158,7 @@
+ 		"bootz ${loadaddr} - ${fdtaddr}\0" \
+ 
+ #define CONFIG_BOOTCOMMAND \
++	"mmc dev ${mmcdev}; " \
+ 	"if test -z \"${fdtfile}\"; then "\
+ 		"setenv fdtfile omap3-${boardname}-${expansionname}.dtb;" \
+ 	"fi;" \
+-- 
+2.11.0
+

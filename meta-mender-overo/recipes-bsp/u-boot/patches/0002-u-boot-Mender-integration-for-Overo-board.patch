@@ -1,0 +1,112 @@
+From 5152008081454cefbacc1d57e082f56f47459df2 Mon Sep 17 00:00:00 2001
+From: Drew Moseley <drew.moseley@northern.tech>
+Date: Tue, 13 Feb 2018 14:43:19 -0500
+Subject: [PATCH 2/2] u-boot: Mender integration for Overo board.
+
+Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
+---
+ include/configs/omap3_overo.h | 49 ++++++++++++++++++-------------------------
+ 1 file changed, 20 insertions(+), 29 deletions(-)
+
+diff --git a/include/configs/omap3_overo.h b/include/configs/omap3_overo.h
+index f66a7b00b8..0f07ed2666 100644
+--- a/include/configs/omap3_overo.h
++++ b/include/configs/omap3_overo.h
+@@ -34,7 +34,8 @@
+ /* Shift 128 << 15 provides 4 MiB heap to support UBI commands.
+  * Shift 128 << 10 provides 128 KiB heap for limited-memory devices. */
+ #define CONFIG_SYS_MALLOC_LEN	(CONFIG_ENV_SIZE + (128 << 15))
+-
++/* Added for Mender integration */
++#define CONFIG_ENV_RANGE        CONFIG_ENV_SIZE
+ /* I2C Support */
+ #define CONFIG_SYS_I2C_OMAP34XX
+ 
+@@ -66,7 +67,9 @@
+ #define CONFIG_RBTREE		/* required by CONFIG_CMD_UBI */
+ #define CONFIG_LZO		/* required by CONFIG_CMD_UBIFS */
+ 
++#define CONFIG_MTD_DEVICE       /* needed for mtdparts commands */
+ #define CONFIG_MTD_PARTITIONS	/* required for UBI partition support */
++#define CONFIG_CMD_MTDPARTS
+ 
+ /* NAND block size is 128 KiB.  Synchronize these values with
+  * overo_nand_partitions in mach-omap2/board-overo.c in Linux:
+@@ -105,7 +108,7 @@
+ 	"mmcdev=0\0" \
+ 	"mmcroot=/dev/mmcblk0p2 rw\0" \
+ 	"mmcrootfstype=ext4 rootwait\0" \
+-	"nandroot=ubi0:rootfs ubi.mtd=4\0" \
++	"nandroot=${mender_kernel_root} ubi.mtd=${mender_mtd_ubi_dev_name}\0" \
+ 	"nandrootfstype=ubifs\0" \
+ 	"mtdparts=" MTDPARTS_DEFAULT "\0" \
+ 	"mmcargs=setenv bootargs console=${console} " \
+@@ -155,35 +158,17 @@
+ 		"bootz ${loadaddr} - ${fdtaddr}\0" \
+ 
+ #define CONFIG_BOOTCOMMAND \
+-	"mmc dev ${mmcdev}; if mmc rescan; then " \
+-		"if run loadbootscript; then " \
+-			"run bootscript; " \
+-		"fi;" \
+-		"if run loadbootenv; then " \
+-			"echo Loaded environment from ${bootenv};" \
+-			"run importbootenv;" \
+-		"fi;" \
+-		"if test -n $uenvcmd; then " \
+-			"echo Running uenvcmd ...;" \
+-			"run uenvcmd;" \
+-		"fi;" \
+-		"if run loaduimage; then " \
+-			"run mmcboot;" \
+-		"fi;" \
+-		"if run loadzimage; then " \
+-			"if test -z \"${fdtfile}\"; then " \
+-				"setenv fdtfile omap3-${boardname}-${expansionname}.dtb;" \
+-			"fi;" \
+-			"if run loadfdt; then " \
+-				"run mmcbootfdt;" \
+-			"fi;" \
+-		"fi;" \
+-	"fi;" \
+-	"run nandboot; " \
+ 	"if test -z \"${fdtfile}\"; then "\
+ 		"setenv fdtfile omap3-${boardname}-${expansionname}.dtb;" \
+ 	"fi;" \
+-	"run nanddtsboot; " \
++	"run nandargs; "                                       \
++	"run mender_setup; "                                   \
++	"ubi part ${mender_mtd_ubi_dev_name} && "              \
++	"ubifsmount ${mender_uboot_root_name} && "             \
++	"run loadubifdt && "                                   \
++	"run loadubizimage && "                                \
++	"bootz ${loadaddr} - ${fdtaddr}; "                     \
++        "run mender_try_to_recover; "                          \
+ 
+ /* memtest works on */
+ #define CONFIG_SYS_MEMTEST_START	(OMAP34XX_SDRC_CS0)
+@@ -204,9 +189,12 @@
+ #define SMNAND_ENV_OFFSET		0x240000 /* environment starts here */
+ 
+ #define CONFIG_SYS_ENV_SECT_SIZE	(128 << 10)	/* 128 KiB */
++#if 0
++/* Removed for Mender Integration */
+ #define CONFIG_ENV_OFFSET		SMNAND_ENV_OFFSET
+ #define CONFIG_ENV_ADDR			SMNAND_ENV_OFFSET
+-
++#endif
++  
+ /* Configure SMSC9211 ethernet */
+ #if defined(CONFIG_CMD_NET)
+ #define CONFIG_SMC911X
+@@ -246,4 +234,7 @@
+ #define CONFIG_CMD_SPL_WRITE_SIZE	0x2000
+ #endif
+ 
++#define CONFIG_BOOTCOUNT_LIMIT
++#define CONFIG_BOOTCOUNT_ENV
++
+ #endif				/* __CONFIG_H */
+-- 
+2.11.0
+
