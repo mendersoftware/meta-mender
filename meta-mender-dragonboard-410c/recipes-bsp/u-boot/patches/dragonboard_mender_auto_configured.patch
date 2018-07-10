@@ -1,0 +1,52 @@
+From b132e8258380ffdaea3ac2e64b196c0505406796 Mon Sep 17 00:00:00 2001
+From: Drew Moseley <drew.moseley@northern.tech>
+Date: Fri, 23 Feb 2018 12:29:52 -0500
+Subject: [PATCH] u-boot-dragonboard: Mender support
+
+---
+ configs/dragonboard410c_defconfig | 2 ++
+ include/config_distro_bootcmd.h   | 1 -
+ include/configs/dragonboard410c.h | 5 +++--
+ 3 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/configs/dragonboard410c_defconfig b/configs/dragonboard410c_defconfig
+index 570ee6d..80946fe 100644
+--- a/configs/dragonboard410c_defconfig
++++ b/configs/dragonboard410c_defconfig
+@@ -46,3 +46,5 @@ CONFIG_OF_LIBFDT_OVERLAY=y
+ CONFIG_OF_CONTROL=y
+ CONFIG_ENV_IS_IN_MMC=y
+ CONFIG_OF_BOARD_SETUP=y
++CONFIG_CMD_EXT4=y
++CONFIG_MMC=y
+diff --git a/include/config_distro_bootcmd.h b/include/config_distro_bootcmd.h
+index 5c469a2..f27b8ea 100644
+--- a/include/config_distro_bootcmd.h
++++ b/include/config_distro_bootcmd.h
+@@ -395,7 +395,6 @@
+ 		"done\0"
+ 
+ #ifndef CONFIG_BOOTCOMMAND
+-#define CONFIG_BOOTCOMMAND "run distro_bootcmd"
+ #endif
+ 
+ #endif  /* _CONFIG_CMD_DISTRO_BOOTCMD_H */
+diff --git a/include/configs/dragonboard410c.h b/include/configs/dragonboard410c.h
+index b056646..c538e5d 100644
+--- a/include/configs/dragonboard410c.h
++++ b/include/configs/dragonboard410c.h
+@@ -99,8 +99,9 @@ REFLASH(dragonboard/u-boot.img, 8)\
+ 	"pxefile_addr_r=0x90100000\0"\
+ 	BOOTENV
+ 
+-#define CONFIG_ENV_SIZE			0x2000
+-#define CONFIG_SYS_MMC_ENV_DEV		0	/* mmc0 = emmc, mmc1 = sd */
++#define CONFIG_BOOTCOUNT_LIMIT
++#define CONFIG_BOOTCOUNT_ENV
++#define CONFIG_ENV_SIZE 0x20000
+ #define CONFIG_ENV_VARS_UBOOT_CONFIG
+ 
+ /* Size of malloc() pool */
+-- 
+2.11.0
+
