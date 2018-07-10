@@ -4,5 +4,4 @@
 # in the future and an fsck will be done.  Setting this to 0 results
 # in an epoch of January 1, 1970 which is detected as an invalid time
 # and the fsck will be skipped.
-EXTRA_OECONF += "--with-time-epoch=0"
-EXTRA_OEMESON += " -Dtime-epoch=0"
+PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-systemd', ' time-epoch', '', d)}"
