@@ -25,5 +25,27 @@ UBOOT_SUFFIX ??= "bin"
 
 # Prefer to use our auto provided fw-utils variant which duplicates the sources
 # from u-boot, so we don't have to apply the same patches twice.
-PREFERRED_PROVIDER_u-boot-fw-utils ??= "u-boot-fw-utils-mender-auto-provided"
-PREFERRED_RPROVIDER_u-boot-fw-utils ??= "u-boot-fw-utils-mender-auto-provided"
+PREFERRED_PROVIDER_u-boot-fw-utils ??= "${@mender_check_distro_features_early_contains(d, \
+                                                                                       'mender-uboot', \
+                                                                                       'u-boot-fw-utils-mender-auto-provided', \
+                                                                                       '')}"
+PREFERRED_RPROVIDER_u-boot-fw-utils ??= "${@mender_check_distro_features_early_contains(d, \
+                                                                                        'mender-uboot', \
+                                                                                        'u-boot-fw-utils-mender-auto-provided', \
+                                                                                        '')}"
+
+def mender_check_distro_features_early_contains(d, feature, if_true, if_false):
+    # Why this complicated function instead of checking DISTRO_FEATURES
+    # directly? It's because PREFERRED_PROVIDERs have some special early
+    # handling which happens before DISTRO_FEATURES is resolved, so we need to
+    # do this special early check.
+
+    in_df_backfill = bb.utils.contains('DISTRO_FEATURES_BACKFILL', feature, True, False, d)
+    in_df_backfill_considered = bb.utils.contains('DISTRO_FEATURES_BACKFILL_CONSIDERED', feature, True, False, d)
+    in_mender_enable = bb.utils.contains('MENDER_FEATURES_ENABLE', feature, True, False, d)
+    in_mender_disable = bb.utils.contains('MENDER_FEATURES_DISABLE', feature, True, False, d)
+
+    if (in_df_backfill or in_mender_enable) and not (in_df_backfill_considered or in_mender_disable):
+        return if_true
+    else:
+        return if_false

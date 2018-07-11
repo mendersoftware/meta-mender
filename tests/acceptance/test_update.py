@@ -583,6 +583,7 @@ class TestUpdates:
 
 
     @pytest.mark.only_for_machine('vexpress-qemu')
+    @pytest.mark.only_with_distro_feature('mender-uboot')
     @pytest.mark.min_mender_version('1.0.0')
     def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables):
         """This tests a very specific scenario: Consider the following production
@@ -686,7 +687,7 @@ class TestUpdates:
             os.remove("image.mender")
             os.remove("image.dat")
 
-    @pytest.mark.only_for_machine('qemux86-64')
+    @pytest.mark.only_with_distro_feature('mender-grub')
     @pytest.mark.min_mender_version('1.0.0')
     def test_redundant_grub_env(self, successful_image_update_mender, bitbake_variables):
         """This tests pretty much the same thing as the test_redundant_uboot_env
