@@ -117,8 +117,15 @@ fake-env.txt 0 0x20000
 EOF
 # Save compiled U-Boot environment
 mkdir -p fw_printenv.lock
-tools/env/fw_printenv -l fw_printenv.lock > "$TMP_DIR/compiled-environment.txt"
+ret=0
+tools/env/fw_printenv -l fw_printenv.lock > "$TMP_DIR/compiled-environment.txt" || ret=$?
 rm -rf fw_printenv.lock
+if [ $ret -ne 0 ]; then
+    if [ $ret -eq 134 -o $ret -eq 139 ]; then
+        echo "Detected SIGABRT or SIGSEGV. This may be an indication that your u-boot-fw-utils package is lacking an important patch. See https://docs.mender.io/troubleshooting/yocto-project-build#do_mender_uboot_auto_configure-fails-when-executing-toolsenvfw_p"
+    fi
+    exit $ret
+fi
 
 # cmd/.version.o.cmd is automatically built by the build system and contains all
 # dependencies for the given source file. We use this to go through all the
