@@ -2,7 +2,7 @@ require u-boot-mender-common.inc
 
 inherit deploy
 
-do_provide_mender_defines_append() {
+do_provide_mender_defines_append_mender-uboot() {
     # Since the auto-provided fw-utils recipe will typically not have access to
     # the proper BOOTENV_SIZE, let's create the fw_env.config file here, so that
     # the mender_tar_src stage will provide it in its tar file.
@@ -19,6 +19,9 @@ do_mender_tar_src() {
     tar czf ${TMPDIR}/mender-u-boot-src.tar.gz `find -maxdepth 1 -type f` git
 }
 python() {
+    if not bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
+        return
+
     if bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', '1', True, False, d):
         aftertask = "do_mender_uboot_auto_configure"
     else:
@@ -26,7 +29,11 @@ python() {
     bb.build.addtask('do_mender_tar_src', 'do_configure', aftertask, d)
 }
 
+# Just to have a task if mender-uboot is not defined.
 do_deploy_append() {
+    :
+}
+do_deploy_append_mender-uboot() {
     # Copy script to the deploy area with u-boot, uImage, and rootfs
     if [ -e ${WORKDIR}/uEnv.txt ] ; then
         install -d ${DEPLOYDIR}

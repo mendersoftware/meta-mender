@@ -1,0 +1,73 @@
+From 8c8f6f108d998b196a6d92dd5fe77d46af4d597e Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@northern.tech>
+Date: Mon, 16 Jul 2018 13:01:37 +0200
+Subject: [PATCH 1/1] configure: Disable soft-float workaround.
+
+Yocto handles floating point flags for us. No need to do any magic,
+especially since it doesn't work if hardware FPU is enabled.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+---
+ configure.ac | 46 ----------------------------------------------
+ 1 file changed, 46 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index edd1841..52036aa 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -794,52 +794,6 @@ if ( test "x$target_cpu" = xi386 || test "x$target_cpu" = xx86_64 ) && test "x$p
+   TARGET_CFLAGS="$TARGET_CFLAGS -mno-mmx -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow"
+ fi
+ 
+-# GRUB doesn't use float or doubles at all. Yet some toolchains may decide
+-# that floats are a good fit to run instead of what's written in the code.
+-# Given that floating point unit is disabled (if present to begin with)
+-# when GRUB is running which may result in various hard crashes.
+-if test x"$platform" != xemu ; then
+-  AC_CACHE_CHECK([for options to get soft-float], grub_cv_target_cc_soft_float, [
+-    grub_cv_target_cc_soft_float=no
+-    if test "x$target_cpu" = xarm64; then
+-       CFLAGS="$TARGET_CFLAGS -mgeneral-regs-only -Werror"
+-       AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
+-		         [grub_cv_target_cc_soft_float="-mgeneral-regs-only"], [])
+-    fi
+-    if test "x$target_cpu" = xia64; then
+-       CFLAGS="$TARGET_CFLAGS -mno-inline-float-divide -mno-inline-sqrt -Werror"
+-       AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
+-		         [grub_cv_target_cc_soft_float="-mno-inline-float-divide -mno-inline-sqrt"], [])
+-    fi
+-    for cand in "-msoft-float -Xclang -msoft-float -Xclang -no-implicit-float" \
+-		"-Xclang -msoft-float -Xclang -no-implicit-float" \
+-		"-Xclang -msoft-float" "-msoft-float"; do
+-      if test x"$grub_cv_target_cc_soft_float" != xno ; then
+-        break
+-      fi
+-      CFLAGS="$TARGET_CFLAGS $cand -Werror"
+-      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
+-		        [grub_cv_target_cc_soft_float="$cand"], [])
+-    done
+-  ])
+-
+-  if test x"$grub_cv_target_cc_soft_float" = xno ; then
+-    AC_MSG_ERROR([could not force soft-float])
+-  fi
+-
+-  case x"$grub_cv_target_cc_soft_float" in
+-    x*"-Xclang"*)
+-      # A trick so that clang doesn't see it on link stаge
+-      TARGET_CPPFLAGS="$TARGET_CPPFLAGS $grub_cv_target_cc_soft_float"
+-      ;;
+-    *)
+-      TARGET_CFLAGS="$TARGET_CFLAGS $grub_cv_target_cc_soft_float"
+-      ;;
+-  esac
+-  TARGET_CCASFLAGS="$TARGET_CCASFLAGS $grub_cv_target_cc_soft_float"
+-
+-fi
+-
+ if test x"$target_cpu" = xsparc64 ; then
+   AC_CACHE_CHECK([for options to reserve application registers], grub_cv_target_cc_mno_app_regs, [
+     grub_cv_target_cc_mno_app_regs=no
+-- 
+2.7.4
+
