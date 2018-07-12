@@ -21,8 +21,7 @@ B = "${WORKDIR}/build"
 
 inherit go
 
-SRC_URI_append = " file://mender.service \
-                 "
+SRC_URI_append = " file://mender.service"
 
 inherit systemd
 

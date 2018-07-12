@@ -1,0 +1,19 @@
+diff --git a/include/env_mender.h b/include/env_mender.h
+index d6bc34e..15b2158 100644
+--- a/include/env_mender.h
++++ b/include/env_mender.h
+@@ -86,6 +86,14 @@
+ 
+ #define CONFIG_MENDER_BOOTCOMMAND                                       \
+     "run mender_setup; "                                                \
++    "if run loadbootenv; then "                                         \
++    "echo Loaded env from ${bootenvfile};"                              \
++    "run importbootenv;"                                                \
++    "fi;"                                                               \
++    "if test -n $uenvcmd; then "                                        \
++    "echo Running uenvcmd ...;"                                         \
++    "run uenvcmd;"                                                      \
++    "fi;"                                                               \
+     "setenv bootargs root=${mender_kernel_root} ${bootargs}; "          \
+     "if test \"${fdt_addr_r}\" != \"\"; then "                          \
+     "load ${mender_uboot_root} ${fdt_addr_r} /boot/${mender_dtb_name}; " \
