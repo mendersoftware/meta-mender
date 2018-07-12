@@ -374,7 +374,7 @@ def only_with_image(request, bitbake_variables):
     mark = request.node.get_marker('only_with_image')
     if mark is not None:
         images = mark.args
-        current = bitbake_variables.get('IMAGE_FSTYPES', '').strip().split(' ')
+        current = bitbake_variables.get('IMAGE_FSTYPES', '').strip().split()
         current.append(bitbake_variables.get('ARTIFACTIMG_FSTYPE', ''))
         if not any([img in current for img in images]):
             pytest.skip('no supported filesystem in {} ' \
@@ -396,7 +396,7 @@ def only_with_distro_feature(request, bitbake_variables):
     mark = request.node.get_marker('only_with_distro_feature')
     if mark is not None:
         features = mark.args
-        current = bitbake_variables.get('DISTRO_FEATURES', '').strip().split(' ')
+        current = bitbake_variables.get('DISTRO_FEATURES', '').strip().split()
         if not all([feature in current for feature in features]):
             pytest.skip('no supported distro feature in {} ' \
                         '(supports {})'.format(', '.join(current),
