@@ -146,6 +146,21 @@ EOF
 
     rm -rf "$wicout/"
 
+    # Pad the image up to the alignment. This matters mostly for the emulator,
+    # which uses the file size to determine the size of the storage device,
+    # which must be a multiple of its device block size. However, it might be
+    # beneficial for real storage media as well, to make sure the final sector
+    # is cleared out when flashing the image. May increase image size slightly,
+    # but should compress well!
+    alignment=${MENDER_PARTITION_ALIGNMENT}
+    pad_size=$(expr \( $(stat -c %s "$outimgname") + $alignment - 1 \) / $alignment \* $alignment)
+    truncate -s $pad_size "$outimgname"
+
+    # If we padded above, and the partition table type is GPT, we need to
+    # relocate the trailing backup header to the new end to avoid warnings.
+    if [ "$part_type" = "gpt" ]; then
+        sgdisk -e "$outimgname"
+    fi
 }
 
 IMAGE_CMD_sdimg() {
@@ -164,6 +179,7 @@ addtask do_rootfs_wicenv after do_image before do_image_biosimg
 
 _MENDER_PART_IMAGE_DEPENDS = " \
     ${@d.getVarFlag('do_image_wic', 'depends', False)} \
+    coreutils-native:do_populate_sysroot \
     wic-tools:do_populate_sysroot \
     dosfstools-native:do_populate_sysroot \
     mtools-native:do_populate_sysroot \
@@ -176,7 +192,8 @@ _MENDER_PART_IMAGE_DEPENDS_append_mender-grub_mender-bios = " grub:do_deploy gru
 do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-bootfiles:do_populate_sysroot', '', d)}"
 
-do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
+do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS} \
+                              gptfdisk-native:do_populate_sysroot"
 
 do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
