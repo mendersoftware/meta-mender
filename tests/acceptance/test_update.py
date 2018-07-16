@@ -524,10 +524,10 @@ class TestUpdates:
             finally:
                 shutil.rmtree(tmpdir, ignore_errors=True)
 
-        put("image.mender")
+        put("image.mender", remote_path="/data/")
         try:
             # Update key configuration on device.
-            run("cp /etc/mender/mender.conf /etc/mender/mender.conf.bak")
+            run("cp /etc/mender/mender.conf /data/etc/mender/mender.conf.bak")
             get("mender.conf", remote_path="/etc/mender")
             with open("mender.conf") as fd:
                 config = json.load(fd)
@@ -554,7 +554,7 @@ class TestUpdates:
                 run('echo "%s" | dd of=%s' % (old_content, passive))
 
             with settings(warn_only=True):
-                result = run("mender -rootfs image.mender -f")
+                result = run("mender -rootfs /data/image.mender -f")
 
             if sig_case.success:
                 if result.return_code != 0:
@@ -576,7 +576,7 @@ class TestUpdates:
             # Reset environment to what it was.
             run("fw_setenv mender_boot_part %s" % active[-1:])
             run("fw_setenv upgrade_available 0")
-            run("mv /etc/mender/mender.conf.bak /etc/mender/mender.conf")
+            run("mv /data/etc/mender/mender.conf.bak /etc/mender/mender.conf")
             if sig_key:
                 run("rm -f /etc/mender/%s" % os.path.basename(sig_key.public))
 
@@ -639,7 +639,7 @@ class TestUpdates:
         try:
             # Make a dummy/broken update
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
-            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
+            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o /data/image.mender" % image_type, shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
             run("mender -rootfs /var/tmp/image.mender -f")
 
@@ -682,7 +682,7 @@ class TestUpdates:
 
         finally:
             # Cleanup.
-            os.remove("image.mender")
+            os.remove("/data/image.mender")
             os.remove("image.dat")
 
     @pytest.mark.only_for_machine('qemux86-64')
