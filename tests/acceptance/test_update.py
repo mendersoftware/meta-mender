@@ -737,3 +737,56 @@ class TestUpdates:
                 run("mv %s/{mender_grubenv1/lock.backup,mender_grubenv1/lock}" % env_dir)
                 run("mv %s/{mender_grubenv2/env.backup,mender_grubenv2/env}" % env_dir)
                 run("mv %s/{mender_grubenv2/lock.backup,mender_grubenv2/lock}" % env_dir)
+
+    @pytest.mark.only_with_distro_feature('mender-uboot')
+    @pytest.mark.only_with_image('sdimg', 'uefiimg')
+    @pytest.mark.min_mender_version('1.6.0')
+    def test_uboot_mender_saveenv_canary(self, bitbake_variables):
+        """Tests that the mender_saveenv_canary works correctly, which tests
+        that Mender will not proceed unless the U-Boot boot loader has saved the
+        environment."""
+
+        if not env.host_string:
+            # This means we are not inside execute(). Recurse into it!
+            execute(self.test_uboot_mender_saveenv_canary, bitbake_variables)
+            return
+
+        image_type = bitbake_variables["MACHINE"]
+
+        try:
+            # Make a dummy/broken update
+            subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
+            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
+            put("image.mender", remote_path="/var/tmp/image.mender")
+
+            # Zero the environment, causing the fw-utils to use their built in
+            # default.
+            env_conf = run("cat /etc/fw_env.config")
+            env_conf_lines = env_conf.split('\n')
+            assert len(env_conf_lines) == 2
+            for i in [0, 1]:
+                entry = env_conf_lines[i].split()
+                run("dd if=%s skip=%d bs=%d count=1 iflag=skip_bytes > /old_env%d"
+                    % (entry[0], int(entry[1], 0), int(entry[2], 0), i))
+                run("dd if=/dev/zero of=%s seek=%d bs=%d count=1 oflag=seek_bytes"
+                    % (entry[0], int(entry[1], 0), int(entry[2], 0)))
+
+            try:
+                output = run("mender -rootfs /var/tmp/image.mender -f")
+                pytest.fail("Update succeeded when canary was not present!")
+            except:
+                output = run("fw_printenv upgrade_available")
+                # Upgrade should not have been triggered.
+                assert(output == "upgrade_available=0")
+            finally:
+                # Restore environment to what it was.
+                for i in [0, 1]:
+                    entry = env_conf_lines[i].split()
+                    run("dd of=%s seek=%d bs=%d count=1 oflag=seek_bytes < /old_env%d"
+                        % (entry[0], int(entry[1], 0), int(entry[2], 0), i))
+                    run("rm -f /old_env%d" % i)
+
+        finally:
+            # Cleanup.
+            os.remove("image.mender")
+            os.remove("image.dat")

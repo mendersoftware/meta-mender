@@ -122,7 +122,7 @@ new file mode 100644
 index 0000000..8e10942
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,142 @@
+@@ -0,0 +1,148 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -192,7 +192,13 @@ index 0000000..8e10942
 +                                                                        \
 +    "mender_post_setup_commands=" MENDER_UBOOT_POST_SETUP_COMMANDS "\0" \
 +                                                                        \
++    "mender_check_saveenv_canary=1\0"                                   \
++                                                                        \
 +    "mender_setup="                                                     \
++    "if test \"${mender_saveenv_canary}\" != \"1\"; then "              \
++    "setenv mender_saveenv_canary 1; "                                  \
++    "saveenv; "                                                         \
++    "fi; "                                                              \
 +    "if test \"${mender_pre_setup_commands}\" != \"\"; "                \
 +    "then "                                                             \
 +    "run mender_pre_setup_commands; "                                   \
