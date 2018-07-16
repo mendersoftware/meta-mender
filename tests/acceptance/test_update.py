@@ -678,10 +678,10 @@ class TestUpdates:
             finally:
                 shutil.rmtree(tmpdir, ignore_errors=True)
 
-        put("image.mender")
+        put("image.mender", remote_path="/data/")
         try:
             # Update key configuration on device.
-            run("cp /etc/mender/mender.conf /etc/mender/mender.conf.bak")
+            run("cp /etc/mender/mender.conf /data/etc/mender/mender.conf.bak")
             get("mender.conf", remote_path="/etc/mender")
             with open("mender.conf") as fd:
                 config = json.load(fd)
@@ -708,7 +708,7 @@ class TestUpdates:
                 run('echo "%s" | dd of=%s' % (old_content, passive))
 
             with settings(warn_only=True):
-                result = run("mender %s image.mender" % install_flag)
+                result = run("mender %s /data/image.mender" % install_flag)
 
             if sig_case.success:
                 if result.return_code != 0:
@@ -747,7 +747,7 @@ class TestUpdates:
             run("fw_setenv mender_boot_part %s" % active[-1:])
             run("fw_setenv mender_boot_part_hex %x" % int(active[-1:]))
             run("fw_setenv upgrade_available 0")
-            run("mv /etc/mender/mender.conf.bak /etc/mender/mender.conf")
+            run("mv /data/etc/mender/mender.conf.bak /etc/mender/mender.conf")
             if sig_key:
                 run("rm -f /etc/mender/%s" % os.path.basename(sig_key.public))
 
@@ -858,7 +858,7 @@ class TestUpdates:
 
         finally:
             # Cleanup.
-            os.remove("image.mender")
+            os.remove("/data/image.mender")
             os.remove("image.dat")
 
     @pytest.mark.only_with_distro_feature('mender-grub')
