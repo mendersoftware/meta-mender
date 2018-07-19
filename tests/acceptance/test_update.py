@@ -532,8 +532,8 @@ class TestUpdates:
             with open("mender.conf") as fd:
                 config = json.load(fd)
             if sig_case.key:
-                config['ArtifactVerifyKey'] = "/etc/mender/%s" % os.path.basename(sig_key.public)
-                put(sig_key.public, remote_path="/etc/mender")
+                config['ArtifactVerifyKey'] = "/data/etc/mender/%s" % os.path.basename(sig_key.public)
+                put(sig_key.public, remote_path="/data/etc/mender")
             else:
                 if config.get('ArtifactVerifyKey'):
                     del config['ArtifactVerifyKey']
@@ -576,7 +576,7 @@ class TestUpdates:
             # Reset environment to what it was.
             run("fw_setenv mender_boot_part %s" % active[-1:])
             run("fw_setenv upgrade_available 0")
-            run("mv /data/etc/mender/mender.conf.bak /etc/mender/mender.conf")
+            run("cp -L /data/etc/mender/mender.conf.bak /etc/mender/mender.conf")
             if sig_key:
                 run("rm -f /etc/mender/%s" % os.path.basename(sig_key.public))
 
