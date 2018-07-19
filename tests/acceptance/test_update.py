@@ -686,8 +686,8 @@ class TestUpdates:
             with open("mender.conf") as fd:
                 config = json.load(fd)
             if sig_case.key:
-                config['ArtifactVerifyKey'] = "/etc/mender/%s" % os.path.basename(sig_key.public)
-                put(sig_key.public, remote_path="/etc/mender")
+                config['ArtifactVerifyKey'] = "/data/etc/mender/%s" % os.path.basename(sig_key.public)
+                put(sig_key.public, remote_path="/data/etc/mender")
             else:
                 if config.get('ArtifactVerifyKey'):
                     del config['ArtifactVerifyKey']
@@ -747,7 +747,7 @@ class TestUpdates:
             run("fw_setenv mender_boot_part %s" % active[-1:])
             run("fw_setenv mender_boot_part_hex %x" % int(active[-1:]))
             run("fw_setenv upgrade_available 0")
-            run("mv /data/etc/mender/mender.conf.bak /etc/mender/mender.conf")
+            run("cp -L /data/etc/mender/mender.conf.bak /etc/mender/mender.conf")
             if sig_key:
                 run("rm -f /etc/mender/%s" % os.path.basename(sig_key.public))
 
@@ -858,7 +858,7 @@ class TestUpdates:
 
         finally:
             # Cleanup.
-            os.remove("/data/image.mender")
+            os.remove("image.mender")
             os.remove("image.dat")
 
     @pytest.mark.only_with_distro_feature('mender-grub')
@@ -980,9 +980,8 @@ class TestUpdates:
             return
 
         # Build a pre-2.0.0 mender version.
-        add_to_local_conf(prepared_test_build, 'PREFERRED_VERSION_pn-mender = "1.%"')
+        add_to_local_conf(prepared_test_build, 'PREFERRED_VERSION_pn-mender = "1.7.%"')
         add_to_local_conf(prepared_test_build, 'EXTERNALSRC_pn-mender = ""')
-        add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_remove_pn-mender = "split-mender-config"')
         run_bitbake(prepared_test_build)
 
         image = "pre-mender-2.0.0.mender"

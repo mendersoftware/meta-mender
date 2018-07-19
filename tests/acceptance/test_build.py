@@ -132,9 +132,11 @@ class TestBuild:
         add_to_local_conf(prepared_test_build, 'MENDER_TENANT_TOKEN = "%s"'
                           %  "authtentoken")
 
+        add_to_local_conf(prepared_test_build, 'IMAGE_FSTYPES_append = " dataimg"')
+
         run_bitbake(prepared_test_build)
 
-        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
+        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.dataimg")
 
         subprocess.check_call(["debugfs", "-R",
                                    "dump -p /etc/mender/mender.conf mender.conf", built_rootfs])
