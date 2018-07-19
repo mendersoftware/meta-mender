@@ -1,3 +1,6 @@
+
+IMAGE_FEATURES_append = " read-only-rootfs"
+
 FILES_${PN} += "/data/etc/mender"
 # Run after all mender recipes are finished.
 do_install_append() {
