@@ -116,18 +116,34 @@ python do_prepare_mender_conf() {
     fd.close()
 }
 addtask do_prepare_mender_conf after do_compile before do_install
+do_prepare_mender_conf[vardeps] = " \
+    MENDER_ARTIFACT_VERIFY_KEY \
+    MENDER_CERT_LOCATION \
+    MENDER_INVENTORY_POLL_INTERVAL_SECONDS \
+    MENDER_RETRY_POLL_INTERVAL_SECONDS \
+    MENDER_ROOTFS_PART_A \
+    MENDER_ROOTFS_PART_B \
+    MENDER_SERVER_URL \
+    MENDER_TENANT_TOKEN \
+    MENDER_UPDATE_POLL_INTERVAL_SECONDS \
+"
 
 do_install() {
     install -d ${D}/${bindir}
 
     GOOS=$(eval $(go env) && echo $GOOS)
     GOARCH=$(eval $(go env) && echo $GOARCH)
+    if [ "${BUILD_ARCH}" = "${HOST_ARCH}" ]; then
+        BUILD_BIN_FOLDER=${B}/bin
+    else
+        BUILD_BIN_FOLDER=${B}/bin/${GOOS}_${GOARCH}
+    fi
     # mender is picked up from our fake GOPATH=${B}/bin; because go build is so
     # consistent, if it's a cross compilation build, binaries will be in
     # ${GOPATH}/bin/${GOOS}_${GOARCH}, howver if it's not, the binaries are in
     # ${GOPATH}/bin; handle cross compiled case only
     install -t ${D}/${bindir} -m 0755 \
-            ${B}/bin/${GOOS}_${GOARCH}/mender
+            ${BUILD_BIN_FOLDER}/mender
 
     install -d ${D}/${datadir}/mender/identity
     install -t ${D}/${datadir}/mender/identity -m 0755 \

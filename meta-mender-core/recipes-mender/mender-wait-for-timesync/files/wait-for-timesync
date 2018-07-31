@@ -2,13 +2,28 @@
 
 TIME_SYNC_COMPLETE="no"
 for i in 1 2 3 4 5 6 7 8 9 10; do
-    if [ "$(date '+%Y')" -lt "2017" ]; then
-        # The time must not be synced yet.
-        echo "System time not yet synchronized; try #${i}" >&2
-        sleep 5
+    if [ -x /usr/bin/timedatectl ]; then
+        # Determine sync status using timedatectl
+        if /usr/bin/timedatectl status | grep -q "synchronized: yes"; then
+            TIME_SYNC_COMPLETE="yes"
+            break
+        else
+            echo "timedatectl: System time not yet synchronized; try #${i}" >&2
+            sleep 5
+        fi
     else
-        TIME_SYNC_COMPLETE="yes"
-        break
+        # Determine sync status heuristically by looking
+        # at the current date.  If it is before 2017 it
+        # is safe to assume we have not yet synchronized
+        # our clock using ntp or other mechanism.
+        if [ "$(date '+%Y')" -lt "2017" ]; then
+            # The time must not be synced yet.
+            echo "System time not yet synchronized; try #${i}" >&2
+            sleep 5
+        else
+            TIME_SYNC_COMPLETE="yes"
+            break
+        fi
     fi
 done
 

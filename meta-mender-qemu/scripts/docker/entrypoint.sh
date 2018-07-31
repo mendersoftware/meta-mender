@@ -40,9 +40,12 @@ if [ -f /mnt/config/artifact-verify-key.pem ]; then
 fi
 
 if [ "$MACHINE" = "vexpress-qemu" ]; then
-    ./setup-mender-configuration.py --sdimg=core-image-full-cmdline-vexpress-qemu.sdimg \
-                                    --server-url=$SERVER_URL \
-                                    --tenant-token=$TENANT_TOKEN $CONFIG_ARGS
+    if [ ! -e /mender-setup-complete ]; then
+        ./setup-mender-configuration.py --sdimg=core-image-full-cmdline-vexpress-qemu.sdimg \
+                                        --server-url=$SERVER_URL \
+                                        --tenant-token=$TENANT_TOKEN $CONFIG_ARGS
+        touch /mender-setup-complete
+    fi
 else
     if [ -n "$TENANT_TOKEN" -o -n "$CONFIG_ARGS" -o -n "$SERVER_URL" ]; then
        echo "reconfiguration of flash images is not supported"
