@@ -241,6 +241,7 @@ def bitbake_path(request, bitbake_path_string):
 
 @pytest.fixture(scope="session")
 def clean_image(request, prepared_test_build_base):
+    reset_local_conf(prepared_test_build_base)
     add_to_local_conf(prepared_test_build_base,
                       'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
     add_to_local_conf(prepared_test_build_base,
@@ -253,11 +254,19 @@ def clean_image(request, prepared_test_build_base):
 def prepared_test_build_base(request, bitbake_variables):
     """Base fixture for prepared_test_build. Returns the same as that one."""
 
-    build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
+    if pytest.config.getoption('--no-tmp-build-dir'):
+        build_dir = os.environ['BUILDDIR']
+    else:
+        build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
+
+    local_conf = os.path.join(build_dir, "conf", "local.conf")
+    local_conf_orig = local_conf + ".orig"
 
     def cleanup_test_build():
-        if not pytest.config.getoption('--keep-build-dir'):
+        if not pytest.config.getoption('--no-tmp-build-dir'):
             run_verbose("rm -rf %s" % build_dir)
+        if os.path.exists(local_conf_orig):
+            run_verbose("mv %s %s" % (local_conf_orig, local_conf))
 
     cleanup_test_build()
     request.addfinalizer(cleanup_test_build)
@@ -266,12 +275,12 @@ def prepared_test_build_base(request, bitbake_variables):
 
     run_verbose(env_setup)
 
-    run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
-    local_conf = os.path.join(build_dir, "conf", "local.conf")
-    local_conf_orig = local_conf + ".orig"
-    with open(local_conf, "a") as fd:
-        fd.write('SSTATE_MIRRORS = " file://.* file://%s/PATH"\n' % bitbake_variables['SSTATE_DIR'])
-        fd.write('DL_DIR = "%s"\n' % bitbake_variables['DL_DIR'])
+    if not pytest.config.getoption('--no-tmp-build-dir'):
+        run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
+        with open(local_conf, "a") as fd:
+            fd.write('SSTATE_MIRRORS = " file://.* file://%s/PATH"\n' % bitbake_variables['SSTATE_DIR'])
+            fd.write('DL_DIR = "%s"\n' % bitbake_variables['DL_DIR'])
+
     run_verbose("cp %s %s" % (local_conf, local_conf_orig))
 
     image_name = pytest.config.getoption("--bitbake-image")
