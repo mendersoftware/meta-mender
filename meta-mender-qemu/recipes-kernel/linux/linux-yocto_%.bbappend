@@ -13,6 +13,8 @@ SRC_URI_append_vexpress-qemu-flash = " file://defconfig \
                                        file://reduce-memory-to-256m.patch \
                                        "
 
+SRC_URI_append_mender-qemux86-64-bios = " file://mender-qemux86-64-bios-standard.scc"
+
 COMPATIBLE_MACHINE_vexpress-qemu-flash = "vexpress-qemu-flash"
 
 # See commit 28a1f5cd95cfd in poky. This was added in order to support running

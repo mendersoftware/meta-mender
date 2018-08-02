@@ -1,0 +1,4 @@
+define KMACHINE mender-qemux86-64-bios 
+
+define KARCH x86-64
+define KTYPE standard
