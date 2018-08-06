@@ -14,9 +14,11 @@ do_provide_mender_defines_append() {
 
 do_mender_tar_src() {
     cd ${WORKDIR}
-    # Zip up all plain files, plus the git directory, but not the rest, because
-    # there are a lot of bitbake data directories.
-    tar czf ${TMPDIR}/mender-u-boot-src.tar.gz `find -maxdepth 1 -type f` git
+    # Zip up all plain files, plus the source directory, but not the rest,
+    # because there are a lot of bitbake data directories.
+    rm -rf src-tar
+    cp -a ${S} src-tar
+    tar -cz --exclude-vcs -f ${TMPDIR}/mender-u-boot-src.tar.gz `find -maxdepth 1 -type f` src-tar
 }
 python() {
     if bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', '1', True, False, d):
