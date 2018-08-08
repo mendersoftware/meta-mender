@@ -109,8 +109,13 @@ part --source rawcopy --sourceparams="file=${WORKDIR}/uboot.env" --ondisk "$ondi
 EOF
     fi
 
-    cat >> "$wks" <<EOF
+    if [ "${MENDER_BOOT_PART_SIZE_MB}" -ne "0" ]; then
+        cat >> "$wks" <<EOF
 part $boot_part_params --ondisk "$ondisk_dev" --fstype=vfat --label boot --align ${MENDER_PARTITION_ALIGNMENT_KB} --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
+EOF
+    fi
+
+    cat >> "$wks" <<EOF
 part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
 part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
 part --source rawcopy --sourceparams=file="${WORKDIR}/data.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label data --align ${MENDER_PARTITION_ALIGNMENT_KB} --fixed-size ${MENDER_DATA_PART_SIZE_MB}

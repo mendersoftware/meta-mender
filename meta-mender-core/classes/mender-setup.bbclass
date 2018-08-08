@@ -24,9 +24,9 @@ MENDER_BOOT_PART_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}1"
 
 # The numbers of the two rootfs partitions in the A/B partition layout.
 MENDER_ROOTFS_PART_A ??= "${MENDER_ROOTFS_PART_A_DEFAULT}"
-MENDER_ROOTFS_PART_A_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}2"
+MENDER_ROOTFS_PART_A_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '1', '2', d)}"
 MENDER_ROOTFS_PART_B ??= "${MENDER_ROOTFS_PART_B_DEFAULT}"
-MENDER_ROOTFS_PART_B_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}3"
+MENDER_ROOTFS_PART_B_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '2', '3', d)}"
 
 # The names of the two rootfs partitions in the A/B partition layout. By default
 # it is the same name as MENDER_ROOTFS_PART_A and MENDER_ROOTFS_B
@@ -37,7 +37,7 @@ MENDER_ROOTFS_PART_B_NAME_DEFAULT = "${MENDER_ROOTFS_PART_B}"
 
 # The partition number holding the data partition.
 MENDER_DATA_PART ??= "${MENDER_DATA_PART_DEFAULT}"
-MENDER_DATA_PART_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}4"
+MENDER_DATA_PART_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '3', '4', d)}"
 
 # The name of of the MTD part holding your UBI volumes.
 MENDER_MTD_UBI_DEVICE_NAME ??= "${MENDER_MTD_UBI_DEVICE_NAME_DEFAULT}"
@@ -116,6 +116,14 @@ IMAGE_BOOTLOADER_FILE ??= ""
 
 # Offset of bootloader, in sectors (512 bytes).
 IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET ??= "2"
+
+# Board specific U-Boot commands to be run prior to mender_setup
+MENDER_UBOOT_PRE_SETUP_COMMANDS ??= "${MENDER_UBOOT_PRE_SETUP_COMMANDS_DEFAULT}"
+MENDER_UBOOT_PRE_SETUP_COMMANDS_DEFAULT = ""
+
+# Board specific U-Boot commands to be run after mender_setup
+MENDER_UBOOT_POST_SETUP_COMMANDS ??= "${MENDER_UBOOT_POST_SETUP_COMMANDS_DEFAULT}"
+MENDER_UBOOT_POST_SETUP_COMMANDS_DEFAULT = ""
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 

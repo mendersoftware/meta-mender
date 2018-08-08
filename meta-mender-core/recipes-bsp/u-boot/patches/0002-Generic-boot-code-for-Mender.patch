@@ -1,4 +1,4 @@
-From 9ce2038eec7ef21ce07f2f0ddde13782635c1821 Mon Sep 17 00:00:00 2001
+From 31159ee5d5ae927f74c1f4a930d6dc73e0146b66 Mon Sep 17 00:00:00 2001
 From: Drew Moseley <drew.moseley@northern.tech>
 Date: Wed, 20 Dec 2017 09:53:16 -0500
 Subject: [PATCH] Generic boot code for Mender.
@@ -7,9 +7,9 @@ Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
 Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
 Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
 ---
- include/config_mender.h |  83 +++++++++++++++++++++++++++++++++++++++
- include/env_mender.h    | 102 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 185 insertions(+)
+ include/config_mender.h |  83 ++++++++++++++++++++++++++++++++++
+ include/env_mender.h    | 118 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 201 insertions(+)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
@@ -104,10 +104,10 @@ index 0000000..63a32a6
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000..705c39e
+index 0000000..3fb65be
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,102 @@
+@@ -0,0 +1,118 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -154,7 +154,9 @@ index 0000000..705c39e
 +                                                                        \
 +    "mender_boot_part=" __stringify(MENDER_ROOTFS_PART_A_NUMBER) "\0"   \
 +                                                                        \
-+    "mender_uboot_boot=" MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":" __stringify(MENDER_BOOT_PART_NUMBER) "\0" \
++    "mender_boot_part_hex=" __stringify(MENDER_ROOTFS_PART_A_NUMBER_HEX) "\0"   \
++                                                                        \
++    "mender_uboot_boot=" MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":" __stringify(MENDER_BOOT_PART_NUMBER_HEX) "\0" \
 +                                                                        \
 +    "mender_uboot_if=" MENDER_UBOOT_STORAGE_INTERFACE "\0"              \
 +                                                                        \
@@ -166,7 +168,15 @@ index 0000000..705c39e
 +                                                                        \
 +    "mender_dtb_name=" MENDER_DTB_NAME "\0"                             \
 +                                                                        \
++    "mender_pre_setup_commands=" MENDER_UBOOT_PRE_SETUP_COMMANDS "\0"   \
++                                                                        \
++    "mender_post_setup_commands=" MENDER_UBOOT_POST_SETUP_COMMANDS "\0" \
++                                                                        \
 +    "mender_setup="                                                     \
++    "if test \"${mender_pre_setup_commands}\" != \"\"; "                \
++    "then "                                                             \
++    "run mender_pre_setup_commands; "                                   \
++    "fi; "                                                              \
 +    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; "    \
 +    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "     \
 +    "then "                                                                            \
@@ -175,18 +185,24 @@ index 0000000..705c39e
 +    "setenv mender_boot_part_name " MENDER_ROOTFS_PART_B_NAME "; "                     \
 +    "fi; "                                                                             \
 +    "setenv mender_kernel_root_name ${mender_boot_part_name}; "         \
-+    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part}; " \
++    "setenv mender_uboot_root " MENDER_UBOOT_STORAGE_INTERFACE " " __stringify(MENDER_UBOOT_STORAGE_DEVICE) ":${mender_boot_part_hex}; " \
 +    "setenv mender_uboot_root_name ${mender_boot_part_name}; "          \
 +    "setenv expand_bootargs \"setenv bootargs \\\\\"${bootargs}\\\\\"\"; "              \
 +    "run expand_bootargs; "                                             \
-+    "setenv expand_bootargs\0"                                          \
++    "setenv expand_bootargs; "                                          \
++    "if test \"${mender_post_setup_commands}\" != \"\"; "               \
++    "then "                                                             \
++    "run mender_post_setup_commands; "                                  \
++    "fi\0"                                                              \
 +                                                                        \
 +    "mender_altbootcmd="                                                \
 +    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "     \
 +    "then "                                                                            \
 +    "setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_B_NUMBER) "; "           \
++    "setenv mender_boot_part_hex " __stringify(MENDER_ROOTFS_PART_B_NUMBER_HEX) "; "           \
 +    "else "                                                                            \
 +    "setenv mender_boot_part " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "           \
++    "setenv mender_boot_part_hex " __stringify(MENDER_ROOTFS_PART_A_NUMBER_HEX) "; "           \
 +    "fi; "                                                              \
 +    "setenv upgrade_available 0; "                                      \
 +    "saveenv; "                                                         \

@@ -7,13 +7,6 @@
 #    ubi2: persistent data partition
 
 
-########## CONFIGURATION START - you can override these default
-##########                       values in your local.conf
-
-IMAGE_TYPEDEP_ubimg_append = "ubifs"
-
-########## CONFIGURATION END ##########
-
 inherit image
 inherit image_types
 

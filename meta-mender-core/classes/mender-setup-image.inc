@@ -1,7 +1,7 @@
-IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender', '', d)}"
-IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-sd', ' sdimg', '', d)}"
-IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', ' ubimg', '', d)}"
-IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-uefi', ' uefiimg', '', d)}"
+IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender mender.bmap', '', d)}"
+IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-sd', ' sdimg sdimg.bmap', '', d)}"
+IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', ' ubimg ubimg.bmap', '', d)}"
+IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-uefi', ' uefiimg uefiimg.bmap', '', d)}"
 
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_x86 = " kernel-image"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_x86-64 = " kernel-image"
@@ -21,12 +21,12 @@ MENDER_BOOT_PART_MOUNT_LOCATION_mender-image-uefi = "/boot/efi"
 ROOTFS_POSTPROCESS_COMMAND_append += " mender_update_fstab_file ; "
 mender_update_fstab_file() {
     if [ "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-sd', 'true', 'false', d)}" ]; then
-        if [ -n "${MENDER_BOOT_PART}" ]; then
+        if [ "${MENDER_BOOT_PART_SIZE_MB}" != "0" ] && [ -n "${MENDER_BOOT_PART}" ]; then
             echo "# Where the U-Boot environment resides; for devices with SD card support ONLY!" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
             mkdir -p ${IMAGE_ROOTFS}${MENDER_BOOT_PART_MOUNT_LOCATION}
             echo "${MENDER_BOOT_PART} ${MENDER_BOOT_PART_MOUNT_LOCATION} ${MENDER_BOOT_PART_FSTYPE} defaults,sync 0 0" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
         else
-            bbdebug 2 "MENDER_BOOT_PART not set. Not adding to fstab..."
+            bbdebug 2 "MENDER_BOOT_PART not applicable. Not adding to fstab..."
         fi
     fi
 
