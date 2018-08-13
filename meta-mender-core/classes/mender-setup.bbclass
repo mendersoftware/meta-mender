@@ -10,8 +10,6 @@ export MENDER_MACHINE = "${MACHINE}"
 # The storage device that holds the device partitions.
 MENDER_STORAGE_DEVICE ??= "${MENDER_STORAGE_DEVICE_DEFAULT}"
 MENDER_STORAGE_DEVICE_DEFAULT = "/dev/mmcblk0"
-MENDER_STORAGE_DEVICE_DEFAULT_x86 = "/dev/hda"
-MENDER_STORAGE_DEVICE_DEFAULT_x86-64 = "/dev/hda"
 
 # The base name of the devices that hold individual partitions.
 # This is often MENDER_STORAGE_DEVICE + "p".
