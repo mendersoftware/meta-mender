@@ -37,6 +37,11 @@ get_grub_device_from_device_base() {
             dev_number=$(expr $(printf "%d" "'$dev_number") - $(printf "%d" "'a") || true)
             echo "hd$dev_number"
             ;;
+        /dev/mmcblk[0-9]p)
+            dev_number=${1#/dev/mmcblk}
+            dev_number=${dev_number%p}
+            echo "hd$dev_number"
+            ;;
         *)
             bberror "Could not determine Grub device from $1"
             exit 1
