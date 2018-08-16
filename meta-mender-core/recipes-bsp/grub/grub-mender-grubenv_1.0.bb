@@ -32,7 +32,15 @@ mender_rootfsa_part=$mender_rootfsa_part
 mender_rootfsb_part=$mender_rootfsb_part
 mender_kernel_root_base=${MENDER_STORAGE_DEVICE_BASE}
 mender_grub_storage_device=$mender_grub_storage_device
+kernel_imagetype=${KERNEL_IMAGETYPE}
 EOF
+
+    if [ -n "${KERNEL_DEVICETREE}" ]; then
+        MENDER_DTB_NAME=$(mender_get_clean_kernel_devicetree)
+        cat >> ${WORKDIR}/00_mender_grubenv_defines_grub.cfg <<EOF
+kernel_devicetree=$MENDER_DTB_NAME
+EOF
+    fi
 
     # Environment files.
 

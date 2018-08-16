@@ -10,20 +10,23 @@ DEPLOYDIR = "${WORKDIR}/deploy-${PN}"
 MENDER_UBOOT_AUTO_CONFIGURE ??= "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', '1', '0', d)}"
 
 ################################################################################
-# Generic patches.
+# Patches.
 ################################################################################
 FILESEXTRAPATHS_prepend := "${THISDIR}/patches:${THISDIR}/files:"
 
-SRC_URI_append = " file://0001-Add-missing-header-which-fails-on-recent-GCC.patch"
-SRC_URI_append = " file://0002-Generic-boot-code-for-Mender.patch"
-SRC_URI_append = " file://0003-Integration-of-Mender-boot-code-into-U-Boot.patch"
-SRC_URI_append = " file://0006-env-Kconfig-Add-descriptions-so-environment-options-.patch"
+SRC_URI_append_mender-uboot = " file://0001-Add-missing-header-which-fails-on-recent-GCC.patch"
+SRC_URI_append_mender-uboot = " file://0002-Generic-boot-code-for-Mender.patch"
+SRC_URI_append_mender-uboot = " file://0003-Integration-of-Mender-boot-code-into-U-Boot.patch"
+SRC_URI_append_mender-uboot = " file://0006-env-Kconfig-Add-descriptions-so-environment-options-.patch"
 
-SRC_URI_append = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
-                                       '1', \
-                                       ' file://0004-Disable-CONFIG_BOOTCOMMAND-and-enable-CONFIG_MENDER_.patch', \
-                                       '', \
-                                       d)}"
+SRC_URI_append_mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
+                                                    '1', \
+                                                    ' file://0004-Disable-CONFIG_BOOTCOMMAND-and-enable-CONFIG_MENDER_.patch', \
+                                                    '', \
+                                                    d)}"
+
+# We need this patch only if using GRUB, booted through EFI.
+SRC_URI_append_mender-grub = " file://0007-distro_bootcmd-Switch-bootefi-to-use-loadaddr-by-def.patch"
 
 
 ################################################################################
@@ -94,24 +97,7 @@ do_provide_mender_defines() {
             ;;
     esac
 
-    # Strip leading and trailing whitespace, then newline divide, and remove dtbo's.
-    MENDER_DTB_NAME="$(echo "${KERNEL_DEVICETREE}" | sed -r 's/(^\s*)|(\s*$)//g; s/\s+/\n/g' | sed -ne '/\.dtbo$/b; p')"
-
-    if [ -z "$MENDER_DTB_NAME" ]; then
-        bbfatal "Did not find a dtb specified in KERNEL_DEVICETREE"
-        exit 1
-    fi
-
-    DTB_COUNT=$(echo "$MENDER_DTB_NAME" | wc -l)
-
-    if [ "$DTB_COUNT" -ne 1 ]; then
-        bbwarn "Found more than one dtb specified in KERNEL_DEVICETREE. Only one should be specified. Choosing the last one."
-        MENDER_DTB_NAME="$(echo "$MENDER_DTB_NAME" | tail -1)"
-    fi
-
-    # Now strip any subdirectories off.  Some kernel builds require KERNEL_DEVICETREE to be defined, for example,
-    # as qcom/apq8016-sbc.dtb yet when installed, they go directly in /boot
-    MENDER_DTB_NAME="$(basename "$MENDER_DTB_NAME")"
+    MENDER_DTB_NAME=$(mender_get_clean_kernel_devicetree)
 
     HEX_MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1="$(printf 0x%x "${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1}")"
     HEX_MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2="$(printf 0x%x "${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2}")"
@@ -205,7 +191,10 @@ CONFIG_SYS_MMC_ENV_DEV=$MENDER_UBOOT_STORAGE_DEVICE
 EOF
     fi
 }
-addtask do_provide_mender_defines after do_patch before do_configure
+python() {
+    if bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
+        bb.build.addtask('do_provide_mender_defines', 'do_configure', 'do_patch', d)
+}
 
 do_check_mender_defines() {
     # Do a sanity check on some defines. The reason this is necessary, even
@@ -259,9 +248,12 @@ do_check_mender_defines() {
 # correctly for u-boot, because they don't call "make <config>_defconfig" inside
 # configure as they should. But we still leave it like this in case it is fixed
 # in the future. See also the comment by oe_runmake above.
-addtask do_check_mender_defines after do_configure before do_compile
+python() {
+    if bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
+        bb.build.addtask('do_check_mender_defines', 'do_compile', 'do_configure', d)
+}
 
-do_compile_append_mender-ubi() {
+do_compile_append_mender-uboot_mender-ubi() {
     # Doing this in do_compile instead of do_configure is actually a bit late,
     # but the U-Boot recipe doesn't separate between the stages.
 
@@ -276,13 +268,13 @@ do_compile_append_mender-ubi() {
     fi
 }
 
-SRC_URI_append = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
-                                       '1', \
-                                       ' file://uboot_auto_configure.sh \
-                                         file://uboot_auto_patch.sh \
-                                         file://add_kconfig_option_with_depends.py', \
-                                       '', \
-                                       d)}"
+SRC_URI_append_mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
+                                                    '1', \
+                                                    ' file://uboot_auto_configure.sh \
+                                                      file://uboot_auto_patch.sh \
+                                                      file://add_kconfig_option_with_depends.py', \
+                                                    '', \
+                                                    d)}"
 
 MENDER_UBOOT_TMP_SRC = "${WORKDIR}/tmp-src"
 MENDER_UBOOT_OLD_SRC = "${WORKDIR}/old-src"
@@ -354,6 +346,9 @@ do_save_mender_auto_configured_patch() {
 }
 
 python() {
+    if not bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
+        return
+
     if bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', '1', True, False, d):
         bb.build.addtask('do_mender_uboot_auto_configure', 'do_configure', 'do_provide_mender_defines', d)
         bb.build.addtask('do_save_mender_auto_configured_patch', '', 'do_mender_uboot_auto_configure', d)

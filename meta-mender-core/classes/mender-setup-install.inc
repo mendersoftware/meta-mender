@@ -1,11 +1,13 @@
-# Estimate how much space may be lost due to partitioning alignment. Use a
-# simple heuristic for now - 4 partitions * alignment
+# Estimate how much space may be lost due partition table. This is based on the
+# assumption that GPT uses one set of sectors at the start of the disk, and one
+# at the end. This wastes a little bit of space in the non-GPT case, which only
+# puts data at the start.
 def mender_get_part_overhead_kb(d):
     import math
 
     align = int(d.getVar('MENDER_PARTITION_ALIGNMENT'))
     if align:
-        return 4 * int(math.ceil(align / 1024))
+        return 2 * int(math.ceil(align / 1024))
     return 0
 
 # Overhead lost due to partitioning.
