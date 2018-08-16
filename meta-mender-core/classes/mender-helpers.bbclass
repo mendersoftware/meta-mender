@@ -32,9 +32,14 @@ get_uboot_device_from_device() {
 
 get_grub_device_from_device_base() {
     case "$1" in
-        /dev/[sh]da)
+        /dev/[sh]d[a-z])
             dev_number=${1#/dev/[sh]d}
             dev_number=$(expr $(printf "%d" "'$dev_number") - $(printf "%d" "'a") || true)
+            echo "hd$dev_number"
+            ;;
+        /dev/mmcblk[0-9]p)
+            dev_number=${1#/dev/mmcblk}
+            dev_number=${dev_number%p}
             echo "hd$dev_number"
             ;;
         *)
