@@ -1,7 +1,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
 
 # Mender needs these.
-GRUB_BUILDIN_append_mender-grub = " cat echo gcry_sha256 halt hashsum loadenv reboot"
+GRUB_BUILDIN_append_mender-grub = " cat echo gcry_sha256 halt hashsum loadenv sleep reboot"
 
 GRUBPLATFORM_arm_mender-grub = "efi"
 

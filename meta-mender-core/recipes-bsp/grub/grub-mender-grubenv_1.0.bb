@@ -20,6 +20,21 @@ SRC_URI = " \
     file://fw_printenv \
 "
 
+PACKAGECONFIG[debug-pause] = ",,,"
+SRC_URI_append = "${@bb.utils.contains('PACKAGECONFIG', 'debug-pause', ' file://06_mender_debug_pause_grub.cfg', '', d)}"
+PACKAGECONFIG[debug-log] = ",,,"
+
+# See https://www.gnu.org/software/grub/manual/grub/grub.html#debug
+DEBUG_LOG_CATEGORY ?= "all"
+
+do_provide_debug_log() {
+    echo "debug=${DEBUG_LOG_CATEGORY}" > ${WORKDIR}/01_mender_debug_log_grub.cfg
+}
+python() {
+    if bb.utils.contains('PACKAGECONFIG', 'debug-log', True, False, d):
+        bb.build.addtask('do_provide_debug_log', 'do_patch', 'do_unpack', d)
+}
+
 do_provide_mender_defines() {
     set -x
 
