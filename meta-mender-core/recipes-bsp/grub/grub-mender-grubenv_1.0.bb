@@ -15,7 +15,7 @@ SRC_URI = " \
     file://05_mender_setup_grub.cfg \
     file://06_bootargs_grub.cfg \
     file://90_mender_boot_grub.cfg \
-    file://91_mender_try_to_recover_grub.cfg \
+    file://95_mender_try_to_recover_grub.cfg \
     file://blank_grubenv \
     file://fw_printenv \
 "
