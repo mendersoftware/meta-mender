@@ -14,9 +14,13 @@ MENDER_STORAGE_DEVICE_DEFAULT_x86-64 = "/dev/hda"
 # The base name of the devices that hold individual partitions.
 # This is often MENDER_STORAGE_DEVICE + "p".
 MENDER_STORAGE_DEVICE_BASE ??= "${MENDER_STORAGE_DEVICE_BASE_DEFAULT}"
-MENDER_STORAGE_DEVICE_BASE_DEFAULT = "${MENDER_STORAGE_DEVICE}p"
-MENDER_STORAGE_DEVICE_BASE_DEFAULT_x86 = "${MENDER_STORAGE_DEVICE}"
-MENDER_STORAGE_DEVICE_BASE_DEFAULT_x86-64 = "${MENDER_STORAGE_DEVICE}"
+def mender_linux_partition_base(dev):
+    import re
+    if re.match("^/dev/[sh]d[a-z]", dev):
+        return dev
+    else:
+        return "%sp" % dev
+MENDER_STORAGE_DEVICE_BASE_DEFAULT = "${@mender_linux_partition_base('${MENDER_STORAGE_DEVICE}')}"
 
 # The partition number holding the boot partition.
 MENDER_BOOT_PART ??= "${MENDER_BOOT_PART_DEFAULT}"
