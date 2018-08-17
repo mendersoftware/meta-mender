@@ -78,9 +78,9 @@ python mender_toradex_json() {
     data = OrderedDict({ "config_format": 2, "autoinstall": False })
 
     # Use image recipes SUMMARY/DESCRIPTION/PV...
-    data["name"] = d.getVar("SUMMARY", True) + " with Mender.io"
+    data["name"] = "Toradex/Mender Embedded Linux Demo"
     data["description"] = d.getVar("DESCRIPTION", True)
-    data["version"] = d.getVar("PV", True)
+    data["version"] = "Yocto Rocko, Mender v1.5.0"
     data["release_date"] = release_date
     data["u_boot_env"] = "uEnv.txt"
     if os.path.exists(os.path.join(deploydir, "prepare.sh")):
