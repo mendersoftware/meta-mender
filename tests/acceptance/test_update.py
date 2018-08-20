@@ -135,7 +135,7 @@ class TestUpdates:
 
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
-        image_type = bitbake_variables["MACHINE"]
+        image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         try:
             # Make a dummy/broken update
@@ -168,7 +168,7 @@ class TestUpdates:
             execute(self.test_too_big_image_update, bitbake_variables)
             return
 
-        image_type = bitbake_variables["MACHINE"]
+        image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         try:
             # Make a too big update
@@ -460,7 +460,7 @@ class TestUpdates:
         else:
             sig_key = None
 
-        image_type = bitbake_variables["MACHINE"]
+        image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         subprocess.check_call("mender-artifact write rootfs-image %s -t %s -n test-update -u image.dat -o image.mender"
                               % (artifact_args, image_type), shell=True)
@@ -636,7 +636,7 @@ class TestUpdates:
 
         orig_env = run("fw_printenv")
 
-        image_type = bitbake_variables["MACHINE"]
+        image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         try:
             # Make a dummy/broken update
