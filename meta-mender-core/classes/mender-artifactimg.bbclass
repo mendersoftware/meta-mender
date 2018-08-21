@@ -20,7 +20,7 @@ IMAGE_CMD_mender () {
         bbfatal "Need to define MENDER_ARTIFACT_NAME variable."
     fi
 
-    rootfs_size=$(stat -Lc %s ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE})
+    rootfs_size=$(stat -Lc %s ${IMGDEPLOYDIR}/${IMAGE_NAME}.${ARTIFACTIMG_FSTYPE})
     calc_rootfs_size=$(expr ${MENDER_CALC_ROOTFS_SIZE} \* 1024)
     if [ $rootfs_size -gt $calc_rootfs_size ]; then
         bbfatal "Size of rootfs is greater than the calculated partition space ($rootfs_size > $calc_rootfs_size). This image won't fit on a device with the current storage configuration. Try reducing IMAGE_OVERHEAD_FACTOR if it is higher than 1.0, or raise MENDER_STORAGE_TOTAL_SIZE_MB if the device in fact has more storage."
@@ -47,7 +47,7 @@ IMAGE_CMD_mender () {
     mender-artifact write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} \
         $extra_args \
-        -u ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
+        -u ${IMGDEPLOYDIR}/${IMAGE_NAME}.${ARTIFACTIMG_FSTYPE} \
         ${MENDER_ARTIFACT_EXTRA_ARGS} \
         -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender
 }

@@ -59,14 +59,12 @@ MENDER_BOOT_PART_FSTYPE_DEFAULT = "auto"
 MENDER_DEVICE_TYPE ??= "${MENDER_DEVICE_TYPE_DEFAULT}"
 MENDER_DEVICE_TYPE_DEFAULT = "${MACHINE}"
 
+# To tell the difference from a beaglebone-yocto image with only U-Boot.
+MENDER_DEVICE_TYPE_DEFAULT_beaglebone-yocto_mender-grub = "${MACHINE}-grub"
+
 # Space separated list of device types compatible with the built update.
 MENDER_DEVICE_TYPES_COMPATIBLE ??= "${MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT}"
 MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT = "${MENDER_DEVICE_TYPE}"
-
-# Upstream poky changed their Beaglebone machine name from "beaglebone" to
-# "beaglebone-yocto". Add the old name to the list of compatible devices, so
-# people can upgrade.
-MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT_append_beaglebone-yocto = " beaglebone"
 
 # Total size of the medium that mender sdimg will be written to. The size of
 # rootfs partition will be calculated automatically by subtracting the size of
@@ -151,6 +149,12 @@ MENDER_UBOOT_POST_SETUP_COMMANDS_DEFAULT = ""
 
 IMAGE_INSTALL_append = " mender"
 IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg"
+
+# Originally defined in bitbake.conf. We define them here so that images with
+# the same MACHINE name, but different MENDER_DEVICE_TYPE, will not result in
+# the same image file name.
+IMAGE_NAME = "${IMAGE_BASENAME}-${MENDER_DEVICE_TYPE}-${DATETIME}"
+IMAGE_LINK_NAME = "${IMAGE_BASENAME}-${MENDER_DEVICE_TYPE}"
 
 # MENDER_FEATURES_ENABLE and MENDER_FEATURES_DISABLE map to
 # DISTRO_FEATURES_BACKFILL and DISTRO_FEATURES_BACKFILL_CONSIDERED,
