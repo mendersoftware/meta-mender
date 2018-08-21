@@ -10,7 +10,6 @@ IMAGE_BOOT_FILES_append_mender-grub = "${_MENDER_GRUB_BOOT_FILES}"
 
 _MENDER_GRUB_BOOT_FILES = ""
 _MENDER_GRUB_BOOT_FILES_mender-grub = " \
-    ${@bb.utils.contains('TRANSLATED_TARGET_ARCH', 'x86-64', 'grub-efi-bootx64.efi;EFI/BOOT/bootx64.efi', 'grub-efi-bootia32.efi;EFI/BOOT/boot.efi', d)} \
     grub.cfg;EFI/BOOT/grub.cfg \
     mender_grubenv1/env;EFI/BOOT/mender_grubenv1/env \
     mender_grubenv1/lock;EFI/BOOT/mender_grubenv1/lock \
@@ -19,3 +18,14 @@ _MENDER_GRUB_BOOT_FILES_mender-grub = " \
     mender_grubenv2/lock;EFI/BOOT/mender_grubenv2/lock \
     mender_grubenv2/lock.sha256sum;EFI/BOOT/mender_grubenv2/lock.sha256sum \
 "
+_MENDER_GRUB_BOOT_FILES_append_mender-grub_arm = " grub-efi-bootarm.efi;EFI/BOOT/bootarm.efi"
+_MENDER_GRUB_BOOT_FILES_append_mender-grub_x86 = " grub-efi-bootia32.efi;EFI/BOOT/boot.efi"
+_MENDER_GRUB_BOOT_FILES_append_mender-grub_x86-64 = " grub-efi-bootx64.efi;EFI/BOOT/bootx64.efi"
+
+# We want to use upstream grub variants if possible. However, we have recipes
+# that will be enabled in some configurations where COMPATIBLE_HOSTS doesn't
+# match for the upstream recipe. See the recipes-bsp/grub folder.
+PREFERRED_PROVIDER_grub-efi ?= "grub-efi"
+PREFERRED_RPROVIDER_grub-efi ?= "grub-efi"
+PREFERRED_PROVIDER_grub-editenv ?= "grub"
+PREFERRED_RPROVIDER_grub-editenv ?= "grub"

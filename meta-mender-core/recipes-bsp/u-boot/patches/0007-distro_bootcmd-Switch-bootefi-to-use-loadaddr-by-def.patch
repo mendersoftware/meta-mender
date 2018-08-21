@@ -1,0 +1,61 @@
+From c769a4f32a42c396c9fb485f1d55e65527e19591 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@northern.tech>
+Date: Tue, 10 Jul 2018 14:30:11 +0200
+Subject: [PATCH 7/7] distro_bootcmd: Switch bootefi to use loadaddr by
+ default.
+
+`loadaddr` is configurable in Kconfig using `CONFIG_LOADADDR`, and
+hence the future. Provide the existing `kernel_addr_r` as a fallback
+if `loadaddr` is not set.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+---
+ include/config_distro_bootcmd.h | 20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/include/config_distro_bootcmd.h b/include/config_distro_bootcmd.h
+index 5c469a2..537c870 100644
+--- a/include/config_distro_bootcmd.h
++++ b/include/config_distro_bootcmd.h
+@@ -121,12 +121,15 @@
+ 		"else "                                                   \
+ 			"bootefi bootmgr ${fdtcontroladdr};"              \
+ 		"fi;"                                                     \
++		"if test -z \"${loadaddr}\"; then "                       \
++			"setenv loadaddr ${kernel_addr_r};"               \
++		"fi;"                                                     \
+ 		"load ${devtype} ${devnum}:${distro_bootpart} "           \
+-			"${kernel_addr_r} efi/boot/"BOOTEFI_NAME"; "      \
++			"${loadaddr} efi/boot/"BOOTEFI_NAME"; "           \
+ 		"if fdt addr ${fdt_addr_r}; then "                        \
+-			"bootefi ${kernel_addr_r} ${fdt_addr_r};"         \
+-		"else "                                                    \
+-			"bootefi ${kernel_addr_r} ${fdtcontroladdr};"     \
++			"bootefi ${loadaddr} ${fdt_addr_r};"              \
++		"else "                                                   \
++			"bootefi ${loadaddr} ${fdtcontroladdr};"          \
+ 		"fi\0"                                                    \
+ 	\
+ 	"load_efi_dtb="                                                   \
+@@ -262,12 +265,15 @@
+ 	"setenv efi_old_arch ${bootp_arch};"                              \
+ 	"setenv bootp_vci " BOOTENV_EFI_PXE_VCI ";"                       \
+ 	"setenv bootp_arch " BOOTENV_EFI_PXE_ARCH ";"                     \
+-	"if dhcp ${kernel_addr_r}; then "                                 \
++	"if test -z \"${loadaddr}\"; then "                               \
++		"setenv loadaddr ${kernel_addr_r};"                       \
++	"fi;"                                                             \
++	"if dhcp ${loadaddr}; then "                                      \
+ 		"tftpboot ${fdt_addr_r} dtb/${efi_fdtfile};"              \
+ 		"if fdt addr ${fdt_addr_r}; then "                        \
+-			"bootefi ${kernel_addr_r} ${fdt_addr_r}; "        \
++			"bootefi ${loadaddr} ${fdt_addr_r}; "             \
+ 		"else "                                                   \
+-			"bootefi ${kernel_addr_r} ${fdtcontroladdr};"     \
++			"bootefi ${loadaddr} ${fdtcontroladdr};"          \
+ 		"fi;"                                                     \
+ 	"fi;"                                                             \
+ 	"setenv bootp_vci ${efi_old_vci};"                                \
+-- 
+2.7.4
+

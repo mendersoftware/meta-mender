@@ -174,3 +174,27 @@ def mender_mtdparts_convert_units_to_bytes(number, unit):
         bb.fatal("Numbers in mtdparts must be aligned to a KiB boundary")
 
     return to_return
+
+mender_get_clean_kernel_devicetree() {
+    # Strip leading and trailing whitespace, then newline divide, and remove dtbo's.
+    MENDER_DTB_NAME="$(echo "${KERNEL_DEVICETREE}" | sed -r 's/(^\s*)|(\s*$)//g; s/\s+/\n/g' | sed -ne '/\.dtbo$/b; p')"
+
+    if [ -z "$MENDER_DTB_NAME" ]; then
+        bbfatal "Did not find a dtb specified in KERNEL_DEVICETREE"
+        exit 1
+    fi
+
+    DTB_COUNT=$(echo "$MENDER_DTB_NAME" | wc -l)
+
+    if [ "$DTB_COUNT" -ne 1 ]; then
+        bbwarn "Found more than one dtb specified in KERNEL_DEVICETREE. Only one should be specified. Choosing the last one."
+        MENDER_DTB_NAME="$(echo "$MENDER_DTB_NAME" | tail -1)"
+    fi
+
+    # Now strip any subdirectories off.  Some kernel builds require KERNEL_DEVICETREE to be defined, for example,
+    # as qcom/apq8016-sbc.dtb yet when installed, they go directly in /boot
+    MENDER_DTB_NAME="$(basename "$MENDER_DTB_NAME")"
+
+    # Return.
+    echo "$MENDER_DTB_NAME"
+}

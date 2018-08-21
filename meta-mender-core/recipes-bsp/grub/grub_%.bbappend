@@ -18,7 +18,12 @@ GRUB_BUILDIN_append_mender-bios = " biosdisk"
 # Needed to use grub-mkimage
 DEPENDS_append = " grub-efi-native"
 
+# No non-EFI GRUB unless we are on BIOS.
 do_mkimage() {
+    :
+}
+
+do_mkimage_mender-bios() {
     set -x
 
     cd ${B}
