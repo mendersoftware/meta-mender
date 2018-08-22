@@ -40,7 +40,11 @@ do_provide_mender_defines() {
 
     mender_rootfsa_part=$(get_part_number_from_device ${MENDER_ROOTFS_PART_A})
     mender_rootfsb_part=$(get_part_number_from_device ${MENDER_ROOTFS_PART_B})
-    mender_grub_storage_device=$(get_grub_device_from_device_base ${MENDER_STORAGE_DEVICE_BASE})
+    if [ -n "${MENDER_GRUB_STORAGE_DEVICE}" ]; then
+        mender_grub_storage_device=${MENDER_GRUB_STORAGE_DEVICE}
+    else
+        mender_grub_storage_device=$(get_grub_device_from_device_base ${MENDER_STORAGE_DEVICE_BASE})
+    fi
 
     cat > ${WORKDIR}/00_mender_grubenv_defines_grub.cfg <<EOF
 mender_rootfsa_part=$mender_rootfsa_part
