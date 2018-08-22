@@ -78,7 +78,7 @@ MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT_append_beaglebone-yocto = " beaglebone"
 # boot and data partitions along with some predefined overhead (see
 # MENDER_PARTITIONING_OVERHEAD_KB).
 MENDER_STORAGE_TOTAL_SIZE_MB ??= "${MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT}"
-MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT = "1024"
+MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT ?= "1024"
 
 # Size of the data partition, which is preserved across updates.
 MENDER_DATA_PART_SIZE_MB ??= "${MENDER_DATA_PART_SIZE_MB_DEFAULT}"
