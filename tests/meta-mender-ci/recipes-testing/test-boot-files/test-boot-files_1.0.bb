@@ -36,4 +36,4 @@ do_deploy() {
 
     install -m 644 ${WORKDIR}/dummy ${DEPLOYDIR}/conflict-test1
 }
-addtask do_deploy
+addtask do_deploy after do_patch

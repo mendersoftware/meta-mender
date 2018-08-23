@@ -225,8 +225,8 @@ _MENDER_PART_IMAGE_DEPENDS = " \
 "
 
 _MENDER_PART_IMAGE_DEPENDS_append_mender-uboot = " u-boot:do_deploy"
-_MENDER_PART_IMAGE_DEPENDS_append_mender-grub = " grub-efi:do_deploy grub-mender-grubenv:do_deploy"
-_MENDER_PART_IMAGE_DEPENDS_append_mender-grub_mender-bios = " grub:do_deploy grub-mender-grubenv:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS_append_mender-grub = " grub-efi:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS_append_mender-grub_mender-bios = " grub:do_deploy"
 
 do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-bootfiles:do_populate_sysroot', '', d)}"
