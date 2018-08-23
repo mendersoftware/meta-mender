@@ -45,11 +45,6 @@ mender_part_image() {
 
     mkdir -p "${WORKDIR}"
 
-    # Workaround for the fact that the image builder requires this directory,
-    # despite not using it. If "rm_work" is enabled, this directory won't always
-    # exist.
-    mkdir -p "${IMAGE_ROOTFS}"
-
     rm -rf "${WORKDIR}/data" || true
     mkdir -p "${WORKDIR}/data"
 
