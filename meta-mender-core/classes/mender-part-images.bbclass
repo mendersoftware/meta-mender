@@ -44,11 +44,6 @@ mender_part_image() {
 
     mkdir -p "${WORKDIR}"
 
-    # Workaround for the fact that the image builder requires this directory,
-    # despite not using it. If "rm_work" is enabled, this directory won't always
-    # exist.
-    mkdir -p "${IMAGE_ROOTFS}"
-
     # create rootfs
     mender_calc_rootfs_size_mb=$(expr ${MENDER_CALC_ROOTFS_SIZE} / 1024)
     dd if=/dev/zero of=${WORKDIR}/rootfs.${ARTIFACTIMG_FSTYPE} count=0 seek=$mender_calc_rootfs_size_mb bs=1M
