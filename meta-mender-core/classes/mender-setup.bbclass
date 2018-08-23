@@ -68,7 +68,7 @@ MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT = "${MENDER_DEVICE_TYPE}"
 # boot and data partitions along with some predefined overhead (see
 # MENDER_PARTITIONING_OVERHEAD_KB).
 MENDER_STORAGE_TOTAL_SIZE_MB ??= "${MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT}"
-MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT = "1024"
+MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT ?= "1024"
 
 # Optional location where a directory can be specified with content that should
 # be included on the data partition. Some of Mender's own files will be added to
