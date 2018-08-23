@@ -41,6 +41,47 @@ IMAGE_NAME_SUFFIX = ""
 # Block storage
 ################################################################################
 
+# Take the content from the rootfs that is going into the boot partition, coming
+# from MENDER_BOOT_PART_MOUNT_LOCATION, and merge with the files from
+# IMAGE_BOOT_FILES, following the format from the official Yocto documentation.
+mender_merge_bootfs_and_image_boot_files() {
+    W="${WORKDIR}/bootfs.${BB_CURRENTTASK}"
+    rm -rf "$W"
+
+    cp -al "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
+
+    # Put in variable to avoid expansion and ';' being parsed by shell.
+    image_boot_files="${IMAGE_BOOT_FILES}"
+    for entry in $image_boot_files; do
+        if echo "$entry" | grep -q ";"; then
+            dest="$(echo "$entry" | sed -e 's/[^;]*;//')"
+            entry="$(echo "$entry" | sed -e 's/;.*//')"
+        else
+            dest="./"
+        fi
+        if echo "$dest" | grep -q '/$'; then
+            dest_is_dir=1
+            mkdir -p "$W/$dest"
+        else
+            dest_is_dir=0
+            mkdir -p "$(dirname "$W/$dest")"
+        fi
+
+        # Use extra for loop so we can check conflict for each file.
+        for file in ${DEPLOY_DIR_IMAGE}/$entry; do
+            if [ $dest_is_dir -eq 1 ]; then
+                destfile="$W/$dest$(basename $file)"
+            else
+                destfile="$W/$dest"
+            fi
+            if [ -e "$destfile" ]; then
+                bbfatal "$destfile already exists in boot partition. Please verify that packages do not put files in the boot partition that conflict with IMAGE_BOOT_FILES."
+            fi
+            cp -l "$file" "$destfile"
+        done
+    done
+}
+
 mender_part_image() {
     suffix="$1"
     part_type="$2"
@@ -105,9 +146,12 @@ EOF
     alignment_kb=$(expr ${MENDER_PARTITION_ALIGNMENT} / 1024)
 
     if [ "${MENDER_BOOT_PART_SIZE_MB}" -ne "0" ]; then
+        mender_merge_bootfs_and_image_boot_files
         cat >> "$wks" <<EOF
-part $boot_part_params --ondisk "$ondisk_dev" --fstype=vfat --label boot --align $alignment_kb --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
+part --source rootfs --rootfs-dir ${WORKDIR}/bootfs.${BB_CURRENTTASK} --ondisk "$ondisk_dev" --fstype=vfat --label boot --align $alignment_kb --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
 EOF
+    elif [ -n "${IMAGE_BOOT_FILES}" ]; then
+        bbwarn "MENDER_BOOT_PART_SIZE_MB is set to zero, but IMAGE_BOOT_FILES is not empty. The files are being omitted from the image."
     fi
 
     exclude_dirs_options="${@" ".join(["--exclude-path %s" % dir for dir in (d.getVar("IMAGE_ROOTFS_EXCLUDE_PATH") or "").split()])}"

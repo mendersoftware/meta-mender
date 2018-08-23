@@ -45,7 +45,7 @@ mender_create_scripts_version_file() {
     echo -n "${MENDER_STATE_SCRIPTS_VERSION}" > ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/version
 }
 
-IMAGE_ROOTFS_EXCLUDE_PATH_append_mender-image = " data/"
+IMAGE_ROOTFS_EXCLUDE_PATH_append_mender-image = " data/ ${@d.getVar('MENDER_BOOT_PART_MOUNT_LOCATION')[1:]}"
 
 
 ################################################################################
