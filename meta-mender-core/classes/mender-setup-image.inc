@@ -91,6 +91,10 @@ python prepare_excluded_directories() {
         if not full_path.startswith(new_rootfs):
             bb.fatal("'%s' points to a path outside the rootfs" % orig_path)
 
+        if not os.path.lexists(full_path):
+            # Nothing to do if it doesn't exist.
+            continue
+
         if path.endswith(os.sep):
             # Delete content only.
             for entry in os.listdir(full_path):
