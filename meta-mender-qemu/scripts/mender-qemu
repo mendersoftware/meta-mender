@@ -49,9 +49,8 @@ fi
 QEMU_ARGS=""
 
 # Extract certain variables from build, with "EXTRACTED_" prefix.
-eval "$(cd $BUILDDIR && bitbake -e core-image-minimal | egrep '^(export )?(MENDER_MACHINE|DISTRO_FEATURES)=' | sed -e 's/^\(export \)*/EXTRACTED_/')"
-MACHINE="${MACHINE:-$EXTRACTED_MENDER_MACHINE}"
-DISTRO_FEATURES="${DISTRO_FEATURES:-$EXTRACTED_DISTRO_FEATURES}"
+eval "$(cd $BUILDDIR && bitbake -e core-image-minimal | egrep '^(export )?(MENDER_MACHINE|DISTRO_FEATURES|MENDER_DEVICE_TYPE)=')"
+MACHINE="${MACHINE:-$MENDER_MACHINE}"
 
 case "$MACHINE" in
     *x86*)
@@ -65,12 +64,12 @@ case "$MACHINE" in
         esac
         if echo "$DISTRO_FEATURES" | grep -q mender-bios; then
             BOOTLOADER_ARG=""
-            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.biosimg"}
+            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MENDER_DEVICE_TYPE}.biosimg"}
         else
             BOOTLOADER="${BOOTLOADER:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.qcow2}"
             BOOTLOADER_DATA="${BOOTLOADER_DATA:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.vars.qcow2}"
             BOOTLOADER_ARG="${BOOTLOADER_ARG:--drive file=${BOOTLOADER},if=pflash,format=qcow2,unit=0,readonly=on -drive file=${BOOTLOADER_DATA},if=pflash,format=qcow2,unit=1}"
-            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.uefiimg"}
+            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MENDER_DEVICE_TYPE}.uefiimg"}
         fi
         if [ -w /dev/kvm ]; then
             QEMU_ARGS="$QEMU_ARGS -enable-kvm"
@@ -83,9 +82,9 @@ case "$MACHINE" in
         BOOTLOADER="${BOOTLOADER:-${BUILDTMP}/deploy/images/${MACHINE}/u-boot.elf}"
         BOOTLOADER_ARG="${BOOTLOADER_ARG:--kernel ${BOOTLOADER}}"
         if echo "$DISTRO_FEATURES" | grep -q mender-grub; then
-            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.uefiimg"}
+            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MENDER_DEVICE_TYPE}.uefiimg"}
         else
-            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.sdimg"}
+            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MENDER_DEVICE_TYPE}.sdimg"}
         fi
         STORAGE_TYPE=sd
         ;;
