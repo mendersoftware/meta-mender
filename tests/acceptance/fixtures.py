@@ -98,7 +98,7 @@ def qemu_running(request, clean_image):
         def qemu_finalizer_impl():
             try:
                 manual_uboot_commit()
-                run("halt")
+                run("poweroff")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
                 while halt_time + 30 > time.time() and qemu.poll() is None:
