@@ -61,3 +61,85 @@ class TestInventory:
                 assert(output == "mender_bootloader_integration=uboot")
         else:
             pytest.fail("Unknown platform combination. Please add a test case for this combination.")
+
+    @pytest.mark.min_mender_version('1.6.0')
+    def test_inventory_os(self, bitbake_variables):
+        """Test that "os" inventory attribute is reported correctly by the
+        inventory script."""
+
+        if not env.host_string:
+            # This means we are not inside execute(). Recurse into it!
+            execute(self.test_inventory_os, bitbake_variables)
+            return
+
+        sources = [
+            {
+                "name": "/etc/os-release",
+                "content": """NAME="Ubuntu"
+VERSION="16.04.4 LTS (Xenial Xerus)"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 16.04.4 LTS"
+VERSION_ID="16.04"
+HOME_URL="http://www.ubuntu.com/"
+SUPPORT_URL="http://help.ubuntu.com/"
+BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
+VERSION_CODENAME=xenial
+UBUNTU_CODENAME=xenial""",
+                "mode": 0644,
+                "expected": "os=Ubuntu 16.04.4 LTS",
+            },
+            {
+                "name": "/usr/lib/os-release",
+                "content": """ID="poky"
+NAME="Poky (Yocto Project Reference Distro)"
+VERSION="2.5+snapshot-20180731 (master)"
+VERSION_ID="2.5-snapshot-20180731"
+""",
+                "mode": 0644,
+                "expected": "os=Poky (Yocto Project Reference Distro) 2.5+snapshot-20180731 (master)",
+            },
+            {
+                "name": "/usr/bin/lsb_release",
+                "content": """#!/bin/sh
+echo LSB OS""",
+                "mode": 0755,
+                "expected": "os=LSB OS",
+            },
+            {
+                "name": "/etc/issue",
+                "content": "Issue OS",
+                "mode": 0644,
+                "expected": "os=Issue OS",
+            },
+            {
+                "name": None,
+                "expected": "os=unknown",
+            },
+        ]
+        for file in [src['name'] for src in sources]:
+            run("if [ -e %s ]; then mv %s %s.backup; fi" % (file, file, file))
+
+        try:
+            for src in sources:
+                if src.get('name') is None:
+                    continue
+                with open("tmpfile", "w") as fd:
+                    fd.write(src['content'])
+                    if src['content'][-1] != '\n':
+                        # Write a final newline if there isn't one.
+                        fd.write('\n')
+                try:
+                    put("tmpfile", remote_path=src['name'])
+                    run("chmod 0%o %s" % (src['mode'], src['name']))
+                finally:
+                    os.remove("tmpfile")
+
+            for src in sources:
+                output = run("/usr/share/mender/inventory/mender-inventory-os")
+                assert(output == src['expected'])
+                if src.get('name') is not None:
+                    run("rm -f %s" % src['name'])
+        finally:
+            for file in [src['name'] for src in sources]:
+                run("if [ -e %s.backup ]; then mv %s.backup %s; fi" % (file, file, file))
