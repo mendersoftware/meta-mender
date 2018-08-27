@@ -13,6 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import os
+import shutil
+
 from common import *
 
 @pytest.fixture(scope="session")
@@ -21,21 +24,22 @@ def setup_board(request, clean_image, bitbake_variables):
 
     print('board type:', bt)
     if "qemu" in bt:
-        return qemu_running(request, clean_image)
+        return qemu_running(request, clean_image())
     elif bt == "beagleboneblack":
         return setup_bbb(request)
     elif bt == "raspberrypi3":
         return setup_rpi3(request)
     elif bt == "colibri-imx7":
-        return setup_colibri_imx7(request, clean_image)
+        return setup_colibri_imx7(request, clean_image())
     else:
         pytest.fail('unsupported board type {}'.format(bt))
 
 
 @pytest.fixture(scope="session")
 def setup_colibri_imx7(request, clean_image):
-    latest_uboot = latest_build_artifact(clean_image['build_dir'], "u-boot-nand.imx")
-    latest_ubimg = latest_build_artifact(clean_image['build_dir'], ".ubimg")
+    image = clean_image()
+    latest_uboot = latest_build_artifact(image['build_dir'], "u-boot-nand.imx")
+    latest_ubimg = latest_build_artifact(image['build_dir'], ".ubimg")
 
     if not latest_uboot:
         pytest.fail('failed to find U-Boot binary')
@@ -73,7 +77,6 @@ def setup_rpi3(request):
     execute(common_boot_from_internal, hosts=conftest.current_hosts())
     request.addfinalizer(board_cleanup)
 
-@pytest.fixture(scope="module")
 def qemu_running(request, clean_image):
     latest_sdimg = latest_build_artifact(clean_image['build_dir'], ".sdimg")
     latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], ".vexpress-nor")
@@ -194,15 +197,15 @@ def successful_image_update_mender(request, clean_image):
     """Provide a 'successful_image_update.mender' file in the current directory that
     contains the latest built update."""
 
-    latest_mender_image = latest_build_artifact(clean_image['build_dir'], ".mender")
+    latest_mender_image = latest_build_artifact(clean_image()['build_dir'], "core-image*.mender")
 
     if os.path.lexists("successful_image_update.mender"):
         print("Using existing 'successful_image_update.mender' in current directory")
         return "successful_image_update.mender"
 
-    os.symlink(latest_mender_image, "successful_image_update.mender")
+    shutil.copy(latest_mender_image, "successful_image_update.mender")
 
-    print("Symlinking 'successful_image_update.mender' to '%s'" % latest_mender_image)
+    print("Copying 'successful_image_update.mender' to '%s'" % latest_mender_image)
 
     def cleanup_image_dat():
         os.remove("successful_image_update.mender")
@@ -237,13 +240,20 @@ def bitbake_path(request, bitbake_variables):
 
 @pytest.fixture(scope="session")
 def clean_image(request, prepared_test_build_base):
-    reset_local_conf(prepared_test_build_base)
-    add_to_local_conf(prepared_test_build_base,
-                      'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
-    add_to_local_conf(prepared_test_build_base,
-                      'EXTRA_IMAGE_FEATURES_append = " ssh-server-openssh"')
-    run_bitbake(prepared_test_build_base)
-    return prepared_test_build_base
+    """Returns a function which returns a clean image. The reason it does not
+    return the clean image directly is that it may need to be reset to a clean
+    state if several independent fixtures invoke it, and there have been unclean
+    builds in between."""
+
+    def getter():
+        reset_local_conf(prepared_test_build_base)
+        add_to_local_conf(prepared_test_build_base,
+                          'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
+        add_to_local_conf(prepared_test_build_base,
+                          'EXTRA_IMAGE_FEATURES_append = " ssh-server-openssh"')
+        run_bitbake(prepared_test_build_base)
+        return prepared_test_build_base
+    return getter
 
 
 @pytest.fixture(scope="session")
