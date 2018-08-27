@@ -168,7 +168,15 @@ def reboot(wait = 120):
     # Make sure reboot has had time to take effect.
     time.sleep(5)
 
-    fabric.network.disconnect_all()
+    for attempt in range(5):
+        try:
+            fabric.network.disconnect_all()
+            break
+        except IOError:
+            # Occasionally we get an IO error here because resource is temporarily
+            # unavailable.
+            time.sleep(5)
+            continue
 
     run_after_connect("true", wait)
 
