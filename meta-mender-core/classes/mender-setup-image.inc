@@ -45,7 +45,7 @@ mender_create_scripts_version_file() {
     echo -n "${MENDER_STATE_SCRIPTS_VERSION}" > ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/version
 }
 
-IMAGE_ROOTFS_EXCLUDE_PATH_append_mender-image = " data/"
+IMAGE_ROOTFS_EXCLUDE_PATH_append_mender-image = " data/ ${@d.getVar('MENDER_BOOT_PART_MOUNT_LOCATION')[1:]}"
 
 
 ################################################################################
@@ -90,6 +90,10 @@ python prepare_excluded_directories() {
         # directory).
         if not full_path.startswith(new_rootfs):
             bb.fatal("'%s' points to a path outside the rootfs" % orig_path)
+
+        if not os.path.lexists(full_path):
+            # Nothing to do if it doesn't exist.
+            continue
 
         if path.endswith(os.sep):
             # Delete content only.
