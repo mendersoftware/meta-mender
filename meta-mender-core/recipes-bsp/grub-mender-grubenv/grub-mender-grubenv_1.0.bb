@@ -2,8 +2,8 @@ inherit mender-helpers
 
 SRC_URI = "git://github.com/mendersoftware/grub-mender-grubenv;protocol=https;branch=master"
 
-# Tag: 1.0
-SRCREV = "05f2d3907abb219f6aa63ed7c90858c7b6d9dcc4"
+# Tag: 1.0.1
+SRCREV = "194417d3f8e8e4cb1645ff55a3a35c3e01e4cb47"
 
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=a63d325b69180ec25a59e045c06ec468"
