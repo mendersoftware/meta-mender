@@ -273,27 +273,11 @@ def bitbake_env_dict(mender_test_dependencies_bitbaked):
 def bitbake_env(request, bitbake_env_dict):
     """Fixture that runs the test using entire bitbake environment."""
 
-    old_env = {}
-    # Save all values that have keys in the bitbake_env_dict
-    for key in bitbake_env_dict:
-        if key in os.environ:
-            old_env[key] = os.environ[key]
-        else:
-            old_env[key] = None
-
-    old_path = os.environ['PATH']
-
-    os.environ.update(bitbake_env_dict)
-    # Exception for PATH, keep old path at end.
-    os.environ['PATH'] += ":" + old_path
+    env_obj = bitbake_env_from(bitbake_env_dict)
+    env_obj.setup()
 
     def env_restore():
-        # Restore all keys we saved.
-        for key in old_env:
-            if old_env[key] is None:
-                del os.environ[key]
-            else:
-                os.environ[key] = old_env[key]
+        env_obj.teardown()
 
     request.addfinalizer(env_restore)
 
