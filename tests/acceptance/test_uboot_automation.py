@@ -186,10 +186,14 @@ class TestUbootAutomation:
         return configs_to_test
 
     @pytest.mark.min_mender_version('1.0.0')
-    def test_uboot_compile(self, bitbake_env, bitbake_variables):
+    def test_uboot_compile(self, bitbake_variables):
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
 
+        with bitbake_env_from("u-boot"):
+            self.run_test_uboot_compile(bitbake_variables)
+
+    def run_test_uboot_compile(self, bitbake_variables):
         # No need to test this on non-vexpress-qemu. It is a very resource
         # consuming test, and it is identical on all boards, since it internally
         # tests all boards.
