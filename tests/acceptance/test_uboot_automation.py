@@ -78,7 +78,7 @@ class TestUbootAutomation:
 
         # SHA from meta-mender repository, limited by date.
         meta_mender_uboot_rev = subprocess.check_output(("git log -n1 --format=%%H --after=%d.days.ago HEAD -- "
-                                                         + "recipes-bsp/u-boot")
+                                                         + "recipes-bsp/u-boot tests/acceptance/test_uboot_automation.py")
                                                         % days_to_be_old,
                                                         cwd=meta_mender_core_dir,
                                                         shell=True).strip()
@@ -88,7 +88,7 @@ class TestUbootAutomation:
 
         # SHA from meta-mender repository, not limited by date.
         meta_mender_uboot_rev = subprocess.check_output("git log -n1 --format=%H HEAD -- "
-                                                        + "recipes-bsp/u-boot",
+                                                        + "recipes-bsp/u-boot tests/acceptance/test_uboot_automation.py",
                                                         cwd=meta_mender_core_dir,
                                                         shell=True).strip()
         for remote in subprocess.check_output(["git", "remote"]).split():
