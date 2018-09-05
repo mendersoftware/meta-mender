@@ -50,11 +50,6 @@ mender_part_image() {
 
     mkdir -p "${WORKDIR}"
 
-    # Workaround for the fact that the image builder requires this directory,
-    # despite not using it. If "rm_work" is enabled, this directory won't always
-    # exist.
-    mkdir -p "${IMAGE_ROOTFS}"
-
     if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)}; then
         # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
         install -m 0644 "${DEPLOY_DIR_IMAGE}/uboot.env" "${WORKDIR}/"

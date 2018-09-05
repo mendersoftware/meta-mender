@@ -6,6 +6,7 @@ inherit mender-helpers
 # For some reason 'bitbake -e' does not report the MACHINE value so
 # we use this as a proxy in case it is not available when needed.
 export MENDER_MACHINE = "${MACHINE}"
+BB_HASHBASE_WHITELIST += "MENDER_MACHINE"
 
 # The storage device that holds the device partitions.
 MENDER_STORAGE_DEVICE ??= "${MENDER_STORAGE_DEVICE_DEFAULT}"
@@ -78,7 +79,7 @@ MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT_append_beaglebone-yocto = " beaglebone"
 # boot and data partitions along with some predefined overhead (see
 # MENDER_PARTITIONING_OVERHEAD_KB).
 MENDER_STORAGE_TOTAL_SIZE_MB ??= "${MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT}"
-MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT = "1024"
+MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT ?= "1024"
 
 # Size of the data partition, which is preserved across updates.
 MENDER_DATA_PART_SIZE_MB ??= "${MENDER_DATA_PART_SIZE_MB_DEFAULT}"

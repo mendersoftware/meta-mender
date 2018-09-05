@@ -168,7 +168,15 @@ def reboot(wait = 120):
     # Make sure reboot has had time to take effect.
     time.sleep(5)
 
-    fabric.network.disconnect_all()
+    for attempt in range(5):
+        try:
+            fabric.network.disconnect_all()
+            break
+        except IOError:
+            # Occasionally we get an IO error here because resource is temporarily
+            # unavailable.
+            time.sleep(5)
+            continue
 
     run_after_connect("true", wait)
 
@@ -445,6 +453,51 @@ def reset_local_conf(prepared_test_build):
 
     # Restore original local.conf
     run_verbose("cp %s %s" % (old_file, new_file))
+
+
+class bitbake_env_from:
+    old_env = {}
+    old_path = None
+    recipe = None
+
+    def __init__(self, recipe):
+        self.recipe = recipe
+
+    def __enter__(self):
+        self.setup()
+
+    def setup(self):
+        if isinstance(self.recipe, str):
+            vars = get_bitbake_variables(self.recipe, export_only=True)
+        else:
+            vars = self.recipe
+
+        self.old_env = {}
+        # Save all values that have keys in the bitbake_env_dict
+        for key in vars:
+            if key in os.environ:
+                self.old_env[key] = os.environ[key]
+            else:
+                self.old_env[key] = None
+
+        self.old_path = os.environ['PATH']
+
+        os.environ.update(vars)
+        # Exception for PATH, keep old path at end.
+        os.environ['PATH'] += ":" + self.old_path
+
+        return os.environ
+
+    def __exit__(self, type, value, traceback):
+        self.teardown()
+
+    def teardown(self):
+        # Restore all keys we saved.
+        for key in self.old_env:
+            if self.old_env[key] is None:
+                del os.environ[key]
+            else:
+                os.environ[key] = self.old_env[key]
 
 
 def versions_of_recipe(recipe):
