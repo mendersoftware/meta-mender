@@ -79,7 +79,7 @@ class TestUbootAutomation:
 
         # SHA from meta-mender repository, limited by date.
         meta_mender_uboot_rev = subprocess.check_output(("git log -n1 --format=%%H --after=%d.days.ago HEAD -- "
-                                                         + "recipes-bsp/u-boot")
+                                                         + "recipes-bsp/u-boot tests/acceptance/test_uboot_automation.py")
                                                         % days_to_be_old,
                                                         cwd=meta_mender_core_dir,
                                                         shell=True).strip()
@@ -89,7 +89,7 @@ class TestUbootAutomation:
 
         # SHA from meta-mender repository, not limited by date.
         meta_mender_uboot_rev = subprocess.check_output("git log -n1 --format=%H HEAD -- "
-                                                        + "recipes-bsp/u-boot",
+                                                        + "recipes-bsp/u-boot tests/acceptance/test_uboot_automation.py",
                                                         cwd=meta_mender_core_dir,
                                                         shell=True).strip()
         for remote in subprocess.check_output(["git", "remote"]).split():
@@ -186,10 +186,14 @@ class TestUbootAutomation:
         return configs_to_test
 
     @pytest.mark.min_mender_version('1.0.0')
-    def test_uboot_compile(self, bitbake_env, bitbake_variables):
+    def test_uboot_compile(self, bitbake_variables):
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
 
+        with bitbake_env_from("u-boot"):
+            self.run_test_uboot_compile(bitbake_variables)
+
+    def run_test_uboot_compile(self, bitbake_variables):
         # No need to test this on non-vexpress-qemu. It is a very resource
         # consuming test, and it is identical on all boards, since it internally
         # tests all boards.
