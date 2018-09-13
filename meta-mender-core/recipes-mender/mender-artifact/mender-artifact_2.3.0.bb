@@ -1,4 +1,4 @@
-require mender.inc
+require mender-artifact.inc
 
 ################################################################################
 #-------------------------------------------------------------------------------
@@ -8,18 +8,16 @@ require mender.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=1.6.x"
+SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=2.3.x"
 
-# Tag: 1.6.0b1
-SRCREV = "44108eb84975013c2b07cd11838dc231ef674ef6"
+# Tag: 2.3.0
+SRCREV = "e05327b84000068c6528d6f87f8c03783456433d"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
-DEFAULT_PREFERENCE = "-1"
+#DEFAULT_PREFERENCE = "-1"
 
 ################################################################################
 
-# DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below.
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=debbe5e440f2e65465e86b25fc7c9fcc"
-LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & MIT & OLDAP-2.8"
+LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=8ce3d9108b58e4a185a5f812536f03a5"
