@@ -46,7 +46,7 @@ def extract_partition(img, number):
                            "skip=%d" % start, "count=%d" % (end - start)])
 
 
-@pytest.mark.only_with_image('sdimg', 'uefiimg')
+@pytest.mark.only_with_image('sdimg', 'uefiimg', 'biosimg')
 @pytest.mark.min_mender_version("1.0.0")
 class TestPartitionImage:
 
@@ -221,13 +221,18 @@ class TestPartitionImage:
 
     @pytest.mark.only_with_distro_feature('mender-grub')
     def test_mender_grubenv(self, bitbake_path, latest_part_image, bitbake_variables):
+        if "mender-bios" in bitbake_variables['DISTRO_FEATURES'].split():
+            env_dir = "/"
+        else:
+            env_dir = "/EFI/BOOT/"
+
         with make_tempdir() as tmpdir:
             old_cwd_fd = os.open(".", os.O_RDONLY)
             os.chdir(tmpdir)
             try:
                 extract_partition(latest_part_image, 1)
                 for env_name in ["mender_grubenv1", "mender_grubenv2"]:
-                    subprocess.check_call(["mcopy", "-i", "img1.fs", "::/EFI/BOOT/%s/env" % env_name, "."])
+                    subprocess.check_call(["mcopy", "-i", "img1.fs", "::%s%s/env" % (env_dir, env_name), "."])
                     with open("env") as fd:
                         data = fd.read()
                     os.unlink("env")
