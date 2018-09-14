@@ -1,0 +1,8 @@
+[Unit]
+Description=Boot script to demo Mender OTA updates
+
+[Service]
+ExecStart=/usr/sbin/boot-script.sh
+
+[Install]
+WantedBy=multi-user.target
