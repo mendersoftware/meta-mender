@@ -118,6 +118,8 @@ MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT_mender-ubi = "u-boot.${UBOOT_SUFFIX}"
 # Usually 2KiB, but can be other nearby powers of two.
 MENDER_NAND_FLASH_PAGE_SIZE ??= "2048"
 
+MENDER_FLASH_MINIMUM_IO_UNIT ??= "${@mender_flash_default_minimum_io_unit(d)}"
+
 MENDER_UBI_LEB_PEB_BLOCK_OVERHEAD ??= "${@mender_calculate_ubi_leb_peb_block_overhead(d)}"
 
 MENDER_UBI_LEB_SIZE ??= "${@eval('${MENDER_STORAGE_PEB_SIZE} - ${MENDER_UBI_LEB_PEB_BLOCK_OVERHEAD}')}"
@@ -133,8 +135,10 @@ MENDER_UBI_TOTAL_FIXED_OVERHEAD ??= "${@eval('4 * ${MENDER_STORAGE_PEB_SIZE}')}"
 MENDER_UBI_TOTAL_BAD_PEB_OVERHEAD ??= "${@mender_get_ubi_bad_peb_overhead(d)}"
 MENDER_UBI_TOTAL_LEB_PEB_OVERHEAD ??= "${@mender_calculate_ubi_leb_peb_overhead(d)}"
 
-MKUBIFS_ARGS ??= "-m 1 -e ${MENDER_UBI_LEB_SIZE} -c 1024"
-UBINIZE_ARGS ??= "-p ${MENDER_STORAGE_PEB_SIZE} -m 1"
+MENDER_MAXIMUM_LEB_COUNT ??= "1024"
+
+MKUBIFS_ARGS ??= "-m ${MENDER_FLASH_MINIMUM_IO_UNIT} -e ${MENDER_UBI_LEB_SIZE} -c ${MENDER_MAXIMUM_LEB_COUNT}"
+UBINIZE_ARGS ??= "-p ${MENDER_STORAGE_PEB_SIZE} -m ${MENDER_FLASH_MINIMUM_IO_UNIT} -s ${MENDER_FLASH_MINIMUM_IO_UNIT}"
 
 # The volume numbers containing the two environment copies. The volume numbers
 # are customizable because the kernel only accepts numbers, but U-boot only
@@ -305,3 +309,13 @@ def mender_get_partitioning_overhead_kb_ubi(d):
     alignment = int(d.getVar('MENDER_PARTITION_ALIGNMENT'))
     overhead = alignment * (int((overhead - 1) / alignment) + 1)
     return str(int(overhead / 1024))
+
+def mender_flash_default_minimum_io_unit(d):
+    flash_type = mender_get_flash_type_from_mtdid(d)
+    if flash_type == "nand":
+        return d.getVar("MENDER_NAND_FLASH_PAGE_SIZE")
+    elif flash_type == "nor":
+        return "1"
+    else:
+        # This is just a guess, really.
+        return "512"
