@@ -220,7 +220,29 @@ python() {
                 bb.fatal("%s from MENDER_FEATURES_ENABLE or DISTRO_FEATURES is not a valid Mender feature."
                          % feature)
             d.setVar('OVERRIDES_append', ':%s' % feature)
+
+            # Verify that all 'mender-' features are added using MENDER_FEATURES
+            # variables. This is important because we base some decisions on
+            # these variables, and then fill DISTRO_FEATURES, which would give
+            # infinite recursion if we based the decision directly on
+            # DISTRO_FEATURES.
+            if feature not in mfe or feature in mfd:
+                bb.fatal(("%s is not added using MENDER_FEATURES_ENABLE and "
+                          + "MENDER_FEATURES_DISABLE variables. Please make "
+                          + "sure that the feature is enabled using "
+                          + "MENDER_FEATURES_ENABLE, and is not in "
+                          + "MENDER_FEATURES_DISABLE.")
+                         % feature)
 }
+
+def mender_feature_is_enabled(feature, if_true, if_false, d):
+    in_enable = bb.utils.contains('MENDER_FEATURES_ENABLE', feature, True, False, d)
+    in_disable = bb.utils.contains('MENDER_FEATURES_DISABLE', feature, True, False, d)
+
+    if in_enable and not in_disable:
+        return if_true
+    else:
+        return if_false
 
 python() {
     if d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True):
