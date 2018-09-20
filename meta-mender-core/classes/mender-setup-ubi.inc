@@ -131,7 +131,8 @@ MENDER_UBI_LEB_SIZE ??= "${@eval('${MENDER_STORAGE_PEB_SIZE} - ${MENDER_UBI_LEB_
 MENDER_UBI_TOTAL_FIXED_OVERHEAD ??= "${@eval('4 * ${MENDER_STORAGE_PEB_SIZE}')}"
 # some amount of PEBs is reserved for bad PEB handling; this is applicable for
 # NAND flash, but not for NOR flash; the amount of reserved PEBs is configurable
-# and is equal to 20 blocks per 1024 blocks by default;
+# and is equal to 20 blocks per 1024 blocks by default.
+# The end result in the variables is expressed in bytes.
 MENDER_UBI_TOTAL_BAD_PEB_OVERHEAD ??= "${@mender_get_ubi_bad_peb_overhead(d)}"
 MENDER_UBI_TOTAL_LEB_PEB_OVERHEAD ??= "${@mender_calculate_ubi_leb_peb_overhead(d)}"
 
@@ -282,14 +283,18 @@ def mender_calculate_ubi_leb_peb_overhead(d):
     return str(overhead)
 
 def mender_get_ubi_bad_peb_overhead(d):
+    import math
+
     storage = mender_get_flash_type_from_mtdid(d)
 
     if storage == "nor":
         return "0"
     elif storage == "nand":
         ubi_size = mender_get_ubi_size(d)
-        blocks = int(ubi_size / int(d.getVar('MENDER_STORAGE_PEB_SIZE')))
-        return str(int(20 * blocks / 1024 + 20))
+        peb_size = int(d.getVar('MENDER_STORAGE_PEB_SIZE'))
+        blocks = int(ubi_size / peb_size)
+        bad_blocks = int(math.ceil(blocks / 1024) * 20)
+        return str(bad_blocks * peb_size)
     else:
         mender_warn_only_if_ubi(d, "Unknown MTDID type %s, setting UBI overhead to 0" % storage)
         return "0"
