@@ -347,6 +347,18 @@ patch_all_candidates_sdimg() {
 }
 
 patch_all_candidates_ubi() {
+    # This was the old way to refer to CONFIG_MTDIDS_DEFAULT and
+    # CONFIG_MTDPARTS_DEFAULT, without the "CONFIG_" prefix. Alias them to the
+    # new ones.
+    replace_definition \
+        'MTDIDS_DEFAULT' \
+        'MTDIDS_DEFAULT' \
+        'CONFIG_MTDIDS_DEFAULT'
+    replace_definition \
+        'MTDPARTS_DEFAULT' \
+        'MTDPARTS_DEFAULT' \
+        'CONFIG_MTDPARTS_DEFAULT'
+
     replace_definition \
         'CONFIG_MTDIDS_DEFAULT' \
         'CONFIG_MTDIDS_DEFAULT' \
