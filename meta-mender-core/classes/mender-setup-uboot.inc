@@ -42,10 +42,8 @@ def mender_check_distro_features_early_contains(d, feature, if_true, if_false):
 
     in_df_backfill = bb.utils.contains('DISTRO_FEATURES_BACKFILL', feature, True, False, d)
     in_df_backfill_considered = bb.utils.contains('DISTRO_FEATURES_BACKFILL_CONSIDERED', feature, True, False, d)
-    in_mender_enable = bb.utils.contains('MENDER_FEATURES_ENABLE', feature, True, False, d)
-    in_mender_disable = bb.utils.contains('MENDER_FEATURES_DISABLE', feature, True, False, d)
 
-    if (in_df_backfill or in_mender_enable) and not (in_df_backfill_considered or in_mender_disable):
+    if in_df_backfill and not in_df_backfill_considered:
         return if_true
     else:
         return if_false
