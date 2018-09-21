@@ -174,10 +174,10 @@ def mender_make_mtdparts(d):
         return ""
 
     u_boot_part_size = int(d.getVar('MENDER_STORAGE_PEB_SIZE'))
-    # Default to at least 512KiB for U-Boot binary. Can be changed by setting
+    # Default to at least 1MiB for U-Boot binary. Can be changed by setting
     # MENDER_MTDPARTS manually.
-    if u_boot_part_size < 524288:
-        u_boot_part_size = 524288
+    if u_boot_part_size < 1048576:
+        u_boot_part_size = 1048576
 
     bootloader = ""
     if bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
