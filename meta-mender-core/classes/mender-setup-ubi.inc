@@ -95,7 +95,7 @@ MENDER_MTDIDS ??= ""
 # If there is more than one mtdid, the mtdid that contains Mender.
 # This should be the one after the equals sign in MENDER_MTDIDS.
 # Currently there is no support for spreading over more than one.
-MENDER_IS_ON_MTDID ??= "${@mender_default_mender_mtdid('${MENDER_MTDIDS}')}"
+MENDER_IS_ON_MTDID ??= "${@mender_default_mender_mtdid(d)}"
 
 # The mtdparts string for the MTD layout. Usually auto-set from MENDER_MTDIDS
 # if possible. It should contain a "u-boot" label and a "ubi" label.
@@ -153,11 +153,18 @@ MENDER_UBOOT_ENV_UBIVOL_NUMBER_2 ??= "4"
 # Functions
 ################################################################################
 
-def mender_warn_only_if_ubi(d, msg):
+def mender_warn_only_if_ubi(d, msg, fatal=False):
     if bb.utils.contains('DISTRO_FEATURES', 'mender-ubi', True, False, d):
-        bb.warn(msg)
+        if fatal:
+            bb.fatal(msg)
+        else:
+            bb.warn(msg)
 
-def mender_default_mender_mtdid(mtdids):
+def mender_default_mender_mtdid(d):
+    mtdids = d.getVar("MENDER_MTDIDS")
+    if mtdids is None or mtdids == "":
+        mender_warn_only_if_ubi(d, "MENDER_MTDIDS must be defined", fatal=True)
+
     if len(mtdids.split(",")) == 1 and len(mtdids.split("=")) == 2:
         return mtdids.split("=")[1]
     else:
@@ -174,10 +181,10 @@ def mender_make_mtdparts(d):
         return ""
 
     u_boot_part_size = int(d.getVar('MENDER_STORAGE_PEB_SIZE'))
-    # Default to at least 512KiB for U-Boot binary. Can be changed by setting
+    # Default to at least 1MiB for U-Boot binary. Can be changed by setting
     # MENDER_MTDPARTS manually.
-    if u_boot_part_size < 524288:
-        u_boot_part_size = 524288
+    if u_boot_part_size < 1048576:
+        u_boot_part_size = 1048576
 
     bootloader = ""
     if bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):

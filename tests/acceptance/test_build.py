@@ -311,7 +311,7 @@ class TestBuild:
             "expected": {
                 "MENDER_MTDIDS": "nor2=40000000.flash",
                 "MENDER_IS_ON_MTDID": "40000000.flash",
-                "MENDER_MTDPARTS": "40000000.flash:512k(u-boot)ro,-(ubi)",
+                "MENDER_MTDPARTS": "40000000.flash:1m(u-boot)ro,-(ubi)",
             },
         }),
         ("custom_mtdids", {
@@ -322,7 +322,7 @@ class TestBuild:
             "expected": {
                 "MENDER_MTDIDS": "nor3=40000001.flash",
                 "MENDER_IS_ON_MTDID": "40000001.flash",
-                "MENDER_MTDPARTS": "40000001.flash:512k(u-boot)ro,-(ubi)",
+                "MENDER_MTDPARTS": "40000001.flash:1m(u-boot)ro,-(ubi)",
             },
         }),
         ("multiple_mtdids_no_selected_one", {
@@ -349,13 +349,13 @@ class TestBuild:
             "vars": [
                 'MENDER_MTDIDS = "nor2=40000000.flash,nor3=50000000.flash"',
                 'MENDER_IS_ON_MTDID = "40000000.flash"',
-                'MENDER_MTDPARTS = "50000000.flash:1m(whatever);40000000.flash:1m(u-boot)ro,3m(u-boot-env),-(ubi)"',
+                'MENDER_MTDPARTS = "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)"',
             ],
             "success": True,
             "expected": {
                 "MENDER_MTDIDS": "nor2=40000000.flash,nor3=50000000.flash",
                 "MENDER_IS_ON_MTDID": "40000000.flash",
-                "MENDER_MTDPARTS": "50000000.flash:1m(whatever);40000000.flash:1m(u-boot)ro,3m(u-boot-env),-(ubi)",
+                "MENDER_MTDPARTS": "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)",
             },
         }),
     ])
