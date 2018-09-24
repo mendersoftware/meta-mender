@@ -3,8 +3,10 @@ IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-sd
 IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', ' ubimg ubimg.bmap', '', d)}"
 IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-uefi', ' uefiimg uefiimg.bmap', '', d)}"
 
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_x86 = " kernel-image"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_x86-64 = " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_x86 =     " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_x86-64 =  " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_arm =     " kernel-image kernel-devicetree"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_aarch64 = " kernel-image kernel-devicetree"
 
 python() {
     features = d.getVar('DISTRO_FEATURES').split()
