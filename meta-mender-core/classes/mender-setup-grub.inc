@@ -19,7 +19,7 @@ _MENDER_GRUB_BOOT_FILES_mender-grub = " \
     mender_grubenv2/lock.sha256sum;EFI/BOOT/mender_grubenv2/lock.sha256sum \
 "
 _MENDER_GRUB_BOOT_FILES_append_mender-grub_arm = " grub-efi-bootarm.efi;EFI/BOOT/bootarm.efi"
-_MENDER_GRUB_BOOT_FILES_append_mender-grub_x86 = " grub-efi-bootia32.efi;EFI/BOOT/boot.efi"
+_MENDER_GRUB_BOOT_FILES_append_mender-grub_x86 = " grub-efi-bootia32.efi;EFI/BOOT/bootia32.efi"
 _MENDER_GRUB_BOOT_FILES_append_mender-grub_x86-64 = " grub-efi-bootx64.efi;EFI/BOOT/bootx64.efi"
 
 # We want to use upstream grub variants if possible. However, we have recipes
