@@ -325,32 +325,45 @@ def common_boot_from_internal():
 
 
 def latest_build_artifact(builddir, extension):
-    output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
+    if pytest.config.getoption('--test-conversion'):
+        sdimg_location = pytest.config.getoption('--sdimg-location')
+        output = subprocess.check_output(["sh", "-c", "ls -t %s/%s/*%s | grep -v data*%s| head -n 1" % (builddir, sdimg_location, extension, extension)])
+    else:
+        output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
     output = output.rstrip('\r\n')
     print("Found latest image of type '%s' to be: %s" % (extension, output))
     return output
 
-def get_bitbake_variables(target, env_setup="true", export_only=False):
+def get_bitbake_variables(target, env_setup="true", export_only=False, test_conversion=False):
     current_dir = os.open(".", os.O_RDONLY)
     os.chdir(os.environ['BUILDDIR'])
 
-    output = subprocess.Popen("%s && bitbake -e %s" % (env_setup, target),
-                              stdout=subprocess.PIPE,
-                              shell=True,
-                              executable="/bin/bash")
+    if test_conversion:
+        config_file_path = os.path.abspath(pytest.config.getoption('--test-variables'))
+        with open(config_file_path, 'r') as config:
+            output = config.readlines()
+    else:
+        ps = subprocess.Popen("%s && bitbake -e %s" % (env_setup, target),
+                                  stdout=subprocess.PIPE,
+                                  shell=True,
+                                  executable="/bin/bash")
+        output= ps.stdout
+
     if export_only:
         export_only_expr = ""
     else:
         export_only_expr = "?"
     matcher = re.compile('^(?:export )%s([A-Za-z][^=]*)="(.*)"$' % export_only_expr)
     ret = {}
-    for line in output.stdout:
+    for line in output:
         line = line.strip()
         match = matcher.match(line)
         if match is not None:
             ret[match.group(1)] = match.group(2)
 
-    output.wait()
+    if not test_conversion:
+        ps.wait()
+
     os.fchdir(current_dir)
 
     # For some unknown reason, 'MACHINE' is not included in the 'bitbake -e' output.

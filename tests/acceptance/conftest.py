@@ -45,6 +45,12 @@ def pytest_addoption(parser):
                      help="use S3 for transferring images under test to target boards")
     parser.addoption("--s3-address", action="store", default="s3.amazonaws.com",
                      help="address of S3 server, defaults to AWS, override when using minio")
+    parser.addoption("--test-conversion", action="store_true", default=False,
+                     help="""conduct testing of .sdimg image built with mender-convert tool""")
+    parser.addoption("--test-variables", action="store", default="default",
+                     help="configuration file holding settings for dedicated platform")
+    parser.addoption("--mender-image", action="store", default="default",
+                     help="Mender compliant raw disk image")
 
 
 def pytest_configure(config):
