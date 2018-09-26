@@ -176,6 +176,19 @@ def latest_mender_image():
     # Find latest built rootfs.
     return latest_build_artifact(os.environ['BUILDDIR'], ".mender")
 
+@pytest.fixture(scope="session")
+def latest_part_image():
+    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
+
+    # Find latest built rootfs.
+    latest_sdimg = latest_build_artifact(os.environ['BUILDDIR'], "core-image*.sdimg")
+    if latest_sdimg:
+        return latest_sdimg
+    else:
+        # Tempting to throw an exception here, but this runs even for platforms
+        # that skip the test, so we should return None instead.
+        return None
+
 @pytest.fixture(scope="function")
 def successful_image_update_mender(request, clean_image):
     """Provide a 'successful_image_update.mender' file in the current directory that
