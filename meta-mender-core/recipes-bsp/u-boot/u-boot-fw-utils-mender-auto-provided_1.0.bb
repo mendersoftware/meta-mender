@@ -23,6 +23,7 @@ RPROVIDES_${PN} = "u-boot-fw-utils"
 
 INSANE_SKIP_${PN} = "already-stripped"
 EXTRA_OEMAKE_class-target = 'CROSS_COMPILE=${TARGET_PREFIX} CC="${CC} ${CFLAGS} ${LDFLAGS}" HOSTCC="${BUILD_CC} ${BUILD_CFLAGS} ${BUILD_LDFLAGS}" V=1'
+DEPENDS += "bison-native"
 
 S = "${WORKDIR}/src-tar"
 
