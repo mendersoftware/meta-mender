@@ -273,11 +273,20 @@ mender_flash_mtdpart() {
             bbfatal "$file is too big to fit inside '$name' mtdpart of size $size."
         fi
     fi
+    # Flash zeros first to make sure that a shorter ubimg doesn't truncate the
+    # write.
+    dd if="/dev/zero" \
+        of="${IMGDEPLOYDIR}/${IMAGE_NAME}.mtdimg" \
+        bs=1024 \
+        seek=$kboffset \
+        count=$kbsize \
+        conv=notrunc
     dd if="$file" \
         of="${IMGDEPLOYDIR}/${IMAGE_NAME}.mtdimg" \
         bs=1024 \
         seek=$kboffset \
-        count=$kbsize
+        count=$kbsize \
+        conv=notrunc
 }
 
 IMAGE_CMD_mtdimg() {
