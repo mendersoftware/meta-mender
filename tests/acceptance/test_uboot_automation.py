@@ -302,21 +302,28 @@ class TestUbootAutomation:
         finally:
             os.unlink("fw_setenv.tmp")
 
+        # Get rid of build outputs in deploy directory that may get in the way.
+        run_bitbake(prepared_test_build, "-c clean u-boot")
         add_to_local_conf(prepared_test_build, 'PREFERRED_PROVIDER_u-boot = "u-boot-testing"')
         add_to_local_conf(prepared_test_build, 'PREFERRED_RPROVIDER_u-boot = "u-boot-testing"')
-        run_bitbake(prepared_test_build)
-
-        new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
-        subprocess.check_call(["debugfs", "-R", "dump /sbin/fw_setenv fw_setenv.tmp", new_rootfs])
-
         try:
-            with open("fw_setenv.tmp") as fd:
-                # If we selected u-boot-testing as the U-Boot provider, fw-utils
-                # should have followed and should also contain the special
-                # substring which that version is patched with.
-                assert "TestStringThatMustOccur_Mender!#%&" in fd.read(), "fw_setenv.tmp does not contain expected substring"
+            run_bitbake(prepared_test_build)
+
+            new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
+            subprocess.check_call(["debugfs", "-R", "dump /sbin/fw_setenv fw_setenv.tmp", new_rootfs])
+
+            try:
+                with open("fw_setenv.tmp") as fd:
+                    # If we selected u-boot-testing as the U-Boot provider, fw-utils
+                    # should have followed and should also contain the special
+                    # substring which that version is patched with.
+                    assert "TestStringThatMustOccur_Mender!#%&" in fd.read(), "fw_setenv.tmp does not contain expected substring"
+            finally:
+                os.unlink("fw_setenv.tmp")
         finally:
-            os.unlink("fw_setenv.tmp")
+            # Get rid of build outputs in deploy directory that may get in the
+            # way.
+            run_bitbake(prepared_test_build, "-c clean u-boot-testing")
 
         # Reset local.conf.
         reset_local_conf(prepared_test_build)

@@ -34,7 +34,8 @@ FILES_${PN} += "${systemd_unitdir}/system/mender.service \
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
 # like. We disable those checks here.
-INSANE_SKIP_${PN} = "ldflags"
+INSANE_SKIP_${PN} = "ldflags textrel"
+INSANE_SKIP_${PN}-ptest = "ldflags textrel"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
 
