@@ -144,7 +144,11 @@ def latest_rootfs():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.ext[234]")
+    if pytest.config.getoption('--test-conversion'):
+        image_name = os.path.splitext(pytest.config.getoption('--mender-image'))[0]
+        return latest_build_artifact(os.environ['BUILDDIR'], "%s.ext[234]" % image_name)
+    else:
+        return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.ext[234]")
 
 @pytest.fixture(scope="session")
 def latest_sdimg():
@@ -187,10 +191,15 @@ def latest_mender_image():
 def latest_part_image():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
+    if pytest.config.getoption('--test-conversion'):
+        pattern = os.path.splitext(pytest.config.getoption('--mender-image'))[0]
+    else:
+        pattern = "core-image*"
+
     # Find latest built rootfs.
-    latest_sdimg = latest_build_artifact(os.environ['BUILDDIR'], "core-image*.sdimg")
-    latest_uefiimg = latest_build_artifact(os.environ['BUILDDIR'], "core-image*.uefiimg")
-    latest_biosimg = latest_build_artifact(os.environ['BUILDDIR'], "core-image*.biosimg")
+    latest_sdimg = latest_build_artifact(os.environ['BUILDDIR'], "%s.sdimg" % pattern)
+    latest_uefiimg = latest_build_artifact(os.environ['BUILDDIR'], "%s.uefiimg" % pattern)
+    latest_biosimg = latest_build_artifact(os.environ['BUILDDIR'], "%s.biosimg" % pattern)
     if latest_sdimg:
         return latest_sdimg
     elif latest_uefiimg:
@@ -224,9 +233,15 @@ def successful_image_update_mender(request, clean_image):
 def bitbake_variables():
     """Returns a map of all bitbake variables active for the build."""
 
+    if pytest.config.getoption('--test-conversion'):
+        os.environ['BUILDDIR'] = os.getcwd()
+
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
-    return get_bitbake_variables("core-image-minimal")
+    if pytest.config.getoption('--test-conversion'):
+        return get_bitbake_variables("mender-image", test_conversion=True)
+    else:
+        return get_bitbake_variables("core-image-minimal")
 
 @pytest.fixture(scope="session")
 def mender_test_dependencies_bitbaked():
@@ -234,17 +249,21 @@ def mender_test_dependencies_bitbaked():
 
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
-    # See the recipe for details about this call.
-    subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot", "mender-test-dependencies"],
-                            cwd=os.environ['BUILDDIR'])
+    if not pytest.config.getoption('--test-conversion'):
+        # See the recipe for details about this call.
+        subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot",
+                                 "mender-test-dependencies"],
+                                cwd=os.environ['BUILDDIR'])
 
 @pytest.fixture(scope="session")
 def bitbake_path_string(mender_test_dependencies_bitbaked):
     """Fixture that returns the PATH we need for our testing tools"""
 
-    bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
-
-    return bb_testing_variables['PATH'] + ":" + os.environ['PATH']
+    if not pytest.config.getoption('--test-conversion'):
+        bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
+        return bb_testing_variables['PATH'] + ":" + os.environ['PATH']
+    else:
+        return os.environ['PATH']
 
 @pytest.fixture(scope="function")
 def bitbake_path(request, bitbake_path_string):
