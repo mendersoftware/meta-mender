@@ -211,10 +211,15 @@ IMAGE_CMD_uefiimg() {
 IMAGE_CMD_biosimg() {
     mender_part_image biosimg msdos "--source bootimg-partition"
 }
+IMAGE_CMD_gptimg() {
+    mender_part_image gptimg gpt "--source bootimg-partition"
+}
+
 
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
 addtask do_rootfs_wicenv after do_image before do_image_uefiimg
 addtask do_rootfs_wicenv after do_image before do_image_biosimg
+addtask do_rootfs_wicenv after do_image before do_image_gptimg
 
 _MENDER_PART_IMAGE_DEPENDS = " \
     ${@d.getVarFlag('do_image_wic', 'depends', False)} \
@@ -236,18 +241,23 @@ do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS} \
 
 do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
+do_image_gptimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 # This isn't actually a dependency, but a way to avoid sdimg and uefiimg
 # building simultaneously, since wic will use the same file names in both, and
 # in parallel builds this is a recipe for disaster.
 IMAGE_TYPEDEP_uefiimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"
 # And same here.
 IMAGE_TYPEDEP_biosimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)}"
+# And same here.
+IMAGE_TYPEDEP_gptimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
 
 # So that we can use the files from excluded paths in the full images.
 do_image_sdimg[respect_exclude_path] = "0"
 do_image_uefiimg[respect_exclude_path] = "0"
 do_image_biosimg[respect_exclude_path] = "0"
-
+do_image_gptimg[respect_exclude_path] = "0"
 
 ################################################################################
 # Flash storage
