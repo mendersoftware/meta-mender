@@ -31,7 +31,7 @@ from common import *
 LAST_BUILD_VERSION = None
 
 # params is the versions we will test.
-@pytest.fixture(scope="function", params=[1, 2])
+@pytest.fixture(scope="function", params=[1, 2, 3])
 def versioned_mender_image(request, prepared_test_build, latest_mender_image):
     """Gets the correct version of the artifact, whether it's the one we
     build by default, or one we have to produce ourselves.
@@ -41,10 +41,6 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image):
 
     version = request.param
 
-    if version is 2:
-        # It's default, so skip the extra build.
-        return (version, latest_mender_image)
-
     if LAST_BUILD_VERSION != version:
         # Run a separate build for this artifact. This doesn't conflict with the
         # above version because the non-default version ends up in a different
@@ -53,6 +49,42 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image):
         run_bitbake(prepared_test_build)
         LAST_BUILD_VERSION = version
     return (version, latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender"))
+
+def check_header_structure(mender_image, header_name, version):
+    # header name is either `header.tar.gz` or `header-augment.tar.gz`.
+    output = subprocess.Popen(["tar xOf " + mender_image + " " + header_name + " | tar tz"],
+                                stdout=subprocess.PIPE, shell=True)
+    line_no = 1
+    type_info_found = False
+    meta_data_found = False
+    for line in output.stdout:
+        line = line.rstrip('\n\r')
+        if line_no == 1:
+            assert(line == "header-info")
+        elif line_no == 2:
+            assert(line == "headers/0000/files")
+
+        elif line == "headers/0000/type-info":
+            type_info_found = True
+
+        elif line == "headers/0000/meta-data":
+            assert(type_info_found)
+            meta_data_found = True
+
+        elif ((version == 1 and (line.startswith("headers/0000/checksums/") or
+                                    line.startswith("headers/0000/signatures/"))) or
+                line.startswith("headers/0000/scripts/")):
+            assert(type_info_found)
+
+        else:
+            assert(False), "Unrecognized line: %s" % line
+
+        line_no = line_no + 1
+
+    output.wait()
+
+    assert(meta_data_found)
+
 
 
 @pytest.mark.only_with_image('mender')
@@ -73,21 +105,37 @@ class TestMenderArtifact:
             elif line_no == 2:
                 if version == 1:
                     assert(line == "header.tar.gz")
-                else:
+                elif version == 2:
+                    assert(line == "manifest")
+                elif version == 3:
                     assert(line == "manifest")
             elif line_no == 3:
                 if version == 1:
                     assert(line == "data/0000.tar.gz")
-                else:
+                elif version == 2:
                     assert(line == "header.tar.gz")
+                elif version == 3:
+                    assert(line == "manifest-augment")
             elif line_no == 4:
-                if version != 1:
+                if version == 2:
                     assert(line == "data/0000.tar.gz")
+                elif version == 3:
+                    assert(line == "header.tar.gz")
+            elif line_no == 5:
+                if version < 3:
+                    assert(False)
+                assert(line == "header-augment.tar.gz")
+            elif line_no == 6:
+                if version < 3:
+                    assert(False)
+                assert(line == "data/0000.tar.gz")
 
             if version == 1:
                 assert(line_no <= 3)
-            else:
+            elif version == 2:
                 assert(line_no <= 4)
+            elif version == 3:
+                assert(line_no <= 6)
 
             line_no = line_no + 1
 
@@ -95,41 +143,15 @@ class TestMenderArtifact:
 
         if version == 1:
             assert(line_no == 4)
-        else:
+        elif version == 2:
             assert(line_no == 5)
+        elif version == 3:
+            assert(line_no == 7)
 
-        output = subprocess.Popen(["tar xOf " + mender_image + " header.tar.gz | tar tz"],
-                                  stdout=subprocess.PIPE, shell=True)
-        line_no = 1
-        type_info_found = False
-        meta_data_found = False
-        for line in output.stdout:
-            line = line.rstrip('\n\r')
-            if line_no == 1:
-                assert(line == "header-info")
-            elif line_no == 2:
-                assert(line == "headers/0000/files")
+        check_header_structure(mender_image, "header.tar.gz", version)
 
-            elif line == "headers/0000/type-info":
-                type_info_found = True
-
-            elif line == "headers/0000/meta-data":
-                assert(type_info_found)
-                meta_data_found = True
-
-            elif ((version == 1 and (line.startswith("headers/0000/checksums/") or
-                                     line.startswith("headers/0000/signatures/"))) or
-                  line.startswith("headers/0000/scripts/")):
-                assert(type_info_found)
-
-            else:
-                assert(False), "Unrecognized line: %s" % line
-
-            line_no = line_no + 1
-
-        output.wait()
-
-        assert(meta_data_found)
+        if version == 3:
+            check_header_structure(mender_image, "header-augment.tar.gz", version)
 
 
     @pytest.mark.min_mender_version("1.0.0")
