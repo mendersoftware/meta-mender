@@ -180,6 +180,11 @@ do_mender_uboot_auto_configure() {
         exit 0
     fi
 
+    if [ -n "${EXTERNALSRC}" ]; then
+        bbwarn "Skipping U-Boot auto-configuration when EXTERNALSRC is set. Would change the source files. If you need the patch, turn off EXTERNALSRC, call 'bitbake -c save_mender_auto_configured_patch u-boot' to generate a patch, and then apply that to your work tree and reenable EXTERNALSRC."
+        exit 0
+    fi
+
     # Try to detect whether Mender specific porting patches have already been
     # applied. To do this, we can look for "mender_setup" anywhere outside of
     # env_mender.h, since the old instructions would put it outside, and in the
