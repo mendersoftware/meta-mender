@@ -13,7 +13,7 @@ python() {
 }
 
 # Update fstab for Mender
-ROOTFS_POSTPROCESS_COMMAND_append += " mender_update_fstab_file ; "
+ROOTFS_POSTPROCESS_COMMAND_append = " mender_update_fstab_file;"
 mender_update_fstab_file() {
     if [ "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-sd', 'true', 'false', d)}" ]; then
         if [ "${MENDER_BOOT_PART_SIZE_MB}" != "0" ] && [ -n "${MENDER_BOOT_PART}" ]; then
@@ -31,7 +31,7 @@ mender_update_fstab_file() {
 
 # Setup state script version file.
 MENDER_STATE_SCRIPTS_VERSION = "2"
-ROOTFS_POSTPROCESS_COMMAND_append += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender_create_scripts_version_file ; ', '', d)}"
+ROOTFS_POSTPROCESS_COMMAND_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender_create_scripts_version_file;', '', d)}"
 
 mender_create_scripts_version_file() {
     install -d -m 755 ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/
