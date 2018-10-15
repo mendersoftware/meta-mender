@@ -81,6 +81,7 @@ def qemu_running(request, clean_image):
     latest_sdimg = latest_build_artifact(clean_image['build_dir'], "core-image*.sdimg")
     latest_uefiimg = latest_build_artifact(clean_image['build_dir'], "core-image*.uefiimg")
     latest_biosimg = latest_build_artifact(clean_image['build_dir'], "core-image*.biosimg")
+    latest_gptimg = latest_build_artifact(clean_image['build_dir'], "core-image*.gptimg")
     latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], "core-image*.vexpress-nor")
 
     if latest_sdimg:
@@ -89,6 +90,8 @@ def qemu_running(request, clean_image):
         qemu, img_path = start_qemu_block_storage(latest_uefiimg, suffix=".uefiimg")
     elif latest_biosimg:
         qemu, img_path = start_qemu_block_storage(latest_biosimg, suffix=".biosimg")
+    elif latest_gptimg:
+        qemu, img_path = start_qemu_block_storage(latest_gptimg, suffix=".gptimg")
     elif latest_vexpress_nor:
         qemu, img_path = start_qemu_flash(latest_vexpress_nor)
     else:
@@ -200,12 +203,15 @@ def latest_part_image():
     latest_sdimg = latest_build_artifact(os.environ['BUILDDIR'], "%s.sdimg" % pattern)
     latest_uefiimg = latest_build_artifact(os.environ['BUILDDIR'], "%s.uefiimg" % pattern)
     latest_biosimg = latest_build_artifact(os.environ['BUILDDIR'], "%s.biosimg" % pattern)
+    latest_gptimg = latest_build_artifact(os.environ['BUILDDIR'], "%s.gptimg" % pattern)
     if latest_sdimg:
         return latest_sdimg
     elif latest_uefiimg:
         return latest_uefiimg
     elif latest_biosimg:
         return latest_biosimg
+    elif latest_gptimg:
+        return latest_gptimg
     else:
         # Tempting to throw an exception here, but this runs even for platforms
         # that skip the test, so we should return None instead.

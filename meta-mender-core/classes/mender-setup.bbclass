@@ -183,6 +183,9 @@ python() {
         # files that rely on the Mender partition layout.
         'mender-image',
 
+        # Include components for generating a BIOS GPT image.
+        'mender-image-gpt',
+
         # Include components for generating a BIOS image.
         'mender-image-bios',
 

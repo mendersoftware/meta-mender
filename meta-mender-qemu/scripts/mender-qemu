@@ -62,9 +62,12 @@ case "$MACHINE" in
                 QEMU_SYSTEM=${QEMU_SYSTEM:-"qemu-system-i386"}
                 ;;
         esac
-        if echo "$DISTRO_FEATURES" | grep -q mender-bios; then
+        if echo "$DISTRO_FEATURES" | grep -q mender-image-bios; then
             BOOTLOADER_ARG=""
             DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MENDER_DEVICE_TYPE}.biosimg"}
+        elif echo "$DISTRO_FEATURES" | grep -q mender-image-gpt; then
+            BOOTLOADER_ARG=""
+            DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MENDER_DEVICE_TYPE}.gptimg"}
         else
             BOOTLOADER="${BOOTLOADER:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.qcow2}"
             BOOTLOADER_DATA="${BOOTLOADER_DATA:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.vars.qcow2}"
@@ -94,7 +97,7 @@ RANDOM_MAC=${RANDOM_MAC:-"52:54:00$(od -txC -An -N3 /dev/urandom|tr \  :)"}
 QEMU_DRIVE=${QEMU_DRIVE:-""}
 
 case $DISK_IMG in
-    *.uefiimg|*.biosimg|*.sdimg)
+    *.uefiimg|*.biosimg|*.sdimg|*.gptimg)
         QEMU_ARGS="$QEMU_ARGS -drive file=$DISK_IMG,if=$STORAGE_TYPE,format=raw "
         ;;
     *.vexpress-nor)
