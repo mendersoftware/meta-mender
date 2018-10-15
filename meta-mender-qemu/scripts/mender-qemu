@@ -67,9 +67,6 @@ case "$MACHINE" in
         BOOTLOADER_DATA="${BOOTLOADER_DATA:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.vars.qcow2}"
         BOOTLOADER_ARG="${BOOTLOADER_ARG:--drive file=${BOOTLOADER},if=pflash,format=qcow2,unit=0,readonly=on -drive file=${BOOTLOADER_DATA},if=pflash,format=qcow2,unit=1}"
         DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MACHINE}.uefiimg"}
-        if [ -w /dev/kvm ]; then
-            QEMU_ARGS="$QEMU_ARGS -enable-kvm"
-        fi
         ;;
     *vexpress*)
         QEMU_SYSTEM=${QEMU_SYSTEM:-"qemu-system-arm"}
@@ -111,15 +108,27 @@ $QEMU_SYSTEM --version
 
 echo "--- starting qemu"
 
-QEMU_AUDIO_DRV=none \
-    $QEMU_SYSTEM \
-    -m 256M \
-    $BOOTLOADER_ARG \
-    -net nic,macaddr="$RANDOM_MAC" \
-    -net user,hostfwd=tcp::8822-:22 \
-    -display vnc=:23 \
-    -nographic \
-    $QEMU_ARGS \
-    "$@"
+ret=0
+for maybe_kvm in -enable-kvm ""; do
+    if QEMU_AUDIO_DRV=none \
+            $QEMU_SYSTEM \
+            -m 256M \
+            $BOOTLOADER_ARG \
+            -net nic,macaddr="$RANDOM_MAC" \
+            -net user,hostfwd=tcp::8822-:22 \
+            -display vnc=:23 \
+            -nographic \
+            $maybe_kvm \
+            $QEMU_ARGS \
+            "$@"; then
+        ret=$?
+        break
+    else
+        ret=$?
+        continue
+    fi
+done
 
 cleanup
+
+exit $ret
