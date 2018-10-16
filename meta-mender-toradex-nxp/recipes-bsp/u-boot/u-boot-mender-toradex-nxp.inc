@@ -19,3 +19,8 @@ BOOTENV_SIZE_colibri-imx7 ?= "0x20000"
 SRC_URI_append_colibri-imx7 = " file://0001-colibri-imx7-mender-integration-primer-enable-BOOTCO.patch"
 SRC_URI_append_colibri-imx7 = " file://0002-colibri-imx7-set-CONFIG_ENV_RANGE-to-cover-2-environ.patch"
 SRC_URI_append_colibri-imx7 = " file://0003-colibri-imx7-mender-integration-override-ubiboot-and.patch"
+
+# 8kB
+BOOTENV_SIZE_colibri-imx7-emmc ?= "0x2000"
+
+SRC_URI_append_colibri-imx7-emmc = " file://0001-colibri-imx7-emmc-mender-integration-patch.patch"
