@@ -113,8 +113,13 @@ python do_prepare_mender_conf() {
     conf_maybe_add("InventoryPollIntervalSeconds", "MENDER_INVENTORY_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
     # Mandatory variables - will always exist
     conf_maybe_add("RetryPollIntervalSeconds", "MENDER_RETRY_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
-    conf_maybe_add("RootfsPartA", "MENDER_ROOTFS_PART_A", getvar=True, integer=False)
-    conf_maybe_add("RootfsPartB", "MENDER_ROOTFS_PART_B", getvar=True, integer=False)
+    if bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', True, False, d):
+        conf_maybe_add("RootfsPartA", "/dev/disk/by-partuuid/" + d.getVar('MENDER_ROOTFS_PART_A_UUID'), getvar=False, integer=False)
+        conf_maybe_add("RootfsPartB", "/dev/disk/by-partuuid/" + d.getVar('MENDER_ROOTFS_PART_B_UUID'), getvar=False, integer=False)
+    else:
+        conf_maybe_add("RootfsPartA", "MENDER_ROOTFS_PART_A", getvar=True, integer=False)
+        conf_maybe_add("RootfsPartB", "MENDER_ROOTFS_PART_B", getvar=True, integer=False)
+
     conf_maybe_add("ServerCertificate", "MENDER_CERT_LOCATION", getvar=True, integer=False)
     conf_maybe_add("ServerURL", "MENDER_SERVER_URL", getvar=True, integer=False)
     conf_maybe_add("UpdatePollIntervalSeconds", "MENDER_UPDATE_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
@@ -138,6 +143,9 @@ do_prepare_mender_conf[vardeps] = " \
     MENDER_SERVER_URL \
     MENDER_TENANT_TOKEN \
     MENDER_UPDATE_POLL_INTERVAL_SECONDS \
+    MENDER_ROOTFS_PART_A_UUID \
+    MENDER_ROOTFS_PART_B_UUID \
+    MENDER_DISK_IDENTIFIER \
 "
 
 do_install() {

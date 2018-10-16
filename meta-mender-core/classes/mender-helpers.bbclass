@@ -61,6 +61,10 @@ get_part_number_from_device() {
         ubi*_* )
             dev_base=$(echo $1 | cut -d_ -f2)
             ;;
+        /dev/disk/by-partuuid/*-[[:digit:]][[:digit:]])
+            dev_base=${1##*[[:xdigit:]]-}
+            dev_base=${dev_base##0}
+            ;;
     esac
     part=$(printf "%d" $dev_base 2>/dev/null)
     if [ $? = 1 ]; then
@@ -81,6 +85,27 @@ get_part_number_hex_from_device() {
         echo $part_hex
     fi
 }
+
+def mender_test_part_uuid(d, varName):
+    import re
+    pattern = re.compile("^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$")
+    uuid = d.getVar(varName)
+    if len(uuid) == 0:
+       bb.fatal("%s Must be defined" % varName )
+    elif not pattern.match(uuid):
+       bb.fatal("%s Is not a valid PARTUUID.  It most follow the format ########-####-####-####-############.  Allow lower case hex values" % varName )
+    return
+
+def mender_test_disk_identifier(d, varName):
+    import re
+    pattern = re.compile("^[0-9a-f]{8}$")
+    uuid = d.getVar(varName)
+    if len(uuid) == 0:
+       bb.fatal("%s Must be defined" % varName )
+    elif not pattern.match(uuid):
+       bb.fatal("%s Is not a valid Disk Identifier.  It most follow the format ########  Allow lower case hex values" % varName )
+    return
+
 
 def mender_make_mtdparts_shell_array(d):
     """Makes a string that can be shell-eval'ed to get the components of the

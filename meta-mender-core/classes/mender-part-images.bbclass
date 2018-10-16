@@ -200,6 +200,25 @@ EOF
     if [ "$part_type" = "gpt" ]; then
         sgdisk -e "$outimgname"
     fi
+
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+        if [ "$part_type" = "gpt" ]; then
+            # Set Fixed PARTUUID for all devices
+            sgdisk -u ${MENDER_BOOT_PART_NUMBER_UUID}:${MENDER_BOOT_PART_UUID} "$outimgname"
+            sgdisk -u ${MENDER_ROOTFS_PART_A_NUMBER_UUID}:${MENDER_ROOTFS_PART_A_UUID} "$outimgname"
+            sgdisk -u ${MENDER_ROOTFS_PART_B_NUMBER_UUID}:${MENDER_ROOTFS_PART_B_UUID} "$outimgname"
+            sgdisk -u ${MENDER_DATA_PART_NUMBER_UUID}:${MENDER_DATA_PART_UUID} "$outimgname"
+        else
+            # For MBR Set the Disk Identifier.  Drives follow the pattern of <Disk Identifier>-<Part Number>
+            (
+                echo x                              # Enter expert mode
+                echo i                              # Set disk identifier
+                echo 0x${MENDER_DISK_IDENTIFIER}    # Identifier
+                echo r                              # Exit expert mode
+                echo w                              # Write changes
+            ) | fdisk ${outimgname}
+        fi
+    fi
 }
 
 IMAGE_CMD_sdimg() {

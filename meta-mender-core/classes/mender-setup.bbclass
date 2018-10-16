@@ -23,15 +23,46 @@ def mender_linux_partition_base(dev):
         return "%sp" % dev
 MENDER_STORAGE_DEVICE_BASE_DEFAULT = "${@mender_linux_partition_base('${MENDER_STORAGE_DEVICE}')}"
 
+# The disk identifer for msdos partitions
+# Follows the format of 8 Lowercase Hex Digits
+MENDER_DISK_IDENTIFIER ??= "${MENDER_DISK_IDENTIFIER_DEFAULT}"
+MENDER_DISK_IDENTIFIER_DEFAULT = ""
+
 # The partition number holding the boot partition.
 MENDER_BOOT_PART ??= "${MENDER_BOOT_PART_DEFAULT}"
 MENDER_BOOT_PART_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}1"
+MENDER_BOOT_PART_DEFAULT_mender-partuuid = "/dev/disk/by-partuuid/${MENDER_BOOT_PART_UUID}"
+
+# The partition uuid holding the boot partition
+MENDER_BOOT_PART_UUID ??= "${MENDER_BOOT_PART_UUID_DEFAULT}"
+MENDER_BOOT_PART_UUID_DEFAULT = ""
+MENDER_BOOT_PART_UUID_DEFAULT_mender-partuuid_mender-image-sd = "${MENDER_DISK_IDENTIFIER}-01"
+MENDER_BOOT_PART_UUID_DEFAULT_mender-partuuid_mender-image-bios = "${MENDER_DISK_IDENTIFIER}-01"
+MENDER_BOOT_PART_NUMBER_UUID = "${MENDER_BOOT_PART_NUMBER_UUID_DEFAULT}"
+MENDER_BOOT_PART_NUMBER_UUID_DEFAULT = "1"
 
 # The numbers of the two rootfs partitions in the A/B partition layout.
 MENDER_ROOTFS_PART_A ??= "${MENDER_ROOTFS_PART_A_DEFAULT}"
 MENDER_ROOTFS_PART_A_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '1', '2', d)}"
+MENDER_ROOTFS_PART_A_DEFAULT_mender-partuuid = "/dev/disk/by-partuuid/${MENDER_ROOTFS_PART_A_UUID}"
 MENDER_ROOTFS_PART_B ??= "${MENDER_ROOTFS_PART_B_DEFAULT}"
 MENDER_ROOTFS_PART_B_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '2', '3', d)}"
+MENDER_ROOTFS_PART_B_DEFAULT_mender-partuuid = "/dev/disk/by-partuuid/${MENDER_ROOTFS_PART_B_UUID}"
+
+# The partition uuid of the two rootfs partitions in the A/B partition layout.
+# Follows the Format of XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXX
+MENDER_ROOTFS_PART_A_UUID ??= "${MENDER_ROOTFS_PART_A_UUID_DEFAULT}"
+MENDER_ROOTFS_PART_A_UUID_DEFAULT = ""
+MENDER_ROOTFS_PART_A_UUID_DEFAULT_mender-partuuid_mender-image-sd = "${MENDER_DISK_IDENTIFIER}-0${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '1', '2', d)}"
+MENDER_ROOTFS_PART_A_UUID_DEFAULT_mender-partuuid_mender-image-bios = "${MENDER_DISK_IDENTIFIER}-0${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '1', '2', d)}"
+MENDER_ROOTFS_PART_A_NUMBER_UUID = "${MENDER_ROOTFS_PART_A_NUMBER_UUID_DEFAULT}"
+MENDER_ROOTFS_PART_A_NUMBER_UUID_DEFAULT  = "${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '1', '2', d)}"
+MENDER_ROOTFS_PART_B_UUID ??= "${MENDER_ROOTFS_PART_B_UUID_DEFAULT}"
+MENDER_ROOTFS_PART_B_UUID_DEFAULT = ""
+MENDER_ROOTFS_PART_B_UUID_DEFAULT_mender-partuuid_mender-image-sd = "${MENDER_DISK_IDENTIFIER}-0${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '2', '3', d)}"
+MENDER_ROOTFS_PART_B_UUID_DEFAULT_mender-partuuid_mender-image-bios = "${MENDER_DISK_IDENTIFIER}-0${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '2', '3', d)}"
+MENDER_ROOTFS_PART_B_NUMBER_UUID = "${MENDER_ROOTFS_PART_B_NUMBER_UUID_DEFAULT}"
+MENDER_ROOTFS_PART_B_NUMBER_UUID_DEFAULT = "${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '2', '3', d)}"
 
 # The names of the two rootfs partitions in the A/B partition layout. By default
 # it is the same name as MENDER_ROOTFS_PART_A and MENDER_ROOTFS_B
@@ -43,6 +74,15 @@ MENDER_ROOTFS_PART_B_NAME_DEFAULT = "${MENDER_ROOTFS_PART_B}"
 # The partition number holding the data partition.
 MENDER_DATA_PART ??= "${MENDER_DATA_PART_DEFAULT}"
 MENDER_DATA_PART_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '3', '4', d)}"
+MENDER_DATA_PART_DEFAULT_mender-partuuid = "/dev/disk/by-partuuid/${MENDER_DATA_PART_UUID}"
+
+# The partition uuid of the data partition.
+MENDER_DATA_PART_UUID ??= "${MENDER_DATA_PART_UUID_DEFAULT}"
+MENDER_DATA_PART_UUID_DEFAULT = ""
+MENDER_DATA_PART_UUID_DEFAULT_mender-partuuid_mender-image-sd = "${MENDER_DISK_IDENTIFIER}-0${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '3', '4', d)}"
+MENDER_DATA_PART_UUID_DEFAULT_mender-partuuid_mender-image-bios = "${MENDER_DISK_IDENTIFIER}-0${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '3', '4', d)}"
+MENDER_DATA_PART_NUMBER_UUID = "${MENDER_DATA_PART_NUMBER_UUID_DEFAULT}"
+MENDER_DATA_PART_NUMBER_UUID_DEFAULT = "${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '3', '4', d)}"
 
 # The name of of the MTD part holding your UBI volumes.
 MENDER_MTD_UBI_DEVICE_NAME ??= "${MENDER_MTD_UBI_DEVICE_NAME_DEFAULT}"
@@ -206,6 +246,9 @@ python() {
 
         # Use Mender together with U-Boot.
         'mender-uboot',
+
+        # Use PARTUUID to set fixed drive locations.
+        'mender-partuuid',
     }
 
     mfe = d.getVar('MENDER_FEATURES_ENABLE')

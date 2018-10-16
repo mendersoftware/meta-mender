@@ -41,11 +41,38 @@ python() {
         bb.build.addtask('do_provide_debug_log', 'do_patch', 'do_unpack', d)
 }
 
+python do_partuuid_error_check() {
+    if bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', True, False, d):
+        if not d.getVar('MENDER_GRUB_STORAGE_DEVICE'):
+            bb.fatal("MENDER_GRUB_STORAGE_DEVICE is required for UUID images")
+        if bb.utils.contains_any('DISTRO_FEATURES', 'mender-image-gpt mender-image-uefi', True, False, d):
+            mender_test_part_uuid(d, 'MENDER_ROOTFS_PART_A_UUID')
+            mender_test_part_uuid(d, 'MENDER_ROOTFS_PART_B_UUID')
+            mender_test_part_uuid(d, 'MENDER_DATA_PART_UUID')
+            mender_test_part_uuid(d, 'MENDER_BOOT_PART_UUID')
+        if bb.utils.contains_any('DISTRO_FEATURES', 'mender-image-sd mender-image-bios', True, False, d):
+            mender_test_disk_identifier(d, 'MENDER_DISK_IDENTIFIER')
+}
+addtask do_partuuid_error_check before do_configure
+do_partuuid_error_check[vardeps] = " \
+    MENDER_ROOTFS_PART_A_UUID \
+    MENDER_ROOTFS_PART_B_UUID \
+    MENDER_DATA_PART_UUID \
+    MENDER_BOOT_PART_UUID \
+    MENDER_DISK_IDENTIFIER \
+"
+
 do_configure() {
     set -x
 
-    mender_rootfsa_part=$(get_part_number_from_device ${MENDER_ROOTFS_PART_A})
-    mender_rootfsb_part=$(get_part_number_from_device ${MENDER_ROOTFS_PART_B})
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)} &&
+       ${@bb.utils.contains_any('DISTRO_FEATURES', 'mender-image-gpt mender-image-uefi', 'true', 'false', d)}; then
+        mender_rootfsa_part="${MENDER_ROOTFS_PART_A_NUMBER_UUID}"
+        mender_rootfsb_part="${MENDER_ROOTFS_PART_B_NUMBER_UUID}"
+    else
+        mender_rootfsa_part=$(get_part_number_from_device ${MENDER_ROOTFS_PART_A})
+        mender_rootfsb_part=$(get_part_number_from_device ${MENDER_ROOTFS_PART_B})
+    fi
     if [ -n "${MENDER_GRUB_STORAGE_DEVICE}" ]; then
         mender_grub_storage_device=${MENDER_GRUB_STORAGE_DEVICE}
     else
@@ -60,6 +87,13 @@ mender_grub_storage_device=$mender_grub_storage_device
 kernel_imagetype=${KERNEL_IMAGETYPE}
 EOF
 
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+        cat >> ${B}/mender_grubenv_defines <<EOF
+mender_rootfsa_uuid="${MENDER_ROOTFS_PART_A_UUID}"
+mender_rootfsb_uuid="${MENDER_ROOTFS_PART_B_UUID}"
+EOF
+    fi
+
     if [ -n "${KERNEL_DEVICETREE}" ]; then
         MENDER_DTB_NAME=$(mender_get_clean_kernel_devicetree)
         cat >> ${B}/mender_grubenv_defines <<EOF
@@ -67,6 +101,17 @@ kernel_devicetree=$MENDER_DTB_NAME
 EOF
     fi
 }
+do_configure[vardeps] = " \
+    MENDER_ROOTFS_PART_A \
+    MENDER_ROOTFS_PART_B \
+    MENDER_STORAGE_DEVICE_BASE \
+    MENDER_ROOTFS_PART_A_UUID \
+    MENDER_ROOTFS_PART_B_UUID \
+    MENDER_DISK_IDENTIFIER \
+    KERNEL_DEVICETREE \
+    MENDER_ROOTFS_PART_A_NUMBER_UUID \
+    MENDER_ROOTFS_PART_B_NUMBER_UUID \
+"
 
 do_compile() {
     set -x
