@@ -24,14 +24,24 @@ def mender_linux_partition_base(dev):
 MENDER_STORAGE_DEVICE_BASE_DEFAULT = "${@mender_linux_partition_base('${MENDER_STORAGE_DEVICE}')}"
 
 # The partition number holding the boot partition.
+MENDER_BOOT_PART_NUMBER ??= "${MENDER_BOOT_PART_NUMBER_DEFAULT}"
+MENDER_BOOT_PART_NUMBER_DEFAULT = "1"
+
+# The string path of the boot partition.
 MENDER_BOOT_PART ??= "${MENDER_BOOT_PART_DEFAULT}"
-MENDER_BOOT_PART_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}1"
+MENDER_BOOT_PART_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${MENDER_BOOT_PART_NUMBER}"
 
 # The numbers of the two rootfs partitions in the A/B partition layout.
+MENDER_ROOTFS_PART_A_NUMBER ??= "${MENDER_ROOTFS_PART_A_NUMBER_DEFAULT}"
+MENDER_ROOTFS_PART_A_NUMBER_DEFAULT = "${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '1', '2', d)}"
+MENDER_ROOTFS_PART_B_NUMBER ??= "${MENDER_ROOTFS_PART_B_NUMBER_DEFAULT}"
+MENDER_ROOTFS_PART_B_NUMBER_DEFAULT = "${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '2', '3', d)}"
+
+# The string path of the two rootfs partitions in the A/B partition layout
 MENDER_ROOTFS_PART_A ??= "${MENDER_ROOTFS_PART_A_DEFAULT}"
-MENDER_ROOTFS_PART_A_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '1', '2', d)}"
+MENDER_ROOTFS_PART_A_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${MENDER_ROOTFS_PART_A_NUMBER}"
 MENDER_ROOTFS_PART_B ??= "${MENDER_ROOTFS_PART_B_DEFAULT}"
-MENDER_ROOTFS_PART_B_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '2', '3', d)}"
+MENDER_ROOTFS_PART_B_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${MENDER_ROOTFS_PART_B_NUMBER}"
 
 # The names of the two rootfs partitions in the A/B partition layout. By default
 # it is the same name as MENDER_ROOTFS_PART_A and MENDER_ROOTFS_B
@@ -41,8 +51,12 @@ MENDER_ROOTFS_PART_B_NAME ??= "${MENDER_ROOTFS_PART_B_NAME_DEFAULT}"
 MENDER_ROOTFS_PART_B_NAME_DEFAULT = "${MENDER_ROOTFS_PART_B}"
 
 # The partition number holding the data partition.
+MENDER_DATA_PART_NUMBER ??= "${MENDER_DATA_PART_NUMBER_DEFAULT}"
+MENDER_DATA_PART_NUMBER_DEFAULT = "${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '3', '4', d)}"
+
+# The string path of the the data partition.
 MENDER_DATA_PART ??= "${MENDER_DATA_PART_DEFAULT}"
-MENDER_DATA_PART_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '3', '4', d)}"
+MENDER_DATA_PART_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${MENDER_DATA_PART_NUMBER}"
 
 # The name of of the MTD part holding your UBI volumes.
 MENDER_MTD_UBI_DEVICE_NAME ??= "${MENDER_MTD_UBI_DEVICE_NAME_DEFAULT}"
@@ -206,6 +220,9 @@ python() {
 
         # Use Mender together with U-Boot.
         'mender-uboot',
+
+        # Use PARTUUID to set fixed drive locations.
+        'mender-partuuid',
     }
 
     mfe = d.getVar('MENDER_FEATURES_ENABLE')
