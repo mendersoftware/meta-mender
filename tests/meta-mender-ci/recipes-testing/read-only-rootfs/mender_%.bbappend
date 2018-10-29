@@ -7,3 +7,4 @@ do_install_append() {
     ln -s /data/etc/mender/mender.conf ${D}/etc/mender/mender.conf
     ln -s /data/etc/mender/server.crt ${D}/etc/mender/server.crt 
 }
+
