@@ -6,19 +6,22 @@ inherit mender-helpers
 # For some reason 'bitbake -e' does not report the MACHINE value so
 # we use this as a proxy in case it is not available when needed.
 export MENDER_MACHINE = "${MACHINE}"
+BB_HASHBASE_WHITELIST += "MENDER_MACHINE"
 
 # The storage device that holds the device partitions.
 MENDER_STORAGE_DEVICE ??= "${MENDER_STORAGE_DEVICE_DEFAULT}"
 MENDER_STORAGE_DEVICE_DEFAULT = "/dev/mmcblk0"
-MENDER_STORAGE_DEVICE_DEFAULT_x86 = "/dev/hda"
-MENDER_STORAGE_DEVICE_DEFAULT_x86-64 = "/dev/hda"
 
 # The base name of the devices that hold individual partitions.
 # This is often MENDER_STORAGE_DEVICE + "p".
 MENDER_STORAGE_DEVICE_BASE ??= "${MENDER_STORAGE_DEVICE_BASE_DEFAULT}"
-MENDER_STORAGE_DEVICE_BASE_DEFAULT = "${MENDER_STORAGE_DEVICE}p"
-MENDER_STORAGE_DEVICE_BASE_DEFAULT_x86 = "${MENDER_STORAGE_DEVICE}"
-MENDER_STORAGE_DEVICE_BASE_DEFAULT_x86-64 = "${MENDER_STORAGE_DEVICE}"
+def mender_linux_partition_base(dev):
+    import re
+    if re.match("^/dev/[sh]d[a-z]", dev):
+        return dev
+    else:
+        return "%sp" % dev
+MENDER_STORAGE_DEVICE_BASE_DEFAULT = "${@mender_linux_partition_base('${MENDER_STORAGE_DEVICE}')}"
 
 # The partition number holding the boot partition.
 MENDER_BOOT_PART ??= "${MENDER_BOOT_PART_DEFAULT}"
@@ -57,21 +60,19 @@ MENDER_BOOT_PART_FSTYPE_DEFAULT = "auto"
 MENDER_DEVICE_TYPE ??= "${MENDER_DEVICE_TYPE_DEFAULT}"
 MENDER_DEVICE_TYPE_DEFAULT = "${MACHINE}"
 
+# To tell the difference from a beaglebone-yocto image with only U-Boot.
+MENDER_DEVICE_TYPE_DEFAULT_beaglebone-yocto_mender-grub = "${MACHINE}-grub"
+
 # Space separated list of device types compatible with the built update.
 MENDER_DEVICE_TYPES_COMPATIBLE ??= "${MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT}"
 MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT = "${MENDER_DEVICE_TYPE}"
-
-# Upstream poky changed their Beaglebone machine name from "beaglebone" to
-# "beaglebone-yocto". Add the old name to the list of compatible devices, so
-# people can upgrade.
-MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT_append_beaglebone-yocto = " beaglebone"
 
 # Total size of the medium that mender sdimg will be written to. The size of
 # rootfs partition will be calculated automatically by subtracting the size of
 # boot and data partitions along with some predefined overhead (see
 # MENDER_PARTITIONING_OVERHEAD_KB).
 MENDER_STORAGE_TOTAL_SIZE_MB ??= "${MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT}"
-MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT = "1024"
+MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT ?= "1024"
 
 # Size of the data partition, which is preserved across updates.
 MENDER_DATA_PART_SIZE_MB ??= "${MENDER_DATA_PART_SIZE_MB_DEFAULT}"
@@ -150,6 +151,12 @@ MENDER_UBOOT_POST_SETUP_COMMANDS_DEFAULT = ""
 IMAGE_INSTALL_append = " mender"
 IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg"
 
+# Originally defined in bitbake.conf. We define them here so that images with
+# the same MACHINE name, but different MENDER_DEVICE_TYPE, will not result in
+# the same image file name.
+IMAGE_NAME = "${IMAGE_BASENAME}-${MENDER_DEVICE_TYPE}-${IMAGE_VERSION_SUFFIX}"
+IMAGE_LINK_NAME = "${IMAGE_BASENAME}-${MENDER_DEVICE_TYPE}"
+
 # MENDER_FEATURES_ENABLE and MENDER_FEATURES_DISABLE map to
 # DISTRO_FEATURES_BACKFILL and DISTRO_FEATURES_BACKFILL_CONSIDERED,
 # respectively.
@@ -176,6 +183,9 @@ python() {
         # files that rely on the Mender partition layout.
         'mender-image',
 
+        # Include components for generating a BIOS GPT image.
+        'mender-image-gpt',
+
         # Include components for generating a BIOS image.
         'mender-image-bios',
 
@@ -198,22 +208,44 @@ python() {
         'mender-uboot',
     }
 
-    mfe = d.getVar('MENDER_FEATURE_ENABLE')
+    mfe = d.getVar('MENDER_FEATURES_ENABLE')
     mfe = mfe.split() if mfe is not None else []
-    mfd = d.getVar('MENDER_FEATURE_DISABLE')
+    mfd = d.getVar('MENDER_FEATURES_DISABLE')
     mfd = mfd.split() if mfd is not None else []
     for feature in mfe + mfd:
         if not feature.startswith('mender-'):
-            bb.fatal("%s in MENDER_FEATURE_ENABLE or MENDER_FEATURE_DISABLE is not a Mender feature."
+            bb.fatal("%s in MENDER_FEATURES_ENABLE or MENDER_FEATURES_DISABLE is not a Mender feature."
                      % feature)
 
     for feature in d.getVar('DISTRO_FEATURES').split():
         if feature.startswith("mender-"):
             if feature not in mender_features:
-                bb.fatal("%s from MENDER_FEATURE_ENABLE or DISTRO_FEATURES is not a valid Mender feature."
+                bb.fatal("%s from MENDER_FEATURES_ENABLE or DISTRO_FEATURES is not a valid Mender feature."
                          % feature)
             d.setVar('OVERRIDES_append', ':%s' % feature)
+
+            # Verify that all 'mender-' features are added using MENDER_FEATURES
+            # variables. This is important because we base some decisions on
+            # these variables, and then fill DISTRO_FEATURES, which would give
+            # infinite recursion if we based the decision directly on
+            # DISTRO_FEATURES.
+            if feature not in mfe or feature in mfd:
+                bb.fatal(("%s is not added using MENDER_FEATURES_ENABLE and "
+                          + "MENDER_FEATURES_DISABLE variables. Please make "
+                          + "sure that the feature is enabled using "
+                          + "MENDER_FEATURES_ENABLE, and is not in "
+                          + "MENDER_FEATURES_DISABLE.")
+                         % feature)
 }
+
+def mender_feature_is_enabled(feature, if_true, if_false, d):
+    in_enable = bb.utils.contains('MENDER_FEATURES_ENABLE', feature, True, False, d)
+    in_disable = bb.utils.contains('MENDER_FEATURES_DISABLE', feature, True, False, d)
+
+    if in_enable and not in_disable:
+        return if_true
+    else:
+        return if_false
 
 python() {
     if d.getVar('MENDER_PARTITION_ALIGNMENT_MB', True):

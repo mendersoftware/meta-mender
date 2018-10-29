@@ -13,6 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import os
+import shutil
+
 from common import *
 
 @pytest.fixture(scope="session")
@@ -21,21 +24,22 @@ def setup_board(request, clean_image, bitbake_variables):
 
     print('board type:', bt)
     if "qemu" in bt:
-        return qemu_running(request, clean_image)
+        return qemu_running(request, clean_image())
     elif bt == "beagleboneblack":
         return setup_bbb(request)
     elif bt == "raspberrypi3":
         return setup_rpi3(request)
     elif bt == "colibri-imx7":
-        return setup_colibri_imx7(request, clean_image)
+        return setup_colibri_imx7(request, clean_image())
     else:
         pytest.fail('unsupported board type {}'.format(bt))
 
 
 @pytest.fixture(scope="session")
 def setup_colibri_imx7(request, clean_image):
-    latest_uboot = latest_build_artifact(clean_image['build_dir'], "u-boot-nand.imx")
-    latest_ubimg = latest_build_artifact(clean_image['build_dir'], ".ubimg")
+    image = clean_image()
+    latest_uboot = latest_build_artifact(image['build_dir'], "u-boot-nand.imx")
+    latest_ubimg = latest_build_artifact(image['build_dir'], ".ubimg")
 
     if not latest_uboot:
         pytest.fail('failed to find U-Boot binary')
@@ -73,11 +77,11 @@ def setup_rpi3(request):
     execute(common_boot_from_internal, hosts=conftest.current_hosts())
     request.addfinalizer(board_cleanup)
 
-@pytest.fixture(scope="module")
 def qemu_running(request, clean_image):
     latest_sdimg = latest_build_artifact(clean_image['build_dir'], "core-image*.sdimg")
     latest_uefiimg = latest_build_artifact(clean_image['build_dir'], "core-image*.uefiimg")
     latest_biosimg = latest_build_artifact(clean_image['build_dir'], "core-image*.biosimg")
+    latest_gptimg = latest_build_artifact(clean_image['build_dir'], "core-image*.gptimg")
     latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], "core-image*.vexpress-nor")
 
     if latest_sdimg:
@@ -86,6 +90,8 @@ def qemu_running(request, clean_image):
         qemu, img_path = start_qemu_block_storage(latest_uefiimg, suffix=".uefiimg")
     elif latest_biosimg:
         qemu, img_path = start_qemu_block_storage(latest_biosimg, suffix=".biosimg")
+    elif latest_gptimg:
+        qemu, img_path = start_qemu_block_storage(latest_gptimg, suffix=".gptimg")
     elif latest_vexpress_nor:
         qemu, img_path = start_qemu_flash(latest_vexpress_nor)
     else:
@@ -99,7 +105,7 @@ def qemu_running(request, clean_image):
         def qemu_finalizer_impl():
             try:
                 manual_uboot_commit()
-                run("halt")
+                run("poweroff")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
                 while halt_time + 30 > time.time() and qemu.poll() is None:
@@ -141,7 +147,11 @@ def latest_rootfs():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.ext[234]")
+    if pytest.config.getoption('--test-conversion'):
+        image_name = os.path.splitext(pytest.config.getoption('--mender-image'))[0]
+        return latest_build_artifact(os.environ['BUILDDIR'], "%s.ext[234]" % image_name)
+    else:
+        return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.ext[234]")
 
 @pytest.fixture(scope="session")
 def latest_sdimg():
@@ -184,16 +194,24 @@ def latest_mender_image():
 def latest_part_image():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
+    if pytest.config.getoption('--test-conversion'):
+        pattern = os.path.splitext(pytest.config.getoption('--mender-image'))[0]
+    else:
+        pattern = "core-image*"
+
     # Find latest built rootfs.
-    latest_sdimg = latest_build_artifact(os.environ['BUILDDIR'], "core-image*.sdimg")
-    latest_uefiimg = latest_build_artifact(os.environ['BUILDDIR'], "core-image*.uefiimg")
-    latest_biosimg = latest_build_artifact(os.environ['BUILDDIR'], "core-image*.biosimg")
+    latest_sdimg = latest_build_artifact(os.environ['BUILDDIR'], "%s.sdimg" % pattern)
+    latest_uefiimg = latest_build_artifact(os.environ['BUILDDIR'], "%s.uefiimg" % pattern)
+    latest_biosimg = latest_build_artifact(os.environ['BUILDDIR'], "%s.biosimg" % pattern)
+    latest_gptimg = latest_build_artifact(os.environ['BUILDDIR'], "%s.gptimg" % pattern)
     if latest_sdimg:
         return latest_sdimg
     elif latest_uefiimg:
         return latest_uefiimg
     elif latest_biosimg:
         return latest_biosimg
+    elif latest_gptimg:
+        return latest_gptimg
     else:
         # Tempting to throw an exception here, but this runs even for platforms
         # that skip the test, so we should return None instead.
@@ -204,15 +222,11 @@ def successful_image_update_mender(request, clean_image):
     """Provide a 'successful_image_update.mender' file in the current directory that
     contains the latest built update."""
 
-    latest_mender_image = latest_build_artifact(clean_image['build_dir'], "core-image*.mender")
+    latest_mender_image = latest_build_artifact(clean_image()['build_dir'], "core-image*.mender")
 
-    if os.path.lexists("successful_image_update.mender"):
-        print("Using existing 'successful_image_update.mender' in current directory")
-        return "successful_image_update.mender"
+    shutil.copy(latest_mender_image, "successful_image_update.mender")
 
-    os.symlink(latest_mender_image, "successful_image_update.mender")
-
-    print("Symlinking 'successful_image_update.mender' to '%s'" % latest_mender_image)
+    print("Copying 'successful_image_update.mender' to '%s'" % latest_mender_image)
 
     def cleanup_image_dat():
         os.remove("successful_image_update.mender")
@@ -225,9 +239,15 @@ def successful_image_update_mender(request, clean_image):
 def bitbake_variables():
     """Returns a map of all bitbake variables active for the build."""
 
+    if pytest.config.getoption('--test-conversion'):
+        os.environ['BUILDDIR'] = os.getcwd()
+
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
-    return get_bitbake_variables("core-image-minimal")
+    if pytest.config.getoption('--test-conversion'):
+        return get_bitbake_variables("mender-image", test_conversion=True)
+    else:
+        return get_bitbake_variables("core-image-minimal")
 
 @pytest.fixture(scope="session")
 def mender_test_dependencies_bitbaked():
@@ -235,17 +255,21 @@ def mender_test_dependencies_bitbaked():
 
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
-    # See the recipe for details about this call.
-    subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot", "mender-test-dependencies"],
-                            cwd=os.environ['BUILDDIR'])
+    if not pytest.config.getoption('--test-conversion'):
+        # See the recipe for details about this call.
+        subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot",
+                                 "mender-test-dependencies"],
+                                cwd=os.environ['BUILDDIR'])
 
 @pytest.fixture(scope="session")
 def bitbake_path_string(mender_test_dependencies_bitbaked):
     """Fixture that returns the PATH we need for our testing tools"""
 
-    bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
-
-    return bb_testing_variables['PATH'] + ":" + os.environ['PATH']
+    if not pytest.config.getoption('--test-conversion'):
+        bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
+        return bb_testing_variables['PATH'] + ":" + os.environ['PATH']
+    else:
+        return os.environ['PATH']
 
 @pytest.fixture(scope="function")
 def bitbake_path(request, bitbake_path_string):
@@ -274,27 +298,11 @@ def bitbake_env_dict(mender_test_dependencies_bitbaked):
 def bitbake_env(request, bitbake_env_dict):
     """Fixture that runs the test using entire bitbake environment."""
 
-    old_env = {}
-    # Save all values that have keys in the bitbake_env_dict
-    for key in bitbake_env_dict:
-        if key in os.environ:
-            old_env[key] = os.environ[key]
-        else:
-            old_env[key] = None
-
-    old_path = os.environ['PATH']
-
-    os.environ.update(bitbake_env_dict)
-    # Exception for PATH, keep old path at end.
-    os.environ['PATH'] += ":" + old_path
+    env_obj = bitbake_env_from(bitbake_env_dict)
+    env_obj.setup()
 
     def env_restore():
-        # Restore all keys we saved.
-        for key in old_env:
-            if old_env[key] is None:
-                del os.environ[key]
-            else:
-                os.environ[key] = old_env[key]
+        env_obj.teardown()
 
     request.addfinalizer(env_restore)
 
@@ -302,13 +310,20 @@ def bitbake_env(request, bitbake_env_dict):
 
 @pytest.fixture(scope="session")
 def clean_image(request, prepared_test_build_base):
-    reset_local_conf(prepared_test_build_base)
-    add_to_local_conf(prepared_test_build_base,
-                      'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
-    add_to_local_conf(prepared_test_build_base,
-                      'EXTRA_IMAGE_FEATURES_append = " ssh-server-openssh"')
-    run_bitbake(prepared_test_build_base)
-    return prepared_test_build_base
+    """Returns a function which returns a clean image. The reason it does not
+    return the clean image directly is that it may need to be reset to a clean
+    state if several independent fixtures invoke it, and there have been unclean
+    builds in between."""
+
+    def getter():
+        reset_local_conf(prepared_test_build_base)
+        add_to_local_conf(prepared_test_build_base,
+                          'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
+        add_to_local_conf(prepared_test_build_base,
+                          'EXTRA_IMAGE_FEATURES_append = " ssh-server-openssh"')
+        run_bitbake(prepared_test_build_base)
+        return prepared_test_build_base
+    return getter
 
 
 @pytest.fixture(scope="session")
@@ -423,7 +438,7 @@ def only_with_image(request, bitbake_variables):
     mark = request.node.get_marker('only_with_image')
     if mark is not None:
         images = mark.args
-        current = bitbake_variables.get('IMAGE_FSTYPES', '').strip().split(' ')
+        current = bitbake_variables.get('IMAGE_FSTYPES', '').strip().split()
         current.append(bitbake_variables.get('ARTIFACTIMG_FSTYPE', ''))
         if not any([img in current for img in images]):
             pytest.skip('no supported filesystem in {} ' \
@@ -445,7 +460,7 @@ def only_with_distro_feature(request, bitbake_variables):
     mark = request.node.get_marker('only_with_distro_feature')
     if mark is not None:
         features = mark.args
-        current = bitbake_variables.get('DISTRO_FEATURES', '').strip().split(' ')
+        current = bitbake_variables.get('DISTRO_FEATURES', '').strip().split()
         if not all([feature in current for feature in features]):
             pytest.skip('no supported distro feature in {} ' \
                         '(supports {})'.format(', '.join(current),

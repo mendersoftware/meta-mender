@@ -168,7 +168,15 @@ def reboot(wait = 120):
     # Make sure reboot has had time to take effect.
     time.sleep(5)
 
-    fabric.network.disconnect_all()
+    for attempt in range(5):
+        try:
+            fabric.network.disconnect_all()
+            break
+        except IOError:
+            # Occasionally we get an IO error here because resource is temporarily
+            # unavailable.
+            time.sleep(5)
+            continue
 
     run_after_connect("true", wait)
 
@@ -317,32 +325,45 @@ def common_boot_from_internal():
 
 
 def latest_build_artifact(builddir, extension):
-    output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
+    if pytest.config.getoption('--test-conversion'):
+        sdimg_location = pytest.config.getoption('--sdimg-location')
+        output = subprocess.check_output(["sh", "-c", "ls -t %s/%s/*%s | grep -v data*%s| head -n 1" % (builddir, sdimg_location, extension, extension)])
+    else:
+        output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
     output = output.rstrip('\r\n')
     print("Found latest image of type '%s' to be: %s" % (extension, output))
     return output
 
-def get_bitbake_variables(target, env_setup="true", export_only=False):
+def get_bitbake_variables(target, env_setup="true", export_only=False, test_conversion=False):
     current_dir = os.open(".", os.O_RDONLY)
     os.chdir(os.environ['BUILDDIR'])
 
-    output = subprocess.Popen("%s && bitbake -e %s" % (env_setup, target),
-                              stdout=subprocess.PIPE,
-                              shell=True,
-                              executable="/bin/bash")
+    if test_conversion:
+        config_file_path = os.path.abspath(pytest.config.getoption('--test-variables'))
+        with open(config_file_path, 'r') as config:
+            output = config.readlines()
+    else:
+        ps = subprocess.Popen("%s && bitbake -e %s" % (env_setup, target),
+                                  stdout=subprocess.PIPE,
+                                  shell=True,
+                                  executable="/bin/bash")
+        output= ps.stdout
+
     if export_only:
         export_only_expr = ""
     else:
         export_only_expr = "?"
     matcher = re.compile('^(?:export )%s([A-Za-z][^=]*)="(.*)"$' % export_only_expr)
     ret = {}
-    for line in output.stdout:
+    for line in output:
         line = line.strip()
         match = matcher.match(line)
         if match is not None:
             ret[match.group(1)] = match.group(2)
 
-    output.wait()
+    if not test_conversion:
+        ps.wait()
+
     os.fchdir(current_dir)
 
     # For some unknown reason, 'MACHINE' is not included in the 'bitbake -e' output.
@@ -445,6 +466,51 @@ def reset_local_conf(prepared_test_build):
 
     # Restore original local.conf
     run_verbose("cp %s %s" % (old_file, new_file))
+
+
+class bitbake_env_from:
+    old_env = {}
+    old_path = None
+    recipe = None
+
+    def __init__(self, recipe):
+        self.recipe = recipe
+
+    def __enter__(self):
+        self.setup()
+
+    def setup(self):
+        if isinstance(self.recipe, str):
+            vars = get_bitbake_variables(self.recipe, export_only=True)
+        else:
+            vars = self.recipe
+
+        self.old_env = {}
+        # Save all values that have keys in the bitbake_env_dict
+        for key in vars:
+            if key in os.environ:
+                self.old_env[key] = os.environ[key]
+            else:
+                self.old_env[key] = None
+
+        self.old_path = os.environ['PATH']
+
+        os.environ.update(vars)
+        # Exception for PATH, keep old path at end.
+        os.environ['PATH'] += ":" + self.old_path
+
+        return os.environ
+
+    def __exit__(self, type, value, traceback):
+        self.teardown()
+
+    def teardown(self):
+        # Restore all keys we saved.
+        for key in self.old_env:
+            if self.old_env[key] is None:
+                del os.environ[key]
+            else:
+                os.environ[key] = self.old_env[key]
 
 
 def versions_of_recipe(recipe):

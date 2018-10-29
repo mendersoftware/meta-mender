@@ -9,16 +9,23 @@ require u-boot-fw-utils-mender.inc
 # u-boot-fw-utils recipe, for those configurations that lack it. It does this by
 # reusing the sources from the main U-Boot recipe itself.
 
+
 LICENSE = "GPL-2.0"
-LIC_FILES_CHKSUM = "file://Licenses/README;md5=a2c678cfd4a4d97135585cad908541c6"
+# Specifying a dummy file here is slightly evil, but the problem is that since
+# this is a special recipe which uses source code coming from any odd U-Boot
+# version imaginable, it is not possible to use a stable checksum pointing to a
+# file from within that source. It is pretty unlikely that U-Boot will change
+# license, so use this for now.
+LIC_FILES_CHKSUM = "file://dummy-license.txt;md5=f02e326f800ee26f04df7961adbf7c0a"
 
 PROVIDES = "u-boot-fw-utils"
 RPROVIDES_${PN} = "u-boot-fw-utils"
 
 INSANE_SKIP_${PN} = "already-stripped"
 EXTRA_OEMAKE_class-target = 'CROSS_COMPILE=${TARGET_PREFIX} CC="${CC} ${CFLAGS} ${LDFLAGS}" HOSTCC="${BUILD_CC} ${BUILD_CFLAGS} ${BUILD_LDFLAGS}" V=1'
+DEPENDS += "bison-native"
 
-S = "${WORKDIR}/git"
+S = "${WORKDIR}/src-tar"
 
 def mender_preferred_uboot(d):
     pref_uboot = d.getVar('PREFERRED_PROVIDER_u-boot')
@@ -38,6 +45,9 @@ do_patch() {
     mkdir -p ${WORKDIR}
     cd ${WORKDIR}
     tar xzf ${TMPDIR}/mender-u-boot-src.tar.gz
+
+    # See LIC_FILES_CHKSUM.
+    echo dummy > ${S}/dummy-license.txt
 }
 do_patch[depends] += "${MENDER_PREFERRED_UBOOT}:do_mender_tar_src"
 

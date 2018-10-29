@@ -16,10 +16,27 @@
 import os
 import pytest
 import subprocess
+import re
 import json
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
+
+def extract_partition(img, number):
+    output = subprocess.Popen(["fdisk", "-l", "-o", "device,start,end", img],
+                              stdout=subprocess.PIPE)
+    for line in output.stdout:
+        if re.search("img%d" % number, line) is None:
+            continue
+
+        match = re.match("\s*\S+\s+(\S+)\s+(\S+)", line)
+        assert(match is not None)
+        start = int(match.group(1))
+        end = (int(match.group(2)) + 1)
+    output.wait()
+
+    subprocess.check_call(["dd", "if=" + img, "of=img%d.fs" % number,
+                           "skip=%d" % start, "count=%d" % (end - start)])
 
 class EmbeddedBootloader:
     loader = None
@@ -311,7 +328,7 @@ class TestBuild:
             "expected": {
                 "MENDER_MTDIDS": "nor2=40000000.flash",
                 "MENDER_IS_ON_MTDID": "40000000.flash",
-                "MENDER_MTDPARTS": "40000000.flash:512k(u-boot)ro,-(ubi)",
+                "MENDER_MTDPARTS": "40000000.flash:1m(u-boot)ro,-(ubi)",
             },
         }),
         ("custom_mtdids", {
@@ -322,7 +339,7 @@ class TestBuild:
             "expected": {
                 "MENDER_MTDIDS": "nor3=40000001.flash",
                 "MENDER_IS_ON_MTDID": "40000001.flash",
-                "MENDER_MTDPARTS": "40000001.flash:512k(u-boot)ro,-(ubi)",
+                "MENDER_MTDPARTS": "40000001.flash:1m(u-boot)ro,-(ubi)",
             },
         }),
         ("multiple_mtdids_no_selected_one", {
@@ -349,13 +366,13 @@ class TestBuild:
             "vars": [
                 'MENDER_MTDIDS = "nor2=40000000.flash,nor3=50000000.flash"',
                 'MENDER_IS_ON_MTDID = "40000000.flash"',
-                'MENDER_MTDPARTS = "50000000.flash:1m(whatever);40000000.flash:1m(u-boot)ro,3m(u-boot-env),-(ubi)"',
+                'MENDER_MTDPARTS = "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)"',
             ],
             "success": True,
             "expected": {
                 "MENDER_MTDIDS": "nor2=40000000.flash,nor3=50000000.flash",
                 "MENDER_IS_ON_MTDID": "40000000.flash",
-                "MENDER_MTDPARTS": "50000000.flash:1m(whatever);40000000.flash:1m(u-boot)ro,3m(u-boot-env),-(ubi)",
+                "MENDER_MTDPARTS": "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)",
             },
         }),
     ])
@@ -375,3 +392,48 @@ class TestBuild:
 
         for key in test_case['expected']:
             assert test_case['expected'][key] == variables[key]
+
+    @pytest.mark.only_with_image('sdimg', 'uefiimg')
+    @pytest.mark.min_mender_version('1.0.0')
+    def test_boot_partition_population(self, prepared_test_build, bitbake_path):
+        # Notice in particular a mix of tabs, newlines and spaces. All there to
+        # check that whitespace it treated correctly.
+        add_to_local_conf(prepared_test_build, """
+IMAGE_INSTALL_append = " test-boot-files"
+
+IMAGE_BOOT_FILES_append = " deployed-test1 deployed-test-dir2/deployed-test2 \
+	deployed-test3;renamed-deployed-test3 \
+ deployed-test-dir4/deployed-test4;renamed-deployed-test4	deployed-test5;renamed-deployed-test-dir5/renamed-deployed-test5 \
+deployed-test-dir6/deployed-test6;renamed-deployed-test-dir6/renamed-deployed-test6 \
+deployed-test-dir7/* \
+deployed-test-dir8/*;./ \
+deployed-test-dir9/*;renamed-deployed-test-dir9/ \
+"
+""")
+        run_bitbake(prepared_test_build)
+
+        image = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.*img")
+        extract_partition(image, 1)
+        try:
+            listing = run_verbose("mdir -i img1.fs -b -/", capture=True).split()
+            expected = [
+                "::/deployed-test1",
+                "::/deployed-test2",
+                "::/renamed-deployed-test3",
+                "::/renamed-deployed-test4",
+                "::/renamed-deployed-test-dir5/renamed-deployed-test5",
+                "::/renamed-deployed-test-dir6/renamed-deployed-test6",
+                "::/deployed-test7",
+                "::/deployed-test8",
+                "::/renamed-deployed-test-dir9/deployed-test9",
+            ]
+            assert(all([item in listing for item in expected]))
+
+            add_to_local_conf(prepared_test_build, 'IMAGE_BOOT_FILES_append = " conflict-test1"')
+            try:
+                run_bitbake(prepared_test_build)
+                pytest.fail("Bitbake succeeded, but should have failed with a file conflict")
+            except subprocess.CalledProcessError:
+                pass
+        finally:
+            os.remove("img1.fs")

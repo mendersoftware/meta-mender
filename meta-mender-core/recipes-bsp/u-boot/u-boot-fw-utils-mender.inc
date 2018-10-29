@@ -1,8 +1,8 @@
 require u-boot-mender-common.inc
 
-FILES_${PN} += "/data/u-boot/fw_env.config"
+FILES_${PN}_append_mender-uboot = " /data/u-boot/fw_env.config"
 
-do_compile_append() {
+do_compile_append_mender-uboot() {
     alignment_bytes=${MENDER_PARTITION_ALIGNMENT}
     if [ $(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} % $alignment_bytes) -ne 0 ]; then
         bberror "MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET must be aligned to" \
@@ -16,7 +16,7 @@ do_compile_append() {
     fi
 }
 
-do_install_append() {
+do_install_append_mender-uboot() {
     install -d -m 755 ${D}${sysconfdir}
     ln -sf /data/u-boot/fw_env.config ${D}${sysconfdir}/fw_env.config
 

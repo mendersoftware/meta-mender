@@ -41,6 +41,47 @@ IMAGE_NAME_SUFFIX = ""
 # Block storage
 ################################################################################
 
+# Take the content from the rootfs that is going into the boot partition, coming
+# from MENDER_BOOT_PART_MOUNT_LOCATION, and merge with the files from
+# IMAGE_BOOT_FILES, following the format from the official Yocto documentation.
+mender_merge_bootfs_and_image_boot_files() {
+    W="${WORKDIR}/bootfs.${BB_CURRENTTASK}"
+    rm -rf "$W"
+
+    cp -al "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
+
+    # Put in variable to avoid expansion and ';' being parsed by shell.
+    image_boot_files="${IMAGE_BOOT_FILES}"
+    for entry in $image_boot_files; do
+        if echo "$entry" | grep -q ";"; then
+            dest="$(echo "$entry" | sed -e 's/[^;]*;//')"
+            entry="$(echo "$entry" | sed -e 's/;.*//')"
+        else
+            dest="./"
+        fi
+        if echo "$dest" | grep -q '/$'; then
+            dest_is_dir=1
+            mkdir -p "$W/$dest"
+        else
+            dest_is_dir=0
+            mkdir -p "$(dirname "$W/$dest")"
+        fi
+
+        # Use extra for loop so we can check conflict for each file.
+        for file in ${DEPLOY_DIR_IMAGE}/$entry; do
+            if [ $dest_is_dir -eq 1 ]; then
+                destfile="$W/$dest$(basename $file)"
+            else
+                destfile="$W/$dest"
+            fi
+            if [ -e "$destfile" ]; then
+                bbfatal "$destfile already exists in boot partition. Please verify that packages do not put files in the boot partition that conflict with IMAGE_BOOT_FILES."
+            fi
+            cp -l "$file" "$destfile"
+        done
+    done
+}
+
 mender_part_image() {
     suffix="$1"
     part_type="$2"
@@ -49,11 +90,6 @@ mender_part_image() {
     set -ex
 
     mkdir -p "${WORKDIR}"
-
-    # Workaround for the fact that the image builder requires this directory,
-    # despite not using it. If "rm_work" is enabled, this directory won't always
-    # exist.
-    mkdir -p "${IMAGE_ROOTFS}"
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)}; then
         # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
@@ -110,9 +146,12 @@ EOF
     alignment_kb=$(expr ${MENDER_PARTITION_ALIGNMENT} / 1024)
 
     if [ "${MENDER_BOOT_PART_SIZE_MB}" -ne "0" ]; then
+        mender_merge_bootfs_and_image_boot_files
         cat >> "$wks" <<EOF
-part $boot_part_params --ondisk "$ondisk_dev" --fstype=vfat --label boot --align $alignment_kb --active --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
+part --source rootfs --rootfs-dir ${WORKDIR}/bootfs.${BB_CURRENTTASK} --ondisk "$ondisk_dev" --fstype=vfat --label boot --align $alignment_kb --fixed-size ${MENDER_BOOT_PART_SIZE_MB}
 EOF
+    elif [ -n "${IMAGE_BOOT_FILES}" ]; then
+        bbwarn "MENDER_BOOT_PART_SIZE_MB is set to zero, but IMAGE_BOOT_FILES is not empty. The files are being omitted from the image."
     fi
 
     exclude_dirs_options="${@" ".join(["--exclude-path %s" % dir for dir in (d.getVar("IMAGE_ROOTFS_EXCLUDE_PATH") or "").split()])}"
@@ -146,6 +185,21 @@ EOF
 
     rm -rf "$wicout/"
 
+    # Pad the image up to the alignment. This matters mostly for the emulator,
+    # which uses the file size to determine the size of the storage device,
+    # which must be a multiple of its device block size. However, it might be
+    # beneficial for real storage media as well, to make sure the final sector
+    # is cleared out when flashing the image. May increase image size slightly,
+    # but should compress well!
+    alignment=${MENDER_PARTITION_ALIGNMENT}
+    pad_size=$(expr \( $(stat -c %s "$outimgname") + $alignment - 1 \) / $alignment \* $alignment)
+    truncate -s $pad_size "$outimgname"
+
+    # If we padded above, and the partition table type is GPT, we need to
+    # relocate the trailing backup header to the new end to avoid warnings.
+    if [ "$part_type" = "gpt" ]; then
+        sgdisk -e "$outimgname"
+    fi
 }
 
 IMAGE_CMD_sdimg() {
@@ -157,13 +211,19 @@ IMAGE_CMD_uefiimg() {
 IMAGE_CMD_biosimg() {
     mender_part_image biosimg msdos "--source bootimg-partition"
 }
+IMAGE_CMD_gptimg() {
+    mender_part_image gptimg gpt "--source bootimg-partition"
+}
+
 
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
 addtask do_rootfs_wicenv after do_image before do_image_uefiimg
 addtask do_rootfs_wicenv after do_image before do_image_biosimg
+addtask do_rootfs_wicenv after do_image before do_image_gptimg
 
 _MENDER_PART_IMAGE_DEPENDS = " \
     ${@d.getVarFlag('do_image_wic', 'depends', False)} \
+    coreutils-native:do_populate_sysroot \
     wic-tools:do_populate_sysroot \
     dosfstools-native:do_populate_sysroot \
     mtools-native:do_populate_sysroot \
@@ -176,22 +236,28 @@ _MENDER_PART_IMAGE_DEPENDS_append_mender-grub_mender-bios = " grub:do_deploy"
 do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-bootfiles:do_populate_sysroot', '', d)}"
 
-do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
+do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS} \
+                              gptfdisk-native:do_populate_sysroot"
 
 do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
+do_image_gptimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 # This isn't actually a dependency, but a way to avoid sdimg and uefiimg
 # building simultaneously, since wic will use the same file names in both, and
 # in parallel builds this is a recipe for disaster.
 IMAGE_TYPEDEP_uefiimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"
 # And same here.
 IMAGE_TYPEDEP_biosimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)}"
+# And same here.
+IMAGE_TYPEDEP_gptimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
 
 # So that we can use the files from excluded paths in the full images.
 do_image_sdimg[respect_exclude_path] = "0"
 do_image_uefiimg[respect_exclude_path] = "0"
 do_image_biosimg[respect_exclude_path] = "0"
-
+do_image_gptimg[respect_exclude_path] = "0"
 
 ################################################################################
 # Flash storage
@@ -217,11 +283,20 @@ mender_flash_mtdpart() {
             bbfatal "$file is too big to fit inside '$name' mtdpart of size $size."
         fi
     fi
+    # Flash zeros first to make sure that a shorter ubimg doesn't truncate the
+    # write.
+    dd if="/dev/zero" \
+        of="${IMGDEPLOYDIR}/${IMAGE_NAME}.mtdimg" \
+        bs=1024 \
+        seek=$kboffset \
+        count=$kbsize \
+        conv=notrunc
     dd if="$file" \
         of="${IMGDEPLOYDIR}/${IMAGE_NAME}.mtdimg" \
         bs=1024 \
         seek=$kboffset \
-        count=$kbsize
+        count=$kbsize \
+        conv=notrunc
 }
 
 IMAGE_CMD_mtdimg() {

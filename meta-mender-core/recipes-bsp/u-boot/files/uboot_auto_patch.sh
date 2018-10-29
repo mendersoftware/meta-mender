@@ -89,6 +89,22 @@ add_definition() {
     fi
 }
 
+append_to_definition() {
+    # Appends something to a string definition.
+
+    if ! definition_exists "$1"; then
+        echo "Tried to append to definition $1, but it doesn't exist!" 1>&2
+        exit 1
+    fi
+
+    if is_kconfig_option "$1"; then
+        sed -re "s%^$1=(.*)\"%$1=\1$2\"%" configs/$CONFIG
+    else
+        # Add it to the last non-backslash-continued line.
+        patch_candidate_list "\\%^[ \t]*#[ \t]*define[ \t]*$1\\b% {:start; /\\\\$/ {p; n; b start}; s%\$% $2%}; p"
+    fi
+}
+
 definition_exists() {
     # Returns 0 if the definition is found either in the source code or in the
     # config definition.
@@ -259,15 +275,15 @@ patch_all_candidates() {
             "fdt_addr_r"
     fi
 
-    # Find load address for kernel and make sure it's in loadaddr.
+    # Find load address for kernel and make sure it's in kernel_addr_r.
     if kernel_addr="$(extract_kernel_addr)"; then
-        if [ "$kernel_addr" != "loadaddr" ]; then
+        if [ "$kernel_addr" != "kernel_addr_r" ]; then
             remove_bootvar \
-                "loadaddr"
+                "kernel_addr_r"
         fi
         rename_bootvar \
             "$kernel_addr" \
-            "loadaddr"
+            "kernel_addr_r"
     else
         # Alright, no dedicated address. Let's try the second best, find it by
         # looking at existing boot commands.
@@ -275,10 +291,11 @@ patch_all_candidates() {
 
         # Using the :- syntax is because "set -u" is in effect.
         if [ -n "${addr:-}" ]; then
-            replace_definition \
-                'CONFIG_LOADADDR' \
-                'CONFIG_LOADADDR' \
-                "$addr"
+            if definition_exists "CONFIG_EXTRA_ENV_SETTINGS"; then
+                append_to_definition "CONFIG_EXTRA_ENV_SETTINGS" "\"kernel_addr_r=$addr\\\\0\""
+            else
+                add_definition "CONFIG_EXTRA_ENV_SETTINGS" "\"kernel_addr_r=$addr\\\\0\""
+            fi
         else
             echo "Could not find kernel load address!" 1>&2
             echo "This is the obtained environment:"
@@ -330,6 +347,18 @@ patch_all_candidates_sdimg() {
 }
 
 patch_all_candidates_ubi() {
+    # This was the old way to refer to CONFIG_MTDIDS_DEFAULT and
+    # CONFIG_MTDPARTS_DEFAULT, without the "CONFIG_" prefix. Alias them to the
+    # new ones.
+    replace_definition \
+        'MTDIDS_DEFAULT' \
+        'MTDIDS_DEFAULT' \
+        'CONFIG_MTDIDS_DEFAULT'
+    replace_definition \
+        'MTDPARTS_DEFAULT' \
+        'MTDPARTS_DEFAULT' \
+        'CONFIG_MTDPARTS_DEFAULT'
+
     replace_definition \
         'CONFIG_MTDIDS_DEFAULT' \
         'CONFIG_MTDIDS_DEFAULT' \

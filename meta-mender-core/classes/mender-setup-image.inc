@@ -3,9 +3,12 @@ IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-sd
 IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', ' ubimg mtdimg ubimg.bmap', '', d)}"
 IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-uefi', ' uefiimg uefiimg.bmap', '', d)}"
 IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-bios', ' biosimg biosimg.bmap', '', d)}"
+IMAGE_FSTYPES_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-gpt', ' gptimg gptimg.bmap', '', d)}"
 
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_x86 = " kernel-image"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_x86-64 = " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_x86 =     " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_x86-64 =  " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_arm =     " kernel-image kernel-devicetree"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_aarch64 = " kernel-image kernel-devicetree"
 
 python() {
     features = d.getVar('DISTRO_FEATURES').split()
@@ -15,13 +18,12 @@ python() {
                      % dep)
 }
 
-MENDER_BOOT_PART_MOUNT_LOCATION = ""
+MENDER_BOOT_PART_MOUNT_LOCATION = "/boot/efi"
 MENDER_BOOT_PART_MOUNT_LOCATION_mender-uboot = "/uboot"
-MENDER_BOOT_PART_MOUNT_LOCATION_mender-grub = "/boot/efi"
 MENDER_BOOT_PART_MOUNT_LOCATION_mender-grub_mender-bios = "/boot/grub"
 
 # Update fstab for Mender
-ROOTFS_POSTPROCESS_COMMAND_append += " mender_update_fstab_file ; "
+ROOTFS_POSTPROCESS_COMMAND_append = " mender_update_fstab_file;"
 mender_update_fstab_file() {
     if ! ${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', 'true', 'false', d)}; then
         if [ "${MENDER_BOOT_PART_SIZE_MB}" != "0" ] && [ -n "${MENDER_BOOT_PART}" ]; then
@@ -39,14 +41,14 @@ mender_update_fstab_file() {
 
 # Setup state script version file.
 MENDER_STATE_SCRIPTS_VERSION = "2"
-ROOTFS_POSTPROCESS_COMMAND_append += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender_create_scripts_version_file ; ', '', d)}"
+ROOTFS_POSTPROCESS_COMMAND_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender_create_scripts_version_file;', '', d)}"
 
 mender_create_scripts_version_file() {
     install -d -m 755 ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/
     echo -n "${MENDER_STATE_SCRIPTS_VERSION}" > ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/version
 }
 
-IMAGE_ROOTFS_EXCLUDE_PATH_append_mender-image = " data/"
+IMAGE_ROOTFS_EXCLUDE_PATH_append_mender-image = " data/ ${@d.getVar('MENDER_BOOT_PART_MOUNT_LOCATION')[1:]}"
 
 
 ################################################################################
@@ -91,6 +93,10 @@ python prepare_excluded_directories() {
         # directory).
         if not full_path.startswith(new_rootfs):
             bb.fatal("'%s' points to a path outside the rootfs" % orig_path)
+
+        if not os.path.lexists(full_path):
+            # Nothing to do if it doesn't exist.
+            continue
 
         if path.endswith(os.sep):
             # Delete content only.

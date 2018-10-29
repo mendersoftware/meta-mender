@@ -95,7 +95,7 @@ MENDER_MTDIDS ??= ""
 # If there is more than one mtdid, the mtdid that contains Mender.
 # This should be the one after the equals sign in MENDER_MTDIDS.
 # Currently there is no support for spreading over more than one.
-MENDER_IS_ON_MTDID ??= "${@mender_default_mender_mtdid('${MENDER_MTDIDS}')}"
+MENDER_IS_ON_MTDID ??= "${@mender_default_mender_mtdid(d)}"
 
 # The mtdparts string for the MTD layout. Usually auto-set from MENDER_MTDIDS
 # if possible. It should contain a "u-boot" label and a "ubi" label.
@@ -118,6 +118,8 @@ MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT_mender-ubi = "u-boot.${UBOOT_SUFFIX}"
 # Usually 2KiB, but can be other nearby powers of two.
 MENDER_NAND_FLASH_PAGE_SIZE ??= "2048"
 
+MENDER_FLASH_MINIMUM_IO_UNIT ??= "${@mender_flash_default_minimum_io_unit(d)}"
+
 MENDER_UBI_LEB_PEB_BLOCK_OVERHEAD ??= "${@mender_calculate_ubi_leb_peb_block_overhead(d)}"
 
 MENDER_UBI_LEB_SIZE ??= "${@eval('${MENDER_STORAGE_PEB_SIZE} - ${MENDER_UBI_LEB_PEB_BLOCK_OVERHEAD}')}"
@@ -129,12 +131,15 @@ MENDER_UBI_LEB_SIZE ??= "${@eval('${MENDER_STORAGE_PEB_SIZE} - ${MENDER_UBI_LEB_
 MENDER_UBI_TOTAL_FIXED_OVERHEAD ??= "${@eval('4 * ${MENDER_STORAGE_PEB_SIZE}')}"
 # some amount of PEBs is reserved for bad PEB handling; this is applicable for
 # NAND flash, but not for NOR flash; the amount of reserved PEBs is configurable
-# and is equal to 20 blocks per 1024 blocks by default;
+# and is equal to 20 blocks per 1024 blocks by default.
+# The end result in the variables is expressed in bytes.
 MENDER_UBI_TOTAL_BAD_PEB_OVERHEAD ??= "${@mender_get_ubi_bad_peb_overhead(d)}"
 MENDER_UBI_TOTAL_LEB_PEB_OVERHEAD ??= "${@mender_calculate_ubi_leb_peb_overhead(d)}"
 
-MKUBIFS_ARGS ??= "-m 1 -e ${MENDER_UBI_LEB_SIZE} -c 1024"
-UBINIZE_ARGS ??= "-p ${MENDER_STORAGE_PEB_SIZE} -m 1"
+MENDER_MAXIMUM_LEB_COUNT ??= "1024"
+
+MKUBIFS_ARGS ??= "-m ${MENDER_FLASH_MINIMUM_IO_UNIT} -e ${MENDER_UBI_LEB_SIZE} -c ${MENDER_MAXIMUM_LEB_COUNT}"
+UBINIZE_ARGS ??= "-p ${MENDER_STORAGE_PEB_SIZE} -m ${MENDER_FLASH_MINIMUM_IO_UNIT} -s ${MENDER_FLASH_MINIMUM_IO_UNIT}"
 
 # The volume numbers containing the two environment copies. The volume numbers
 # are customizable because the kernel only accepts numbers, but U-boot only
@@ -148,11 +153,18 @@ MENDER_UBOOT_ENV_UBIVOL_NUMBER_2 ??= "4"
 # Functions
 ################################################################################
 
-def mender_warn_only_if_ubi(d, msg):
+def mender_warn_only_if_ubi(d, msg, fatal=False):
     if bb.utils.contains('DISTRO_FEATURES', 'mender-ubi', True, False, d):
-        bb.warn(msg)
+        if fatal:
+            bb.fatal(msg)
+        else:
+            bb.warn(msg)
 
-def mender_default_mender_mtdid(mtdids):
+def mender_default_mender_mtdid(d):
+    mtdids = d.getVar("MENDER_MTDIDS")
+    if mtdids is None or mtdids == "":
+        mender_warn_only_if_ubi(d, "MENDER_MTDIDS must be defined", fatal=True)
+
     if len(mtdids.split(",")) == 1 and len(mtdids.split("=")) == 2:
         return mtdids.split("=")[1]
     else:
@@ -169,10 +181,10 @@ def mender_make_mtdparts(d):
         return ""
 
     u_boot_part_size = int(d.getVar('MENDER_STORAGE_PEB_SIZE'))
-    # Default to at least 512KiB for U-Boot binary. Can be changed by setting
+    # Default to at least 1MiB for U-Boot binary. Can be changed by setting
     # MENDER_MTDPARTS manually.
-    if u_boot_part_size < 524288:
-        u_boot_part_size = 524288
+    if u_boot_part_size < 1048576:
+        u_boot_part_size = 1048576
 
     bootloader = ""
     if bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
@@ -278,14 +290,18 @@ def mender_calculate_ubi_leb_peb_overhead(d):
     return str(overhead)
 
 def mender_get_ubi_bad_peb_overhead(d):
+    import math
+
     storage = mender_get_flash_type_from_mtdid(d)
 
     if storage == "nor":
         return "0"
     elif storage == "nand":
         ubi_size = mender_get_ubi_size(d)
-        blocks = int(ubi_size / int(d.getVar('MENDER_STORAGE_PEB_SIZE')))
-        return str(int(20 * blocks / 1024 + 20))
+        peb_size = int(d.getVar('MENDER_STORAGE_PEB_SIZE'))
+        blocks = int(ubi_size / peb_size)
+        bad_blocks = int(math.ceil(blocks / 1024) * 20)
+        return str(bad_blocks * peb_size)
     else:
         mender_warn_only_if_ubi(d, "Unknown MTDID type %s, setting UBI overhead to 0" % storage)
         return "0"
@@ -305,3 +321,13 @@ def mender_get_partitioning_overhead_kb_ubi(d):
     alignment = int(d.getVar('MENDER_PARTITION_ALIGNMENT'))
     overhead = alignment * (int((overhead - 1) / alignment) + 1)
     return str(int(overhead / 1024))
+
+def mender_flash_default_minimum_io_unit(d):
+    flash_type = mender_get_flash_type_from_mtdid(d)
+    if flash_type == "nand":
+        return d.getVar("MENDER_NAND_FLASH_PAGE_SIZE")
+    elif flash_type == "nor":
+        return "1"
+    else:
+        # This is just a guess, really.
+        return "512"

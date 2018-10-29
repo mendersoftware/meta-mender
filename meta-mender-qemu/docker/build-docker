@@ -59,29 +59,38 @@ if [ $BUILD_DEFAULTS = 1 ]; then
         exit 1
     fi
 
+    # Fish out some settings from Bitbake.
+    eval "$(bitbake -e core-image-full-cmdline | egrep '^DISTRO_FEATURES=')"
+
+    if egrep -q '\bmender-image-uefi\b' <<<"$DISTRO_FEATURES"; then
+        DISK_IMG="core-image-full-cmdline-$MACHINE.uefiimg"
+    elif egrep -q '\bmender-image-sd\b' <<<"$DISTRO_FEATURES"; then
+        DISK_IMG="core-image-full-cmdline-$MACHINE.sdimg"
+    else
+        echo "Neither mender-image-uefi nor mender-image-sd are set! Don't know which image to use!" 1>&2
+        exit 1
+    fi
+    ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$MACHINE/"
+    cat > "$MACHINE/env.txt" <<EOF
+export MACHINE=$MACHINE
+export DISK_IMG=/$DISK_IMG
+EOF
+
     case "$MACHINE" in
         qemux86-64)
-            DISK_IMG="core-image-full-cmdline-$MACHINE.uefiimg"
-            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$MACHINE/"
             ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.qcow2" "$MACHINE/"
             ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.vars.qcow2" "$MACHINE/"
             DOCKER_ARGS="--build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=ovmf.qcow2 --build-arg BOOTLOADER_DATA=ovmf.vars.qcow2"
-            cat > "$MACHINE/env.txt" <<EOF
-export MACHINE=$MACHINE
+            cat >> "$MACHINE/env.txt" <<EOF
 export BOOTLOADER=/ovmf.qcow2
 export BOOTLOADER_DATA=/ovmf.vars.qcow2
-export DISK_IMG=/$DISK_IMG
 EOF
             ;;
         vexpress-qemu)
-            DISK_IMG="core-image-full-cmdline-$MACHINE.sdimg"
-            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$MACHINE/"
             ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/u-boot.elf" "$MACHINE/"
             DOCKER_ARGS="--build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=u-boot.elf"
-            cat > "$MACHINE/env.txt" <<EOF
-export MACHINE=$MACHINE
+            cat >> "$MACHINE/env.txt" <<EOF
 export BOOTLOADER=/u-boot.elf
-export DISK_IMG=/$DISK_IMG
 EOF
             ;;
     esac

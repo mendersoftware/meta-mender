@@ -15,6 +15,7 @@
 
 import os
 import os.path
+import subprocess
 
 from fabric.api import *
 
@@ -39,12 +40,20 @@ def pytest_addoption(parser):
                      help="image to build during the tests")
     parser.addoption("--no-tmp-build-dir", action="store_true", default=False,
                      help="Do not use a temporary build directory. Faster, but may mess with your build directory.")
+    parser.addoption("--no-pull", action="store_true", default=False,
+                     help="Do not pull submodules. Handy if debugging something locally.")
     parser.addoption("--board-type", action="store", default='qemu',
                      help="type of board to use in testing, supported types: qemu, bbb, colibri-imx7")
     parser.addoption("--use-s3", action="store_true", default=False,
                      help="use S3 for transferring images under test to target boards")
     parser.addoption("--s3-address", action="store", default="s3.amazonaws.com",
                      help="address of S3 server, defaults to AWS, override when using minio")
+    parser.addoption("--test-conversion", action="store_true", default=False,
+                     help="""conduct testing of .sdimg image built with mender-convert tool""")
+    parser.addoption("--test-variables", action="store", default="default",
+                     help="configuration file holding settings for dedicated platform")
+    parser.addoption("--mender-image", action="store", default="default",
+                     help="Mender compliant raw disk image")
 
 
 def pytest_configure(config):
@@ -75,6 +84,10 @@ def pytest_configure(config):
 
     env.connection_attempts = 10
     env.timeout = 30
+
+    if not config.getoption("--no-pull"):
+        print("Automatically pulling submodules. Use --no-pull to disable")
+        subprocess.check_call("git submodule update --init --remote", shell=True)
 
 
 def current_hosts():

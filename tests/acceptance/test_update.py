@@ -135,7 +135,7 @@ class TestUpdates:
 
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
-        image_type = bitbake_variables["MACHINE"]
+        image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         try:
             # Make a dummy/broken update
@@ -168,7 +168,7 @@ class TestUpdates:
             execute(self.test_too_big_image_update, bitbake_variables)
             return
 
-        image_type = bitbake_variables["MACHINE"]
+        image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         try:
             # Make a too big update
@@ -460,7 +460,7 @@ class TestUpdates:
         else:
             sig_key = None
 
-        image_type = bitbake_variables["MACHINE"]
+        image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         subprocess.check_call("mender-artifact write rootfs-image %s -t %s -n test-update -u image.dat -o image.mender"
                               % (artifact_args, image_type), shell=True)
@@ -575,6 +575,7 @@ class TestUpdates:
         finally:
             # Reset environment to what it was.
             run("fw_setenv mender_boot_part %s" % active[-1:])
+            run("fw_setenv mender_boot_part_hex %x" % int(active[-1:]))
             run("fw_setenv upgrade_available 0")
             run("cp -L /data/etc/mender/mender.conf.bak /etc/mender/mender.conf")
             if sig_key:
@@ -582,6 +583,7 @@ class TestUpdates:
 
 
     @pytest.mark.only_for_machine('vexpress-qemu')
+    @pytest.mark.only_with_distro_feature('mender-uboot')
     @pytest.mark.min_mender_version('1.0.0')
     def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables):
         """This tests a very specific scenario: Consider the following production
@@ -634,7 +636,7 @@ class TestUpdates:
 
         orig_env = run("fw_printenv")
 
-        image_type = bitbake_variables["MACHINE"]
+        image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         try:
             # Make a dummy/broken update
@@ -685,7 +687,7 @@ class TestUpdates:
             os.remove("/data/image.mender")
             os.remove("image.dat")
 
-    @pytest.mark.only_for_machine('qemux86-64')
+    @pytest.mark.only_with_distro_feature('mender-grub')
     @pytest.mark.min_mender_version('1.0.0')
     def test_redundant_grub_env(self, successful_image_update_mender, bitbake_variables):
         """This tests pretty much the same thing as the test_redundant_uboot_env
