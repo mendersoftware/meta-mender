@@ -314,10 +314,14 @@ class TestBuild:
 
         output = run_verbose("mender-artifact read %s" % image, capture=True)
         assert "Compatible devices: '[machine1 machine2]'" in output
+        isVersion3 = "Version: 3" in output
 
         output = subprocess.check_output("tar xOf %s header.tar.gz | tar xOz header-info" % image, shell=True)
         data = json.loads(output)
-        assert data["device_types_compatible"] == ["machine1", "machine2"]
+        if isVersion3:
+            assert data["artifact_depends"]["device_type"] == ["machine1", "machine2"]
+        else:
+            assert data["device_types_compatible"] == ["machine1", "machine2"]
 
     @pytest.mark.only_for_machine('vexpress-qemu-flash')
     @pytest.mark.min_mender_version('1.3.0')
