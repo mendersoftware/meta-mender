@@ -54,14 +54,26 @@ do_provide_mender_defines() {
     fi
 
     if [ -n "${MENDER_BOOT_PART}" ]; then
-        MENDER_BOOT_PART_NUMBER=`get_part_number_from_device ${MENDER_BOOT_PART}`
-        MENDER_BOOT_PART_NUMBER_HEX=`get_part_number_hex_from_device ${MENDER_BOOT_PART}`
-    fi
+        if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+            MENDER_BOOT_PART_NUMBER=${MENDER_BOOT_PART}
+            MENDER_BOOT_PART_NUMBER_HEX=`mender_number_to_hex ${MENDER_BOOT_PART_NUMBER}`
+        else
+            MENDER_BOOT_PART_NUMBER=`get_part_number_from_device ${MENDER_BOOT_PART}`
+            MENDER_BOOT_PART_NUMBER_HEX=`get_part_number_hex_from_device ${MENDER_BOOT_PART}`
+        fi
+     fi
 
-    MENDER_ROOTFS_PART_A_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_A}`
-    MENDER_ROOTFS_PART_A_NUMBER_HEX=`get_part_number_hex_from_device ${MENDER_ROOTFS_PART_A}`
-    MENDER_ROOTFS_PART_B_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_B}`
-    MENDER_ROOTFS_PART_B_NUMBER_HEX=`get_part_number_hex_from_device ${MENDER_ROOTFS_PART_B}`
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+        MENDER_ROOTFS_PART_A_NUMBER=${MENDER_ROOTFS_PART_A}
+        MENDER_ROOTFS_PART_A_NUMBER_HEX=`mender_number_to_hex ${MENDER_ROOTFS_PART_A_NUMBER}`
+        MENDER_ROOTFS_PART_B_NUMBER=${MENDER_ROOTFS_PART_B}
+        MENDER_ROOTFS_PART_B_NUMBER_HEX=`mender_number_to_hex ${MENDER_ROOTFS_PART_B_NUMBER}`
+    else
+        MENDER_ROOTFS_PART_A_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_A}`
+        MENDER_ROOTFS_PART_A_NUMBER_HEX=`get_part_number_hex_from_device ${MENDER_ROOTFS_PART_A}`
+        MENDER_ROOTFS_PART_B_NUMBER=`get_part_number_from_device ${MENDER_ROOTFS_PART_B}`
+        MENDER_ROOTFS_PART_B_NUMBER_HEX=`get_part_number_hex_from_device ${MENDER_ROOTFS_PART_B}`
+    fi
 
     if [ -n "${MENDER_UBOOT_STORAGE_INTERFACE}" ]; then
         MENDER_UBOOT_STORAGE_INTERFACE=${MENDER_UBOOT_STORAGE_INTERFACE}

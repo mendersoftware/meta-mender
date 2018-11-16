@@ -61,6 +61,9 @@ get_part_number_from_device() {
         ubi*_* )
             dev_base=$(echo $1 | cut -d_ -f2)
             ;;
+        /dev/disk/by-partuuid/* )
+            bberror "Please enable mender-partuuid Distro feature to use PARTUUID"
+            ;;
     esac
     part=$(printf "%d" $dev_base 2>/dev/null)
     if [ $? = 1 ]; then
@@ -81,6 +84,24 @@ get_part_number_hex_from_device() {
         echo $part_hex
     fi
 }
+
+mender_number_to_hex() {
+    part_hex=$(printf "%X" $1 2>/dev/null)
+}
+
+def mender_get_partuuid_from_device(d, deviceName):
+    import re
+    if bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', True, False, d) and deviceName:
+        uuid=deviceName.replace('/dev/disk/by-partuuid/', '')
+        gptMatch = re.search('^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$', uuid)
+        if gptMatch:
+            return gptMatch.group(0)
+
+        msdosMatch = re.search("^[0-9a-f]{8}\-[0-9]{2}$", uuid)
+        if msdosMatch:
+            return msdosMatch.group(0)
+        bb.fatal("%s Does not contain a valid PARTUUID path" % deviceName )
+    return
 
 def mender_make_mtdparts_shell_array(d):
     """Makes a string that can be shell-eval'ed to get the components of the

@@ -10,8 +10,8 @@ MENDER_STORAGE_DEVICE_DEFAULT_mender-ubi = "ubi0"
 MENDER_STORAGE_DEVICE_BASE_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE}_"
 
 # The numbers of the two rootfs partitions in the A/B partition layout.
-MENDER_ROOTFS_PART_A_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE_BASE}0"
-MENDER_ROOTFS_PART_B_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE_BASE}1"
+MENDER_ROOTFS_PART_A_NUMBER_DEFAULT_mender-ubi = "0"
+MENDER_ROOTFS_PART_B_NUMBER_DEFAULT_mender-ubi = "1"
 
 # The partition number holding the data partition.
 MENDER_DATA_PART_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE_BASE}2"
@@ -31,6 +31,7 @@ MENDER_MTD_UBI_DEVICE_NAME_DEFAULT_mender-ubi = "ubi"
 
 # Boot part is not used when building UBI image.
 MENDER_BOOT_PART_DEFAULT_mender-ubi = ""
+MENDER_BOOT_PART_NUMBER_DEFAULT_mender-ubi = ""
 MENDER_BOOT_PART_SIZE_MB_DEFAULT_mender-ubi = "0"
 
 # These are not applicable when building UBI image.
