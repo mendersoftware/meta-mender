@@ -334,7 +334,7 @@ def prepared_test_build(prepared_test_build_base):
 
 @pytest.fixture(autouse=True)
 def min_mender_version(request, bitbake_variables):
-    version_mark = request.node.get_marker("min_mender_version")
+    version_mark = request.node.get_closest_marker("min_mender_version")
     if version_mark is None:
         pytest.fail(('%s must be marked with @pytest.mark.min_mender_version("<VERSION>") to '
                      + 'indicate lowest Mender version for which the test will work.')
@@ -361,7 +361,7 @@ def only_for_machine(request, bitbake_variables):
            pass
 
     """
-    mach_mark = request.node.get_marker('only_for_machine')
+    mach_mark = request.node.get_closest_marker('only_for_machine')
     if mach_mark is not None:
         machines = mach_mark.args
         current = bitbake_variables.get('MACHINE', None)
@@ -382,7 +382,7 @@ def only_with_image(request, bitbake_variables):
            pass
 
     """
-    mark = request.node.get_marker('only_with_image')
+    mark = request.node.get_closest_marker('only_with_image')
     if mark is not None:
         images = mark.args
         current = bitbake_variables.get('IMAGE_FSTYPES', '').strip().split(' ')

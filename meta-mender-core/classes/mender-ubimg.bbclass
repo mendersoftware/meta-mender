@@ -88,4 +88,4 @@ IMAGE_CMD_ubimg () {
 
 IMAGE_TYPEDEP_ubimg_append = " ubifs"
 
-IMAGE_DEPENDS_ubimg += "rsync-native"
+do_image_ubimg[depends] += "rsync-native:do_populate_sysroot"
