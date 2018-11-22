@@ -25,9 +25,6 @@ SRC_URI_append_mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE
                                                     '', \
                                                     d)}"
 
-# We need this patch only if using GRUB, booted through EFI.
-SRC_URI_append_mender-grub = " file://0007-distro_bootcmd-Switch-bootefi-to-use-loadaddr-by-def.patch"
-
 
 ################################################################################
 # Generic tasks.
