@@ -568,9 +568,25 @@ class TestUpdates:
             else:
                 expected_content = old_content
 
-            content = run("dd if=%s bs=%d count=1"
-                          % (passive, len(expected_content)))
-            assert content == expected_content, "Case: %s" % sig_case.label
+            try:
+                content = run("dd if=%s bs=%d count=1"
+                              % (passive, len(expected_content)))
+                assert content == expected_content, "Case: %s" % sig_case.label
+
+            # In Fabric context, SystemExit means CalledProcessError. We should
+            # not catch all exceptions, because we want to leave assertions
+            # alone.
+            except SystemExit:
+                if "mender-ubi" in bitbake_variables['DISTRO_FEATURES'].split():
+                    # For UBI volumes specifically: The UBI_IOCVOLUP call which
+                    # Mender uses prior to writing the data, takes a size
+                    # argument, and if you don't write that amount of bytes, the
+                    # volume is marked corrupted as a security measure. This
+                    # sometimes triggers in our checksum mismatch tests, so
+                    # accept the volume being unreadable in that case.
+                    pass
+                else:
+                    raise
 
         finally:
             # Reset environment to what it was.

@@ -17,6 +17,10 @@ SRCREV = "f63441b72e9d07db1114fa63f298563d2e812902"
 # Downprioritize this recipe in version selections.
 DEFAULT_PREFERENCE = "-1"
 
+# REMOVE (not just comment) THIS FOR ALL NEW RECIPES!!!
+# It's only here for old versions where we cannot change the source code.
+GOPTESTBUILDFLAGS_append = " -vet=off"
+
 ################################################################################
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
