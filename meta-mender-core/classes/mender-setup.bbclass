@@ -160,6 +160,21 @@ MENDER_UBOOT_PRE_SETUP_COMMANDS_DEFAULT = ""
 MENDER_UBOOT_POST_SETUP_COMMANDS ??= "${MENDER_UBOOT_POST_SETUP_COMMANDS_DEFAULT}"
 MENDER_UBOOT_POST_SETUP_COMMANDS_DEFAULT = ""
 
+# All the allowed mender configuration variables
+MENDER_CONFIGURATION_VARS ?= "\
+    RootfsPartA \
+    RootfsPartB \
+    InventoryPollIntervalSeconds \
+    RetryPollIntervalSeconds \
+    ArtifactVerifyKey \
+    ServerCertificate \
+    ServerURL \
+    UpdatePollIntervalSeconds"
+
+# The configuration variables to migrate to the persistent configuration.
+MENDER_PERSISTENT_CONFIGURATION_VARS ?= "RootfsPartA RootfsPartB"
+
+
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 IMAGE_INSTALL_append = " mender"
