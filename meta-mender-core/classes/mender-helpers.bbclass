@@ -42,6 +42,11 @@ get_grub_device_from_device_base() {
             dev_number=${dev_number%p}
             echo "hd$dev_number"
             ;;
+        /dev/nvme[0-9]n[0-9]p)
+            dev_number=${1#/dev/nvme?n}
+            dev_number=$(expr $(printf "%d" "'$dev_number") - $(printf "%d" "'1") || true)
+            echo "hd$dev_number"
+            ;;
         *)
             bberror "Could not determine Grub device from $1"
             exit 1
@@ -57,6 +62,9 @@ get_part_number_from_device() {
             ;;
         /dev/[sh]d[a-z][1-9])
             dev_base=${1##*d[a-z]}
+            ;;
+        /dev/nvme[0-9]n[0-9]p[0-9])
+            dev_base=$(echo $1 | cut -dp -f2)
             ;;
         ubi*_* )
             dev_base=$(echo $1 | cut -d_ -f2)
