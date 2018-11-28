@@ -61,7 +61,7 @@ MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT = "${MENDER_DEVICE_TYPE}"
 # boot and data partitions along with some predefined overhead (see
 # MENDER_PARTITIONING_OVERHEAD_KB).
 MENDER_STORAGE_TOTAL_SIZE_MB ??= "${MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT}"
-MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT = "1024"
+MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT ?= "1024"
 
 # Optional location where a directory can be specified with content that should
 # be included on the data partition. Some of Mender's own files will be added to
@@ -155,19 +155,19 @@ python() {
         'mender-uboot',
     }
 
-    mfe = d.getVar('MENDER_FEATURE_ENABLE', True)
+    mfe = d.getVar('MENDER_FEATURES_ENABLE', True)
     mfe = mfe.split() if mfe is not None else []
-    mfd = d.getVar('MENDER_FEATURE_DISABLE', True)
+    mfd = d.getVar('MENDER_FEATURES_DISABLE', True)
     mfd = mfd.split() if mfd is not None else []
     for feature in mfe + mfd:
         if not feature.startswith('mender-'):
-            bb.fatal("%s in MENDER_FEATURE_ENABLE or MENDER_FEATURE_DISABLE is not a Mender feature."
+            bb.fatal("%s in MENDER_FEATURES_ENABLE or MENDER_FEATURES_DISABLE is not a Mender feature."
                      % feature)
 
     for feature in d.getVar('DISTRO_FEATURES', True).split():
         if feature.startswith("mender-"):
             if feature not in mender_features:
-                bb.fatal("%s from MENDER_FEATURE_ENABLE or DISTRO_FEATURES is not a valid Mender feature."
+                bb.fatal("%s from MENDER_FEATURES_ENABLE or DISTRO_FEATURES is not a valid Mender feature."
                          % feature)
             d.setVar('OVERRIDES_append', ':%s' % feature)
 }
