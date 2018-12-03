@@ -44,10 +44,18 @@ python() {
 do_configure() {
     set -x
 
-    mender_rootfsa_part=$(get_part_number_from_device ${MENDER_ROOTFS_PART_A})
-    mender_rootfsb_part=$(get_part_number_from_device ${MENDER_ROOTFS_PART_B})
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+        mender_rootfsa_part=${MENDER_ROOTFS_PART_A_NUMBER}
+        mender_rootfsb_part=${MENDER_ROOTFS_PART_B_NUMBER}
+    else
+        mender_rootfsa_part=$(get_part_number_from_device ${MENDER_ROOTFS_PART_A})
+        mender_rootfsb_part=$(get_part_number_from_device ${MENDER_ROOTFS_PART_B})
+    fi
+
     if [ -n "${MENDER_GRUB_STORAGE_DEVICE}" ]; then
         mender_grub_storage_device=${MENDER_GRUB_STORAGE_DEVICE}
+    elif ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+        bbfatal "MENDER_GRUB_STORAGE_DEVICE is required for mender-partuuid"
     else
         mender_grub_storage_device=$(get_grub_device_from_device_base ${MENDER_STORAGE_DEVICE_BASE})
     fi
@@ -59,6 +67,15 @@ mender_kernel_root_base=${MENDER_STORAGE_DEVICE_BASE}
 mender_grub_storage_device=$mender_grub_storage_device
 kernel_imagetype=${KERNEL_IMAGETYPE}
 EOF
+
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+        mender_rootfsa_uuid=${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_A}')}
+        mender_rootfsb_uuid=${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_B}')}
+        cat >> ${B}/mender_grubenv_defines <<EOF
+mender_rootfsa_uuid=$mender_rootfsa_uuid
+mender_rootfsb_uuid=$mender_rootfsb_uuid
+EOF
+    fi
 
     if [ -n "${KERNEL_DEVICETREE}" ]; then
         MENDER_DTB_NAME=$(mender_get_clean_kernel_devicetree)
