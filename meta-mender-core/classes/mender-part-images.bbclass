@@ -249,6 +249,17 @@ _MENDER_PART_IMAGE_DEPENDS = " \
     mtools-native:do_populate_sysroot \
 "
 
+
+# This is needed because by default 'mender-grub' feature is used on ARM, but
+# it still uses U-boot as an EFI provider/launcher and requires it to be
+# present. We can not add this to '_append_mender-grub' because this is also
+# used by x86 based devices which normally do not use U-boot.
+#
+# This assumes that U-boot is used on ARM, this could become problematic
+# if we add support for other bootloaders on ARM, e.g Barebox.
+_MENDER_PART_IMAGE_DEPENDS_append_arm =     " u-boot:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS_append_aarch64 = " u-boot:do_deploy"
+
 _MENDER_PART_IMAGE_DEPENDS_append_mender-uboot = " u-boot:do_deploy"
 _MENDER_PART_IMAGE_DEPENDS_append_mender-grub = " grub-efi:do_deploy"
 _MENDER_PART_IMAGE_DEPENDS_append_mender-grub_mender-bios = " grub:do_deploy"
