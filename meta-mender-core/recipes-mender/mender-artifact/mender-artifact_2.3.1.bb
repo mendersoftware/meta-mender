@@ -8,14 +8,14 @@ require mender-artifact.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=2.4.x"
+SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=2.3.x"
 
-# Tag: 2.4.0b1
-SRCREV = "1bedfca0cd74246b5c4bc8f3015c48dc34bbf1dc"
+# Tag: 2.3.1
+SRCREV = "03d2e84786c16225fdf5813630a23cc2f76ace39"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
-DEFAULT_PREFERENCE = "-1"
+#DEFAULT_PREFERENCE = "-1"
 
 ################################################################################
 
