@@ -41,6 +41,13 @@ IMAGE_NAME_SUFFIX = ""
 # Block storage
 ################################################################################
 
+def mender_wic_exclude_path_options(exclude_path):
+    exclude_path = exclude_path.strip()
+    if exclude_path:
+        return "--exclude-path %s" % exclude_path
+    else:
+        return ""
+
 mender_part_image() {
     suffix="$1"
     part_type="$2"
@@ -110,11 +117,11 @@ part $boot_part_params --ondisk "$ondisk_dev" --fstype=vfat --label boot --align
 EOF
     fi
 
-    exclude_dirs_options="${@" ".join(["--exclude-path %s" % dir for dir in (d.getVar("IMAGE_ROOTFS_EXCLUDE_PATH") or "").split()])}"
+    exclude_path_options="${@mender_wic_exclude_path_options('${IMAGE_ROOTFS_EXCLUDE_PATH}')}"
 
     cat >> "$wks" <<EOF
-part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_dirs_options
-part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_dirs_options
+part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_path_options
+part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_path_options
 part --source rootfs --rootfs-dir ${IMAGE_ROOTFS}/data --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label data --align $alignment_kb --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 bootloader --ptable $part_type
 EOF
