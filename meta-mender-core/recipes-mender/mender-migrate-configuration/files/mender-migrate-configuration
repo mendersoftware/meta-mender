@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# A simple shell script that helps migrating customers on the old setup
+# with a single mender.conf file. The new setup will keep a persistent
+# configuration file on the data partition, and a transient one (which
+# can be updated by a mender-update.
+
+which jq > /dev/null
+if [ "$?" -ne -"0" ]; then
+    echo "Dependency upon jq is not fullfilled."
+    exit 1
+fi
+
+# If one variable is present in MENDER_PERSISTENT_CONFIGURATION_VARS during build, but not in the mender.conf
+# file currently on the device - Fail.
+jq --exit-status '%jq-program-marker% | to_entries | .[] | .value == null | not' /etc/mender/mender.conf > /dev/null
+if [ "$?" -ne "0" ]; then
+    NON_EXISTENT_VARIABLE=$(jq '%jq-program-marker% | to_entries | .[] | select(.value == null) | .key' /etc/mender/mender.conf)
+    echo "Variable ${NON_EXISTENT_VARIABLE} was not found in /etc/mender/mender.conf"
+fi
+
+# Create the persistent configuration file from the variables set in
+# MENDER_PERSISTENT_CONFIGURATION_VARS.
+jq '%jq-program-marker%' /etc/mender/mender.conf > /data/mender/mender-persistent.conf
+sync
+mv /data/mender/mender-persistent.conf /data/mender/mender.conf
+sync
+
+# Remove the fields from the transient configuration file (/etc/mender/mender.conf),
+# that has now been moved into the persistent configuration (/data/mender/mender.conf).
+# No need to error-check here, as a missing field will simply behave like an identity transformation.
+jq 'del(%jq-delete-fields-marker%)' /etc/mender/mender.conf > mender-transient.conf
+sync
+mv mender-transient.conf /etc/mender/mender.conf
+sync
