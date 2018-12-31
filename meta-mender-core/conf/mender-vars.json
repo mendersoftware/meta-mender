@@ -12,7 +12,7 @@
      "regular expression syntax with the value provided", 
      "in current build; furthermore if a value is a list", 
      "of regular expressions, each value is checked for", 
-     "existance in the variable in current build", 
+     "existence in the variable in current build",
      "For example: we can issue a warning if user does",
      "not include mender-uboot and mender-install",
      "if we give the following definition below:", 
@@ -124,5 +124,7 @@
     "MENDER_UBOOT_STORAGE_DEVICE_DEFAULT": "",
     "MENDER_UBOOT_STORAGE_INTERFACE": "",
     "MENDER_UBOOT_STORAGE_INTERFACE_DEFAULT": "",
-    "MENDER_UPDATE_POLL_INTERVAL_SECONDS": ""
+    "MENDER_UPDATE_POLL_INTERVAL_SECONDS": "",
+    "MENDER_CONFIGURATION_VARS": "",
+    "MENDER_PERSISTENT_CONFIGURATION_VARS": ""
 }

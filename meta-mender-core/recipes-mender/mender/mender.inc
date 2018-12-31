@@ -30,6 +30,7 @@ SYSTEMD_SERVICE_${PN} = "mender.service"
 FILES_${PN} += "${systemd_unitdir}/system/mender.service \
                 ${sysconfdir}/mender.conf \
                 /data/mender/device_type \
+                /data/mender/mender.conf \
                "
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
@@ -46,6 +47,11 @@ PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-grub', '
 PACKAGECONFIG[mender-install] = ",,,mender-artifact-info ca-certificates"
 PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
 PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
+
+# NOTE: Splits the mender.conf file by default into a transient and a persistent config. Needs to be
+# explicitly disabled if this is not to apply.
+PACKAGECONFIG[split-mender-config] = ",,,"
+PACKAGECONFIG_append = " split-mender-config"
 
 do_compile() {
     GOPATH="${B}:${S}"
@@ -84,12 +90,11 @@ python do_prepare_mender_conf() {
     if os.path.exists(src_conf):
         bb.debug(1, "mender.conf already present in ${WORKDIR}, merging with generated settings.")
         fd = open(src_conf)
-        conf = json.load(fd)
+        transient_conf = json.load(fd)
         fd.close()
     else:
         bb.debug(1, "mender.conf not present in ${WORKDIR}, generating a new one.")
-        conf = {}
-
+        transient_conf = {}
     def conf_maybe_add(key, value, getvar, integer):
         if getvar:
             warn_str = "variable '%s'" % value
@@ -97,12 +102,12 @@ python do_prepare_mender_conf() {
         else:
             warn_str = "automatically provided settings"
         if value is not None and value != "":
-            if conf.get(key) is not None and conf[key] != value:
+            if transient_conf.get(key) is not None and transient_conf[key] != value:
                 bb.warn("Configuration key '%s', found in mender.conf, conflicts with %s. Choosing the latter." % (key, warn_str))
             if integer:
-                conf[key] = int(value)
+                transient_conf[key] = int(value)
             else:
-                conf[key] = value
+                transient_conf[key] = value
 
     key_in_src_uri = os.path.exists(os.path.join(d.getVar("WORKDIR"), "artifact-verify-key.pem"))
     key_in_var = d.getVar("MENDER_ARTIFACT_VERIFY_KEY") not in [None, ""]
@@ -122,10 +127,32 @@ python do_prepare_mender_conf() {
     # Tenant-token is optional, but falls back to a default-value set in config.go
     conf_maybe_add("TenantToken", "MENDER_TENANT_TOKEN", getvar=True, integer=False)
 
-    dst_conf = os.path.join(d.getVar("B"), "mender.conf")
+    # Filter returns the variables that are present in both instances.
+    # Thus no misspelled variables will ever enter the persistent configuration during migration.
+    persistent_configs = bb.utils.filter("MENDER_PERSISTENT_CONFIGURATION_VARS", d.getVar("MENDER_CONFIGURATION_VARS"), d)
+
+    persistent_conf = {}
+
+    # Extract the variables that are destined for the persistent mender-configuration.
+    if bb.utils.contains('PACKAGECONFIG', 'split-mender-config', True, False, d):
+        for config_var in transient_conf:
+            if config_var in persistent_configs:
+                persistent_conf[config_var] = transient_conf[config_var]
+
+        # Remove the configurations from the transient conf that are already in the persistent configuration.
+        for config_var in persistent_conf:
+            del transient_conf[config_var]
+
+        dst_conf = os.path.join(d.getVar("B"), "persistent_mender.conf")
+        fd = open(dst_conf, "w")
+        json.dump(persistent_conf, fd, indent=4, sort_keys=True)
+        fd.close()
+
+    dst_conf = os.path.join(d.getVar("B"), "transient_mender.conf")
     fd = open(dst_conf, "w")
-    json.dump(conf, fd, indent=4, sort_keys=True)
+    json.dump(transient_conf, fd, indent=4, sort_keys=True)
     fd.close()
+
 }
 addtask do_prepare_mender_conf after do_compile before do_install
 do_prepare_mender_conf[vardeps] = " \
@@ -138,6 +165,7 @@ do_prepare_mender_conf[vardeps] = " \
     MENDER_SERVER_URL \
     MENDER_TENANT_TOKEN \
     MENDER_UPDATE_POLL_INTERVAL_SECONDS \
+    MENDER_PERSISTENT_CONFIGURATION_VARS \
 "
 
 do_install() {
@@ -171,7 +199,13 @@ do_install() {
 
     #install configuration
     install -d ${D}/${sysconfdir}/mender
-    install -m 0644 ${B}/mender.conf ${D}/${sysconfdir}/mender
+    install -d ${D}/data/mender
+    if [ -f ${B}/transient_mender.conf ]; then
+        install -m 0644 ${B}/transient_mender.conf ${D}/${sysconfdir}/mender/mender.conf
+    fi
+    if [ -f ${B}/persistent_mender.conf ]; then
+        install -m 0644 ${B}/persistent_mender.conf ${D}/data/mender/mender.conf
+    fi
 
     #install server certificate
     if [ -f ${WORKDIR}/server.crt ]; then
