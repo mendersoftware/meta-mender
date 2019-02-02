@@ -12,6 +12,7 @@ _MENDER_EFI_BOOT_FILE = ""
 _MENDER_EFI_BOOT_FILE_mender-grub_arm = "grub-efi-bootarm.efi;EFI/BOOT/bootarm.efi"
 _MENDER_EFI_BOOT_FILE_mender-grub_x86 = "grub-efi-bootia32.efi;EFI/BOOT/bootia32.efi"
 _MENDER_EFI_BOOT_FILE_mender-grub_x86-64 = "grub-efi-bootx64.efi;EFI/BOOT/bootx64.efi"
+_MENDER_EFI_BOOT_FILE_mender-grub_aarch64 = "grub-efi-bootaa64.efi;EFI/BOOT/bootaa64.efi"
 _MENDER_EFI_BOOT_FILE_mender-grub_mender-bios = ""
 
 # We want to use upstream grub variants if possible. However, we have recipes
