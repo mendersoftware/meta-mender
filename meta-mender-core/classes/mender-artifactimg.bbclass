@@ -13,6 +13,9 @@ do_image_mender[depends] += "mender-artifact-native:do_populate_sysroot"
 ARTIFACTIMG_FSTYPE ??= "${ARTIFACTIMG_FSTYPE_DEFAULT}"
 ARTIFACTIMG_FSTYPE_DEFAULT = "ext4"
 
+ARTIFACTIMG_NAME ??= "${ARTIFACTIMG_NAME_DEFAULT}"
+ARTIFACTIMG_NAME_DEFAULT = "${IMAGE_LINK_NAME}"
+
 IMAGE_CMD_mender () {
     set -x
 
@@ -20,7 +23,7 @@ IMAGE_CMD_mender () {
         bbfatal "Need to define MENDER_ARTIFACT_NAME variable."
     fi
 
-    rootfs_size=$(stat -Lc %s ${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE})
+    rootfs_size=$(stat -Lc %s ${IMGDEPLOYDIR}/${ARTIFACTIMG_NAME}.${ARTIFACTIMG_FSTYPE})
     calc_rootfs_size=$(expr ${MENDER_CALC_ROOTFS_SIZE} \* 1024)
     if [ $rootfs_size -gt $calc_rootfs_size ]; then
         bbfatal "Size of rootfs is greater than the calculated partition space ($rootfs_size > $calc_rootfs_size). This image won't fit on a device with the current storage configuration. Try reducing IMAGE_OVERHEAD_FACTOR if it is higher than 1.0, or raise MENDER_STORAGE_TOTAL_SIZE_MB if the device in fact has more storage."
@@ -47,7 +50,7 @@ IMAGE_CMD_mender () {
     mender-artifact write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} \
         $extra_args \
-        -u ${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE} \
+        -u ${IMGDEPLOYDIR}/${ARTIFACTIMG_NAME}.${ARTIFACTIMG_FSTYPE} \
         ${MENDER_ARTIFACT_EXTRA_ARGS} \
         -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender
 }
