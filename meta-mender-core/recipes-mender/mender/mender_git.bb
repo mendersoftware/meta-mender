@@ -57,6 +57,11 @@ def mender_license(branch):
                    "md5": "13741fb0210ea8a11a3e8e0247c9429c",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
+    elif branch == "1.7.x":
+        return {
+                   "md5": "5632b9f17043c6f5f532501778595c78",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+        }
     else:
         return {
                    "md5": "08bde78aa3411d357cefdcc4799f026b",
