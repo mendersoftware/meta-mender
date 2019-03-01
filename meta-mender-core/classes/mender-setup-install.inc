@@ -14,12 +14,13 @@ def mender_get_part_overhead_kb(d):
 MENDER_PARTITIONING_OVERHEAD_KB ??= "${MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT}"
 MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT = "${@mender_get_part_overhead_kb(d)}"
 
-def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, alignment, overhead_kb, reserved_space_size):
+def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, swap_mb, alignment, overhead_kb, reserved_space_size):
     import math
 
     # Space used by each of the partitions, aligned to partition alignment
     calc_space = math.ceil(boot_mb * 1048576 / alignment) * alignment
     calc_space += math.ceil(data_mb * 1048576 / alignment) * alignment
+    calc_space += math.ceil(swap_mb * 1048576 / alignment) * alignment
 
     # Remaining space after partitions and overhead are subtracted.
     calc_space = total_mb * 1048576 - calc_space - overhead_kb * 1024
@@ -42,6 +43,7 @@ def mender_calculate_rootfs_size_kb(total_mb, boot_mb, data_mb, alignment, overh
 MENDER_CALC_ROOTFS_SIZE = "${@mender_calculate_rootfs_size_kb(${MENDER_STORAGE_TOTAL_SIZE_MB}, \
                                                               ${MENDER_BOOT_PART_SIZE_MB}, \
                                                               ${MENDER_DATA_PART_SIZE_MB}, \
+                                                              ${MENDER_SWAP_PART_SIZE_MB}, \
                                                               ${MENDER_PARTITION_ALIGNMENT}, \
                                                               ${MENDER_PARTITIONING_OVERHEAD_KB}, \
                                                               ${MENDER_RESERVED_SPACE_BOOTLOADER_DATA})}"

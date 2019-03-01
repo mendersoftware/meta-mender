@@ -52,7 +52,7 @@ MENDER_ROOTFS_PART_B_NAME_DEFAULT = "${MENDER_ROOTFS_PART_B}"
 
 # The partition number holding the data partition.
 MENDER_DATA_PART_NUMBER ??= "${MENDER_DATA_PART_NUMBER_DEFAULT}"
-MENDER_DATA_PART_NUMBER_DEFAULT = "${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '3', '4', d)}"
+MENDER_DATA_PART_NUMBER_DEFAULT = "${@mender_get_data_part_num(d)}"
 
 # The string path of the the data partition.
 MENDER_DATA_PART ??= "${MENDER_DATA_PART_DEFAULT}"
@@ -91,6 +91,10 @@ MENDER_STORAGE_TOTAL_SIZE_MB_DEFAULT ?= "1024"
 # Size of the data partition, which is preserved across updates.
 MENDER_DATA_PART_SIZE_MB ??= "${MENDER_DATA_PART_SIZE_MB_DEFAULT}"
 MENDER_DATA_PART_SIZE_MB_DEFAULT = "128"
+
+# Size of the swap partition, zero means not required
+MENDER_SWAP_PART_SIZE_MB ??= "${MENDER_SWAP_PART_SIZE_MB_DEFAULT}"
+MENDER_SWAP_PART_SIZE_MB_DEFAULT = "0"
 
 # Size of the first (FAT) partition, that contains the bootloader
 MENDER_BOOT_PART_SIZE_MB ??= "${MENDER_BOOT_PART_SIZE_MB_DEFAULT}"

@@ -166,9 +166,19 @@ EOF
     cat >> "$wks" <<EOF
 part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_path_options
 part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_path_options
+EOF
+
+    if [ "${MENDER_SWAP_PART_SIZE_MB}" -ne "0" ]; then
+        cat >> "$wks" <<EOF
+part swap --ondisk "$ondisk_dev" --fstype=swap --label swap --align $alignment_kb --size ${MENDER_SWAP_PART_SIZE_MB}
+EOF
+    fi
+
+    cat >> "$wks" <<EOF
 part --source rootfs --rootfs-dir ${IMAGE_ROOTFS}/data --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label data --align $alignment_kb --fixed-size ${MENDER_DATA_PART_SIZE_MB}
 bootloader --ptable $part_type
 EOF
+
 
     echo "### Contents of wks file ###"
     cat "$wks"

@@ -227,3 +227,21 @@ mender_get_clean_kernel_devicetree() {
     # Return.
     echo "$MENDER_DTB_NAME"
 }
+
+
+def mender_is_msdos_ptable_image(d):
+    mptimgs = 'mender-image-sd mender-image-bios'
+    return bb.utils.contains_any('MENDER_FEATURES_ENABLE', mptimgs , True, False, d)
+
+
+def mender_get_data_part_num(d):
+    n = 3
+    boot_part_size = d.getVar('MENDER_BOOT_PART_SIZE_MB')
+    swap_part_size = d.getVar('MENDER_SWAP_PART_SIZE_MB')
+    if (boot_part_size and boot_part_size != '0'): n += 1
+    if (swap_part_size and swap_part_size != '0'): n += 1
+
+    #is an msdos extended partion going to be required
+    if n <= 4: return n
+    if mender_is_msdos_ptable_image(d): n += 1
+    return n
