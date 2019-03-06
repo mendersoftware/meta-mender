@@ -422,6 +422,23 @@ def versions_of_recipe(recipe):
             versions.append(match.group(1))
     return versions
 
+def version_is_minimum(bitbake_variables, component, min_version):
+    version = bitbake_variables.get('PREFERRED_VERSION_pn-%s' % component)
+    if version is None:
+        version = bitbake_variables.get('PREFERRED_VERSION_%s' % component)
+    if version is None:
+        version = "master"
+    try:
+        if LooseVersion(min_version) > LooseVersion(version):
+            return False
+        else:
+            return True
+    except TypeError:
+        # Type error indicates that 'version' is likely a string (branch
+        # name). For now we just default to always consider them higher than the
+        # minimum version.
+        return True
+
 @contextmanager
 def make_tempdir(delete=True):
     """context manager for temporary directories"""
