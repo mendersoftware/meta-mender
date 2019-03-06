@@ -88,6 +88,20 @@ class Helpers:
         # Flip lowest bit.
         fd.write("%c" % (middle_byte ^ 0x1))
 
+    @staticmethod
+    def get_file_flag(bitbake_variables):
+        if version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"):
+            return "-f"
+        else:
+            return "-u"
+
+    @staticmethod
+    def get_install_flag(bitbake_variables):
+        if version_is_minimum(bitbake_variables, "mender", "2.0.0"):
+            return "-install"
+        else:
+            return "-rootfs"
+
 class SignatureCase:
     label = ""
     signature = False
@@ -133,6 +147,8 @@ class TestUpdates:
             execute(self.test_broken_image_update, bitbake_variables)
             return
 
+        file_flag = Helpers.get_file_flag(bitbake_variables)
+        install_flag = Helpers.get_install_flag(bitbake_variables)
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
         image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
@@ -140,9 +156,10 @@ class TestUpdates:
         try:
             # Make a dummy/broken update
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
-            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
+            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update %s image.dat -o image.mender"
+                            % (image_type, file_flag), shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
-            run("mender -rootfs /var/tmp/image.mender -f")
+            run("mender %s /var/tmp/image.mender" % install_flag)
             reboot()
 
             # Now qemu is auto-rebooted twice; once to boot the dummy image,
@@ -168,14 +185,17 @@ class TestUpdates:
             execute(self.test_too_big_image_update, bitbake_variables)
             return
 
+        file_flag = Helpers.get_file_flag(bitbake_variables)
+        install_flag = Helpers.get_install_flag(bitbake_variables)
         image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         try:
             # Make a too big update
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=1024", shell=True)
-            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update-too-big -u image.dat -o image-too-big.mender" % image_type, shell=True)
+            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update-too-big %s image.dat -o image-too-big.mender"
+                            % (image_type, file_flag), shell=True)
             put("image-too-big.mender", remote_path="/var/tmp/image-too-big.mender")
-            output = run("mender -rootfs /var/tmp/image-too-big.mender -f ; echo 'ret_code=$?'")
+            output = run("mender %s /var/tmp/image-too-big.mender ; echo 'ret_code=$?'" % install_flag)
 
             assert(output.find("no space left on device") >= 0)
             assert(output.find("ret_code=0") < 0)
@@ -196,6 +216,7 @@ class TestUpdates:
             execute(self.test_network_based_image_update, successful_image_update_mender, bitbake_variables)
             return
 
+        install_flag = Helpers.get_install_flag(bitbake_variables)
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
         http_server = None
@@ -208,7 +229,7 @@ class TestUpdates:
             assert(http_server)
 
         try:
-            output = run("mender -rootfs http://%s/successful_image_update.mender -f" % (http_server_location))
+            output = run("mender %s http://%s/successful_image_update.mender" % (install_flag, http_server_location))
             print("output from rootfs update: ", output)
         finally:
             if http_server:
@@ -428,6 +449,9 @@ class TestUpdates:
             execute(self.test_signed_updates, sig_case, bitbake_path, bitbake_variables)
             return
 
+        file_flag = Helpers.get_file_flag(bitbake_variables)
+        install_flag = Helpers.get_install_flag(bitbake_variables)
+
         # mmc mount points are named: /dev/mmcblk0p1
         # ubi volumes are named: ubi0_1
         (active, passive) = determine_active_passive_part(bitbake_variables)
@@ -462,8 +486,8 @@ class TestUpdates:
 
         image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
-        subprocess.check_call("mender-artifact write rootfs-image %s -t %s -n test-update -u image.dat -o image.mender"
-                              % (artifact_args, image_type), shell=True)
+        subprocess.check_call("mender-artifact write rootfs-image %s -t %s -n test-update %s image.dat -o image.mender"
+                              % (artifact_args, image_type, file_flag), shell=True)
 
         # If instructed to, corrupt the signature and/or checksum.
         if (sig_case.signature and not sig_case.signature_ok) or not sig_case.checksum_ok or not sig_case.header_checksum_ok:
@@ -554,7 +578,7 @@ class TestUpdates:
                 run('echo "%s" | dd of=%s' % (old_content, passive))
 
             with settings(warn_only=True):
-                result = run("mender -rootfs image.mender -f")
+                result = run("mender %s image.mender" % install_flag)
 
             if sig_case.success:
                 if result.return_code != 0:
@@ -646,6 +670,9 @@ class TestUpdates:
             (active, passive) = determine_active_passive_part(bitbake_variables)
             assert(active == bitbake_variables["MENDER_ROOTFS_PART_B"])
 
+        file_flag = Helpers.get_file_flag(bitbake_variables)
+        install_flag = Helpers.get_install_flag(bitbake_variables)
+
         # Make a note of the checksums of each environment. We use this later to
         # determine which one changed.
         old_checksums = Helpers.get_env_checksums(bitbake_variables)
@@ -657,9 +684,10 @@ class TestUpdates:
         try:
             # Make a dummy/broken update
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
-            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
+            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update %s image.dat -o image.mender"
+                            % (image_type, file_flag), shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
-            run("mender -rootfs /var/tmp/image.mender -f")
+            run("mender %s /var/tmp/image.mender" % install_flag)
 
             new_checksums = Helpers.get_env_checksums(bitbake_variables)
 
@@ -769,12 +797,15 @@ class TestUpdates:
             execute(self.test_uboot_mender_saveenv_canary, bitbake_variables)
             return
 
+        file_flag = Helpers.get_file_flag(bitbake_variables)
+        install_flag = Helpers.get_install_flag(bitbake_variables)
         image_type = bitbake_variables["MACHINE"]
 
         try:
             # Make a dummy/broken update
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
-            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update -u image.dat -o image.mender" % image_type, shell=True)
+            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update %s image.dat -o image.mender"
+                            % (image_type, file_flag), shell=True)
             put("image.mender", remote_path="/var/tmp/image.mender")
 
             # Zero the environment, causing the fw-utils to use their built in
@@ -790,7 +821,7 @@ class TestUpdates:
                     % (entry[0], int(entry[1], 0), int(entry[2], 0)))
 
             try:
-                output = run("mender -rootfs /var/tmp/image.mender -f")
+                output = run("mender %s /var/tmp/image.mender", install_flag)
                 pytest.fail("Update succeeded when canary was not present!")
             except:
                 output = run("fw_printenv upgrade_available")
