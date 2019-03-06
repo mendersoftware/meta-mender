@@ -206,3 +206,23 @@ mender_get_clean_kernel_devicetree() {
     # Return.
     echo "$MENDER_DTB_NAME"
 }
+
+
+def mender_version_is_minimum(d, component, min_version, if_true, if_false):
+    from distutils.version import LooseVersion
+
+    version = d.getVar('PREFERRED_VERSION_pn-%s' % component)
+    if not version:
+        version = d.getVar('PREFERRED_VERSION_%s' % component)
+    if not version:
+        version = "master"
+    try:
+        if LooseVersion(min_version) > LooseVersion(version):
+            return if_false
+        else:
+            return if_true
+    except TypeError:
+        # Type error indicates that 'version' is likely a string (branch
+        # name). For now we just default to always consider them higher than the
+        # minimum version.
+        return if_true
