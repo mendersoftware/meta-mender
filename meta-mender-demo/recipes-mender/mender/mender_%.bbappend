@@ -6,6 +6,8 @@ MENDER_UPDATE_POLL_INTERVAL_SECONDS = "5"
 MENDER_INVENTORY_POLL_INTERVAL_SECONDS = "5"
 MENDER_RETRY_POLL_INTERVAL_SECONDS = "30"
 
+PACKAGECONFIG_append = " modules"
+
 do_compile_prepend() {
   bbwarn "You are building with the mender-demo layer, which is not intended for production use"
 }
