@@ -21,9 +21,6 @@ B = "${WORKDIR}/build"
 
 inherit go
 
-SRC_URI_append = " file://mender.service \
-                 "
-
 inherit systemd
 
 SYSTEMD_SERVICE_${PN} = "mender.service"
@@ -46,6 +43,10 @@ PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-grub', '
 PACKAGECONFIG[mender-install] = ",,,mender-artifact-info ca-certificates"
 PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
 PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
+# The docker module depends on bash, and of course on docker. However, docker is
+# a very large requirement, which we will not mandate. Bash however, we require,
+# because otherwise the Yocto QA checks will complain.
+PACKAGECONFIG[modules] = ",,,bash"
 
 do_compile() {
     GOPATH="${B}:${S}"
@@ -70,7 +71,7 @@ do_compile() {
     cd ${B}/src/${GO_IMPORT}
 
     # run verbose build, we should see which dependencies are pulled in
-    oe_runmake V=1 install
+    oe_runmake V=1
 
     echo "device_type=${MENDER_DEVICE_TYPE}" > ${B}/device_type
 }
@@ -141,35 +142,21 @@ do_prepare_mender_conf[vardeps] = " \
 "
 
 do_install() {
-    install -d ${D}/${bindir}
+    oe_runmake \
+        -C ${B}/src/${GO_IMPORT} \
+        V=1 \
+        prefix=${D} \
+        bindir=${bindir} \
+        datadir=${datadir} \
+        sysconfdir=${sysconfdir} \
+        systemd_unitdir=${systemd_unitdir} \
+        install-bin \
+        install-identity-scripts \
+        install-inventory-scripts \
+        install-systemd \
+        ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
 
-    GOOS=$(eval $(${GO} env) && echo $GOOS)
-    GOARCH=$(eval $(${GO} env) && echo $GOARCH)
-    if [ "${BUILD_ARCH}" = "${HOST_ARCH}" ]; then
-        BUILD_BIN_FOLDER=${B}/bin
-    else
-        BUILD_BIN_FOLDER=${B}/bin/${GOOS}_${GOARCH}
-    fi
-    # mender is picked up from our fake GOPATH=${B}/bin; because go build is so
-    # consistent, if it's a cross compilation build, binaries will be in
-    # ${GOPATH}/bin/${GOOS}_${GOARCH}, howver if it's not, the binaries are in
-    # ${GOPATH}/bin; handle cross compiled case only
-    install -t ${D}/${bindir} -m 0755 \
-            ${BUILD_BIN_FOLDER}/mender
-
-    install -d ${D}/${datadir}/mender/identity
-    install -t ${D}/${datadir}/mender/identity -m 0755 \
-            ${S}/src/${GO_IMPORT}/support/mender-device-identity
-
-    # install example inventory tools
-    install -d ${D}/${datadir}/mender/inventory
-    install -t ${D}/${datadir}/mender/inventory -m 0755 \
-            ${S}/src/${GO_IMPORT}/support/mender-inventory-*
-
-    install -d ${D}/${systemd_unitdir}/system
-    install -m 0644 ${WORKDIR}/mender.service ${D}/${systemd_unitdir}/system
-
-    #install configuration
+    #install our prepared configuration
     install -d ${D}/${sysconfdir}/mender
     install -m 0644 ${B}/mender.conf ${D}/${sysconfdir}/mender
 
