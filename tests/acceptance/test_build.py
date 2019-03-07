@@ -437,3 +437,33 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 pass
         finally:
             os.remove("img1.fs")
+
+    @pytest.mark.only_with_image('sdimg', 'uefiimg')
+    @pytest.mark.min_mender_version('2.0.0')
+    def test_module_install(self, prepared_test_build, bitbake_path, latest_rootfs):
+        mender_vars = get_bitbake_variables("mender")
+        if "modules" in mender_vars['PACKAGECONFIG'].split():
+            originally_on = True
+        else:
+            originally_on = False
+
+        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender", latest_rootfs])
+        entries = [elem.split('/')[5] for elem in output.split('\n') if elem.startswith('/')]
+
+        if originally_on:
+            assert "modules" in entries
+            add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_remove = "modules"')
+        else:
+            assert "modules" not in entries
+            add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_append = " modules"')
+        run_bitbake(prepared_test_build)
+
+        new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")
+
+        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender", new_rootfs])
+        entries = [elem.split('/')[5] for elem in output.split('\n') if elem.startswith('/')]
+
+        if originally_on:
+            assert "modules" not in entries
+        else:
+            assert "modules" in entries
