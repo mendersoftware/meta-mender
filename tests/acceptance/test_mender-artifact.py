@@ -31,7 +31,7 @@ from common import *
 LAST_BUILD_VERSION = None
 
 # params is the versions we will test.
-@pytest.fixture(scope="function", params=[1, 2])
+@pytest.fixture(scope="function", params=[1, 2, 3])
 def versioned_mender_image(request, prepared_test_build, latest_mender_image):
     """Gets the correct version of the artifact, whether it's the one we
     build by default, or one we have to produce ourselves.
@@ -41,7 +41,7 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image):
 
     version = request.param
 
-    if version is 2:
+    if version is 3:
         # It's default, so skip the extra build.
         return (version, latest_mender_image)
 
@@ -107,7 +107,7 @@ class TestMenderArtifact:
             line = line.rstrip('\n\r')
             if line_no == 1:
                 assert(line == "header-info")
-            elif line_no == 2:
+            elif line_no == 2 and version < 3:
                 assert(line == "headers/0000/files")
 
             elif line == "headers/0000/type-info":
