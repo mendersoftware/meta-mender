@@ -28,6 +28,10 @@ FILES_${PN} += "${systemd_unitdir}/system/mender.service \
                 ${sysconfdir}/mender.conf \
                "
 
+SRC_URI_append_mender-image_mender-systemd = " file://mender-data-dir.service"
+FILES_${PN}_append_mender-image_mender-systemd = " ${systemd_unitdir}/system/mender-data-dir.service \
+                                                   ${systemd_unitdir}/system/mender.service.wants/mender-data-dir.service"
+
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
 # like. We disable those checks here.
 INSANE_SKIP_${PN} = "ldflags"
@@ -179,4 +183,10 @@ do_install() {
         rm -rf ${D}/${localstatedir}/lib/mender
         ln -s /data/mender ${D}/${localstatedir}/lib/mender
     fi
+}
+
+do_install_append_mender-image_mender-systemd() {
+    install -m 644 ${WORKDIR}/mender-data-dir.service ${D}${systemd_unitdir}/system/
+    install -d -m 755 ${D}${systemd_unitdir}/system/mender.service.wants
+    ln -sf ../mender-data-dir.service ${D}${systemd_unitdir}/system/mender.service.wants/
 }
