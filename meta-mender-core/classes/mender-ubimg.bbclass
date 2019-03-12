@@ -72,7 +72,7 @@ vol_name=rootfsb
 
 [data]
 mode=ubi
-image=${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg
+image=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.dataimg
 vol_id=2
 vol_size=${MENDER_DATA_PART_SIZE_MB}MiB
 vol_type=dynamic
