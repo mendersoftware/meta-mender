@@ -287,7 +287,7 @@ class TestBuild:
             run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'], recipe))
 
     @pytest.mark.min_mender_version('1.1.0')
-    def test_multiple_device_types_compatible(self, prepared_test_build, bitbake_path):
+    def test_multiple_device_types_compatible(self, prepared_test_build, bitbake_path, bitbake_variables):
         """Tests that we can include multiple device_types in the artifact."""
 
         add_to_local_conf(prepared_test_build, 'MENDER_DEVICE_TYPES_COMPATIBLE = "machine1 machine2"')
@@ -300,7 +300,10 @@ class TestBuild:
 
         output = subprocess.check_output("tar xOf %s header.tar.gz | tar xOz header-info" % image, shell=True)
         data = json.loads(output)
-        assert data["device_types_compatible"] == ["machine1", "machine2"]
+        if version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"):
+            assert data["artifact_depends"]["device_type"] == ["machine1", "machine2"]
+        else:
+            assert data["device_types_compatible"] == ["machine1", "machine2"]
 
     @pytest.mark.only_with_image('sdimg', 'uefiimg')
     @pytest.mark.min_mender_version('1.0.0')
