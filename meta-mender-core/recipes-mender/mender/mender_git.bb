@@ -1,5 +1,4 @@
 require mender.inc
-require mender-old-makefile.inc
 
 DEPENDS = "xz"
 RDEPENDS_${PN} = "liblzma"
