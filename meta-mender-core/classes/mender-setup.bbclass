@@ -62,11 +62,28 @@ MENDER_DATA_PART_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${MENDER_DATA_PART_NUMB
 MENDER_MTD_UBI_DEVICE_NAME ??= "${MENDER_MTD_UBI_DEVICE_NAME_DEFAULT}"
 MENDER_MTD_UBI_DEVICE_NAME_DEFAULT = ""
 
-# Filesystem type of data partition. This configuration is used in fstab. Most
-# filesystems can be auto detected, but some can not and hence we allow the
-# user to override this.
+# Filesystem type of data partition. Used for both FS generation and fstab construction
+# Leave as default (auto) to generate a partition using the same Filesystem as 
+# the rootfs ($ARTIFACTIMG_FSTYPE) and set the fstab to auto-detect the partition type
+# Set to a known filesystem to generate the partition using that type
 MENDER_DATA_PART_FSTYPE ??= "${MENDER_DATA_PART_FSTYPE_DEFAULT}"
 MENDER_DATA_PART_FSTYPE_DEFAULT = "auto"
+
+# Filesystem type of data partition to generate. Used only for FS generation
+# Typically you'll be best off setting MENDER_DATA_PART_FSTYPE instead
+MENDER_DATA_PART_FSTYPE_TO_GEN ??= "${MENDER_DATA_PART_FSTYPE_TO_GEN_DEFAULT}"
+MENDER_DATA_PART_FSTYPE_TO_GEN_DEFAULT = "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE', 'auto', '${ARTIFACTIMG_FSTYPE}', '${MENDER_DATA_PART_FSTYPE}', d)}"
+
+# Set the fstab options for mounting the data partition
+MENDER_DATA_PART_FSTAB_OPTS ??= "${MENDER_DATA_PART_FSTAB_OPTS_DEFAULT}"
+MENDER_DATA_PART_FSTAB_OPTS_DEFAULT = "defaults"
+
+# Set any extra options for creating the data partition
+MENDER_DATA_PART_FSOPTS ??= "${MENDER_DATA_PART_FSOPTS_DEFAULT}"
+MENDER_DATA_PART_FSOPTS_DEFAULT = ""
+
+# Filesystem type of boot partition, used for fstab construction.
+# Typically the default (auto) will work fine
 MENDER_BOOT_PART_FSTYPE ??= "${MENDER_BOOT_PART_FSTYPE_DEFAULT}"
 MENDER_BOOT_PART_FSTYPE_DEFAULT = "auto"
 

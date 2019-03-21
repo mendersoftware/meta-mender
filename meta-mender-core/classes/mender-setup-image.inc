@@ -43,7 +43,7 @@ mender_update_fstab_file() {
     fi
 
     mkdir -p ${IMAGE_ROOTFS}/data
-    printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpDataPart} /data ${MENDER_DATA_PART_FSTYPE} defaults 0 0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpDataPart} /data ${MENDER_DATA_PART_FSTYPE} ${MENDER_DATA_PART_FSTAB_OPTS} 0 0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
 }
 
 # Setup state script version file.
