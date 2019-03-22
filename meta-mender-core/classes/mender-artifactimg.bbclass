@@ -1,3 +1,5 @@
+inherit mender-helpers
+
 # ------------------------------ CONFIGURATION ---------------------------------
 
 # Extra arguments that should be passed to mender-artifact.
@@ -47,10 +49,21 @@ IMAGE_CMD_mender () {
         extra_args="$extra_args -s ${DEPLOY_DIR_IMAGE}/mender-state-scripts"
     fi
 
+    image_flag=-u
+    if ${@mender_version_is_minimum(d, "mender-artifact", "3.0.0", "true", "false")}; then
+        # There is no version 4.0.0 at this time. This was introduced as a way
+        # to keep master building while 3.0.0 is still on a branch. Revert the
+        # commit that introduced this as soon as 3.0.0 goes back to the master
+        # branch.
+        if ! ${@mender_version_is_minimum(d, "mender-artifact", "4.0.0", "true", "false")}; then
+            image_flag=-f
+        fi
+    fi
+
     mender-artifact write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} \
         $extra_args \
-        -u ${IMGDEPLOYDIR}/${ARTIFACTIMG_NAME}.${ARTIFACTIMG_FSTYPE} \
+        $image_flag ${IMGDEPLOYDIR}/${ARTIFACTIMG_NAME}.${ARTIFACTIMG_FSTYPE} \
         ${MENDER_ARTIFACT_EXTRA_ARGS} \
         -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender
 }
