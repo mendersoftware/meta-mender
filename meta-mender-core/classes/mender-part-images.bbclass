@@ -79,11 +79,20 @@ mender_part_image() {
         install -m 0644 "${DEPLOY_DIR_IMAGE}/${IMAGE_BOOTLOADER_FILE}" "${WORKDIR}/"
 
         if [ $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
-            bbfatal "IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET must be aligned to kB" \
-                    "boundary (an even number)."
+            # wic doesn't support fractions of kiB, so we need to do some tricks
+            # when we are at an odd sector: Create a new bootloader file that
+            # lacks the first 512 bytes, write that at the next even sector,
+            # which coincides with a whole kiB, and then write the missing
+            # sector manually afterwards.
+            bootloader_sector=$(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} + 1)
+            bootloader_file=${WORKDIR}/${IMAGE_BOOTLOADER_FILE}-partial
+            dd if=${WORKDIR}/${IMAGE_BOOTLOADER_FILE} of=$bootloader_file skip=1
+        else
+            bootloader_sector=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET}
+            bootloader_file=${WORKDIR}/${IMAGE_BOOTLOADER_FILE}
         fi
-        bootloader_align_kb=$(expr $(expr ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} \* 512) / 1024)
-        bootloader_size=$(stat -c '%s' "${WORKDIR}/${IMAGE_BOOTLOADER_FILE}")
+        bootloader_align_kb=$(expr $(expr $bootloader_sector \* 512) / 1024)
+        bootloader_size=$(stat -c '%s' "$bootloader_file")
         bootloader_end=$(expr $bootloader_align_kb \* 1024 + $bootloader_size)
         if [ $bootloader_end -gt ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} ]; then
             bberror "Size of bootloader specified in IMAGE_BOOTLOADER_FILE" \
@@ -93,7 +102,7 @@ mender_part_image() {
         fi
         cat >> "$wks" <<EOF
 # embed bootloader
-part --source rawcopy --sourceparams="file=${WORKDIR}/${IMAGE_BOOTLOADER_FILE}" --ondisk "$ondisk_dev" --align $bootloader_align_kb --no-table
+part --source rawcopy --sourceparams="file=$bootloader_file" --ondisk "$ondisk_dev" --align $bootloader_align_kb --no-table
 EOF
     fi
 
@@ -126,6 +135,13 @@ EOF
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-$suffix"
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/$(basename "${wks%.wks}")"*.direct "$outimgname"
+
+    if [ -n "${IMAGE_BOOTLOADER_FILE}" ] && [ ${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} -ne $bootloader_sector ]; then
+        # We need to write the first sector of the bootloader. See comment above
+        # where bootloader_sector is set.
+        dd if=${WORKDIR}/${IMAGE_BOOTLOADER_FILE} of="$outimgname" seek=${IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} count=1 conv=notrunc
+    fi
+
     rm -rf "$wicout/"
 
 }
