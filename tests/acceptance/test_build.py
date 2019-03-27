@@ -444,8 +444,6 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     @pytest.mark.only_with_image('sdimg', 'uefiimg')
     @pytest.mark.min_mender_version('2.0.0')
     def test_module_install(self, prepared_test_build, bitbake_path, latest_rootfs):
-        pytest.skip("Temporarily disabled until the module code hits master.")
-
         mender_vars = get_bitbake_variables("mender")
         if "modules" in mender_vars['PACKAGECONFIG'].split():
             originally_on = True
