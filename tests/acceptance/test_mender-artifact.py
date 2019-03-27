@@ -32,7 +32,7 @@ LAST_BUILD_VERSION = None
 
 # params is the versions we will test.
 @pytest.fixture(scope="function", params=[1, 2, 3])
-def versioned_mender_image(request, prepared_test_build, latest_mender_image):
+def versioned_mender_image(request, prepared_test_build, latest_mender_image, bitbake_variables):
     """Gets the correct version of the artifact, whether it's the one we
     build by default, or one we have to produce ourselves.
     Returns a tuple of version and built image."""
@@ -40,6 +40,13 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image):
     global LAST_BUILD_VERSION
 
     version = request.param
+
+    if ((version >= 2 and not version_is_minimum(bitbake_variables, "mender-artifact", "2.0.0"))
+        or (version >= 3 and not version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"))):
+        pytest.skip("Requires version %d of mender-artifact format." % version)
+
+    if version_is_minimum(bitbake_variables, "mender-artifact", "4.0.0"):
+        pytest.fail("Should add new mender artifact format here!")
 
     if version is 3:
         # It's default, so skip the extra build.
