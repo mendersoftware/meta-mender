@@ -45,18 +45,19 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image, bi
         or (version >= 3 and not version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"))):
         pytest.skip("Requires version %d of mender-artifact format." % version)
 
-    if version_is_minimum(bitbake_variables, "mender-artifact", "4.0.0"):
-        pytest.fail("Should add new mender artifact format here!")
-
-    if version is 3:
-        # It's default, so skip the extra build.
-        return (version, latest_mender_image)
+    if version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"):
+        default_version = 3
+    elif version_is_minimum(bitbake_variables, "mender-artifact", "2.0.0"):
+        default_version = 2
+    else:
+        default_version = 1
 
     if LAST_BUILD_VERSION != version:
         # Run a separate build for this artifact. This doesn't conflict with the
         # above version because the non-default version ends up in a different
         # directory.
-        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version)
+        if version != default_version:
+            add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version)
         run_bitbake(prepared_test_build)
         LAST_BUILD_VERSION = version
     return (version, latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender"))
