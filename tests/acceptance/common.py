@@ -428,6 +428,14 @@ def version_is_minimum(bitbake_variables, component, min_version):
         version = bitbake_variables.get('PREFERRED_VERSION_%s' % component)
     if version is None:
         version = "master"
+
+    # Special cases for master while there are unmerged branches.
+    if version.startswith("master"):
+        if component == "mender" and min_version.startswith("2."):
+            return False
+        if component == "mender-artifact" and min_version.startswith("3."):
+            return False
+
     try:
         if LooseVersion(min_version) > LooseVersion(version):
             return False

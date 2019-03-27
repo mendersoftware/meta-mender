@@ -98,6 +98,14 @@ def mender_version_is_minimum(d, component, min_version, if_true, if_false):
         version = d.getVar('PREFERRED_VERSION_%s' % component)
     if not version:
         version = "master"
+
+    # Special cases for master while there are unmerged branches.
+    if version.startswith("master"):
+        if component == "mender" and min_version.startswith("2."):
+            return if_false
+        if component == "mender-artifact" and min_version.startswith("3."):
+            return if_false
+
     try:
         if LooseVersion(min_version) > LooseVersion(version):
             return if_false
