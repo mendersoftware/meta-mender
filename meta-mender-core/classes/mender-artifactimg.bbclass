@@ -49,16 +49,7 @@ IMAGE_CMD_mender () {
         extra_args="$extra_args -s ${DEPLOY_DIR_IMAGE}/mender-state-scripts"
     fi
 
-    image_flag=-u
-    if ${@mender_version_is_minimum(d, "mender-artifact", "3.0.0", "true", "false")}; then
-        # There is no version 4.0.0 at this time. This was introduced as a way
-        # to keep master building while 3.0.0 is still on a branch. Revert the
-        # commit that introduced this as soon as 3.0.0 goes back to the master
-        # branch.
-        if ! ${@mender_version_is_minimum(d, "mender-artifact", "4.0.0", "true", "false")}; then
-            image_flag=-f
-        fi
-    fi
+    image_flag=${@mender_version_is_minimum(d, "mender-artifact", "3.0.0", "-f", "-u")}
 
     mender-artifact write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} \
