@@ -73,3 +73,10 @@ LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.
 DEFAULT_PREFERENCE = "-1"
+
+do_compile_ptest_base() {
+   # Yocto branches sumo and older fail in Mender version 2.0
+   # ptest since it uses some golang features that are only
+   # available in newer branches of OE
+   true
+}
