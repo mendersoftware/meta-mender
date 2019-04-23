@@ -1,5 +1,7 @@
 require mender.inc
-require mender-old-makefile.inc
+
+DEPENDS = "xz"
+RDEPENDS_${PN} = "liblzma"
 
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
@@ -53,19 +55,19 @@ SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=${MENDER
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
 def mender_license(branch):
-    if branch == "1.2.x":
-        return {
-                   "md5": "13741fb0210ea8a11a3e8e0247c9429c",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
-        }
-    elif branch == "1.7.x":
+    if branch == "1.7.x":
         return {
                    "md5": "5632b9f17043c6f5f532501778595c78",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
+    elif branch.startswith("1."):
+        return {
+                   "md5": "debbe5e440f2e65465e86b25fc7c9fcc",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+        }
     else:
         return {
-                   "md5": "08bde78aa3411d357cefdcc4799f026b",
+                   "md5": "ccb00e21c31df7189b2bd237ed86e7c2",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
 LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=${@mender_license(d.getVar('MENDER_BRANCH'))['md5']}"
