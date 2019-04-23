@@ -1,4 +1,5 @@
 require mender.inc
+require mender-old-makefile.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=1.3.x"
 
