@@ -306,51 +306,6 @@ class TestBuild:
             assert data["device_types_compatible"] == ["machine1", "machine2"]
 
     @pytest.mark.only_with_image('sdimg', 'uefiimg')
-    @pytest.mark.min_mender_version('1.0.0')
-    def test_boot_partition_population(self, prepared_test_build, bitbake_path):
-        # Notice in particular a mix of tabs, newlines and spaces. All there to
-        # check that whitespace it treated correctly.
-        add_to_local_conf(prepared_test_build, """
-IMAGE_INSTALL_append = " test-boot-files"
-
-IMAGE_BOOT_FILES_append = " deployed-test1 deployed-test-dir2/deployed-test2 \
-	deployed-test3;renamed-deployed-test3 \
- deployed-test-dir4/deployed-test4;renamed-deployed-test4	deployed-test5;renamed-deployed-test-dir5/renamed-deployed-test5 \
-deployed-test-dir6/deployed-test6;renamed-deployed-test-dir6/renamed-deployed-test6 \
-deployed-test-dir7/* \
-deployed-test-dir8/*;./ \
-deployed-test-dir9/*;renamed-deployed-test-dir9/ \
-"
-""")
-        run_bitbake(prepared_test_build)
-
-        image = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.*img")
-        extract_partition(image, 1)
-        try:
-            listing = run_verbose("mdir -i img1.fs -b -/", capture=True).split()
-            expected = [
-                "::/deployed-test1",
-                "::/deployed-test2",
-                "::/renamed-deployed-test3",
-                "::/renamed-deployed-test4",
-                "::/renamed-deployed-test-dir5/renamed-deployed-test5",
-                "::/renamed-deployed-test-dir6/renamed-deployed-test6",
-                "::/deployed-test7",
-                "::/deployed-test8",
-                "::/renamed-deployed-test-dir9/deployed-test9",
-            ]
-            assert(all([item in listing for item in expected]))
-
-            add_to_local_conf(prepared_test_build, 'IMAGE_BOOT_FILES_append = " conflict-test1"')
-            try:
-                run_bitbake(prepared_test_build)
-                pytest.fail("Bitbake succeeded, but should have failed with a file conflict")
-            except subprocess.CalledProcessError:
-                pass
-        finally:
-            os.remove("img1.fs")
-
-    @pytest.mark.only_with_image('sdimg', 'uefiimg')
     @pytest.mark.min_mender_version('2.0.0')
     def test_module_install(self, prepared_test_build, bitbake_path, latest_rootfs):
         mender_vars = get_bitbake_variables("mender")
