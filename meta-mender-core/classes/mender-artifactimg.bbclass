@@ -49,7 +49,11 @@ IMAGE_CMD_mender () {
         extra_args="$extra_args -s ${DEPLOY_DIR_IMAGE}/mender-state-scripts"
     fi
 
-    image_flag=${@mender_version_is_minimum(d, "mender-artifact", "3.0.0", "-f", "-u")}
+    if mender-artifact write rootfs-image --help | grep -e '-u FILE'; then
+        image_flag=-u
+    else
+        image_flag=-f
+    fi
 
     mender-artifact write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} \
