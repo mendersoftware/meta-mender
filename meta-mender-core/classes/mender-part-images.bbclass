@@ -158,12 +158,15 @@ EOF
 
     alignment_kb=$(expr ${MENDER_PARTITION_ALIGNMENT} / 1024)
 
+    # remove leading and trailing spaces
+    IMAGE_BOOT_FILES_STRIPPED=$(echo "${IMAGE_BOOT_FILES}" | sed -r 's/(^\s*)|(\s*$)//g')
+
     if [ "${MENDER_BOOT_PART_SIZE_MB}" -ne "0" ]; then
         mender_merge_bootfs_and_image_boot_files
         cat >> "$wks" <<EOF
 part --source rootfs --rootfs-dir ${WORKDIR}/bootfs.${BB_CURRENTTASK} --ondisk "$ondisk_dev" --fstype=vfat --label boot --align $alignment_kb --fixed-size ${MENDER_BOOT_PART_SIZE_MB} --active
 EOF
-    elif [ -n "${IMAGE_BOOT_FILES}" ]; then
+    elif [ -n "$IMAGE_BOOT_FILES_STRIPPED" ]; then
         bbwarn "MENDER_BOOT_PART_SIZE_MB is set to zero, but IMAGE_BOOT_FILES is not empty. The files are being omitted from the image."
     fi
 
