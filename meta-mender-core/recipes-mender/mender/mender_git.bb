@@ -1,4 +1,5 @@
 require mender.inc
+require mender-old-makefile.inc
 
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
@@ -57,9 +58,14 @@ def mender_license(branch):
                    "md5": "13741fb0210ea8a11a3e8e0247c9429c",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
+    elif branch == "1.7.x":
+        return {
+                   "md5": "5632b9f17043c6f5f532501778595c78",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+        }
     else:
         return {
-                   "md5": "debbe5e440f2e65465e86b25fc7c9fcc",
+                   "md5": "08bde78aa3411d357cefdcc4799f026b",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
 LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=${@mender_license(d.getVar('MENDER_BRANCH'))['md5']}"
@@ -67,3 +73,10 @@ LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.
 DEFAULT_PREFERENCE = "-1"
+
+do_compile_ptest_base() {
+   # Yocto branches sumo and older fail in Mender version 2.0
+   # ptest since it uses some golang features that are only
+   # available in newer branches of OE
+   true
+}

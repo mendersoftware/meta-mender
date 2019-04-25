@@ -511,6 +511,31 @@ def versions_of_recipe(recipe):
             versions.append(match.group(1))
     return versions
 
+def version_is_minimum(bitbake_variables, component, min_version):
+    version = bitbake_variables.get('PREFERRED_VERSION_pn-%s' % component)
+    if version is None:
+        version = bitbake_variables.get('PREFERRED_VERSION_%s' % component)
+    if version is None:
+        version = "master"
+
+    # Special cases for master while there are unmerged branches.
+    if version.startswith("master"):
+        if component == "mender" and min_version.startswith("2."):
+            return False
+        if component == "mender-artifact" and min_version.startswith("3."):
+            return False
+
+    try:
+        if LooseVersion(min_version) > LooseVersion(version):
+            return False
+        else:
+            return True
+    except TypeError:
+        # Type error indicates that 'version' is likely a string (branch
+        # name). For now we just default to always consider them higher than the
+        # minimum version.
+        return True
+
 @contextmanager
 def make_tempdir(delete=True):
     """context manager for temporary directories"""

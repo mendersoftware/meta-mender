@@ -206,3 +206,4 @@ mender_get_clean_kernel_devicetree() {
     # Return.
     echo "$MENDER_DTB_NAME"
 }
+

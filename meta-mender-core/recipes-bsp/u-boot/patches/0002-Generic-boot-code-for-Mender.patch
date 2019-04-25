@@ -1,4 +1,4 @@
-From e8742827a8a97391d9b4d4f2b289403551af97ec Mon Sep 17 00:00:00 2001
+From ff9fe6268fd69f9daa9932977decdfd62f77e548 Mon Sep 17 00:00:00 2001
 From: Drew Moseley <drew.moseley@northern.tech>
 Date: Sun, 28 Jan 2018 17:44:32 -0500
 Subject: [PATCH] Generic boot code for Mender.
@@ -7,15 +7,15 @@ Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
 Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
 Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
 ---
- include/config_mender.h |  98 ++++++++++++++++++++++++++++++++
- include/env_mender.h    | 146 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 244 insertions(+)
+ include/config_mender.h |  98 ++++++++++++++++++++++++++
+ include/env_mender.h    | 152 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 250 insertions(+)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000..3836a6d
+index 0000000000..3836a6ddd4
 --- /dev/null
 +++ b/include/config_mender.h
 @@ -0,0 +1,98 @@
@@ -119,10 +119,10 @@ index 0000000..3836a6d
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000..cf46ef0
+index 0000000000..a1996ab2bd
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,146 @@
+@@ -0,0 +1,152 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -194,7 +194,13 @@ index 0000000..cf46ef0
 +                                                                        \
 +    "mender_post_setup_commands=" MENDER_UBOOT_POST_SETUP_COMMANDS "\0" \
 +                                                                        \
++    "mender_check_saveenv_canary=1\0"                                   \
++                                                                        \
 +    "mender_setup="                                                     \
++    "if test \"${mender_saveenv_canary}\" != \"1\"; then "              \
++    "setenv mender_saveenv_canary 1; "                                  \
++    "saveenv; "                                                         \
++    "fi; "                                                              \
 +    "if test \"${mender_pre_setup_commands}\" != \"\"; "                \
 +    "then "                                                             \
 +    "run mender_pre_setup_commands; "                                   \
@@ -270,5 +276,5 @@ index 0000000..cf46ef0
 +
 +#endif /* HEADER_ENV_MENDER_H */
 -- 
-2.7.4
+2.21.0
 
