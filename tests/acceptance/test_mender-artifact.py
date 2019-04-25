@@ -31,8 +31,8 @@ from common import *
 LAST_BUILD_VERSION = None
 
 # params is the versions we will test.
-@pytest.fixture(scope="function", params=[1, 2])
-def versioned_mender_image(request, prepared_test_build, latest_mender_image):
+@pytest.fixture(scope="function", params=[1, 2, 3])
+def versioned_mender_image(request, prepared_test_build, latest_mender_image, bitbake_variables):
     """Gets the correct version of the artifact, whether it's the one we
     build by default, or one we have to produce ourselves.
     Returns a tuple of version and built image."""
@@ -41,15 +41,23 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image):
 
     version = request.param
 
-    if version is 2:
-        # It's default, so skip the extra build.
-        return (version, latest_mender_image)
+    if ((version >= 2 and not version_is_minimum(bitbake_variables, "mender-artifact", "2.0.0"))
+        or (version >= 3 and not version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"))):
+        pytest.skip("Requires version %d of mender-artifact format." % version)
+
+    if version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"):
+        default_version = 3
+    elif version_is_minimum(bitbake_variables, "mender-artifact", "2.0.0"):
+        default_version = 2
+    else:
+        default_version = 1
 
     if LAST_BUILD_VERSION != version:
         # Run a separate build for this artifact. This doesn't conflict with the
         # above version because the non-default version ends up in a different
         # directory.
-        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version)
+        if version != default_version:
+            add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version)
         run_bitbake(prepared_test_build)
         LAST_BUILD_VERSION = version
     return (version, latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender"))
@@ -107,7 +115,7 @@ class TestMenderArtifact:
             line = line.rstrip('\n\r')
             if line_no == 1:
                 assert(line == "header-info")
-            elif line_no == 2:
+            elif line_no == 2 and version < 3:
                 assert(line == "headers/0000/files")
 
             elif line == "headers/0000/type-info":

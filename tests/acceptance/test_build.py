@@ -287,7 +287,7 @@ class TestBuild:
             run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'], recipe))
 
     @pytest.mark.min_mender_version('1.1.0')
-    def test_multiple_device_types_compatible(self, prepared_test_build, bitbake_path):
+    def test_multiple_device_types_compatible(self, prepared_test_build, bitbake_path, bitbake_variables):
         """Tests that we can include multiple device_types in the artifact."""
 
         add_to_local_conf(prepared_test_build, 'MENDER_DEVICE_TYPES_COMPATIBLE = "machine1 machine2"')
@@ -300,4 +300,37 @@ class TestBuild:
 
         output = subprocess.check_output("tar xOf %s header.tar.gz | tar xOz header-info" % image, shell=True)
         data = json.loads(output)
-        assert data["device_types_compatible"] == ["machine1", "machine2"]
+        if version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"):
+            assert data["artifact_depends"]["device_type"] == ["machine1", "machine2"]
+        else:
+            assert data["device_types_compatible"] == ["machine1", "machine2"]
+
+    @pytest.mark.only_with_image('sdimg', 'uefiimg')
+    @pytest.mark.min_mender_version('2.0.0')
+    def test_module_install(self, prepared_test_build, bitbake_path, latest_rootfs):
+        mender_vars = get_bitbake_variables("mender")
+        if "modules" in mender_vars['PACKAGECONFIG'].split():
+            originally_on = True
+        else:
+            originally_on = False
+
+        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender", latest_rootfs])
+        entries = [elem.split('/')[5] for elem in output.split('\n') if elem.startswith('/')]
+
+        if originally_on:
+            assert "modules" in entries
+            add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_remove = "modules"')
+        else:
+            assert "modules" not in entries
+            add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_append = " modules"')
+        run_bitbake(prepared_test_build)
+
+        new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")
+
+        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender", new_rootfs])
+        entries = [elem.split('/')[5] for elem in output.split('\n') if elem.startswith('/')]
+
+        if originally_on:
+            assert "modules" not in entries
+        else:
+            assert "modules" in entries

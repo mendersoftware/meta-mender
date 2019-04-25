@@ -1,3 +1,5 @@
+inherit mender-helpers
+
 # ------------------------------ CONFIGURATION ---------------------------------
 
 # Extra arguments that should be passed to mender-artifact.
@@ -44,10 +46,16 @@ IMAGE_CMD_mender () {
         extra_args="$extra_args -s ${DEPLOY_DIR_IMAGE}/mender-state-scripts"
     fi
 
+    if mender-artifact write rootfs-image --help | grep -e '-u FILE'; then
+        image_flag=-u
+    else
+        image_flag=-f
+    fi
+
     mender-artifact write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} \
         $extra_args \
-        -u ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
+        $image_flag ${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.${ARTIFACTIMG_FSTYPE} \
         ${MENDER_ARTIFACT_EXTRA_ARGS} \
         -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender
 }

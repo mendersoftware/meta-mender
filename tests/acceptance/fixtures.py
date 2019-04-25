@@ -336,14 +336,52 @@ def min_mender_version(request, bitbake_variables):
                     % str(request.node))
 
     test_version = version_mark.args[0]
-    mender_version = bitbake_variables.get('PREFERRED_VERSION_pn-mender')
-    if mender_version is None:
-        mender_version = bitbake_variables.get('PREFERRED_VERSION_mender')
-    if mender_version is None:
-        mender_version = "master"
-    if LooseVersion(test_version) > LooseVersion(mender_version):
-        pytest.skip("Test for Mender client %s and newer cannot run with Mender client %s"
-                    % (test_version, mender_version))
+    if not version_is_minimum(bitbake_variables, "mender", test_version):
+        pytest.skip("Test requires Mender client %s or newer" % test_version)
+
+@pytest.fixture(autouse=True)
+def min_yocto_version(request, bitbake_variables):
+    version_mark = request.node.get_closest_marker("min_yocto_version")
+    if version_mark is None:
+        return
+
+    yocto_versions_ordered = [
+        "krogoth",
+        "morty",
+        "pyro",
+        "rocko",
+        "sumo",
+        "thud",
+        "warrior",
+        "zeus",
+    ]
+
+    test_version = version_mark.args[0]
+
+    # Technique taken from release_tool.py in integration repository:
+
+    # Return "closest" branch or tag name. Basically we measure the distance in
+    # commits from the merge base of most refs to the current HEAD, and then
+    # pick the shortest one, and we assume that this is our current version. We
+    # pick all the refs from tags and local branches, as well as single level
+    # upstream branches (which avoids pull requests).
+    yocto_version = subprocess.check_output("""
+        for i in $(git for-each-ref --format='%(refname:short)' 'refs/heads/*' 'refs/remotes/*/*'); do
+            echo $(git log --oneline $(git merge-base $i HEAD)..HEAD | wc -l) $i
+        done | sort -n | head -n1 | awk '{print $2}'
+        """, shell=True).strip().decode()
+
+    # Get rid of remote information, if any.
+    if yocto_version.rfind("/"):
+        yocto_version = yocto_version[yocto_version.rfind("/")+1:]
+
+    if yocto_version == "master":
+        # Never skip for master.
+        return
+
+    if yocto_versions_ordered.index(test_version) > yocto_versions_ordered.index(yocto_version):
+        pytest.skip("Test requires minimum Yocto version '%s' and current Yocto version is '%s'"
+                    % (test_version, yocto_version))
 
 @pytest.fixture(autouse=True)
 def only_for_machine(request, bitbake_variables):

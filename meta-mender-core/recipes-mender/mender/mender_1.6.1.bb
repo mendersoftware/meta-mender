@@ -11,8 +11,8 @@ require mender-old-makefile.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=1.6.x"
 
-# Tag: 1.6.0
-SRCREV = "329eba697b086386f191e11836fc709e821fdb2a"
+# Tag: 1.6.1
+SRCREV = "31caee72ba26b266ba0a0f344796b6acd11d3a6e"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
