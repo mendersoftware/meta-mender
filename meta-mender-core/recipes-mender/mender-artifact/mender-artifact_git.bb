@@ -54,19 +54,14 @@ SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;br
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
 def mender_license(branch):
-    if branch == "2.0.x":
-        return {
-                   "md5": "70480461e7f35d34bbc0b27e02b87311",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
-        }
-    elif branch == "2.1.x" or branch == "2.2.x":
-        return {
-                   "md5": "1baf9ba39aca12f99a87a99b18440e84",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
-        }
-    elif branch == "2.3.x" or branch == "2.4.x":
+    if branch == "2.3.x" or branch == "2.4.x":
         return {
                    "md5": "8ce3d9108b58e4a185a5f812536f03a5",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
+        }
+    elif branch == "3.0.x":
+        return {
+                   "md5": "3c56d1f34c03d02dc3001a58712e0b7c",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
         }
     else:
