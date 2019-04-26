@@ -21,3 +21,5 @@ DEFAULT_PREFERENCE = "-1"
 
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
 LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=3c56d1f34c03d02dc3001a58712e0b7c"
+
+DEPENDS += "xz"
