@@ -8,7 +8,7 @@ require mender.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=update_modules"
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.0.x"
 
 # Tag: 2.0.0b1
 SRCREV = "040a234aba2abb1b8d9351674892a1b0c7202fea"
