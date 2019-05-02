@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2017 Northern.tech AS
+# Copyright 2019 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 #    limitations under the License.
 
 import copy
+import math
 import multiprocessing
 import os
 import re
@@ -43,6 +44,17 @@ class TestUbootAutomation:
         memory_jobs = int(memory_kb / 2 / 1048576)
 
         return min(memory_jobs, multiprocessing.cpu_count())
+
+    @staticmethod
+    def parallel_subjob_count():
+        # Since memory can be the constraining factor on number of parallel
+        # build directories (see comment for parallel_job_count), we should make
+        # sure that each build directory uses enough cores to utilize all cores
+        # total.
+        job_count = TestUbootAutomation.parallel_job_count()
+        cpu_count = multiprocessing.cpu_count()
+        # Pick the smallest number that makes NUMBER * job_count >= cpu_count
+        return int(math.ceil(float(cpu_count) / float(job_count)))
 
     def check_if_should_run(self):
         # The logic here is this:
@@ -235,10 +247,11 @@ class TestUbootAutomation:
             env['MAYBE_UBI'] = "--ubi" if machine == "vexpress-qemu-flash" else ""
             # Compile all boards. The reason for using a makefile is to get easy
             # parallelization.
-            subprocess.check_call("make -j %d -f %s TMP=/dev/shm/test_uboot_compile %s"
+            subprocess.check_call("make -j %d -f %s SUBJOBCOUNT=-j%d TMP=/dev/shm/test_uboot_compile %s"
                                   % (self.parallel_job_count(),
                                      os.path.join(env['TESTS_DIR'],
                                                   "files/Makefile.test_uboot_automation"),
+                                     self.parallel_subjob_count(),
                                      sanitized_makeflags),
                                   shell=True,
                                   env=env,
