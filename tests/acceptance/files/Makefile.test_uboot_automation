@@ -37,12 +37,12 @@ $(LOGS)/%_defconfig:
 		|| ( echo AutoPatchFailed >> $@ )
 
 	# Setup compile.
-	$(MAKE) -C "$(TMP)/`basename $@`/orig" "`basename $@`" \
+	$(MAKE) $(SUBJOBCOUNT) -C "$(TMP)/`basename $@`/orig" "`basename $@`" \
 			>> $@ 2>&1 \
 		|| ( echo AutoPatchFailed >> $@ )
 
 	# Try to compile it.
-	$(MAKE) -C "$(TMP)/`basename $@`/orig" \
+	$(MAKE) $(SUBJOBCOUNT) -C "$(TMP)/`basename $@`/orig" \
 			>> $@ 2>&1 \
 		|| ( echo AutoPatchFailed >> $@ )
 
