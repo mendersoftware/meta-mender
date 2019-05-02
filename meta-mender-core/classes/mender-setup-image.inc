@@ -47,7 +47,7 @@ mender_update_fstab_file() {
 }
 
 # Setup state script version file.
-MENDER_STATE_SCRIPTS_VERSION = "2"
+MENDER_STATE_SCRIPTS_VERSION = "3"
 ROOTFS_POSTPROCESS_COMMAND_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender_create_scripts_version_file;', '', d)}"
 
 mender_create_scripts_version_file() {
