@@ -46,8 +46,15 @@ mender_update_fstab_file() {
     printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpDataPart} /data ${MENDER_DATA_PART_FSTYPE} ${MENDER_DATA_PART_FSTAB_OPTS} 0 0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
 }
 
+def mender_default_state_scripts_version(d):
+    pref_mender = d.getVar('PREFERRED_VERSION_pn-mender')
+    if pref_mender and pref_mender.startswith("1."):
+        return "2"
+    else:
+        return "3"
+
 # Setup state script version file.
-MENDER_STATE_SCRIPTS_VERSION = "3"
+MENDER_STATE_SCRIPTS_VERSION = "${@mender_default_state_scripts_version(d)}"
 ROOTFS_POSTPROCESS_COMMAND_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender_create_scripts_version_file;', '', d)}"
 
 mender_create_scripts_version_file() {
