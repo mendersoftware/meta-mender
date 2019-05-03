@@ -18,6 +18,7 @@ from fabric.api import *
 import json
 import os
 import pytest
+import re
 import shutil
 import subprocess
 import tempfile
@@ -28,9 +29,9 @@ from common import *
 
 class Helpers:
     @staticmethod
-    def upload_to_s3():
-        subprocess.call(["s3cmd", "--follow-symlinks", "put", "successful_image_update.mender", "s3://mender/temp/"])
-        subprocess.call(["s3cmd", "setacl", "s3://mender/temp/successful_image_update.mender", "--acl-public"])
+    def upload_to_s3(artifact):
+        subprocess.call(["s3cmd", "--follow-symlinks", "put", artifact, "s3://mender/temp/"])
+        subprocess.call(["s3cmd", "setacl", "s3://mender/temp/%s" % artifact, "--acl-public"])
 
     @staticmethod
     # TODO: Use this when mender is more stable. Spurious errors are currently generated.
@@ -96,11 +97,38 @@ class Helpers:
             return "-u"
 
     @staticmethod
-    def get_install_flag(bitbake_variables):
-        if version_is_minimum(bitbake_variables, "mender", "2.0.0"):
-            return "-install"
+    def get_install_flag():
+        with settings(warn_only=True):
+            output = run("mender --help 2>&1")
+            if re.search("^\s*-install(\s|$)", output, flags=re.MULTILINE):
+                return "-install"
+            else:
+                return "-rootfs"
+
+    @staticmethod
+    # Note: `image` needs to be in current directory.
+    def install_update(image):
+        http_server_location = pytest.config.getoption("--http-server")
+        use_s3 = pytest.config.getoption("--use-s3")
+        board = pytest.config.getoption("--board-type")
+        install_flag = Helpers.get_install_flag()
+
+        http_server = None
+        if "qemu" not in board or use_s3:
+            Helpers.upload_to_s3(image)
+            s3_address = pytest.config.getoption("--s3-address")
+            http_server_location = "{}/mender/temp".format(s3_address)
         else:
-            return "-rootfs"
+            http_server = subprocess.Popen(["python", "-m", "SimpleHTTPServer"])
+            assert(http_server)
+
+        try:
+            output = run("mender %s http://%s/%s" % (install_flag, http_server_location, image))
+            print("output from rootfs update: ", output)
+        finally:
+            if http_server:
+                http_server.terminate()
+
 
 class SignatureCase:
     label = ""
@@ -148,7 +176,7 @@ class TestUpdates:
             return
 
         file_flag = Helpers.get_file_flag(bitbake_variables)
-        install_flag = Helpers.get_install_flag(bitbake_variables)
+        install_flag = Helpers.get_install_flag()
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
         image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
@@ -186,7 +214,7 @@ class TestUpdates:
             return
 
         file_flag = Helpers.get_file_flag(bitbake_variables)
-        install_flag = Helpers.get_install_flag(bitbake_variables)
+        install_flag = Helpers.get_install_flag()
         image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         try:
@@ -207,33 +235,14 @@ class TestUpdates:
 
     @pytest.mark.min_mender_version('1.0.0')
     def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables):
-        http_server_location = pytest.config.getoption("--http-server")
-        use_s3 = pytest.config.getoption("--use-s3")
-        board = pytest.config.getoption("--board-type")
-
         if not env.host_string:
             # This means we are not inside execute(). Recurse into it!
             execute(self.test_network_based_image_update, successful_image_update_mender, bitbake_variables)
             return
 
-        install_flag = Helpers.get_install_flag(bitbake_variables)
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
 
-        http_server = None
-        if "qemu" not in board or use_s3:
-            Helpers.upload_to_s3()
-            s3_address = pytest.config.getoption("--s3-address")
-            http_server_location = "{}/mender/temp".format(s3_address)
-        else:
-            http_server = subprocess.Popen(["python", "-m", "SimpleHTTPServer"])
-            assert(http_server)
-
-        try:
-            output = run("mender %s http://%s/successful_image_update.mender" % (install_flag, http_server_location))
-            print("output from rootfs update: ", output)
-        finally:
-            if http_server:
-                http_server.terminate()
+        Helpers.install_update(successful_image_update_mender)
 
         output = run("fw_printenv bootcount")
         assert(output == "bootcount=0")
@@ -571,7 +580,7 @@ class TestUpdates:
             return
 
         file_flag = Helpers.get_file_flag(bitbake_variables)
-        install_flag = Helpers.get_install_flag(bitbake_variables)
+        install_flag = Helpers.get_install_flag()
 
         # mmc mount points are named: /dev/mmcblk0p1
         # ubi volumes are named: ubi0_1
@@ -792,7 +801,7 @@ class TestUpdates:
             assert(active == bitbake_variables["MENDER_ROOTFS_PART_B"])
 
         file_flag = Helpers.get_file_flag(bitbake_variables)
-        install_flag = Helpers.get_install_flag(bitbake_variables)
+        install_flag = Helpers.get_install_flag()
 
         # Make a note of the checksums of each environment. We use this later to
         # determine which one changed.
@@ -919,7 +928,7 @@ class TestUpdates:
             return
 
         file_flag = Helpers.get_file_flag(bitbake_variables)
-        install_flag = Helpers.get_install_flag(bitbake_variables)
+        install_flag = Helpers.get_install_flag()
         image_type = bitbake_variables["MACHINE"]
 
         try:
@@ -960,3 +969,68 @@ class TestUpdates:
             # Cleanup.
             os.remove("image.mender")
             os.remove("image.dat")
+
+    @pytest.mark.min_mender_version('2.0.0')
+    def test_upgrade_from_pre_2_0(self, successful_image_update_mender, bitbake_variables, prepared_test_build):
+        """Tests that we can upgrade from any pre-2.0.0 mender version to this version."""
+
+        if not env.host_string:
+            # This means we are not inside execute(). Recurse into it!
+            execute(self.test_upgrade_from_pre_2_0, successful_image_update_mender, bitbake_variables, prepared_test_build)
+            return
+
+        # Build a pre-2.0.0 mender version.
+        add_to_local_conf(prepared_test_build, 'PREFERRED_VERSION_pn-mender = "1.%"')
+        add_to_local_conf(prepared_test_build, 'EXTERNALSRC_pn-mender = ""')
+        add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_remove_pn-mender = "split-mender-config"')
+        run_bitbake(prepared_test_build)
+
+        image = "pre-mender-2.0.0.mender"
+        shutil.copyfile(latest_build_artifact(prepared_test_build["build_dir"], "*.mender"), image)
+        try:
+            Helpers.install_update(image)
+            reboot()
+            run_after_connect("true")
+        finally:
+            os.remove(image)
+
+        def is_pre_mender_2_0():
+            output = run("mender -version")
+            return any([line.startswith("1.") for line in output.split("\n")])
+
+        # Double check that it is a pre-2.0.0 version. For future readers: If
+        # this test fails and there is no pre-2.0.0 recipe in this branch, the
+        # whole test can be removed.
+        assert is_pre_mender_2_0()
+
+        run("mender -commit")
+
+        reset_local_conf(prepared_test_build)
+
+        # Build an image that the pre-2.0.0 mender will accept.
+        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS_append = " -v 2"')
+        run_bitbake(prepared_test_build)
+        build_image = latest_build_artifact(prepared_test_build["build_dir"], "*.mender")
+        image = "test_upgrade_from_pre_2_0.mender"
+        shutil.copyfile(build_image, image)
+
+        try:
+            reset_local_conf(prepared_test_build)
+
+            # Delete existing database, if any.
+            run("rm -f /data/mender/mender-store*")
+
+            # Carry out rest of the test using the existing upgrade test.
+            self.test_network_based_image_update(image, bitbake_variables)
+
+            # Double check that it is now a 2.0.0+ version.
+            assert not is_pre_mender_2_0()
+
+        finally:
+            os.remove(image)
+
+        # Make sure committing is not possible anymore afterwards.
+        with settings(warn_only=True):
+            output = run("mender -commit")
+            assert output.return_code != 0
+            assert "No artifact installation in progress" in output
