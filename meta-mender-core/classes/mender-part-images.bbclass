@@ -82,10 +82,16 @@ mender_merge_bootfs_and_image_boot_files() {
     done
 }
 
-def mender_wic_exclude_path_options(exclude_path):
+def mender_wic_exclude_path_options(rootfs, exclude_path):
     exclude_path = exclude_path.strip()
-    if exclude_path:
-        return "--exclude-path %s" % exclude_path
+
+    existing_exclude_paths = ""
+    for path in exclude_path.split():
+        if os.path.lexists(os.path.realpath(os.path.join(rootfs, path))):
+           existing_exclude_paths += path + " "
+
+    if existing_exclude_paths:
+        return "--exclude-path %s" % existing_exclude_paths
     else:
         return ""
 
@@ -152,16 +158,19 @@ EOF
 
     alignment_kb=$(expr ${MENDER_PARTITION_ALIGNMENT} / 1024)
 
+    # remove leading and trailing spaces
+    IMAGE_BOOT_FILES_STRIPPED=$(echo "${IMAGE_BOOT_FILES}" | sed -r 's/(^\s*)|(\s*$)//g')
+
     if [ "${MENDER_BOOT_PART_SIZE_MB}" -ne "0" ]; then
         mender_merge_bootfs_and_image_boot_files
         cat >> "$wks" <<EOF
 part --source rootfs --rootfs-dir ${WORKDIR}/bootfs.${BB_CURRENTTASK} --ondisk "$ondisk_dev" --fstype=vfat --label boot --align $alignment_kb --fixed-size ${MENDER_BOOT_PART_SIZE_MB} --active
 EOF
-    elif [ -n "${IMAGE_BOOT_FILES}" ]; then
+    elif [ -n "$IMAGE_BOOT_FILES_STRIPPED" ]; then
         bbwarn "MENDER_BOOT_PART_SIZE_MB is set to zero, but IMAGE_BOOT_FILES is not empty. The files are being omitted from the image."
     fi
 
-    exclude_path_options="${@mender_wic_exclude_path_options('${IMAGE_ROOTFS_EXCLUDE_PATH}')}"
+    exclude_path_options="${@mender_wic_exclude_path_options('${IMAGE_ROOTFS}', '${IMAGE_ROOTFS_EXCLUDE_PATH}')}"
 
     cat >> "$wks" <<EOF
 part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_path_options

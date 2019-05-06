@@ -1,20 +1,21 @@
-require mender-artifact.inc
+require mender.inc
 
-DEPENDS += "xz"
+DEPENDS = "xz"
+RDEPENDS_${PN} = "liblzma"
 
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the
 # SHA.
-def mender_artifact_autorev_if_git_version(d):
+def mender_autorev_if_git_version(d):
     version = d.getVar("PREFERRED_VERSION")
     if version is None or version == "":
         version = d.getVar("PREFERRED_VERSION_%s" % d.getVar('PN'))
     if version is not None and "git" in version:
         return d.getVar("AUTOREV")
     else:
-        return "77326b288c70cd713e7ad15d2a084b6ee797e8ff"
-SRCREV ?= '${@mender_artifact_autorev_if_git_version(d)}'
+        return "f6ffa190892202263fdb75975059fbb201adab6a"
+SRCREV ?= '${@mender_autorev_if_git_version(d)}'
 
 def mender_branch_from_preferred_version(d):
     import re
@@ -31,7 +32,7 @@ def mender_branch_from_preferred_version(d):
     else:
         # Else return master as branch.
         return "master"
-MENDER_ARTIFACT_BRANCH = "${@mender_branch_from_preferred_version(d)}"
+MENDER_BRANCH = "${@mender_branch_from_preferred_version(d)}"
 
 def mender_version_from_preferred_version(d, srcpv):
     pref_version = d.getVar("PREFERRED_VERSION")
@@ -47,30 +48,29 @@ def mender_version_from_preferred_version(d, srcpv):
     else:
         # Else return the default "master-git".
         return "master-git%s" % srcpv
-PV = "${@mender_version_from_preferred_version(d, '${SRCPV}')}"
 
-SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=${MENDER_ARTIFACT_BRANCH}"
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=${MENDER_BRANCH}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
 def mender_license(branch):
-    if branch == "2.3.x" or branch == "2.4.x":
+    if branch == "1.7.x":
         return {
-                   "md5": "8ce3d9108b58e4a185a5f812536f03a5",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
+                   "md5": "5632b9f17043c6f5f532501778595c78",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
-    elif branch == "3.0.x":
+    elif branch.startswith("1."):
         return {
-                   "md5": "3c56d1f34c03d02dc3001a58712e0b7c",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
+                   "md5": "debbe5e440f2e65465e86b25fc7c9fcc",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
     else:
         return {
-                   "md5": "f3d4710343f1b959e4fa6b728ce12264",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
+                   "md5": "ccb00e21c31df7189b2bd237ed86e7c2",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=${@mender_license(d.getVar('MENDER_ARTIFACT_BRANCH'))['md5']}"
-LICENSE = "${@mender_license(d.getVar('MENDER_ARTIFACT_BRANCH'))['license']}"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=${@mender_license(d.getVar('MENDER_BRANCH'))['md5']}"
+LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.
 DEFAULT_PREFERENCE = "-1"
