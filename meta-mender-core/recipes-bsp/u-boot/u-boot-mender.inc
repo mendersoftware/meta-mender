@@ -44,4 +44,4 @@ do_deploy_append() {
     dd if=/dev/zero of=${WORKDIR}/uboot.env count=$MENDER_BOOTENV_TOTAL_ALIGNED_SIZE_SECTORS
     install -m 644 ${WORKDIR}/uboot.env ${DEPLOYDIR}/uboot.env
 }
-addtask deploy after do_compile
+addtask deploy after do_compile before do_package
