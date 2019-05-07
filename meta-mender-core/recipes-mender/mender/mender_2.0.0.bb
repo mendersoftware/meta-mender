@@ -10,12 +10,12 @@ require mender.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.0.x"
 
-# Tag: 2.0.0b1
-SRCREV = "040a234aba2abb1b8d9351674892a1b0c7202fea"
+# Tag: 2.0.0
+SRCREV = "2087c5aafcb0c49a73e5977429e8fc05d902c000"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
-DEFAULT_PREFERENCE = "-1"
+#DEFAULT_PREFERENCE = "-1"
 
 ################################################################################
 
