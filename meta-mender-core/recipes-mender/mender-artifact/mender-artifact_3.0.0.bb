@@ -10,8 +10,8 @@ require mender-artifact.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=3.0.x"
 
-# Tag: 3.0.0b1
-SRCREV = "218d5926d13f2f1e4906af05daafea3589d69383"
+# Tag: 3.0.0
+SRCREV = "9baef384b7c6d28f58088999da79796a3d2ff7a9"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
