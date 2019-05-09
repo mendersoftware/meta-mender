@@ -27,6 +27,7 @@ SYSTEMD_SERVICE_${PN} = "mender.service"
 FILES_${PN} += "${systemd_unitdir}/system/mender.service \
                 ${sysconfdir}/mender.conf \
                 /data/mender/device_type \
+                ${sysconfdir}/udev/mount.blacklist.d/mender \
                "
 
 SRC_URI_append_mender-image_mender-systemd = " file://mender-data-dir.service"
@@ -189,6 +190,11 @@ do_install() {
         install -m 755 -d ${D}/data/mender
         install -m 444 ${B}/device_type ${D}/data/mender/
     fi
+
+    # Setup blacklist to ensure udev does not automatically mount Mender managed partitions
+    install -d ${D}${sysconfdir}/udev/mount.blacklist.d
+    echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
+    echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
 }
 
 do_install_append_mender-image_mender-systemd() {
