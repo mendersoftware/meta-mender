@@ -7,7 +7,7 @@ MENDER_GRUB_STORAGE_DEVICE ??= "${MENDER_GRUB_STORAGE_DEVICE_DEFAULT}"
 MENDER_GRUB_STORAGE_DEVICE_DEFAULT = ""
 
 IMAGE_BOOT_FILES_append_mender-grub = " \
-    ${@bb.utils.contains('TRANSLATED_TARGET_ARCH', 'x86-64', 'grub-efi-bootx64.efi;EFI/BOOT/bootx64.efi', 'grub-efi-bootia32.efi;EFI/BOOT/boot.efi', d)} \
+    ${@bb.utils.contains('TRANSLATED_TARGET_ARCH', 'x86-64', 'grub-efi-bootx64.efi;EFI/BOOT/bootx64.efi', 'grub-efi-bootia32.efi;EFI/BOOT/bootia32.efi', d)} \
     grub.cfg;EFI/BOOT/grub.cfg \
     mender_grubenv1/env;EFI/BOOT/mender_grubenv1/env \
     mender_grubenv1/lock;EFI/BOOT/mender_grubenv1/lock \
