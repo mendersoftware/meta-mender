@@ -1,4 +1,5 @@
 require mender.inc
+require mender-old-makefile.inc
 
 ################################################################################
 #-------------------------------------------------------------------------------
@@ -8,28 +9,19 @@ require mender.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.0.x"
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=1.7.x"
 
-# Tag: 2.0.0b1
-SRCREV = "040a234aba2abb1b8d9351674892a1b0c7202fea"
+# Tag: 1.7.1
+SRCREV = "2b888756a45b89a33dd1bd7dd3a86540575675e7"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
-DEFAULT_PREFERENCE = "-1"
+#DEFAULT_PREFERENCE = "-1"
 
 ################################################################################
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=ccb00e21c31df7189b2bd237ed86e7c2"
-LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=5632b9f17043c6f5f532501778595c78"
+LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & MIT & OLDAP-2.8"
 
-DEPENDS += "xz"
-RDEPENDS_${PN} += "liblzma"
-
-do_compile_ptest_base() {
-   # Yocto branches sumo and older fail in Mender version 2.0
-   # ptest since it uses some golang features that are only
-   # available in newer branches of OE
-   true
-}
