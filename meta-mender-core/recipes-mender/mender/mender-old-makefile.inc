@@ -87,4 +87,9 @@ do_install() {
         rm -rf ${D}/${localstatedir}/lib/mender
         ln -s /data/mender ${D}/${localstatedir}/lib/mender
     fi
+
+    # Setup blacklist to ensure udev does not automatically mount Mender managed partitions
+    install -d ${D}${sysconfdir}/udev/mount.blacklist.d
+    echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
+    echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
 }
