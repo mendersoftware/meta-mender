@@ -199,7 +199,7 @@ MENDER_PERSISTENT_CONFIGURATION_VARS ?= "RootfsPartA RootfsPartB"
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 IMAGE_INSTALL_append = " mender"
-IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg"
+IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg mender-bootimg"
 
 # Originally defined in bitbake.conf. We define them here so that images with
 # the same MACHINE name, but different MENDER_DEVICE_TYPE, will not result in
