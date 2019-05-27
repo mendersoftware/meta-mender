@@ -412,9 +412,14 @@ def min_yocto_version(request, bitbake_variables):
         "thud",
         "warrior",
         "zeus",
+
+        "master",
     ]
 
     test_version = version_mark.args[0]
+
+    candidates = ["'refs/heads/%s' 'refs/remotes/*/%s'"
+                  % (branch, branch) for branch in yocto_versions_ordered]
 
     # Technique taken from release_tool.py in integration repository:
 
@@ -423,19 +428,18 @@ def min_yocto_version(request, bitbake_variables):
     # pick the shortest one, and we assume that this is our current version. We
     # pick all the refs from tags and local branches, as well as single level
     # upstream branches (which avoids pull requests).
+
+    # An additional tweak here is that we only consider the well known branch
+    # names from Yocto as candidates.
     yocto_version = subprocess.check_output("""
-        for i in $(git for-each-ref --format='%(refname:short)' 'refs/heads/*' 'refs/remotes/*/*'); do
+        for i in $(git for-each-ref --format='%%(refname:short)' %s); do
             echo $(git log --oneline $(git merge-base $i HEAD)..HEAD | wc -l) $i
         done | sort -n | head -n1 | awk '{print $2}'
-        """, shell=True).strip().decode()
+        """ % " ".join(candidates), shell=True).strip().decode()
 
     # Get rid of remote information, if any.
     if yocto_version.rfind("/"):
         yocto_version = yocto_version[yocto_version.rfind("/")+1:]
-
-    if yocto_version == "master":
-        # Never skip for master.
-        return
 
     if yocto_versions_ordered.index(test_version) > yocto_versions_ordered.index(yocto_version):
         pytest.skip("Test requires minimum Yocto version '%s' and current Yocto version is '%s'"
