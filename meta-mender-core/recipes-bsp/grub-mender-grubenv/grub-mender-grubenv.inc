@@ -21,7 +21,7 @@ S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 PACKAGECONFIG[debug-pause] = ",,,"
-SRC_URI_append = "${@bb.utils.contains('PACKAGECONFIG', 'debug-pause', ' file://06_mender_debug_pause_grub.cfg', '', d)}"
+SRC_URI_append = "${@bb.utils.contains('PACKAGECONFIG', 'debug-pause', ' file://06_mender_debug_pause_grub.cfg;subdir=git', '', d)}"
 PACKAGECONFIG[debug-log] = ",,,"
 
 # See https://www.gnu.org/software/grub/manual/grub/grub.html#debug
