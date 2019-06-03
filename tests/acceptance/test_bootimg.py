@@ -30,4 +30,7 @@ class TestBootImg:
 
         built_img = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.bootimg")
 
-        # What can we check here to validate this?
+        distro_features = bitbake_variables['DISTRO_FEATURES'].split()
+        if "mender-grub" in distro_features and "mender-image-uefi" in distro_features:
+            output = subprocess.check_output(["mdir", "-i", built_img, "-b", "/EFI/BOOT"])
+            assert "mender_grubenv1" in output.split('/')
