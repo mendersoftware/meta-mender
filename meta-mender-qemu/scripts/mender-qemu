@@ -115,7 +115,7 @@ for maybe_kvm in -enable-kvm ""; do
             -m 256M \
             $BOOTLOADER_ARG \
             -net nic,macaddr="$RANDOM_MAC" \
-            -net user,hostfwd=tcp::8822-:22 \
+            -net user,hostfwd=tcp::8822-:22$QEMU_NET_HOSTFWD \
             -display vnc=:23 \
             -nographic \
             $maybe_kvm \
