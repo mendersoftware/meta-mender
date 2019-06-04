@@ -245,3 +245,44 @@ def mender_get_data_part_num(d):
     if n <= 4: return n
     if mender_is_msdos_ptable_image(d): n += 1
     return n
+
+# Take the content from the rootfs that is going into the boot partition, coming
+# from MENDER_BOOT_PART_MOUNT_LOCATION, and merge with the files from
+# IMAGE_BOOT_FILES, following the format from the official Yocto documentation.
+mender_merge_bootfs_and_image_boot_files() {
+    W="${WORKDIR}/bootfs.${BB_CURRENTTASK}"
+    rm -rf "$W"
+
+    cp -al "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
+
+    # Put in variable to avoid expansion and ';' being parsed by shell.
+    image_boot_files="${IMAGE_BOOT_FILES}"
+    for entry in $image_boot_files; do
+        if echo "$entry" | grep -q ";"; then
+            dest="$(echo "$entry" | sed -e 's/[^;]*;//')"
+            entry="$(echo "$entry" | sed -e 's/;.*//')"
+        else
+            dest="./"
+        fi
+        if echo "$dest" | grep -q '/$'; then
+            dest_is_dir=1
+            mkdir -p "$W/$dest"
+        else
+            dest_is_dir=0
+            mkdir -p "$(dirname "$W/$dest")"
+        fi
+
+        # Use extra for loop so we can check conflict for each file.
+        for file in ${DEPLOY_DIR_IMAGE}/$entry; do
+            if [ $dest_is_dir -eq 1 ]; then
+                destfile="$W/$dest$(basename $file)"
+            else
+                destfile="$W/$dest"
+            fi
+            if [ -e "$destfile" ]; then
+                bbfatal "$destfile already exists in boot partition. Please verify that packages do not put files in the boot partition that conflict with IMAGE_BOOT_FILES."
+            fi
+            cp -l "$file" "$destfile"
+        done
+    done
+}
