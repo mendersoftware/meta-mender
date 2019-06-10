@@ -1,0 +1,12 @@
+[Unit]
+Description=Mender persistent machine ID for systemd
+ConditionPathExists=/etc/machine-id
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/mender-set-systemd-machine-id.sh
+
+[Install]
+WantedBy=mender.service
