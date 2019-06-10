@@ -204,6 +204,9 @@ python() {
 
         # Use Mender together with U-Boot.
         'mender-uboot',
+
+        # Setup the systemd machine ID to be persistent across OTA updates.
+        'mender-persist-systemd-machine-id',
     }
 
     mfe = d.getVar('MENDER_FEATURES_ENABLE')
