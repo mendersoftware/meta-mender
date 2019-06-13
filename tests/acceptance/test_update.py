@@ -1032,5 +1032,5 @@ class TestUpdates:
         # Make sure committing is not possible anymore afterwards.
         with settings(warn_only=True):
             output = run("mender -commit")
-            assert output.return_code != 0
-            assert "No artifact installation in progress" in output
+            assert output.return_code == 2
+            assert "There is nothing to commit" in output
