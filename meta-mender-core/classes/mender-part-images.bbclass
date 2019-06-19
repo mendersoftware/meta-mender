@@ -335,7 +335,7 @@ IMAGE_CMD_mtdimg() {
         elif [ "$name" = "u-boot-env" ]; then
             mender_flash_mtdpart "${DEPLOY_DIR_IMAGE}/uboot.env" $size $kbsize $kboffset $name
         elif [ "$name" = "ubi" ]; then
-            mender_flash_mtdpart "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubimg" $size $kbsize $kboffset $name
+            mender_flash_mtdpart "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.ubimg" $size $kbsize $kboffset $name
         else
             bbwarn "Don't know how to flash mtdparts '$name'. Filling with zeros."
             mender_flash_mtdpart "/dev/zero" $size $kbsize $kboffset $name
@@ -344,7 +344,7 @@ IMAGE_CMD_mtdimg() {
         i=$(expr $i + 1)
     done
 
-    ln -sfn "${IMAGE_NAME}.mtdimg" "${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.mtdimg"
+    ln -sfn "${IMAGE_NAME}.mtdimg" "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.mtdimg"
 }
 
 IMAGE_TYPEDEP_mtdimg_append = " ubimg"

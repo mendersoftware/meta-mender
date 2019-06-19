@@ -56,7 +56,7 @@ IMAGE_CMD_ubimg () {
     cat > ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg <<EOF
 [rootfsA]
 mode=ubi
-image=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubifs
+image=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.ubifs
 vol_id=0
 vol_size=${MENDER_CALC_ROOTFS_SIZE}KiB
 vol_type=dynamic
@@ -64,7 +64,7 @@ vol_name=rootfsa
 
 [rootfsB]
 mode=ubi
-image=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubifs
+image=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.ubifs
 vol_id=1
 vol_size=${MENDER_CALC_ROOTFS_SIZE}KiB
 vol_type=dynamic
@@ -72,7 +72,7 @@ vol_name=rootfsb
 
 [data]
 mode=ubi
-image=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.dataimg
+image=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.dataimg
 vol_id=2
 vol_size=${MENDER_DATA_PART_SIZE_MB}MiB
 vol_type=dynamic
