@@ -38,5 +38,5 @@ if [ ! -e /mender-setup-complete ]; then
     touch /mender-setup-complete
 fi
 
-export QEMU_NET_HOSTFWD=",hostfwd=tcp::80-:80"
+export QEMU_NET_HOSTFWD=",hostfwd=tcp::80-:80,hostfwd=tcp::85-:85"
 ./mender-qemu "$@"
