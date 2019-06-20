@@ -205,12 +205,16 @@ def mender_mtdparts_convert_units_to_bytes(number, unit):
     return to_return
 
 mender_get_clean_kernel_devicetree() {
-    # Strip leading and trailing whitespace, then newline divide, and remove dtbo's.
-    MENDER_DTB_NAME="$(echo "${KERNEL_DEVICETREE}" | sed -r 's/(^\s*)|(\s*$)//g; s/\s+/\n/g' | sed -ne '/\.dtbo$/b; p')"
+    if [ -n "${MENDER_DTB_NAME_FORCE}" ]; then
+        MENDER_DTB_NAME="${MENDER_DTB_NAME_FORCE}"
+    else
+        # Strip leading and trailing whitespace, then newline divide, and remove dtbo's.
+        MENDER_DTB_NAME="$(echo "${KERNEL_DEVICETREE}" | sed -r 's/(^\s*)|(\s*$)//g; s/\s+/\n/g' | sed -ne '/\.dtbo$/b; p')"
 
-    if [ -z "$MENDER_DTB_NAME" ]; then
-        bbfatal "Did not find a dtb specified in KERNEL_DEVICETREE"
-        exit 1
+        if [ -z "$MENDER_DTB_NAME" ]; then
+            bbfatal "Did not find a dtb specified in KERNEL_DEVICETREE"
+            exit 1
+        fi
     fi
 
     DTB_COUNT=$(echo "$MENDER_DTB_NAME" | wc -l)
