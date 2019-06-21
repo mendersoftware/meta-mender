@@ -42,19 +42,6 @@ IMAGE_NAME_SUFFIX = ""
 # Block storage
 ################################################################################
 
-def mender_wic_exclude_path_options(rootfs, exclude_path):
-    exclude_path = exclude_path.strip()
-
-    existing_exclude_paths = ""
-    for path in exclude_path.split():
-        if os.path.lexists(os.path.realpath(os.path.join(rootfs, path))):
-           existing_exclude_paths += path + " "
-
-    if existing_exclude_paths:
-        return "--exclude-path %s" % existing_exclude_paths
-    else:
-        return ""
-
 mender_part_image() {
     suffix="$1"
     part_type="$2"
@@ -130,11 +117,9 @@ EOF
         bbwarn "MENDER_BOOT_PART_SIZE_MB is set to zero, but IMAGE_BOOT_FILES is not empty. The files are being omitted from the image."
     fi
 
-    exclude_path_options="${@mender_wic_exclude_path_options('${IMAGE_ROOTFS}', '${IMAGE_ROOTFS_EXCLUDE_PATH}')}"
-
     cat >> "$wks" <<EOF
-part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label primary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_path_options
-part --source rootfs --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label secondary --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $exclude_path_options
+part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
+part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
 EOF
 
     if [ "${MENDER_SWAP_PART_SIZE_MB}" -ne "0" ]; then
@@ -144,7 +129,7 @@ EOF
     fi
 
     cat >> "$wks" <<EOF
-part --source rootfs --rootfs-dir ${IMAGE_ROOTFS}/data --ondisk "$ondisk_dev" --fstype=${MENDER_DATA_PART_FSTYPE_TO_GEN} --label data --align $alignment_kb --fixed-size ${MENDER_DATA_PART_SIZE_MB} --mkfs-extraopts='${MENDER_DATA_PART_FSOPTS}'
+part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.dataimg" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_DATA_PART_SIZE_MB} --mkfs-extraopts='${MENDER_DATA_PART_FSOPTS}'
 bootloader --ptable $part_type
 EOF
 
@@ -260,6 +245,12 @@ do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS} \
 do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
 do_image_gptimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
+
+IMAGE_TYPEDEP_sdimg_append   = " ${ARTIFACTIMG_FSTYPE} dataimg"
+IMAGE_TYPEDEP_uefiimg_append = " ${ARTIFACTIMG_FSTYPE} dataimg"
+IMAGE_TYPEDEP_biosimg_append = " ${ARTIFACTIMG_FSTYPE} dataimg"
+IMAGE_TYPEDEP_gptimg_append  = " ${ARTIFACTIMG_FSTYPE} dataimg"
+
 # This isn't actually a dependency, but a way to avoid sdimg and uefiimg
 # building simultaneously, since wic will use the same file names in both, and
 # in parallel builds this is a recipe for disaster.
