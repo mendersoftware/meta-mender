@@ -188,7 +188,11 @@ def latest_mender_image():
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.mender")
+    if pytest.config.getoption('--test-conversion'):
+        image_name = os.path.splitext(pytest.config.getoption('--mender-image'))[0]
+        return latest_build_artifact(os.environ['BUILDDIR'], "%s.mender" % image_name)
+    else:
+        return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.mender")
 
 @pytest.fixture(scope="session")
 def latest_part_image():
