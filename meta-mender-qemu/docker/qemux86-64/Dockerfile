@@ -22,7 +22,7 @@ FROM alpine:3.7
 
 # Install packages
 RUN apk update && apk upgrade && \
-    apk add util-linux \
+    apk add util-linux multipath-tools \
             bash e2fsprogs-extra python3
 
 RUN apk add qemu-system-x86_64
@@ -42,6 +42,7 @@ COPY $BOOTLOADER_DATA ./ovmf.vars.qcow2
 ADD scripts/mender-qemu ./
 ADD scripts/docker/entrypoint.sh ./
 ADD scripts/docker/setup-mender-configuration.py ./
+ADD scripts/docker/extract_fs ./
 ADD env.txt ./
 
 # Delete images if they are empty. This is to save space if the artifacts are
