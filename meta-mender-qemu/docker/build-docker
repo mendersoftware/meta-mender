@@ -2,6 +2,9 @@
 
 cd "$(dirname "$0")"
 
+BUILD_DEFAULTS=1
+IMAGE_NAME="core-image-full-cmdline"
+
 usage() {
     cat <<EOF
 $(basename "$0") [options] MACHINE [docker build options]
@@ -12,16 +15,25 @@ All options after MACHINE are given to "docker build".
 --no-defaults
 	Do not automatically copy over needed directories and pass needed
 	arguments. If you use this you must pass the arguments and prepare the
-	files yourself.
+	files yourself. Other options have no effect if this is passed.
+-i, --image <IMAGE_NAME>
+	The name of the image being used in the container. Defaults to
+	$IMAGE_NAME.
 EOF
 }
-
-BUILD_DEFAULTS=1
 
 while [ -n "$1" ]; do
     case "$1" in
         --no-defaults)
             BUILD_DEFAULTS=0
+            ;;
+        -i|--image)
+            shift
+            if [ -z "$1" ]; then
+                echo "Need to specify image name with -i / --image." 1>&2
+                exit 1
+            fi
+            IMAGE_NAME="$1"
             ;;
         -h|--help)
             usage
@@ -60,12 +72,12 @@ if [ $BUILD_DEFAULTS = 1 ]; then
     fi
 
     # Fish out some settings from Bitbake.
-    eval "$(bitbake -e core-image-full-cmdline | egrep '^DISTRO_FEATURES=')"
+    eval "$(bitbake -e $IMAGE_NAME | egrep '^DISTRO_FEATURES=')"
 
     if egrep -q '\bmender-image-uefi\b' <<<"$DISTRO_FEATURES"; then
-        DISK_IMG="core-image-full-cmdline-$MACHINE.uefiimg"
+        DISK_IMG="$IMAGE_NAME-$MACHINE.uefiimg"
     elif egrep -q '\bmender-image-sd\b' <<<"$DISTRO_FEATURES"; then
-        DISK_IMG="core-image-full-cmdline-$MACHINE.sdimg"
+        DISK_IMG="$IMAGE_NAME-$MACHINE.sdimg"
     else
         echo "Neither mender-image-uefi nor mender-image-sd are set! Don't know which image to use!" 1>&2
         exit 1

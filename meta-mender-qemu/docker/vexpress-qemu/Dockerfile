@@ -121,8 +121,8 @@ ADD env.txt ./
 
 # Delete images if they are empty. This is to save space if the artifacts are
 # mounted on /mnt/build instead.
-RUN if [ `stat -c %s core-image-full-cmdline-vexpress-qemu.sdimg` -eq 0 ]; then rm -f core-image-full-cmdline-vexpress-qemu.sdimg; fi
-RUN if [ `stat -c %s u-boot.elf` -eq 0 ]; then rm -f u-boot.elf; fi
+RUN if [ $(stat -c %s $(basename $DISK_IMAGE)) -eq 0 ]; then rm -f $(basename $DISK_IMAGE); fi
+RUN if [ $(stat -c %s u-boot.elf) -eq 0 ]; then rm -f u-boot.elf; fi
 
 RUN chmod +x entrypoint.sh mender-qemu
 EXPOSE 8822
