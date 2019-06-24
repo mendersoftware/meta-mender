@@ -15,6 +15,7 @@
 
 from fabric.api import *
 
+import hashlib
 import os
 import pytest
 import shutil
@@ -24,7 +25,7 @@ import tempfile
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
-def extract_ubimg(path, outdir):
+def extract_ubimg_files(path, outdir):
     """Extract ubi image to a directory inside `outdir`. Returns path to a the
     directory, where contents of each volume are in direct sub-directories.
     Sub-directories are named after volumes.
@@ -35,6 +36,19 @@ def extract_ubimg(path, outdir):
     # /tmp/meta-mender-acceptance.xzkPVM/148052886/data
     # /tmp/meta-mender-acceptance.xzkPVM/148052886/rootfsa
     # /tmp/meta-mender-acceptance.xzkPVM/148052886/rootfsb
+    volumes_root = os.path.join(outdir, os.listdir(outdir)[0])
+    return volumes_root
+
+def extract_ubimg_images(path, outdir):
+    """Extract ubi image to a directory inside `outdir`. Returns path to a the
+    directory with each image, named after volumes.
+    """
+    subprocess.check_call("ubireader_extract_images -o {} {}".format(outdir, path),
+                          shell=True)
+    # extract to the following files:
+    # /tmp/tmpoJ1z_s/core-image-full-cmdline-vexpress-qemu-flash.ubimg/img-1823796814_vol-rootfsb.ubifs
+    # /tmp/tmpoJ1z_s/core-image-full-cmdline-vexpress-qemu-flash.ubimg/img-1823796814_vol-rootfsa.ubifs
+    # /tmp/tmpoJ1z_s/core-image-full-cmdline-vexpress-qemu-flash.ubimg/img-1823796814_vol-data.ubifs
     volumes_root = os.path.join(outdir, os.listdir(outdir)[0])
     return volumes_root
 
@@ -219,8 +233,55 @@ class TestUbimg:
         """Test that data volume has correct contents"""
 
         with make_tempdir() as tmpdir:
-            rootdir = extract_ubimg(ubimg_without_uboot_env, tmpdir)
+            rootdir = extract_ubimg_files(ubimg_without_uboot_env, tmpdir)
 
             assert os.path.exists(os.path.join(rootdir, 'rootfsa/usr/bin/mender'))
             assert os.path.exists(os.path.join(rootdir, 'rootfsb/usr/bin/mender'))
             # TODO: verify contents of data partition
+
+    @pytest.mark.min_yocto_version("warrior")
+    def test_equal_checksum_ubimg_and_artifact(self, prepared_test_build):
+        build_dir = prepared_test_build['build_dir']
+
+        # See ubimg_without_uboot_env() for why this is needed. We need to do it
+        # explicitly here because we need both the artifact and the ubimg.
+        add_to_local_conf(prepared_test_build, 'MENDER_FEATURES_DISABLE_append = " mender-uboot"')
+        run_bitbake(prepared_test_build)
+
+        bufsize = 1048576 # 1MiB
+        with tempfile.NamedTemporaryFile() as tmp_artifact:
+            latest_mender_image = latest_build_artifact(build_dir, "*.mender")
+            subprocess.check_call("tar xOf %s data/0000.tar.gz | tar xzO > %s" % (latest_mender_image, tmp_artifact.name),
+                                  shell=True)
+            size = os.stat(tmp_artifact.name).st_size
+            hash = hashlib.md5()
+            while True:
+                buf = tmp_artifact.read(bufsize)
+                if len(buf) == 0:
+                    break
+                hash.update(buf)
+            artifact_hash = hash.hexdigest()
+            artifact_info = subprocess.check_output(["ubireader_display_info", tmp_artifact.name])
+            artifact_ls = subprocess.check_output(["ls", "-l", tmp_artifact.name])
+
+        tmpdir = tempfile.mkdtemp()
+        try:
+            ubifsdir = extract_ubimg_images(latest_build_artifact(build_dir, "*.ubimg"), tmpdir)
+            rootfsa = os.path.join(ubifsdir, [img for img in os.listdir(ubifsdir) if "rootfsa" in img][0])
+            bytes_read = 0
+            hash = hashlib.md5()
+            with open(rootfsa) as fd:
+                while bytes_read < size:
+                    buf = fd.read(min(size - bytes_read, bufsize))
+                    if len(buf) == 0:
+                        break
+                    bytes_read += len(buf)
+                    hash.update(buf)
+                image_hash = hash.hexdigest()
+            image_info = subprocess.check_output(["ubireader_display_info", rootfsa])
+            image_ls = subprocess.check_output(["ls", "-l", rootfsa])
+        finally:
+            shutil.rmtree(tmpdir)
+
+        assert artifact_info == image_info
+        assert artifact_hash == image_hash, "Artifact:\n%s\nImage:\n%s" % (artifact_ls, image_ls)
