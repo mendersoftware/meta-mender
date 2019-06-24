@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -e
+
+failure() {
+    echo "Failed! Make sure you are using a privileged container." 1>&2
+    cleanup
+    exit 1
+}
+
+cleanup() {
+    # Ignore errors in cleanup.
+    set +e
+    kpartx -d $DEV
+    losetup -d $DEV
+}
+
+trap failure ERR
+trap cleanup EXIT
+
+DEV=$(losetup -f)
+IMG=$(ls /*img | head -n 1)
+OUTPUT=/output/$(sed -e 's/\.[^.]*img$/.ext4/' <<<$(basename $IMG))
+
+losetup $DEV $IMG
+kpartx -a $DEV
+echo "Copying filesystem image to $OUTPUT"
+dd if=/dev/mapper/$(basename $DEV)p2 of=$OUTPUT bs=8M status=none
+chown $(stat -c '%u:%g' /output) $OUTPUT
