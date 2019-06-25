@@ -100,6 +100,13 @@ VERSION_ID="2.5-snapshot-20180731"
                 "expected": "os=Poky (Yocto Project Reference Distro) 2.5+snapshot-20180731 (master)",
             },
             {
+                "name": "/bin/lsb_release",
+                "content": """#!/bin/sh
+echo Base LSB OS""",
+                "mode": 0755,
+                "expected": "os=Base LSB OS",
+            },
+            {
                 "name": "/usr/bin/lsb_release",
                 "content": """#!/bin/sh
 echo LSB OS""",
