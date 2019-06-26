@@ -1,6 +1,9 @@
 require mender.inc
 require mender-old-makefile.inc
 
+DEPENDS = "xz"
+RDEPENDS_${PN} = "liblzma"
+
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the
