@@ -251,6 +251,7 @@ def mender_get_ubi_size(d):
 
     # Find all space in mtdimage not occupied by the UBI image.
     non_ubi_size = 0
+    ubiname = d.getVar('MENDER_MTD_UBI_DEVICE_NAME')
     for part in mtdpart.split(":", 1)[1].split(","):
         match = re.match("^([0-9]+|-)([kmg]?)(?:@([0-9]+)([kmg]?))?\(([^)]+)\)", part)
         if match is None:
@@ -262,14 +263,14 @@ def mender_get_ubi_size(d):
         else:
             vol_size = mender_mtdparts_convert_units_to_bytes(match.group(1), match.group(2))
 
-        if match.group(5) == "ubi":
+        if match.group(5) == ubiname:
             # UBI space, we are finished.
             break
 
         if vol_size != "-":
             non_ubi_size += vol_size
     else:
-        bb.fatal("Could not find \"(ubi)\" MTD partition")
+        bb.fatal("Could not find \"(%s)\" MTD partition" % ubiname)
 
     if vol_size == "-":
         ubi_size = int(d.getVar('MENDER_STORAGE_TOTAL_SIZE_MB')) * 1048576 - non_ubi_size
