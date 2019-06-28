@@ -152,4 +152,4 @@ echo LSB OS""",
         finally:
             for file in [src['name'] for src in sources if src['name']]:
                 backup = "/data%s.backup" % file
-                run("if [ -e %s ]; then cp %s $(realpath %s); fi" % (backup, backup, file))
+                run("if [ -e %s ]; then dd if=%s of=$(realpath %s); fi" % (backup, backup, file))
