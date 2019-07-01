@@ -22,7 +22,7 @@ FROM alpine:3.7
 
 # Install packages
 RUN apk update && apk upgrade && \
-    apk add util-linux \
+    apk add util-linux multipath-tools \
             bash e2fsprogs-extra python3
 
 RUN apk add qemu-system-x86_64
@@ -35,19 +35,20 @@ ARG DISK_IMAGE=scripts/docker/empty-file
 ARG BOOTLOADER=scripts/docker/empty-file
 ARG BOOTLOADER_DATA=scripts/docker/empty-file
 
-COPY $DISK_IMAGE ./core-image-full-cmdline-qemux86-64.uefiimg
+COPY $DISK_IMAGE .
 COPY $BOOTLOADER ./ovmf.qcow2
 COPY $BOOTLOADER_DATA ./ovmf.vars.qcow2
 
 ADD scripts/mender-qemu ./
 ADD scripts/docker/entrypoint.sh ./
 ADD scripts/docker/setup-mender-configuration.py ./
+ADD scripts/docker/extract_fs ./
 ADD env.txt ./
 
 # Delete images if they are empty. This is to save space if the artifacts are
 # mounted on /mnt/build instead.
-RUN if [ `stat -c %s core-image-full-cmdline-qemux86-64.uefiimg` -eq 0 ]; then rm -f core-image-full-cmdline-qemux86-64.uefiimg; fi
-RUN if [ `stat -c %s ovmf.qcow2` -eq 0 ]; then rm -f ovmf.qcow2; fi
+RUN if [ $(stat -c %s $(basename $DISK_IMAGE)) -eq 0 ]; then rm -f $(basename $DISK_IMAGE); fi
+RUN if [ $(stat -c %s ovmf.qcow2) -eq 0 ]; then rm -f ovmf.qcow2; fi
 
 RUN chmod +x entrypoint.sh mender-qemu
 EXPOSE 8822

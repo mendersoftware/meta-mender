@@ -16,11 +16,11 @@
 # -e TENANT_TOKEN=<token>
 #       Use token as tenant token for client.
 
-FROM alpine:3.6
+FROM alpine:3.7
 
 # Install packages
 RUN apk update && apk upgrade && \
-    apk add util-linux \
+    apk add util-linux multipath-tools \
             bash e2fsprogs-extra python3 && \
     rm -rf /var/cache/apk/*
 
@@ -117,12 +117,13 @@ COPY $DISK_IMAGE .
 ADD scripts/mender-qemu ./
 ADD scripts/docker/entrypoint.sh ./
 ADD scripts/docker/setup-mender-configuration.py ./
+ADD scripts/docker/extract_fs ./
 ADD env.txt ./
 
 # Delete images if they are empty. This is to save space if the artifacts are
 # mounted on /mnt/build instead.
-RUN if [ `stat -c %s core-image-full-cmdline-vexpress-qemu.sdimg` -eq 0 ]; then rm -f core-image-full-cmdline-vexpress-qemu.sdimg; fi
-RUN if [ `stat -c %s u-boot.elf` -eq 0 ]; then rm -f u-boot.elf; fi
+RUN if [ $(stat -c %s $(basename $DISK_IMAGE)) -eq 0 ]; then rm -f $(basename $DISK_IMAGE); fi
+RUN if [ $(stat -c %s u-boot.elf) -eq 0 ]; then rm -f u-boot.elf; fi
 
 RUN chmod +x entrypoint.sh mender-qemu
 EXPOSE 8822

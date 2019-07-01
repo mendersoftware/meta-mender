@@ -60,12 +60,12 @@ class Helpers:
         offsets = Helpers.get_env_offsets(bitbake_variables)
         dev = bitbake_variables["MENDER_STORAGE_DEVICE"]
 
-        run("dd if=%s of=env1.tmp bs=1 count=4 skip=%d" % (dev, offsets[0]))
-        run("dd if=%s of=env2.tmp bs=1 count=4 skip=%d" % (dev, offsets[1]))
+        run("dd if=%s of=/data/env1.tmp bs=1 count=4 skip=%d" % (dev, offsets[0]))
+        run("dd if=%s of=/data/env2.tmp bs=1 count=4 skip=%d" % (dev, offsets[1]))
 
-        get("env1.tmp")
-        get("env2.tmp")
-        run("rm -f env1.tmp env2.tmp")
+        get("env1.tmp", remote_path="/data")
+        get("env2.tmp", remote_path="/data")
+        run("rm -f /data/env1.tmp /data/env2.tmp")
 
         env = open("env1.tmp")
         checksums[0] = env.read()
@@ -747,7 +747,7 @@ class TestUpdates:
             run("fw_setenv mender_boot_part %s" % active[-1:])
             run("fw_setenv mender_boot_part_hex %x" % int(active[-1:]))
             run("fw_setenv upgrade_available 0")
-            run("cp -L /data/etc/mender/mender.conf.bak /etc/mender/mender.conf")
+            run("cp -L /data/etc/mender/mender.conf.bak $(realpath /etc/mender/mender.conf)")
             if sig_key:
                 run("rm -f /etc/mender/%s" % os.path.basename(sig_key.public))
 
@@ -945,7 +945,7 @@ class TestUpdates:
             assert len(env_conf_lines) == 2
             for i in [0, 1]:
                 entry = env_conf_lines[i].split()
-                run("dd if=%s skip=%d bs=%d count=1 iflag=skip_bytes > /old_env%d"
+                run("dd if=%s skip=%d bs=%d count=1 iflag=skip_bytes > /data/old_env%d"
                     % (entry[0], int(entry[1], 0), int(entry[2], 0), i))
                 run("dd if=/dev/zero of=%s seek=%d bs=%d count=1 oflag=seek_bytes"
                     % (entry[0], int(entry[1], 0), int(entry[2], 0)))
@@ -961,9 +961,9 @@ class TestUpdates:
                 # Restore environment to what it was.
                 for i in [0, 1]:
                     entry = env_conf_lines[i].split()
-                    run("dd of=%s seek=%d bs=%d count=1 oflag=seek_bytes < /old_env%d"
+                    run("dd of=%s seek=%d bs=%d count=1 oflag=seek_bytes < /data/old_env%d"
                         % (entry[0], int(entry[1], 0), int(entry[2], 0), i))
-                    run("rm -f /old_env%d" % i)
+                    run("rm -f /data/old_env%d" % i)
 
         finally:
             # Cleanup.

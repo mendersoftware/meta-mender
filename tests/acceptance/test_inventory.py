@@ -100,6 +100,13 @@ VERSION_ID="2.5-snapshot-20180731"
                 "expected": "os=Poky (Yocto Project Reference Distro) 2.5+snapshot-20180731 (master)",
             },
             {
+                "name": "/bin/lsb_release",
+                "content": """#!/bin/sh
+echo Base LSB OS""",
+                "mode": 0755,
+                "expected": "os=Base LSB OS",
+            },
+            {
                 "name": "/usr/bin/lsb_release",
                 "content": """#!/bin/sh
 echo LSB OS""",
@@ -117,8 +124,10 @@ echo LSB OS""",
                 "expected": "os=unknown",
             },
         ]
-        for file in [src['name'] for src in sources]:
-            run("if [ -e %s ]; then mv %s %s.backup; fi" % (file, file, file))
+        for file in [src['name'] for src in sources if src['name']]:
+            backup = "/data%s.backup" % file
+            bdir = os.path.dirname(backup)
+            run("mkdir -p %s && if [ -e %s ]; then cp %s %s; fi" % (bdir, file, file, backup))
 
         try:
             for src in sources:
@@ -139,7 +148,8 @@ echo LSB OS""",
                 output = run("/usr/share/mender/inventory/mender-inventory-os")
                 assert(output == src['expected'])
                 if src.get('name') is not None:
-                    run("rm -f %s" % src['name'])
+                    run("rm -f $(realpath %s)" % src['name'])
         finally:
-            for file in [src['name'] for src in sources]:
-                run("if [ -e %s.backup ]; then mv %s.backup %s; fi" % (file, file, file))
+            for file in [src['name'] for src in sources if src['name']]:
+                backup = "/data%s.backup" % file
+                run("if [ -e %s ]; then dd if=%s of=$(realpath %s); fi" % (backup, backup, file))
