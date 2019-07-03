@@ -26,3 +26,10 @@ LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
 
 DEPENDS += "xz"
 RDEPENDS_${PN} += "liblzma"
+
+do_compile_ptest_base() {
+   # Yocto branches sumo and older fail in Mender version 2.0
+   # ptest since it uses some golang features that are only
+   # available in newer branches of OE
+   true
+}
