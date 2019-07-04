@@ -15,7 +15,7 @@ IMAGE_CMD_vexpress-nor() {
     # create a single NOR file image, fill with 0xff (empty) pattern
     dd if=/dev/zero bs=1M count=128 | tr '\000' '\377' > ${WORKDIR}/nor-full
 
-    ubimgfile=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubimg
+    ubimgfile=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.ubimg
 
     # ubi image starts at 2MB offset and must be smaller than 126MB
     imgsize=$(stat -c '%s' -L ${ubimgfile})

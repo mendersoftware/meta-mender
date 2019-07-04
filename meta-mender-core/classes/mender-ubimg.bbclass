@@ -35,7 +35,7 @@ IMAGE_CMD_ubimg () {
 
     echo \[rootfsA\] >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo mode=ubi >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo image=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubifs >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
+    echo image=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.ubifs >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo vol_id=0 >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo vol_size=${MENDER_CALC_ROOTFS_SIZE}KiB >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo vol_type=dynamic >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
@@ -44,7 +44,7 @@ IMAGE_CMD_ubimg () {
 
     echo \[rootfsB\] >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo mode=ubi >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
-    echo image=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.ubifs >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
+    echo image=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.ubifs >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo vol_id=1 >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo vol_size=${MENDER_CALC_ROOTFS_SIZE}KiB >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
     echo vol_type=dynamic >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg
