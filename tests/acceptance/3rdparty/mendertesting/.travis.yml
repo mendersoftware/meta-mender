@@ -2,8 +2,7 @@ language: go
 
 # Golang version matrix
 go:
-    - 1.5.3
-    - tip
+    - 1.8
 
 before_install:
     # Install code coverage / coveralls tooling
@@ -34,7 +33,7 @@ before_script:
     - if [ -n "$(go fmt)" ]; then echo 'Code is not formatted with "go fmt"'; false; fi
 
     # Perform static code analysys
-    - go tool vet -unsafeptr=false `go list ./... | grep -v vendor | sed -e "s,^,$GOPATH/src/,;s,.*:,,"`
+    - go vet `go list ./... | grep -v vendor`
 
 script:
     # go list supply import paths for all sub directories.
