@@ -299,6 +299,33 @@ IMAGE_TYPEDEP_biosimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', '
 IMAGE_TYPEDEP_gptimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
+# Make sure the Mender part image is available in the live installer
+IMAGE_TYPEDEP_hddimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'gptimg', ' gptimg', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
+
+# Use the Mender part image as the Live image
+python() {
+    if bb.utils.contains('IMAGE_FSTYPES', 'sdimg', True, False, d):
+        type='sdimg'
+    elif bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', True, False, d):
+        type='uefiimg'
+    elif bb.utils.contains('IMAGE_FSTYPES', 'biosimg', True, False, d):
+        type='biosimg'
+    elif bb.utils.contains('IMAGE_FSTYPES', 'gptimg', True, False, d):
+        type='gptimg'
+    else:
+        return
+
+    d.setVar('LIVE_ROOTFS_TYPE', type)
+    d.setVar('ROOTFS', "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.%s.bz2" % type)
+    d.setVar('IMAGE_FSTYPES_append', ' %s.bz2 ' % type)
+
+    # Remove the boot option on the Live installer; it won't work since Mender hard codes
+    # the device nodes
+    d.setVar('LABELS_LIVE_remove', 'boot')
+}
 
 # So that we can use the files from excluded paths in the full images.
 do_image_sdimg[respect_exclude_path] = "0"
