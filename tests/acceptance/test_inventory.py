@@ -62,7 +62,7 @@ class TestInventory:
         else:
             pytest.fail("Unknown platform combination. Please add a test case for this combination.")
 
-    @pytest.mark.min_mender_version('1.6.0')
+    @pytest.mark.min_mender_version('2.0.0')
     def test_inventory_os(self, bitbake_variables):
         """Test that "os" inventory attribute is reported correctly by the
         inventory script."""
