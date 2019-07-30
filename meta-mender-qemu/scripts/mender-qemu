@@ -111,7 +111,7 @@ case $DISK_IMG in
 esac
 
 echo "--- qemu version"
-$QEMU_SYSTEM --version
+$QEMU_SYSTEM --version || exit 1
 
 echo "--- starting qemu"
 
