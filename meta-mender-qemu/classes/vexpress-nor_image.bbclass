@@ -6,7 +6,7 @@ IMAGE_TYPEDEP_vexpress-nor = "mtdimg"
 IMAGE_CMD_vexpress-nor() {
     set -ex
 
-    mtdimgfile=${IMGDEPLOYDIR}/${IMAGE_BASENAME}-${MACHINE}.mtdimg
+    mtdimgfile=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.mtdimg
 
     imgsize=$(stat -c '%s' -L ${mtdimgfile})
     if [ "$imgsize" -gt 134217728 ]; then
