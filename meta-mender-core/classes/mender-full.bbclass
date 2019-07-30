@@ -8,8 +8,8 @@ MENDER_FEATURES_ENABLE_append = " \
     mender-systemd \
 "
 
-_MENDER_IMAGE_TYPE_DEFAULT = "mender-image-uefi"
-_MENDER_BOOTLOADER_DEFAULT = "mender-grub"
+_MENDER_IMAGE_TYPE_DEFAULT ?= "mender-image-uefi"
+_MENDER_BOOTLOADER_DEFAULT ?= "mender-grub"
 
 # Beaglebone reads the first VFAT partition and only understands MBR partition
 # table. Even though this is a slight violation of the UEFI spec, change to that
