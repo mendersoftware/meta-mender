@@ -9,6 +9,8 @@ DEPLOYDIR = "${WORKDIR}/deploy-${PN}"
 
 MENDER_UBOOT_AUTO_CONFIGURE ??= "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', '1', '0', d)}"
 
+MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART ??= "0"
+
 ################################################################################
 # Patches.
 ################################################################################
@@ -42,12 +44,17 @@ do_provide_mender_defines() {
         bbfatal "To compile U-Boot with mender you have to add 'mender-uboot' to MENDER_FEATURES_ENABLE or DISTRO_FEATURES."
     fi
 
-    if [ $(expr ${MENDER_RESERVED_SPACE_BOOTLOADER_DATA} % \( ${MENDER_PARTITION_ALIGNMENT} \* 2 \)) -ne 0 ]; then
-        bbfatal "MENDER_RESERVED_SPACE_BOOTLOADER_DATA is not an even multiple of MENDER_PARTITION_ALIGNMENT."
-    fi
+    if [ ${MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART} -eq "0" ]; then
+        # Only check reserved space for bootloader data when the bootloader data is saved to the user partition of the MMC.
+        # In cases where it's saved to the boot partition it's not a part of the rootfs size and MENDER_RESERVED_SPACE_BOOTLOADER_DATA
+        # can be set to 0. It's up to layer customization to check size and alignment in this case.
+        if [ $(expr ${MENDER_RESERVED_SPACE_BOOTLOADER_DATA} % \( ${MENDER_PARTITION_ALIGNMENT} \* 2 \)) -ne 0 ]; then
+            bbfatal "MENDER_RESERVED_SPACE_BOOTLOADER_DATA is not an even multiple of MENDER_PARTITION_ALIGNMENT."
+        fi
 
-    if [ ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} -gt ${MENDER_RESERVED_SPACE_BOOTLOADER_DATA} ]; then
-        bbfatal "BOOTENV_SIZE (${BOOTENV_SIZE}) is too big to fit two copies inside MENDER_RESERVED_SPACE_BOOTLOADER_DATA (${MENDER_RESERVED_SPACE_BOOTLOADER_DATA}) with proper alignment. Please either: 1. Increase MENDER_RESERVED_SPACE_BOOTLOADER_DATA manually and make sure it is an *even* multiple of MENDER_PARTITION_ALIGNMENT (${MENDER_PARTITION_ALIGNMENT}). -or- 2. Decrease BOOTENV_SIZE in the U-Boot recipe so that it can fit two copies inside MENDER_RESERVED_SPACE_BOOTLOADER_DATA. Please see https://docs.mender.io/troubleshooting/yocto-project-build for more information."
+        if [ ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} -gt ${MENDER_RESERVED_SPACE_BOOTLOADER_DATA} ]; then
+            bbfatal "BOOTENV_SIZE (${BOOTENV_SIZE}) is too big to fit two copies inside MENDER_RESERVED_SPACE_BOOTLOADER_DATA (${MENDER_RESERVED_SPACE_BOOTLOADER_DATA}) with proper alignment. Please either: 1. Increase MENDER_RESERVED_SPACE_BOOTLOADER_DATA manually and make sure it is an *even* multiple of MENDER_PARTITION_ALIGNMENT (${MENDER_PARTITION_ALIGNMENT}). -or- 2. Decrease BOOTENV_SIZE in the U-Boot recipe so that it can fit two copies inside MENDER_RESERVED_SPACE_BOOTLOADER_DATA. Please see https://docs.mender.io/troubleshooting/yocto-project-build for more information."
+        fi
     fi
 
     if [ -n "${MENDER_BOOT_PART}" ]; then
@@ -135,6 +142,7 @@ do_provide_mender_defines() {
 #define MENDER_ROOTFS_PART_B_NUMBER_HEX $MENDER_ROOTFS_PART_B_NUMBER_HEX
 #define MENDER_UBOOT_STORAGE_INTERFACE "$MENDER_UBOOT_STORAGE_INTERFACE"
 #define MENDER_UBOOT_STORAGE_DEVICE $MENDER_UBOOT_STORAGE_DEVICE
+#define MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART ${MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART}
 
 /* BB variables. */
 #define MENDER_STORAGE_DEVICE "${MENDER_STORAGE_DEVICE}"
@@ -196,7 +204,7 @@ EOF
         cat >> ${S}/mender_Kconfig_fragment <<EOF
 CONFIG_ENV_OFFSET=$HEX_MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
 CONFIG_ENV_OFFSET_REDUND=$HEX_MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
-CONFIG_SYS_MMC_ENV_PART=0
+CONFIG_SYS_MMC_ENV_PART=${MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART}
 CONFIG_SYS_MMC_ENV_DEV=$MENDER_UBOOT_STORAGE_DEVICE
 EOF
     fi
@@ -368,6 +376,20 @@ python() {
 # Helpers and internal variables.
 ################################################################################
 
+# @return the full path to the uboot environment device (IE /dev/mmcblkXbootY or /dev/mmcblkX)
+def mender_get_uboot_env_mmc_linux_device_path(d):
+    # Convert u-boot partition numbers to linux device references
+    # See [CONFIG_SYS_MMC_ENV_PART](https://github.com/u-boot/u-boot/blob/u-boot-2016.09.y/README#L4390) and
+    # [linux kernel mmc-dev-parts documentation](https://www.kernel.org/doc/Documentation/mmc/mmc-dev-parts.txt)
+    storage_device=d.getVar("MENDER_STORAGE_DEVICE",True)
+    env_part=d.getVar("MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART",True)
+    env_part_append=""
+    if env_part != "0":
+        env_part_append="boot%d" % (int(env_part)-1)
+    return storage_device + env_part_append
+
+MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH ?= "${@mender_get_uboot_env_mmc_linux_device_path(d)}"
+
 mender_create_fw_env_config_file() {
     # Takes one argument, which is the file to put it in.
 
@@ -378,8 +400,8 @@ mender_create_fw_env_config_file() {
 
     # create fw_env.config file
     cat > $1 <<EOF
-${MENDER_STORAGE_DEVICE} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1} $HEX_BOOTENV_SIZE
-${MENDER_STORAGE_DEVICE} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2} $HEX_BOOTENV_SIZE
+${MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1} $HEX_BOOTENV_SIZE
+${MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2} $HEX_BOOTENV_SIZE
 EOF
 }
 
@@ -402,7 +424,8 @@ EOF
 # This should evaluate to the same as MENDER_RESERVED_SPACE_BOOTLOADER_DATA.
 # The only reason it's not evaluated the same way is that we don't have the
 # necessary information (BOOTENV_SIZE) when evaluating
-# MENDER_RESERVED_SPACE_BOOTLOADER_DATA.
+# MENDER_RESERVED_SPACE_BOOTLOADER_DATA.  Note: If MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART is set to a non zero value
+# MENDER_RESERVED_SPACE_BOOTLOADER_DATA may be set to 0 to remove from rootfs size calculations.
 MENDER_BOOTENV_TOTAL_ALIGNED_SIZE = "${@mender_get_env_total_aligned_size(${BOOTENV_SIZE}, ${MENDER_PARTITION_ALIGNMENT})}"
 
 def mender_get_env_offset(start_offset, index, total_aligned_size):
