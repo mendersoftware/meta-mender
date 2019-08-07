@@ -75,7 +75,7 @@ class TestUbootAutomation:
         # always checked, even if they are old.
 
         # Number of days that must pass for the branch to be considered stable.
-        days_to_be_old = 7
+        days_to_be_old = 14
 
         # Find the repository directories we need
         [ poky_dir, meta_mender_core_dir, rest ] = subprocess.check_output(
