@@ -280,6 +280,9 @@ python() {
         bb.fatal("IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET is deprecated. Please define MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET instead.")
     if d.getVar('MENDER_DATA_PART_DIR'):
         bb.fatal("MENDER_DATA_PART_DIR is deprecated. Please use recipes to add files directly to /data instead.")
+
+    if bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', True, False, d) and d.getVar('MENDER_STORAGE_DEVICE', True) != "":
+        bb.warn("MENDER_STORAGE_DEVICE is ignored when mender-partuuid is enabled. Clear MENDER_STORAGE_DEVICE to remove this warning.")
 }
 
 
