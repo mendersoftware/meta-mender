@@ -32,8 +32,13 @@ FILES_${PN} += "${systemd_unitdir}/system/mender.service \
                "
 
 SRC_URI_append_mender-image_mender-systemd = " file://mender-data-dir.service"
+SRC_URI_append_mender-persist-systemd-machine-id = " file://mender-systemd-machine-id.service \
+                                                     file://mender-set-systemd-machine-id.sh"
 FILES_${PN}_append_mender-image_mender-systemd = " ${systemd_unitdir}/system/mender-data-dir.service \
                                                    ${systemd_unitdir}/system/mender.service.wants/mender-data-dir.service"
+FILES_${PN}_append_mender-persist-systemd-machine-id = " ${systemd_unitdir}/system/mender-systemd-machine-id.service \
+                                                         ${systemd_unitdir}/system/mender.service.wants/mender-systemd-machine-id.service \
+                                                         ${bindir}/mender-set-systemd-machine-id.sh"
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
 # like. We disable those checks here.
@@ -235,4 +240,12 @@ do_install_append_mender-image_mender-systemd() {
     install -m 644 ${WORKDIR}/mender-data-dir.service ${D}${systemd_unitdir}/system/
     install -d -m 755 ${D}${systemd_unitdir}/system/mender.service.wants
     ln -sf ../mender-data-dir.service ${D}${systemd_unitdir}/system/mender.service.wants/
+}
+
+do_install_append_mender-persist-systemd-machine-id() {
+    install -m 644 ${WORKDIR}/mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/
+    install -d -m 755 ${D}${systemd_unitdir}/system/mender.service.wants
+    ln -sf ../mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/mender.service.wants/
+    install -d -m 755 ${D}${bindir}
+    install -m 755 ${WORKDIR}/mender-set-systemd-machine-id.sh ${D}${bindir}
 }

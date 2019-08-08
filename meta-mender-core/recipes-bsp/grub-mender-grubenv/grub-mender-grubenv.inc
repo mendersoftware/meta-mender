@@ -1,7 +1,5 @@
 inherit mender-helpers
 
-SRC_URI = "git://github.com/mendersoftware/grub-mender-grubenv;protocol=https;branch=master"
-
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 GRUB_CONF_LOCATION = "${MENDER_BOOT_PART_MOUNT_LOCATION}/EFI/BOOT"

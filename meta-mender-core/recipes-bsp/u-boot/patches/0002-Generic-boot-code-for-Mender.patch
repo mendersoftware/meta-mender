@@ -1,4 +1,4 @@
-From c07ad477cd5715079a3bd086293e0adf91f15b88 Mon Sep 17 00:00:00 2001
+From 8ecd3470f58cf8022e3188da3c2eb77448c244cb Mon Sep 17 00:00:00 2001
 From: Drew Moseley <drew.moseley@northern.tech>
 Date: Sun, 28 Jan 2018 17:44:32 -0500
 Subject: [PATCH] Generic boot code for Mender.
@@ -7,15 +7,15 @@ Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
 Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
 Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
 ---
- include/config_mender.h |  98 +++++++++++++++++++++++++++++++
- include/env_mender.h    | 152 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 250 insertions(+)
+ include/config_mender.h |  98 +++++++++++++++++++++++++
+ include/env_mender.h    | 157 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 255 insertions(+)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000..3836a6d
+index 0000000000..3836a6ddd4
 --- /dev/null
 +++ b/include/config_mender.h
 @@ -0,0 +1,98 @@
@@ -119,10 +119,10 @@ index 0000000..3836a6d
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000..a1996ab
+index 0000000000..0605f6a9fa
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,152 @@
+@@ -0,0 +1,157 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -205,6 +205,11 @@ index 0000000..a1996ab
 +    "then "                                                             \
 +    "run mender_pre_setup_commands; "                                   \
 +    "fi; "                                                              \
++    "if test \"${mender_systemd_machine_id}\" != \"\"; "                \
++    "then "                                                             \
++    "setenv bootargs systemd.machine_id=${mender_systemd_machine_id} "  \
++    "${bootargs}; "                                                     \
++    "fi; "                                                              \
 +    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; "    \
 +    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "     \
 +    "then "                                                                            \
@@ -276,5 +281,5 @@ index 0000000..a1996ab
 +
 +#endif /* HEADER_ENV_MENDER_H */
 -- 
-2.7.4
+2.21.0
 
