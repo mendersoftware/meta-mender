@@ -225,7 +225,7 @@ class TestUbootAutomation:
                                   shell=True)
         bitbake_variables = get_bitbake_variables("u-boot")
 
-        shutil.rmtree("/dev/shm/test_uboot_compile", ignore_errors=True)
+        shutil.rmtree("/tmp/test_uboot_compile", ignore_errors=True)
 
         env = copy.copy(os.environ)
         env['UBOOT_SRC'] = bitbake_variables['S']
@@ -247,7 +247,7 @@ class TestUbootAutomation:
             env['MAYBE_UBI'] = "--ubi" if machine == "vexpress-qemu-flash" else ""
             # Compile all boards. The reason for using a makefile is to get easy
             # parallelization.
-            subprocess.check_call("make -j %d -f %s SUBJOBCOUNT=-j%d TMP=/dev/shm/test_uboot_compile %s"
+            subprocess.check_call("make -j %d -f %s SUBJOBCOUNT=-j%d TMP=/tmp/test_uboot_compile %s"
                                   % (self.parallel_job_count(),
                                      os.path.join(env['TESTS_DIR'],
                                                   "files/Makefile.test_uboot_automation"),
@@ -302,7 +302,7 @@ class TestUbootAutomation:
             shutil.rmtree(env['LOGS'])
 
         finally:
-            shutil.rmtree("/dev/shm/test_uboot_compile", ignore_errors=True)
+            shutil.rmtree("/tmp/test_uboot_compile", ignore_errors=True)
 
     @pytest.mark.only_with_image('sdimg')
     @pytest.mark.min_mender_version('1.0.0')
