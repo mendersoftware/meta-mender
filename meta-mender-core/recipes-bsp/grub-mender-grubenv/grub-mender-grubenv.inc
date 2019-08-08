@@ -20,6 +20,8 @@ B = "${WORKDIR}/build"
 
 PACKAGECONFIG[debug-pause] = ",,,"
 SRC_URI_append = "${@bb.utils.contains('PACKAGECONFIG', 'debug-pause', ' file://06_mender_debug_pause_grub.cfg;subdir=git', '', d)}"
+PACKAGECONFIG[force-grub-prompt] = ",,,"
+SRC_URI_append = "${@bb.utils.contains('PACKAGECONFIG', 'force-grub-prompt', ' file://06_mender_debug_force_grub_prompt_grub.cfg;subdir=git', '', d)}"
 PACKAGECONFIG[debug-log] = ",,,"
 
 # See https://www.gnu.org/software/grub/manual/grub/grub.html#debug
