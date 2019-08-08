@@ -13,9 +13,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from fabric.api import *
-from fabric.contrib.files import append
-import fabric.network
+from fabric import Connection
+from paramiko import SSHException
+from paramiko.ssh_exception import NoValidConnectionsError
+
 
 from distutils.version import LooseVersion
 import pytest
@@ -61,7 +62,16 @@ class ProcessGroupPopen(subprocess.Popen):
         self.__signal(signal.SIGKILL)
 
 
-def start_qemu(qenv=None):
+
+def execute(cmd, args=None, conn=None):
+    print("inside execute\n", conn)
+
+    if args:
+        cmd(args, conn=conn)
+    else:
+        cmd(conn=conn)
+
+def start_qemu(qenv=None, conn=None):
     """Start qemu and return a subprocess.Popen object corresponding to a running
     qemu process. `qenv` is a dict of environment variables that will be added
     to `subprocess.Popen(..,env=)`.
@@ -82,8 +92,8 @@ def start_qemu(qenv=None):
 
     try:
         # make sure we are connected.
-        execute(run_after_connect, "true", hosts = conftest.current_hosts())
-        execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
+        execute(run_after_connect, "true", conn)
+        #execute(qemu_prep_after_boot, hosts = "localhost")
     except:
         # or do the necessary cleanup if we're not
         try:
@@ -100,7 +110,7 @@ def start_qemu(qenv=None):
     return proc
 
 
-def start_qemu_block_storage(latest_sdimg, suffix):
+def start_qemu_block_storage(latest_sdimg, suffix, conn):
     """Start qemu instance running block storage"""
     fh, img_path = tempfile.mkstemp(suffix=suffix, prefix="test-image")
     # don't need an open fd to temp file
@@ -114,7 +124,8 @@ def start_qemu_block_storage(latest_sdimg, suffix):
     qenv["DISK_IMG"] = img_path
 
     try:
-        qemu = start_qemu(qenv)
+        print("start block storage: ", conn)
+        qemu = start_qemu(qenv, conn)
     except:
         os.remove(img_path)
         raise
@@ -122,7 +133,7 @@ def start_qemu_block_storage(latest_sdimg, suffix):
     return qemu, img_path
 
 
-def start_qemu_flash(latest_vexpress_nor):
+def start_qemu_flash(latest_vexpress_nor, conn):
     """Start qemu instance running *.vexpress-nor image"""
 
     print("qemu raw flash with image {}".format(latest_vexpress_nor))
@@ -146,7 +157,7 @@ def start_qemu_flash(latest_vexpress_nor):
     qenv["MACHINE"] = "vexpress-qemu-flash"
 
     try:
-        qemu = start_qemu(qenv)
+        qemu = start_qemu(qenv, conn)
     except:
         os.remove(img_path)
         raise
@@ -178,63 +189,37 @@ def reboot(wait = 120):
             time.sleep(5)
             continue
 
-    run_after_connect("true", wait)
+    run_after_connect("true", wait=wait)
 
     qemu_prep_after_boot()
 
 
-def run_after_connect(cmd, wait=360):
-    output = ""
+def run_after_connect(cmd, wait=360, conn=None):
+    # override the Connection parameters 
+    conn.timeout = 60
+
     start_time = time.time()
 
-    with settings(timeout=30, abort_exception=Exception):
-        while True:
-            attempt_time = time.time()
-            try:
-                output = run(cmd)
-                break
-            except BaseException as e:
-                print("Could not connect to host %s: %s" % (env.host_string, e))
-                if attempt_time >= start_time + wait:
-                    raise Exception("Could not reconnect to host")
-                now = time.time()
-                if now - attempt_time < 5:
-                    time.sleep(60)
-                continue
-    return output
+    timeout = time.time() + 60*3
 
-
-def ssh_prep_args():
-    return ssh_prep_args_impl("ssh")
-
-
-def scp_prep_args():
-    return ssh_prep_args_impl("scp")
-
-
-def ssh_prep_args_impl(tool):
-    if not env.host_string:
-        raise Exception("get()/put() called outside of execute()")
-
-    cmd = ("%s -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" %
-           tool)
-
-    host_parts = env.host_string.split(":")
-    host = ""
-    port = ""
-    port_flag = "-p"
-    if tool == "scp":
-        port_flag = "-P"
-    if len(host_parts) == 2:
-        host = host_parts[0]
-        port = "%s%s" % (port_flag, host_parts[1])
-    elif len(host_parts) == 1:
-        host = host_parts[0]
-        port = ""
-    else:
-        raise Exception("Malformed host string")
-
-    return (cmd, host, port)
+    while time.time() < timeout:
+        try:
+            print("checking if the host is connected")
+            result = conn.run(cmd, hide=True)
+            if result.exited == 0:
+                print("connected")
+                return True
+        except NoValidConnectionsError as e:
+            print("connection not ready yet")
+            time.sleep(30)
+            continue
+        except SSHException as e:
+            print("Could not connect to host %s: %s" % (conn.host, e))
+            if not (str(e).endswith("Connection reset by peer") or 
+                    str(e).endswith("Error reading SSH protocol banner") or 
+                    str(e).endswith("No existing session")):
+                raise e
+    return False
 
 
 def determine_active_passive_part(bitbake_variables):
@@ -255,27 +240,19 @@ def determine_active_passive_part(bitbake_variables):
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
-def put(file, local_path = ".", remote_path = "."):
-    (scp, host, port) = scp_prep_args()
+def put_no_sftp(file, remote = ".", conn=None):
+    cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    conn.local("%s -P %s %s %s@%s:%s" %
+          (cmd, conn.port, file, conn.user, conn.host, remote))
 
-    local("%s %s %s/%s %s@%s:%s" %
-          (scp, port, local_path, file, env.user, host, remote_path))
-
-
-# See comment for put().
-def get(file, local_path = ".", remote_path = "."):
-    (scp, host, port) = scp_prep_args()
-
-    local("%s %s %s@%s:%s/%s %s" %
-          (scp, port, env.user, host, remote_path, file, local_path))
+# Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
+def get_no_sftp(file, local = ".", conn=None):
+    cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    conn.local("%s -P %s %s@%s:%s %s" %
+          (cmd, conn.port, conn.user, conn.host, file, local))
 
 
 def qemu_prep_after_boot():
-    # Nothing needed ATM.
-    pass
-
-
-def qemu_prep_fresh_host():
     # Nothing needed ATM.
     pass
 
@@ -313,14 +290,14 @@ def common_board_cleanup():
     with settings(warn_only=True):
         sudo("reboot")
 
-    execute(run_after_connect, "true", hosts = conftest.current_hosts())
+    execute(run_after_connect, "true")
 
 def common_boot_from_internal():
     sudo("mender-qa activate-test-image on")
     with settings(warn_only=True):
         sudo("reboot")
 
-    execute(run_after_connect, "true", hosts = conftest.current_hosts())
+    execute(run_after_connect, "true")
 
 
 
@@ -330,7 +307,7 @@ def latest_build_artifact(builddir, extension):
         output = subprocess.check_output(["sh", "-c", "ls -t %s/%s/*%s | grep -v data*%s| head -n 1" % (builddir, sdimg_location, extension, extension)])
     else:
         output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
-    output = output.rstrip('\r\n')
+    output = output.decode().rstrip('\r\n')
     print("Found latest image of type '%s' to be: %s" % (extension, output))
     return output
 
@@ -347,7 +324,6 @@ def get_bitbake_variables(target, env_setup="true", export_only=False, test_conv
                                   stdout=subprocess.PIPE,
                                   shell=True,
                                   executable="/bin/bash")
-        output= ps.stdout
 
     if export_only:
         export_only_expr = ""
@@ -355,8 +331,11 @@ def get_bitbake_variables(target, env_setup="true", export_only=False, test_conv
         export_only_expr = "?"
     matcher = re.compile('^(?:export )%s([A-Za-z][^=]*)="(.*)"$' % export_only_expr)
     ret = {}
-    for line in output:
-        line = line.strip()
+    while True:
+        line = ps.stdout.readline()
+        if not line:
+            break
+        line = line.decode().strip()
         match = matcher.match(line)
         if match is not None:
             ret[match.group(1)] = match.group(2)
@@ -422,7 +401,7 @@ def run_bitbake(prepared_test_build, target=None, capture=False):
     try:
         # Cannot use for loop here due to buffering and iterators.
         while True:
-            line = ps.stdout.readline()
+            line = ps.stdout.readline().decode()
             if not line:
                 break
 
@@ -437,7 +416,7 @@ def run_bitbake(prepared_test_build, target=None, capture=False):
         # Empty any remaining lines.
         try:
             if capture:
-                output += ps.stdout.readlines()
+                output += ps.stdout.readlines().decode()
             else:
                 ps.stdout.readlines()
         except:

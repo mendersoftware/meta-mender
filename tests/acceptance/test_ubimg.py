@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from fabric.api import *
+from fabric import Connection
 
 import os
 import pytest
@@ -138,6 +138,7 @@ def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build_base):
     """The ubireader_utils_info tool and friends don't support our UBI volumes
     that contain the U-Boot environment and hence not valid UBIFS structures.
     Therefore, make a new temporary image that doesn't contain U-Boot."""
+    print("ubimg build\n\n")
 
     # The tests are marked with "only_with_image('ubimg')", but that is checked
     # using a function fixture, and this is a session fixture, which cannot

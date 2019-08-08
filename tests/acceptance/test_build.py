@@ -63,7 +63,7 @@ class TestBuild:
 
         # Crude check, just make sure it occurs in the build file.
         subprocess.check_call("fgrep %s ../../meta-mender-core/recipes-mender/mender/mender.inc >/dev/null 2>&1"
-                              % output.split()[0], shell=True)
+                              % output.decode().split()[0], shell=True)
 
 
     @pytest.mark.only_with_image('sdimg')

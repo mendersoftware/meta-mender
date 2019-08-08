@@ -18,25 +18,49 @@ import shutil
 
 from common import *
 
-@pytest.fixture(scope="session")
-def setup_board(request, clean_image, bitbake_variables):
-    bt = pytest.config.getoption("--board-type")
+#     # Bash not always available, nor currently required
+#     config['shell'] = "/bin/sh -c"
 
-    print('board type:', bt)
-    if "qemu" in bt:
-        return qemu_running(request, clean_image())
-    elif bt == "beagleboneblack":
-        return setup_bbb(request)
-    elif bt == "raspberrypi3":
-        return setup_rpi3(request)
-    elif bt == "colibri-imx7":
-        return setup_colibri_imx7(request, clean_image())
+#     # Don't allocate pseudo-TTY by default, since it is not fully functional.
+#     # It can still be overriden on a case by case basis by passing
+#     # "pty = True/False" to the various fabric functions. See
+#     # http://www.fabfile.org/faq.html about init scripts.
+#     config['always_use_pty'] = False
+#     Config: run.pty.
+
+
+def config_host():
+    host_info = pytest.config.getoption("host").split(':')
+
+    if len(host_info) == 2:
+        return host_info[0], int(host_info[1])
+    elif len(host_info) == 1:
+        return host_info[0], 22
     else:
-        pytest.fail('unsupported board type {}'.format(bt))
+        return 'localhost', 22
+
+@pytest.fixture(scope="function")
+def connection(request):
+    host, port = config_host()
+    conn = Connection(host=host,
+            user=pytest.config.getoption("user"),
+            port=port,
+            connect_timeout=60,
+            connect_kwargs={
+                "password": "",
+                "banner_timeout": 60,
+                "auth_timeout": 60,
+                })
+
+    def fin():
+        conn.close()            
+    request.addfinalizer(fin)
+    
+    return conn
 
 
 @pytest.fixture(scope="session")
-def setup_colibri_imx7(request, clean_image):
+def setup_colibri_imx7(request, clean_image, connection):
     image = clean_image()
     latest_uboot = latest_build_artifact(image['build_dir'], "u-boot-nand.imx")
     latest_ubimg = latest_build_artifact(image['build_dir'], ".ubimg")
@@ -52,48 +76,51 @@ def setup_colibri_imx7(request, clean_image):
                            remote_path='/tmp',
                            image_file=os.path.basename(latest_ubimg))
 
-    execute(board_setup, hosts=conftest.current_hosts())
+    execute(board_setup, conn=connection)
 
     def board_cleanup():
         def board_cleanup_impl():
             common_board_cleanup()
-        execute(board_cleanup_impl, hosts=conftest.current_hosts())
+        execute(board_cleanup_impl, conn=connection)
 
     request.addfinalizer(board_cleanup)
 
 @pytest.fixture(scope="session")
-def setup_bbb(request):
+def setup_bbb(request, connection):
     def board_cleanup():
-        execute(common_board_cleanup, hosts=conftest.current_hosts())
+        execute(common_board_cleanup, conn=connection)
 
-    execute(common_boot_from_internal, hosts=conftest.current_hosts())
+    execute(common_boot_from_internal, conn=connection)
     request.addfinalizer(board_cleanup)
 
 @pytest.fixture(scope="session")
-def setup_rpi3(request):
+def setup_rpi3(request, connection):
     def board_cleanup():
-        execute(common_board_cleanup, hosts=conftest.current_hosts())
+        execute(common_board_cleanup, conn=connection)
 
-    execute(common_boot_from_internal, hosts=conftest.current_hosts())
+    execute(common_boot_from_internal, conn=connection)
     request.addfinalizer(board_cleanup)
 
-def qemu_running(request, clean_image):
-    latest_sdimg = latest_build_artifact(clean_image['build_dir'], "core-image*.sdimg")
-    latest_uefiimg = latest_build_artifact(clean_image['build_dir'], "core-image*.uefiimg")
-    latest_biosimg = latest_build_artifact(clean_image['build_dir'], "core-image*.biosimg")
-    latest_gptimg = latest_build_artifact(clean_image['build_dir'], "core-image*.gptimg")
-    latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], "core-image*.vexpress-nor")
+def setup_qemu(req, conn, clean_img):
+    print("setup qemu\n\n", conn)
+
+    image = clean_img()
+    latest_sdimg = latest_build_artifact(image['build_dir'], "core-image*.sdimg")
+    latest_uefiimg = latest_build_artifact(image['build_dir'], "core-image*.uefiimg")
+    latest_biosimg = latest_build_artifact(image['build_dir'], "core-image*.biosimg")
+    latest_gptimg = latest_build_artifact(image['build_dir'], "core-image*.gptimg")
+    latest_vexpress_nor = latest_build_artifact(image['build_dir'], "core-image*.vexpress-nor")
 
     if latest_sdimg:
-        qemu, img_path = start_qemu_block_storage(latest_sdimg, suffix=".sdimg")
+        qemu, img_path = start_qemu_block_storage(latest_sdimg, suffix=".sdimg", conn=conn)
     elif latest_uefiimg:
-        qemu, img_path = start_qemu_block_storage(latest_uefiimg, suffix=".uefiimg")
+        qemu, img_path = start_qemu_block_storage(latest_uefiimg, suffix=".uefiimg", conn=conn)
     elif latest_biosimg:
-        qemu, img_path = start_qemu_block_storage(latest_biosimg, suffix=".biosimg")
+        qemu, img_path = start_qemu_block_storage(latest_biosimg, suffix=".biosimg", conn=conn)
     elif latest_gptimg:
-        qemu, img_path = start_qemu_block_storage(latest_gptimg, suffix=".gptimg")
+        qemu, img_path = start_qemu_block_storage(latest_gptimg, suffix=".gptimg", conn=conn)
     elif latest_vexpress_nor:
-        qemu, img_path = start_qemu_flash(latest_vexpress_nor)
+        qemu, img_path = start_qemu_flash(latest_vexpress_nor, conn=conn)
     else:
         pytest.fail("cannot find a suitable image type")
 
@@ -102,10 +129,10 @@ def qemu_running(request, clean_image):
     # Make sure we revert to the first root partition on next reboot, makes test
     # cases more predictable.
     def qemu_finalizer():
-        def qemu_finalizer_impl():
+        def qemu_finalizer_impl(conn):
             try:
                 manual_uboot_commit()
-                run("poweroff")
+                conn.run("poweroff")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
                 while halt_time + 30 > time.time() and qemu.poll() is None:
@@ -127,23 +154,36 @@ def qemu_running(request, clean_image):
             qemu.wait()
             os.remove(img_path)
 
-        execute(qemu_finalizer_impl, hosts=conftest.current_hosts())
+        execute(qemu_finalizer_impl, conn=conn)
 
-    request.addfinalizer(qemu_finalizer)
-
-    execute(qemu_prep_fresh_host, hosts=conftest.current_hosts())
+    req.addfinalizer(qemu_finalizer)
 
 
 @pytest.fixture(scope="function")
-def no_image_file(setup_board):
+def setup_board(clean_image, request, connection):
+    
+    # first set up the board
+    bt = pytest.config.getoption("--board-type")
+    print("board type: ", bt)
+
+    if "qemu" in bt:
+        return setup_qemu(request, connection, clean_image)
+    elif bt == "beagleboneblack":
+        return setup_bbb(request)
+    elif bt == "raspberrypi3":
+        return setup_rpi3(request)
+    elif bt == "colibri-imx7":
+        return setup_colibri_imx7(request)
+    else:
+        pytest.fail('unsupported board type {}'.format(bt))
+
     """Make sure 'image.dat' is not present on the device."""
-    execute(no_image_file_impl, hosts=conftest.current_hosts())
+    connection.run("rm -f image.dat")
 
 
-def no_image_file_impl():
-    run("rm -f image.dat")
 @pytest.fixture(scope="session")
 def latest_rootfs():
+    print("latest rootfs\n\n")
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
@@ -162,6 +202,7 @@ def latest_sdimg():
 
 @pytest.fixture(scope="session")
 def latest_ubimg():
+    print("latest ubimg\n\n")
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built ubimg.
@@ -169,6 +210,8 @@ def latest_ubimg():
 
 @pytest.fixture(scope="session")
 def latest_ubifs():
+    print("latest ubifs\n\n")
+
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built ubifs. NOTE: need to include *core-image* otherwise
@@ -235,6 +278,9 @@ def successful_image_update_mender(request, clean_image):
 
     return "successful_image_update.mender"
 
+#
+# bitbake related fixtures
+#  
 @pytest.fixture(scope="session")
 def bitbake_variables():
     """Returns a map of all bitbake variables active for the build."""
@@ -262,26 +308,17 @@ def mender_test_dependencies_bitbaked():
                                 cwd=os.environ['BUILDDIR'])
 
 @pytest.fixture(scope="session")
-def bitbake_path_string(mender_test_dependencies_bitbaked):
-    """Fixture that returns the PATH we need for our testing tools"""
-
-    if not pytest.config.getoption('--test-conversion'):
-        bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
-        return bb_testing_variables['PATH'] + ":" + os.environ['PATH']
-    else:
-        return os.environ['PATH']
-
-@pytest.fixture(scope="function")
-def bitbake_path(request, bitbake_path_string):
+def bitbake_path(request):
     """Fixture that enables the PATH we need for our testing tools."""
 
     old_path = os.environ['PATH']
 
-    os.environ['PATH'] = bitbake_path_string
+    if not pytest.config.getoption('--test-conversion'):
+        bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
+        os.environ['PATH'] = bb_testing_variables['PATH'] + ":" + os.environ['PATH']
 
     def path_restore():
         os.environ['PATH'] = old_path
-
     request.addfinalizer(path_restore)
 
     return os.environ['PATH']
@@ -297,6 +334,7 @@ def bitbake_env_dict(mender_test_dependencies_bitbaked):
 @pytest.fixture(scope="function")
 def bitbake_env(request, bitbake_env_dict):
     """Fixture that runs the test using entire bitbake environment."""
+    print("bitbake env\n\n")
 
     env_obj = bitbake_env_from(bitbake_env_dict)
     env_obj.setup()
@@ -314,6 +352,7 @@ def clean_image(request, prepared_test_build_base):
     return the clean image directly is that it may need to be reset to a clean
     state if several independent fixtures invoke it, and there have been unclean
     builds in between."""
+    print("clean image\n\n")
 
     def getter():
         reset_local_conf(prepared_test_build_base)
@@ -329,6 +368,8 @@ def clean_image(request, prepared_test_build_base):
 @pytest.fixture(scope="session")
 def prepared_test_build_base(request, bitbake_variables):
     """Base fixture for prepared_test_build. Returns the same as that one."""
+
+    print("prepare build base\n\n")
 
     if pytest.config.getoption('--no-tmp-build-dir'):
         build_dir = os.environ['BUILDDIR']
@@ -378,6 +419,7 @@ def prepared_test_build(prepared_test_build_base):
     - env_setup (passed to some functions)
     - local_conf
     """
+    print("prepare test build\n\n")
 
     reset_local_conf(prepared_test_build_base)
 
@@ -387,6 +429,7 @@ def prepared_test_build(prepared_test_build_base):
 
 @pytest.fixture(autouse=True)
 def min_mender_version(request, bitbake_variables):
+    print("min mender version\n\n")
     version_mark = request.node.get_closest_marker("min_mender_version")
     if version_mark is None:
         pytest.fail(('%s must be marked with @pytest.mark.min_mender_version("<VERSION>") to '

@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from fabric.api import *
+from fabric import Connection
 
 import json
 import os
@@ -164,7 +164,7 @@ class SignatureCase:
         self.artifact_version = artifact_version
         self.success = success
 
-@pytest.mark.usefixtures("no_image_file", "setup_board", "bitbake_path")
+@pytest.mark.usefixtures("setup_board", "bitbake_path")
 class TestUpdates:
 
     @pytest.mark.min_mender_version('1.0.0')

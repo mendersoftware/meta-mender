@@ -23,7 +23,7 @@ class TestCommits:
         # First find which range to check. Include HEAD and exclude all known
         # upstream branches.
         git_branch = subprocess.check_output(["git", "branch", "-r"])
-        all_branches = [line.split()[0] for line in git_branch.strip().split('\n')]
+        all_branches = [line.split()[0] for line in git_branch.decode().strip().split('\n')]
 
         # Exclude all non-pull requests.
         commit_range = ["HEAD", "--not"]
