@@ -41,6 +41,7 @@ COPY $BOOTLOADER_DATA ./ovmf.vars.qcow2
 
 ADD scripts/mender-qemu ./
 ADD scripts/docker/entrypoint.sh ./
+ADD scripts/docker/ext4_manipulator.py ./
 ADD scripts/docker/setup-mender-configuration.py ./
 ADD scripts/docker/extract_fs ./
 ADD env.txt ./
