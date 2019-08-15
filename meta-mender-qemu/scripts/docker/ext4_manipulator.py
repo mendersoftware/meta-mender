@@ -1,13 +1,19 @@
 import os
 import subprocess
+from pathlib import PurePath
 
 def get(remote_path, local_path, rootfs):
     subprocess.check_call(["debugfs", "-R", "dump -p %s %s" % (remote_path, local_path), rootfs],
                           stderr=subprocess.STDOUT)
 
-def put(local_path, remote_path, rootfs):
+def put(local_path, remote_path, rootfs, remote_path_mkdir_p=False):
     proc = subprocess.Popen(["debugfs", "-w", rootfs], stdin=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
+    if remote_path_mkdir_p:
+        # Create parent directories sequencially, to simulate a "mkdir -p" on the final dir
+        parent_dirs = list(PurePath(remote_path).parents)[::-1][1:]
+        for parent in parent_dirs:
+            proc.stdin.write(("mkdir %s\n" % parent).encode())
     proc.stdin.write(("cd %s\n" % os.path.dirname(remote_path)).encode())
     proc.stdin.write(("rm %s\n" % os.path.basename(remote_path)).encode())
     proc.stdin.write(("write %s %s\n" % (local_path, os.path.basename(remote_path))).encode())
