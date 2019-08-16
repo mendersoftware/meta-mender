@@ -308,7 +308,7 @@ python() {
 
     d.setVar('LIVE_ROOTFS_TYPE', type)
     d.setVar('ROOTFS', "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.%s.bz2" % type)
-    d.setVar('IMAGE_FSTYPES_append', ' %s.bz2 ' % type)
+    d.appendVar('IMAGE_FSTYPES', ' %s.bz2 ' % type)
 
     # Remove the boot option on the Live installer; it won't work since Mender hard codes
     # the device nodes
