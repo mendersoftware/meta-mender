@@ -74,3 +74,5 @@ do_install () {
     install -m 755 ${B}/tools/env/fw_printenv ${D}${base_sbindir}/fw_setenv
     install -m 0644 ${B}/tools/env/fw_env.config ${D}${sysconfdir}/fw_env.config
 }
+
+PACKAGE_ARCH = "${MACHINE_ARCH}"
