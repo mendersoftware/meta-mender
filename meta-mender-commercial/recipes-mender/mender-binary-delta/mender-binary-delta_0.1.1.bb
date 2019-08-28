@@ -1,7 +1,12 @@
-SRC_URI = "file://mender-binary-delta"
-
 LICENSE = "CLOSED"
 LICENSE_FLAGS = "commercial"
+
+SUB_FOLDER_arm = "armhf"
+SUB_FOLDER_x86-64 = "x86_64"
+
+SRC_URI = "file://${SUB_FOLDER}/mender-binary-delta"
+
+COMPATIBLE_HOSTS = "arm|x86_64"
 
 # "lsb" is needed because Yocto by default does not provide a cross platform
 # dynamic linker. On x86_64 this manifests as a missing
@@ -16,6 +21,8 @@ FILES_${PN} = " \
 INSANE_SKIP_${PN} = "already-stripped"
 
 do_version_check() {
+    cp ${WORKDIR}/${SUB_FOLDER}/mender-binary-delta ${WORKDIR}/
+
     if ! strings ${WORKDIR}/mender-binary-delta | fgrep -q "${PN} ${PV}"; then
         bbfatal "String '${PN} ${PV}' not found in binary. Is it the correct version? Check with --version. Possible candidates: $(strings ${WORKDIR}/mender-binary-delta | grep '${PN} [a-f0-9]')"
     fi
