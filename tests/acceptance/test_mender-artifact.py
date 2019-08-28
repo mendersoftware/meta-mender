@@ -58,7 +58,8 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image, bi
         # directory.
         if version != default_version:
             add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version)
-        run_bitbake(prepared_test_build)
+        run_bitbake(prepared_test_build['image_name'], 
+                    prepared_test_build['env_setup'])
         LAST_BUILD_VERSION = version
     return (version, latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender"))
 

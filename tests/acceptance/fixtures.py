@@ -60,10 +60,9 @@ def connection(request):
 
 
 @pytest.fixture(scope="session")
-def setup_colibri_imx7(request, clean_image, connection):
-    image = clean_image()
-    latest_uboot = latest_build_artifact(image['build_dir'], "u-boot-nand.imx")
-    latest_ubimg = latest_build_artifact(image['build_dir'], ".ubimg")
+def setup_colibri_imx7(request, build_dir, connection):
+    latest_uboot = latest_build_artifact(build_dir, "u-boot-nand.imx")
+    latest_ubimg = latest_build_artifact(build_dir, ".ubimg")
 
     if not latest_uboot:
         pytest.fail('failed to find U-Boot binary')
@@ -101,15 +100,14 @@ def setup_rpi3(request, connection):
     execute(common_boot_from_internal, conn=connection)
     request.addfinalizer(board_cleanup)
 
-def setup_qemu(req, conn, clean_img):
+def setup_qemu(req, build_dir, conn):
     print("setup qemu\n\n", conn)
 
-    image = clean_img()
-    latest_sdimg = latest_build_artifact(image['build_dir'], "core-image*.sdimg")
-    latest_uefiimg = latest_build_artifact(image['build_dir'], "core-image*.uefiimg")
-    latest_biosimg = latest_build_artifact(image['build_dir'], "core-image*.biosimg")
-    latest_gptimg = latest_build_artifact(image['build_dir'], "core-image*.gptimg")
-    latest_vexpress_nor = latest_build_artifact(image['build_dir'], "core-image*.vexpress-nor")
+    latest_sdimg = latest_build_artifact(build_dir, "core-image*.sdimg")
+    latest_uefiimg = latest_build_artifact(build_dir, "core-image*.uefiimg")
+    latest_biosimg = latest_build_artifact(build_dir, "core-image*.biosimg")
+    latest_gptimg = latest_build_artifact(build_dir, "core-image*.gptimg")
+    latest_vexpress_nor = latest_build_artifact(build_dir, "core-image*.vexpress-nor")
 
     if latest_sdimg:
         qemu, img_path = start_qemu_block_storage(latest_sdimg, suffix=".sdimg", conn=conn)
@@ -160,20 +158,22 @@ def setup_qemu(req, conn, clean_img):
 
 
 @pytest.fixture(scope="function")
-def setup_board(clean_image, request, connection):
+def setup_board(request, build_image_fn, connection):
     
     # first set up the board
     bt = pytest.config.getoption("--board-type")
     print("board type: ", bt)
 
     if "qemu" in bt:
-        return setup_qemu(request, connection, clean_image)
+        image_dir = build_image_fn()
+        return setup_qemu(request, image_dir, connection)
     elif bt == "beagleboneblack":
         return setup_bbb(request)
     elif bt == "raspberrypi3":
         return setup_rpi3(request)
     elif bt == "colibri-imx7":
-        return setup_colibri_imx7(request)
+        image_dir = build_image_fn()
+        return setup_colibri_imx7(request, image_dir, connection)
     else:
         pytest.fail('unsupported board type {}'.format(bt))
 
@@ -261,11 +261,11 @@ def latest_part_image():
         return None
 
 @pytest.fixture(scope="function")
-def successful_image_update_mender(request, clean_image):
+def successful_image_update_mender(request, build_image_fn):
     """Provide a 'successful_image_update.mender' file in the current directory that
     contains the latest built update."""
 
-    latest_mender_image = latest_build_artifact(clean_image()['build_dir'], "core-image*.mender")
+    latest_mender_image = latest_build_artifact(build_image_fn(), "core-image*.mender")
 
     shutil.copy(latest_mender_image, "successful_image_update.mender")
 
@@ -347,29 +347,26 @@ def bitbake_env(request, bitbake_env_dict):
     return os.environ
 
 @pytest.fixture(scope="session")
-def clean_image(request, prepared_test_build_base):
-    """Returns a function which returns a clean image. The reason it does not
+def build_image_fn(request, prepared_test_build_base):
+    """
+    Returns a function which returns a clean image. The reason it does not
     return the clean image directly is that it may need to be reset to a clean
     state if several independent fixtures invoke it, and there have been unclean
-    builds in between."""
-    print("clean image\n\n")
+    builds in between.
+    """
 
-    def getter():
-        reset_local_conf(prepared_test_build_base)
-        add_to_local_conf(prepared_test_build_base,
-                          'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
-        add_to_local_conf(prepared_test_build_base,
-                          'EXTRA_IMAGE_FEATURES_append = " ssh-server-openssh"')
-        run_bitbake(prepared_test_build_base)
-        return prepared_test_build_base
-    return getter
+    def img_builder():
+        reset_local_conf(prepared_test_build_base['build_dir'])
+        build_image(prepared_test_build_base['build_dir'], prepared_test_build_base['bitbake_corebase'], 
+            ['SYSTEMD_AUTO_ENABLE_pn-mender = "disable"', 'EXTRA_IMAGE_FEATURES_append = " ssh-server-openssh"'],
+            )
+        return prepared_test_build_base['build_dir']
+    
+    return img_builder
 
-
+#TODO: is this session scope?
 @pytest.fixture(scope="session")
 def prepared_test_build_base(request, bitbake_variables):
-    """Base fixture for prepared_test_build. Returns the same as that one."""
-
-    print("prepare build base\n\n")
 
     if pytest.config.getoption('--no-tmp-build-dir'):
         build_dir = os.environ['BUILDDIR']
@@ -388,10 +385,6 @@ def prepared_test_build_base(request, bitbake_variables):
     cleanup_test_build()
     request.addfinalizer(cleanup_test_build)
 
-    env_setup = "cd %s && . oe-init-build-env %s" % (bitbake_variables['COREBASE'], build_dir)
-
-    run_verbose(env_setup)
-
     if not pytest.config.getoption('--no-tmp-build-dir'):
         run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
         with open(local_conf, "a") as fd:
@@ -400,29 +393,16 @@ def prepared_test_build_base(request, bitbake_variables):
 
     run_verbose("cp %s %s" % (local_conf, local_conf_orig))
 
-    image_name = pytest.config.getoption("--bitbake-image")
-
-    return {'build_dir': build_dir,
-            'image_name': image_name,
-            'env_setup': env_setup,
-            'local_conf': local_conf,
-            'local_conf_orig': local_conf_orig,
-    }
-
+    return {'build_dir':build_dir, 'bitbake_corebase':bitbake_variables['COREBASE']}
 
 @pytest.fixture(scope="function")
 def prepared_test_build(prepared_test_build_base):
-    """Prepares a separate test build directory where a custom build can be
-    made, which reuses the sstate-cache. Returns a dictionary with:
-    - build_dir
-    - image_name
-    - env_setup (passed to some functions)
-    - local_conf
     """
-    print("prepare test build\n\n")
+    Prepares a separate test build directory where a custom build can be
+    made, which reuses the sstate-cache.
+    """
 
-    reset_local_conf(prepared_test_build_base)
-
+    reset_local_conf(prepared_test_build_base['build_dir'])
     return prepared_test_build_base
 
 
@@ -490,14 +470,14 @@ def min_yocto_version(request, bitbake_variables):
 
 @pytest.fixture(autouse=True)
 def only_for_machine(request, bitbake_variables):
-    """Fixture that enables use of `only_for_machine(machine-name)` mark.
+    """
+    Fixture that enables use of `only_for_machine(machine-name)` mark.
     Example::
 
        @pytest.mark.only_for_machine('vexpress-qemu')
        def test_foo():
            # executes only if building for vexpress-qemu
            pass
-
     """
     mach_mark = request.node.get_closest_marker('only_for_machine')
     if mach_mark is not None:

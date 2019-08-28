@@ -983,7 +983,8 @@ class TestUpdates:
         add_to_local_conf(prepared_test_build, 'PREFERRED_VERSION_pn-mender = "1.%"')
         add_to_local_conf(prepared_test_build, 'EXTERNALSRC_pn-mender = ""')
         add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_remove_pn-mender = "split-mender-config"')
-        run_bitbake(prepared_test_build)
+        run_bitbake(prepared_test_build['image_name'], 
+                    prepared_test_build['env_setup'])
 
         image = "pre-mender-2.0.0.mender"
         shutil.copyfile(latest_build_artifact(prepared_test_build["build_dir"], "*.mender"), image)
@@ -1009,7 +1010,8 @@ class TestUpdates:
 
         # Build an image that the pre-2.0.0 mender will accept.
         add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS_append = " -v 2"')
-        run_bitbake(prepared_test_build)
+        run_bitbake(prepared_test_build['image_name'], 
+                    prepared_test_build['env_setup'])
         build_image = latest_build_artifact(prepared_test_build["build_dir"], "*.mender")
         image = "test_upgrade_from_pre_2_0.mender"
         shutil.copyfile(build_image, image)

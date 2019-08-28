@@ -392,10 +392,16 @@ def run_verbose(cmd, capture=False):
         return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
 
 # Capture is true or false and conditonally returns output.
-def run_bitbake(prepared_test_build, target=None, capture=False):
-    if target is None:
-        target = prepared_test_build['image_name']
-    cmd = "%s && bitbake %s" % (prepared_test_build['env_setup'], target)
+def build_image(build_dir, bitbake_corebase, extra_conf_params=None, capture=False):
+    
+    for param in extra_conf_params:
+        _add_to_local_conf(build_dir, param)
+    init_env_cmd = "cd %s && . oe-init-build-env %s" % (bitbake_corebase, build_dir)
+    _run_bitbake(pytest.config.getoption("--bitbake-image"),
+                 init_env_cmd, capture)
+
+def _run_bitbake(target, env_setup_cmd, capture=False):
+    cmd = "%s && bitbake %s" % (env_setup_cmd, target)
     ps = run_verbose(cmd, capture=subprocess.PIPE)
     output = ""
     try:
@@ -431,20 +437,20 @@ def run_bitbake(prepared_test_build, target=None, capture=False):
     return output
 
 
-def add_to_local_conf(prepared_test_build, string):
-    """Add given string to local.conf before the build. Newline is added
-    automatically."""
+def _add_to_local_conf(build_dir, string):
+    """
+    Add given string to local.conf before the build. Newline is added
+    automatically.
+    """
 
-    with open(prepared_test_build['local_conf'], "a") as fd:
+    with open(os.path.join(build_dir, "conf", "local.conf"), "a") as fd:
         fd.write('\n## ADDED BY TEST\n')
         fd.write("%s\n" % string)
 
-def reset_local_conf(prepared_test_build):
-    new_file = prepared_test_build['local_conf']
-    old_file = prepared_test_build['local_conf_orig']
-
+def reset_local_conf(build_dir):
     # Restore original local.conf
-    run_verbose("cp %s %s" % (old_file, new_file))
+    local_conf = os.path.join(build_dir, "conf", "local.conf")
+    run_verbose("cp %s %s" % (local_conf + ".orig", local_conf))
 
 
 class bitbake_env_from:

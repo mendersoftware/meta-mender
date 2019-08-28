@@ -26,7 +26,8 @@ class TestDataImg:
         """Test that we can build a dataimg successfully."""
 
         add_to_local_conf(prepared_test_build, 'IMAGE_FSTYPES = "dataimg"')
-        run_bitbake(prepared_test_build)
+        run_bitbake(prepared_test_build['image_name'], 
+                    prepared_test_build['env_setup'])
 
         built_img = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.dataimg")
 
