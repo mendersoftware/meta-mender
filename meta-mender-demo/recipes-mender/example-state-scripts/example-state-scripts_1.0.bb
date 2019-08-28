@@ -17,4 +17,5 @@ do_compile() {
     cp example-script ${MENDER_STATE_SCRIPTS_DIR}/ArtifactInstall_Leave_99
     cp example-script ${MENDER_STATE_SCRIPTS_DIR}/ArtifactReboot_Leave_50
     cp example-script ${MENDER_STATE_SCRIPTS_DIR}/ArtifactCommit_Enter_50
+    cp example-script ${MENDER_STATE_SCRIPTS_DIR}/ArtifactCommit_Leave_50
 }
