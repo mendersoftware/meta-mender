@@ -517,3 +517,9 @@ def only_with_distro_feature(request, bitbake_variables):
             pytest.skip('no supported distro feature in {} ' \
                         '(supports {})'.format(', '.join(current),
                                                ', '.join(features)))
+
+@pytest.fixture(autouse=True)
+def commercial_test(request, bitbake_variables):
+    mark = request.node.get_closest_marker('commercial')
+    if mark is not None and not request.config.getoption("--commercial-tests"):
+        pytest.skip("Tests of commercial features are disabled.")
