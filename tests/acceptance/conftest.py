@@ -45,6 +45,8 @@ def pytest_addoption(parser):
                      help="use S3 for transferring images under test to target boards")
     parser.addoption("--s3-address", action="store", default="s3.amazonaws.com",
                      help="address of S3 server, defaults to AWS, override when using minio")
+    parser.addoption("--commercial-tests", action="store_true",
+                     help="Enable tests of commercial features")
 
 
 def pytest_configure(config):
