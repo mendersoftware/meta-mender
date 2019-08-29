@@ -1004,7 +1004,7 @@ class TestUpdates:
 
         run("mender -commit")
 
-        reset_local_conf(prepared_test_build)
+        reset_build_conf(prepared_test_build)
 
         # Build an image that the pre-2.0.0 mender will accept.
         add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS_append = " -v 2"')
@@ -1014,7 +1014,7 @@ class TestUpdates:
         shutil.copyfile(build_image, image)
 
         try:
-            reset_local_conf(prepared_test_build)
+            reset_build_conf(prepared_test_build)
 
             # Delete existing database, if any.
             run("rm -f /data/mender/mender-store*")

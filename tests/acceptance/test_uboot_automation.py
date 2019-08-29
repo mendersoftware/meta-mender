@@ -343,7 +343,7 @@ class TestUbootAutomation:
             run_bitbake(prepared_test_build, "-c clean u-boot-testing")
 
         # Reset local.conf.
-        reset_local_conf(prepared_test_build)
+        reset_build_conf(prepared_test_build)
 
         bitbake_vars = get_bitbake_variables("u-boot", env_setup=prepared_test_build['env_setup'])
         if bitbake_vars['MENDER_UBOOT_AUTO_CONFIGURE'] == "0":
