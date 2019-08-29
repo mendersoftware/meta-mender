@@ -62,6 +62,7 @@ class TestInventory:
         else:
             pytest.fail("Unknown platform combination. Please add a test case for this combination.")
 
+    @pytest.mark.skip(reason="Test mostly relevant for rofs feature, which is not ported beyond thud. Skipping for older releases")
     @pytest.mark.min_mender_version('2.0.0')
     def test_inventory_os(self, bitbake_variables):
         """Test that "os" inventory attribute is reported correctly by the
