@@ -19,39 +19,7 @@ import subprocess
 import re
 import json
 
-# Make sure common is imported after fabric, because we override some functions.
 from common import *
-
-def extract_partition(img, number):
-    output = subprocess.Popen(["fdisk", "-l", "-o", "device,start,end", img],
-                              stdout=subprocess.PIPE)
-    for line in output.stdout:
-        if re.search("img%d" % number, line) is None:
-            continue
-
-        match = re.match("\s*\S+\s+(\S+)\s+(\S+)", line)
-        assert(match is not None)
-        start = int(match.group(1))
-        end = (int(match.group(2)) + 1)
-    output.wait()
-
-    subprocess.check_call(["dd", "if=" + img, "of=img%d.fs" % number,
-                           "skip=%d" % start, "count=%d" % (end - start)])
-
-class EmbeddedBootloader:
-    loader = None
-    offset = 0
-
-    def __init__(self, bitbake_variables, loader_base, offset):
-        loader_dir = bitbake_variables['DEPLOY_DIR_IMAGE']
-        loader = None
-
-        if loader_base is not None and loader_base != "":
-            loader = os.path.join(loader_dir, file)
-
-        self.loader = loader
-        self.offset = offset
-
 
 class TestBuild:
     @pytest.mark.min_mender_version("1.0.0")
@@ -74,10 +42,10 @@ class TestBuild:
 
         loader_file = "bootloader.bin"
         loader_offset = 4
-        add_to_local_conf(prepared_test_build, 'MENDER_IMAGE_BOOTLOADER_FILE = "%s"' % loader_file)
-        add_to_local_conf(prepared_test_build, 'MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET = "%d"' % loader_offset)
-
-        new_bb_vars = get_bitbake_variables("core-image-minimal", prepared_test_build['env_setup'])
+     
+        init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'], 
+                                                            prepared_test_build['build_dir'])
+        new_bb_vars = get_bitbake_variables("core-image-minimal", init_env_cmd)
 
         loader_dir = new_bb_vars['DEPLOY_DIR_IMAGE']
         loader_path = os.path.join(loader_dir, loader_file)
@@ -85,7 +53,10 @@ class TestBuild:
         run_verbose("mkdir -p %s" % os.path.dirname(loader_path))
         run_verbose("cp /etc/os-release %s" % loader_path)
 
-        run_bitbake(prepared_test_build)
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['MENDER_IMAGE_BOOTLOADER_FILE = "%s"' % loader_file,
+                    'MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET = "%d"' % loader_offset])
 
         built_sdimg = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.sdimg")
 
@@ -115,9 +86,9 @@ class TestBuild:
         """Test that setting IMAGE_ROOTFS_EXTRA_SPACE to arbitrary values does
         not break the build."""
 
-        add_to_local_conf(prepared_test_build, 'IMAGE_ROOTFS_EXTRA_SPACE_append = " + 640 - 222 + 900"')
-
-        run_bitbake(prepared_test_build)
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['IMAGE_ROOTFS_EXTRA_SPACE_append = " + 640 - 222 + 900"'])
 
         built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")
 
@@ -129,10 +100,9 @@ class TestBuild:
     def test_tenant_token(self, prepared_test_build):
         """Test setting a custom tenant-token"""
 
-        add_to_local_conf(prepared_test_build, 'MENDER_TENANT_TOKEN = "%s"'
-                          %  "authtentoken")
-
-        run_bitbake(prepared_test_build)
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['MENDER_TENANT_TOKEN = "%s"' % "authtentoken"])
 
         built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
 
@@ -155,12 +125,10 @@ class TestBuild:
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
 
-        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
-                          % os.path.join(os.getcwd(), signing_key("RSA").private))
-        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
-                          % os.path.join(os.getcwd(), signing_key("RSA").public))
-
-        run_bitbake(prepared_test_build)
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['MENDER_ARTIFACT_SIGNING_KEY = "%s"' % os.path.join(os.getcwd(), signing_key("RSA").private),
+                    'MENDER_ARTIFACT_VERIFY_KEY = "%s"' % os.path.join(os.getcwd(), signing_key("RSA").public)])
 
         built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
         # Copy out the key we just added from the image and use that to
@@ -215,8 +183,9 @@ class TestBuild:
 
         try:
             # Alright, now build a new image containing scripts.
-            add_to_local_conf(prepared_test_build, 'IMAGE_INSTALL_append = " example-state-scripts"')
-            run_bitbake(prepared_test_build)
+            build_image(prepared_test_build['build_dir'], 
+                        prepared_test_build['bitbake_corebase'],
+                        ['IMAGE_INSTALL_append = " example-state-scripts"'])
 
             found_rootfs_scripts = {
                 "version": False,
@@ -266,7 +235,9 @@ class TestBuild:
             # necessary, but unfortunately bitbake does not clean up deployment
             # files from recipes that are not included in the current build, so
             # we have to do it manually.
-            run_bitbake(prepared_test_build, "-c clean example-state-scripts")
+            build_image(prepared_test_build['build_dir'], 
+                        prepared_test_build['bitbake_corebase'],
+                        target="-c clean example-state-scripts")
 
     @pytest.mark.min_mender_version('1.0.0')
     # The extra None elements are to check for no preferred version,
@@ -280,8 +251,8 @@ class TestBuild:
         build from a specific SHA. This test tests that we can change that or
         turn it off and the build still works."""
 
-        old_file = prepared_test_build['local_conf_orig']
-        new_file = prepared_test_build['local_conf']
+        old_file = get_local_conf_orig_path(prepared_test_build['build_dir'])
+        new_file = get_local_conf_path(prepared_test_build['build_dir'])
 
         if recipe.endswith("-native"):
             base_recipe = recipe[:-len("-native")]
@@ -301,19 +272,22 @@ class TestBuild:
                     new_fd.write('PREFERRED_VERSION_%s%s = "%s"\n' % (pn_style, base_recipe, version))
                     new_fd.write('PREFERRED_VERSION_%s%s-native = "%s"\n' % (pn_style, base_recipe, version))
 
-            run_verbose("%s && bitbake %s" % (prepared_test_build['env_setup'], recipe))
+            init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'], 
+                                                            prepared_test_build['build_dir'])
+            run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
 
     @pytest.mark.min_mender_version('1.1.0')
     def test_multiple_device_types_compatible(self, prepared_test_build, bitbake_path, bitbake_variables):
         """Tests that we can include multiple device_types in the artifact."""
 
-        add_to_local_conf(prepared_test_build, 'MENDER_DEVICE_TYPES_COMPATIBLE = "machine1 machine2"')
-        run_bitbake(prepared_test_build)
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['MENDER_DEVICE_TYPES_COMPATIBLE = "machine1 machine2"'])
 
         image = latest_build_artifact(prepared_test_build['build_dir'], 'core-image*.mender')
 
         output = run_verbose("mender-artifact read %s" % image, capture=True)
-        assert "Compatible devices: '[machine1 machine2]'" in output
+        assert b"Compatible devices: '[machine1 machine2]'" in output
 
         output = subprocess.check_output("tar xOf %s header.tar.gz | tar xOz header-info" % image, shell=True)
         data = json.loads(output)
@@ -383,15 +357,18 @@ class TestBuild:
         """Tests that we can build with various combinations of MTD variables,
         and that they receive the correct values."""
 
-        add_to_local_conf(prepared_test_build, "\n".join(test_case["vars"]))
         try:
-            run_bitbake(prepared_test_build)
+            build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ["\n".join(test_case["vars"])])
             assert test_case['success'], "Build succeeded, but should fail"
         except subprocess.CalledProcessError:
             assert not test_case['success'], "Build failed"
 
-        variables = get_bitbake_variables(prepared_test_build['image_name'],
-                                          prepared_test_build['env_setup'])
+        init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'], 
+                                                            prepared_test_build['build_dir'])
+        variables = get_bitbake_variables(pytest.config.getoption("--bitbake-image"),
+                                          init_env_cmd)
 
         for key in test_case['expected']:
             assert test_case['expected'][key] == variables[key]
@@ -401,7 +378,10 @@ class TestBuild:
     def test_boot_partition_population(self, prepared_test_build, bitbake_path):
         # Notice in particular a mix of tabs, newlines and spaces. All there to
         # check that whitespace it treated correctly.
-        add_to_local_conf(prepared_test_build, """
+        
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ["""
 IMAGE_INSTALL_append = " test-boot-files"
 
 IMAGE_BOOT_FILES_append = " deployed-test1 deployed-test-dir2/deployed-test2 \
@@ -412,8 +392,7 @@ deployed-test-dir7/* \
 deployed-test-dir8/*;./ \
 deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 "
-""")
-        run_bitbake(prepared_test_build)
+"""])
 
         image = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.*img")
         extract_partition(image, 1)
@@ -432,9 +411,10 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             ]
             assert(all([item in listing for item in expected]))
 
-            add_to_local_conf(prepared_test_build, 'IMAGE_BOOT_FILES_append = " conflict-test1"')
             try:
-                run_bitbake(prepared_test_build)
+                build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['IMAGE_BOOT_FILES_append = " conflict-test1"'])
                 pytest.fail("Bitbake succeeded, but should have failed with a file conflict")
             except subprocess.CalledProcessError:
                 pass
@@ -455,15 +435,18 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
         if originally_on:
             assert "modules" in entries
-            add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_remove = "modules"')
+            build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['PACKAGECONFIG_remove = "modules"'])
         else:
             assert "modules" not in entries
-            add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_append = " modules"')
-        run_bitbake(prepared_test_build)
+            build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['PACKAGECONFIG_append = " modules"'])
 
         new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")
 
-        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender", new_rootfs])
+        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender", new_rootfs]).decode()
         entries = [elem.split('/')[5] for elem in output.split('\n') if elem.startswith('/')]
 
         if originally_on:

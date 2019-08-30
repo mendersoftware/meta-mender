@@ -15,7 +15,6 @@
 
 import os
 import pytest
-from fabric import Connection
 from common import put_no_sftp
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")

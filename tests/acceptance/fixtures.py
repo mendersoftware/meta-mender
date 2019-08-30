@@ -15,7 +15,10 @@
 
 import os
 import shutil
+import time
+import errno
 
+from paramiko.client import WarningPolicy
 from common import *
 
 #     # Bash not always available, nor currently required
@@ -27,7 +30,6 @@ from common import *
 #     # http://www.fabfile.org/faq.html about init scripts.
 #     config['always_use_pty'] = False
 #     Config: run.pty.
-
 
 def config_host():
     host_info = pytest.config.getoption("host").split(':')
@@ -51,13 +53,15 @@ def connection(request):
                 "banner_timeout": 60,
                 "auth_timeout": 60,
                 })
+    conn.client.set_missing_host_key_policy(WarningPolicy())
 
     def fin():
         conn.close()            
     request.addfinalizer(fin)
+
+    
     
     return conn
-
 
 @pytest.fixture(scope="session")
 def setup_colibri_imx7(request, build_dir, connection):
@@ -70,39 +74,33 @@ def setup_colibri_imx7(request, build_dir, connection):
     if not latest_ubimg:
         pytest.failed('failed to find latest ubimg for the board')
 
-    def board_setup():
-        common_board_setup(files=[latest_ubimg, latest_uboot],
-                           remote_path='/tmp',
-                           image_file=os.path.basename(latest_ubimg))
-
-    execute(board_setup, conn=connection)
+    common_board_setup(files=[latest_ubimg, latest_uboot],
+                        remote_path='/tmp',
+                        image_file=os.path.basename(latest_ubimg),
+                        conn=connection)
 
     def board_cleanup():
-        def board_cleanup_impl():
-            common_board_cleanup()
-        execute(board_cleanup_impl, conn=connection)
+        common_board_cleanup(conn=connection)
 
     request.addfinalizer(board_cleanup)
 
 @pytest.fixture(scope="session")
 def setup_bbb(request, connection):
     def board_cleanup():
-        execute(common_board_cleanup, conn=connection)
+        common_board_cleanup(conn=connection)
 
-    execute(common_boot_from_internal, conn=connection)
+    common_boot_from_internal(conn=connection)
     request.addfinalizer(board_cleanup)
 
 @pytest.fixture(scope="session")
 def setup_rpi3(request, connection):
     def board_cleanup():
-        execute(common_board_cleanup, conn=connection)
+        common_board_cleanup(conn=connection)
 
-    execute(common_boot_from_internal, conn=connection)
+    common_boot_from_internal(conn=connection)
     request.addfinalizer(board_cleanup)
 
 def setup_qemu(req, build_dir, conn):
-    print("setup qemu\n\n", conn)
-
     latest_sdimg = latest_build_artifact(build_dir, "core-image*.sdimg")
     latest_uefiimg = latest_build_artifact(build_dir, "core-image*.uefiimg")
     latest_biosimg = latest_build_artifact(build_dir, "core-image*.biosimg")
@@ -129,7 +127,7 @@ def setup_qemu(req, build_dir, conn):
     def qemu_finalizer():
         def qemu_finalizer_impl(conn):
             try:
-                manual_uboot_commit()
+                manual_uboot_commit(conn)
                 conn.run("poweroff")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
@@ -151,16 +149,12 @@ def setup_qemu(req, build_dir, conn):
 
             qemu.wait()
             os.remove(img_path)
-
-        execute(qemu_finalizer_impl, conn=conn)
+        qemu_finalizer_impl(conn=conn)
 
     req.addfinalizer(qemu_finalizer)
 
-
 @pytest.fixture(scope="function")
 def setup_board(request, build_image_fn, connection):
-    
-    # first set up the board
     bt = pytest.config.getoption("--board-type")
     print("board type: ", bt)
 
@@ -180,10 +174,8 @@ def setup_board(request, build_image_fn, connection):
     """Make sure 'image.dat' is not present on the device."""
     connection.run("rm -f image.dat")
 
-
 @pytest.fixture(scope="session")
 def latest_rootfs():
-    print("latest rootfs\n\n")
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
@@ -202,7 +194,6 @@ def latest_sdimg():
 
 @pytest.fixture(scope="session")
 def latest_ubimg():
-    print("latest ubimg\n\n")
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built ubimg.
@@ -210,8 +201,6 @@ def latest_ubimg():
 
 @pytest.fixture(scope="session")
 def latest_ubifs():
-    print("latest ubifs\n\n")
-
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built ubifs. NOTE: need to include *core-image* otherwise
@@ -293,19 +282,8 @@ def bitbake_variables():
     if pytest.config.getoption('--test-conversion'):
         return get_bitbake_variables("mender-image", test_conversion=True)
     else:
+        # TODO: why not pytest.config.getoption('--bitbake-image'):
         return get_bitbake_variables("core-image-minimal")
-
-@pytest.fixture(scope="session")
-def mender_test_dependencies_bitbaked():
-    """Fixture that makes sure mender-test-dependencies is bitbaked."""
-
-    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
-
-    if not pytest.config.getoption('--test-conversion'):
-        # See the recipe for details about this call.
-        subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot",
-                                 "mender-test-dependencies"],
-                                cwd=os.environ['BUILDDIR'])
 
 @pytest.fixture(scope="session")
 def bitbake_path(request):
@@ -322,29 +300,6 @@ def bitbake_path(request):
     request.addfinalizer(path_restore)
 
     return os.environ['PATH']
-
-@pytest.fixture(scope="session")
-def bitbake_env_dict(mender_test_dependencies_bitbaked):
-    """Fixture that returns the PATH we need for our testing tools"""
-
-    bb_testing_variables = get_bitbake_variables("mender-test-dependencies", export_only=True)
-
-    return bb_testing_variables
-
-@pytest.fixture(scope="function")
-def bitbake_env(request, bitbake_env_dict):
-    """Fixture that runs the test using entire bitbake environment."""
-    print("bitbake env\n\n")
-
-    env_obj = bitbake_env_from(bitbake_env_dict)
-    env_obj.setup()
-
-    def env_restore():
-        env_obj.teardown()
-
-    request.addfinalizer(env_restore)
-
-    return os.environ
 
 @pytest.fixture(scope="session")
 def build_image_fn(request, prepared_test_build_base):
@@ -373,8 +328,8 @@ def prepared_test_build_base(request, bitbake_variables):
     else:
         build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
 
-    local_conf = os.path.join(build_dir, "conf", "local.conf")
-    local_conf_orig = local_conf + ".orig"
+    local_conf = get_local_conf_path(build_dir)
+    local_conf_orig = get_local_conf_orig_path(build_dir)
 
     def cleanup_test_build():
         if not pytest.config.getoption('--no-tmp-build-dir'):
@@ -384,6 +339,9 @@ def prepared_test_build_base(request, bitbake_variables):
 
     cleanup_test_build()
     request.addfinalizer(cleanup_test_build)
+
+    env_setup = "cd %s && . oe-init-build-env %s" % (bitbake_variables['COREBASE'], build_dir)
+    run_verbose(env_setup)
 
     if not pytest.config.getoption('--no-tmp-build-dir'):
         run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
@@ -405,11 +363,8 @@ def prepared_test_build(prepared_test_build_base):
     reset_local_conf(prepared_test_build_base['build_dir'])
     return prepared_test_build_base
 
-
-
 @pytest.fixture(autouse=True)
 def min_mender_version(request, bitbake_variables):
-    print("min mender version\n\n")
     version_mark = request.node.get_closest_marker("min_mender_version")
     if version_mark is None:
         pytest.fail(('%s must be marked with @pytest.mark.min_mender_version("<VERSION>") to '
@@ -488,7 +443,6 @@ def only_for_machine(request, bitbake_variables):
                         '(required {})'.format(current if not None else '(none)',
                                                ', '.join(machines)))
 
-
 @pytest.fixture(autouse=True)
 def only_with_image(request, bitbake_variables):
     """Fixture that enables use of `only_with_image(img1, img2)` mark.
@@ -512,14 +466,14 @@ def only_with_image(request, bitbake_variables):
 
 @pytest.fixture(autouse=True)
 def only_with_distro_feature(request, bitbake_variables):
-    """Fixture that enables use of `only_with_distro_feature(feature1, feature2)` mark.
+    """
+    Fixture that enables use of `only_with_distro_feature(feature1, feature2)` mark.
     Example::
 
        @pytest.mark.only_with_distro_feature('mender-uboot')
        def test_foo():
            # executes only if mender-uboot feature is enabled
            pass
-
     """
 
     mark = request.node.get_closest_marker('only_with_distro_feature')

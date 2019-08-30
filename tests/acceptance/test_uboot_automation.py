@@ -80,11 +80,11 @@ class TestUbootAutomation:
         # Find the repository directories we need
         [ poky_dir, meta_mender_core_dir, rest ] = subprocess.check_output(
             "bitbake-layers show-layers | awk '$1~/(^meta$|^meta-mender-core$)/ {print $2}' | xargs -n 1 dirname",
-            cwd=os.environ['BUILDDIR'], shell=True).split("\n")
+            cwd=os.environ['BUILDDIR'], shell=True).decode().split("\n")
 
         # SHA from poky repository, limited by date.
         poky_rev = subprocess.check_output("git log -n1 --format=%%H --after=%d.days.ago HEAD" % days_to_be_old, shell=True,
-                                           cwd=poky_dir).strip()
+                                           cwd=poky_dir).decode().strip()
         if poky_rev:
             print("Running test_uboot_compile because poky commit is more recent than %d days." % days_to_be_old)
             return
@@ -96,7 +96,7 @@ class TestUbootAutomation:
                                                             + " tests/acceptance/files/Makefile.test_uboot_automation"))
                                                         % days_to_be_old,
                                                         cwd=meta_mender_core_dir,
-                                                        shell=True).strip()
+                                                        shell=True).decode().strip()
         if meta_mender_uboot_rev:
             print("Running test_uboot_compile because u-boot in meta-mender has been modified more recently than %d days ago." % days_to_be_old)
             return
@@ -107,16 +107,16 @@ class TestUbootAutomation:
                                                            + " tests/acceptance/test_uboot_automation.py"
                                                            + " tests/acceptance/files/Makefile.test_uboot_automation"),
                                                         cwd=meta_mender_core_dir,
-                                                        shell=True).strip()
-        for remote in subprocess.check_output(["git", "remote"]).split():
-            url = subprocess.check_output("git config --get remote.%s.url" % remote, shell=True)
+                                                        shell=True).decode().strip()
+        for remote in subprocess.check_output(["git", "remote"]).decode().split():
+            url = subprocess.check_output("git config --get remote.%s.url" % remote, shell=True).decode()
             if "mendersoftware" in url:
                 upstream_remote = remote
                 break
         else:
             pytest.fail("Upstream remote not found! Should not happen.")
 
-        contained_in = subprocess.check_output("git branch -r --contains %s" % meta_mender_uboot_rev, shell=True).split()
+        contained_in = subprocess.check_output("git branch -r --contains %s" % meta_mender_uboot_rev, shell=True).decode().split()
         is_upstream = False
         for branch in contained_in:
             if branch.startswith("%s/" % upstream_remote) and not branch.startswith("%s/pull/" % upstream_remote):
@@ -320,13 +320,17 @@ class TestUbootAutomation:
             os.unlink("fw_setenv.tmp")
                    
         # Get rid of build outputs in deploy directory that may get in the way.
-        run_bitbake("-c clean u-boot", prepared_test_build['env_setup'])
-        add_to_local_conf(prepared_test_build, 'PREFERRED_PROVIDER_u-boot = "u-boot-testing"')
-        add_to_local_conf(prepared_test_build, 'PREFERRED_RPROVIDER_u-boot = "u-boot-testing"')
-        try:
-            run_bitbake(prepared_test_build['image_name'], prepared_test_build['env_setup'])
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    target="-c clean u-boot")
 
-            new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
+        try:
+            build_image(prepared_test_build['build_dir'], 
+                        prepared_test_build['bitbake_corebase'],
+                        ['PREFERRED_PROVIDER_u-boot = "u-boot-testing"',
+                        'PREFERRED_RPROVIDER_u-boot = "u-boot-testing"'])
+
+            new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]").decode()
             subprocess.check_call(["debugfs", "-R", "dump /sbin/fw_setenv fw_setenv.tmp", new_rootfs])
 
             try:
@@ -340,7 +344,9 @@ class TestUbootAutomation:
         finally:
             # Get rid of build outputs in deploy directory that may get in the
             # way.
-            run_bitbake("-c clean u-boot-testing", prepared_test_build['env_setup'])
+            build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    target="-c clean u-boot-testing")
 
         # Reset local.conf.
         reset_local_conf(prepared_test_build)
@@ -351,11 +357,13 @@ class TestUbootAutomation:
             # is already off.
             return
 
-        add_to_local_conf(prepared_test_build, 'MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"')
         try:
             # Capture and discard output, it looks very ugly in the log.
-            run_bitbake(prepared_test_build['image_name'], 
-                        prepared_test_build['env_setup'], capture=True)
+            build_image(prepared_test_build['build_dir'], 
+                        prepared_test_build['bitbake_corebase'],
+                        ['MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"'],
+                        capture=True)
+
             pytest.fail("Build should not succeed when MENDER_UBOOT_AUTO_CONFIGURE is turned off")
         except subprocess.CalledProcessError:
             pass
@@ -372,7 +380,9 @@ class TestUbootAutomation:
         if bitbake_variables['MENDER_UBOOT_AUTO_CONFIGURE'] == "0":
             pytest.skip("Test is not applicable when MENDER_UBOOT_AUTO_CONFIGURE is off")
 
-        run_bitbake("-c save_mender_auto_configured_patch u-boot", prepared_test_build['env_setup'])
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    target="-c save_mender_auto_configured_patch u-boot")
 
         patch_name = os.path.join(bitbake_variables['WORKDIR'], 'mender_auto_configured.patch')
         with open(patch_name) as fd:
@@ -386,20 +396,27 @@ class TestUbootAutomation:
         shutil.copyfile(patch_name, new_patch_name)
 
         try:
-            add_to_local_conf(prepared_test_build, 'MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"')
             # We need to add the code using TEST_SRC_URI_APPEND make sure it is
             # absolutely last, otherwise platform specific layers may add
             # patches after us.
-            add_to_local_conf(prepared_test_build, 'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"' % os.path.basename(new_patch_name))
+
             # Normally changes to SRC_URI are picked up automatically, but since
             # we are sneaking it in via the TEST_SRC_URI_APPEND and its
             # associated python snippet, we need to clean the build manually.
-            run_bitbake("-c clean u-boot", prepared_test_build['env_setup'])
-
-            run_bitbake("u-boot", prepared_test_build['env_setup'])
+            build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"',
+                    'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"'],
+                    target="-c clean u-boot")
+            
+            build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    target="u-boot")
 
         finally:
-            run_bitbake("-c clean u-boot", prepared_test_build['env_setup'])
+            build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    target="-c clean u-boot")
             os.unlink(new_patch_name)
 
     # Would be nice to test this with non-UBI, but we don't currently have any
@@ -419,8 +436,9 @@ class TestUbootAutomation:
         if bitbake_variables['MENDER_UBOOT_AUTO_CONFIGURE'] == "0":
             pytest.skip("Test is not applicable when MENDER_UBOOT_AUTO_CONFIGURE is off")
 
-        run_bitbake("-c save_mender_auto_configured_patch u-boot",
-                    prepared_test_build['env_setup'])
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    target="-c save_mender_auto_configured_patch u-boot")
 
         try:
             patch_name = os.path.join(bitbake_variables['WORKDIR'], 'mender_auto_configured.patch')
@@ -433,18 +451,24 @@ class TestUbootAutomation:
                     else:
                         new_patch.write(line)
 
-            add_to_local_conf(prepared_test_build, 'MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"')
             # We need to add the code using TEST_SRC_URI_APPEND make sure it is
             # absolutely last, otherwise platform specific layers may add
             # patches after us.
-            add_to_local_conf(prepared_test_build, 'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"' % os.path.basename(new_patch_name))
+
             # Normally changes to SRC_URI are picked up automatically, but since
             # we are sneaking it in via the TEST_SRC_URI_APPEND and its
             # associated python snippet, we need to clean the build manually.
-            run_bitbake( "-c clean u-boot", prepared_test_build['env_setup'])
+            
+            build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"',
+                    'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"' % os.path.basename(new_patch_name)],
+                    target="-c clean u-boot")
 
             try:
-                run_bitbake("-c compile u-boot", prepared_test_build['env_setup'], capture=True)
+                build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    target="-c compile u-boot")
 
                 # Should never get here.
                 pytest.fail("Bitbake succeeded even though we intentionally broke the patch!")
@@ -453,5 +477,7 @@ class TestUbootAutomation:
                 assert e.output.find("Please fix U-Boot's configuration file") >= 0
 
         finally:
-            run_bitbake("-c clean u-boot", prepared_test_build['env_setup'])
+            build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    target="-c clean u-boot")
             os.unlink(new_patch_name)

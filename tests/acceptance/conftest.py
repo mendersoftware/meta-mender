@@ -57,7 +57,3 @@ def pytest_configure(config):
         print("Automatically pulling submodules. Use --no-pull to disable")
         subprocess.check_call("git submodule update --init --remote", shell=True)
 
-
-def current_hosts():
-    #TODO remove 
-    return 'localhost'

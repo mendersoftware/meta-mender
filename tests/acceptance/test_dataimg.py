@@ -17,7 +17,6 @@ import os
 import pytest
 import subprocess
 
-# Make sure common is imported after fabric, because we override some functions.
 from common import *
 
 class TestDataImg:
@@ -25,9 +24,9 @@ class TestDataImg:
     def test_dataimg_creation(self, bitbake_variables, prepared_test_build):
         """Test that we can build a dataimg successfully."""
 
-        add_to_local_conf(prepared_test_build, 'IMAGE_FSTYPES = "dataimg"')
-        run_bitbake(prepared_test_build['image_name'], 
-                    prepared_test_build['env_setup'])
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['IMAGE_FSTYPES = "dataimg"'])
 
         built_img = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.dataimg")
 

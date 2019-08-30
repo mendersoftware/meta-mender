@@ -17,7 +17,6 @@ from fabric import Connection
 from paramiko import SSHException
 from paramiko.ssh_exception import NoValidConnectionsError
 
-
 from distutils.version import LooseVersion
 import pytest
 import os
@@ -25,23 +24,20 @@ import re
 import subprocess
 import time
 import tempfile
-import errno
 import shutil
 import signal
 import sys
 
 from contextlib import contextmanager
 
-import conftest
-
 class ProcessGroupPopen(subprocess.Popen):
-    """Wrapper for subprocess.Popen that starts the underlying process in a
+    """
+    Wrapper for subprocess.Popen that starts the underlying process in a
     separate process group. The wrapper overrides kill() and terminate() so
     that the corresponding SIGKILL/SIGTERM are sent to the whole process group
     and not just the forked process.
 
     Note that ProcessGroupPopen() constructor hijacks preexec_fn parameter.
-
     """
 
     def __init__(self, *args, **kwargs):
@@ -62,17 +58,9 @@ class ProcessGroupPopen(subprocess.Popen):
         self.__signal(signal.SIGKILL)
 
 
-
-def execute(cmd, args=None, conn=None):
-    print("inside execute\n", conn)
-
-    if args:
-        cmd(args, conn=conn)
-    else:
-        cmd(conn=conn)
-
 def start_qemu(qenv=None, conn=None):
-    """Start qemu and return a subprocess.Popen object corresponding to a running
+    """
+    Start qemu and return a subprocess.Popen object corresponding to a running
     qemu process. `qenv` is a dict of environment variables that will be added
     to `subprocess.Popen(..,env=)`.
 
@@ -92,8 +80,7 @@ def start_qemu(qenv=None, conn=None):
 
     try:
         # make sure we are connected.
-        execute(run_after_connect, "true", conn)
-        #execute(qemu_prep_after_boot, hosts = "localhost")
+        run_after_connect("true", conn=conn)
     except:
         # or do the necessary cleanup if we're not
         try:
@@ -104,14 +91,15 @@ def start_qemu(qenv=None, conn=None):
             pass
 
         proc.wait()
-
         raise
 
     return proc
 
 
 def start_qemu_block_storage(latest_sdimg, suffix, conn):
-    """Start qemu instance running block storage"""
+    """
+    Start qemu instance running block storage
+    """
     fh, img_path = tempfile.mkstemp(suffix=suffix, prefix="test-image")
     # don't need an open fd to temp file
     os.close(fh)
@@ -165,23 +153,22 @@ def start_qemu_flash(latest_vexpress_nor, conn):
     return qemu, img_path
 
 
-def reboot(wait = 120):
-    with settings(warn_only = True):
-        try:
-            run("reboot")
-        except:
-            # qemux86-64 is so fast that sometimes the above call fails with
-            # an exception because the connection was broken before we returned.
-            # So catch everything, even though it might hide real errors (but
-            # those will probably be caught below after the timeout).
-            pass
+def reboot(wait=120, conn=None):
+    try:
+        conn.run("reboot", warn=True)
+    except:
+        # qemux86-64 is so fast that sometimes the above call fails with
+        # an exception because the connection was broken before we returned.
+        # So catch everything, even though it might hide real errors (but
+        # those will probably be caught below after the timeout).
+        pass
 
     # Make sure reboot has had time to take effect.
     time.sleep(5)
 
     for attempt in range(5):
         try:
-            fabric.network.disconnect_all()
+            conn.close()
             break
         except IOError:
             # Occasionally we get an IO error here because resource is temporarily
@@ -189,9 +176,7 @@ def reboot(wait = 120):
             time.sleep(5)
             continue
 
-    run_after_connect("true", wait=wait)
-
-    qemu_prep_after_boot()
+    run_after_connect("true", wait=wait, conn=conn)
 
 
 def run_after_connect(cmd, wait=360, conn=None):
@@ -199,16 +184,12 @@ def run_after_connect(cmd, wait=360, conn=None):
     conn.timeout = 60
 
     start_time = time.time()
-
     timeout = time.time() + 60*3
 
     while time.time() < timeout:
         try:
-            print("checking if the host is connected")
             result = conn.run(cmd, hide=True)
-            if result.exited == 0:
-                print("connected")
-                return True
+            return result.stdout
         except NoValidConnectionsError as e:
             print("connection not ready yet")
             time.sleep(30)
@@ -219,14 +200,15 @@ def run_after_connect(cmd, wait=360, conn=None):
                     str(e).endswith("Error reading SSH protocol banner") or 
                     str(e).endswith("No existing session")):
                 raise e
-    return False
 
 
-def determine_active_passive_part(bitbake_variables):
-    """Given the output from mount, determine the currently active and passive
-    partitions, returning them as a pair in that order."""
+def determine_active_passive_part(bitbake_variables, conn=None):
+    """
+    Given the output from mount, determine the currently active and passive
+    partitions, returning them as a pair in that order.
+    """
 
-    mount_output = run("mount")
+    mount_output = conn.run("mount").stdout
     a = bitbake_variables["MENDER_ROOTFS_PART_A"]
     b = bitbake_variables["MENDER_ROOTFS_PART_B"]
 
@@ -242,8 +224,13 @@ def determine_active_passive_part(bitbake_variables):
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
 def put_no_sftp(file, remote = ".", conn=None):
     cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-    conn.local("%s -P %s %s %s@%s:%s" %
-          (cmd, conn.port, file, conn.user, conn.host, remote))
+    
+    try:
+        conn.local("%s -P %s %s %s@%s:%s" %
+            (cmd, conn.port, file, conn.user, conn.host, remote))
+    except Exception as e:
+        print("exception while putting file: ", e)
+        raise e
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
 def get_no_sftp(file, local = ".", conn=None):
@@ -252,18 +239,13 @@ def get_no_sftp(file, local = ".", conn=None):
           (cmd, conn.port, conn.user, conn.host, file, local))
 
 
-def qemu_prep_after_boot():
-    # Nothing needed ATM.
-    pass
-
-
-def manual_uboot_commit():
-    run("fw_setenv upgrade_available 0")
-    run("fw_setenv bootcount 0")
+def manual_uboot_commit(conn=None):
+    conn.run("fw_setenv upgrade_available 0")
+    conn.run("fw_setenv bootcount 0")
 
 
 
-def common_board_setup(files=None, remote_path='/tmp', image_file=None):
+def common_board_setup(files=None, remote_path='/tmp', image_file=None, conn=None):
     """
     Deploy and activate an image to a board that usese mender-qa tools.
 
@@ -272,33 +254,30 @@ def common_board_setup(files=None, remote_path='/tmp', image_file=None):
     :param files: list of files to deploy
     """
     for f in files:
-        put(os.path.basename(f), local_path=os.path.dirname(f),
-            remote_path=remote_path)
+        put_no_sftp(os.path.basename(f), 
+                    remote=os.path.join(remote_path, os.path.basename(f)), 
+                    conn=conn)
 
     env_overrides = {}
     if image_file:
         env_overrides['IMAGE_FILE'] = image_file
 
-    run("{} mender-qa deploy-test-image".format(' '.join(
+    conn.run("{} mender-qa deploy-test-image".format(' '.join(
         ['{}={}'.format(k, v) for k, v in env_overrides.items()])))
 
-    with settings(warn_only=True):
-        sudo("mender-qa activate-test-image")
+    conn.sudo("mender-qa activate-test-image")
 
-def common_board_cleanup():
-    sudo("mender-qa activate-test-image off")
-    with settings(warn_only=True):
-        sudo("reboot")
+def common_board_cleanup(conn=None):
+    conn.sudo("mender-qa activate-test-image off")
+    conn.sudo("reboot", warn=True)
 
-    execute(run_after_connect, "true")
+    run_after_connect("true", conn=conn)
 
-def common_boot_from_internal():
-    sudo("mender-qa activate-test-image on")
-    with settings(warn_only=True):
-        sudo("reboot")
+def common_boot_from_internal(conn=None):
+    conn.sudo("mender-qa activate-test-image on")
+    conn.sudo("reboot", warn=True)
 
-    execute(run_after_connect, "true")
-
+    run_after_connect("true", conn=conn)
 
 
 def latest_build_artifact(builddir, extension):
@@ -392,13 +371,21 @@ def run_verbose(cmd, capture=False):
         return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
 
 # Capture is true or false and conditonally returns output.
-def build_image(build_dir, bitbake_corebase, extra_conf_params=None, capture=False):
-    
-    for param in extra_conf_params:
-        _add_to_local_conf(build_dir, param)
+def build_image(build_dir, bitbake_corebase, extra_conf_params=None, target=None, capture=False):
+    try:
+        for param in extra_conf_params:
+            _add_to_local_conf(build_dir, param)
+    except TypeError as te:
+        pass
+
     init_env_cmd = "cd %s && . oe-init-build-env %s" % (bitbake_corebase, build_dir)
-    _run_bitbake(pytest.config.getoption("--bitbake-image"),
-                 init_env_cmd, capture)
+
+    if target:
+        _run_bitbake(target,
+                     init_env_cmd, capture)
+    else:
+        _run_bitbake(pytest.config.getoption("--bitbake-image"),
+                     init_env_cmd, capture)
 
 def _run_bitbake(target, env_setup_cmd, capture=False):
     cmd = "%s && bitbake %s" % (env_setup_cmd, target)
@@ -436,6 +423,12 @@ def _run_bitbake(target, env_setup_cmd, capture=False):
 
     return output
 
+# Make sure we are constructing the paths the same way always
+def get_local_conf_path(build_dir):
+    return os.path.join(build_dir, "conf", "local.conf")
+
+def get_local_conf_orig_path(build_dir):
+    return os.path.join(build_dir, "conf", "local.conf.orig")
 
 def _add_to_local_conf(build_dir, string):
     """
@@ -451,6 +444,23 @@ def reset_local_conf(build_dir):
     # Restore original local.conf
     local_conf = os.path.join(build_dir, "conf", "local.conf")
     run_verbose("cp %s %s" % (local_conf + ".orig", local_conf))
+
+
+def extract_partition(img, number):
+    output = subprocess.Popen(["fdisk", "-l", "-o", "device,start,end", img],
+                              stdout=subprocess.PIPE)
+    for line in output.stdout:
+        if re.search("img%d" % number, line.decode()) is None:
+            continue
+
+        match = re.match("\s*\S+\s+(\S+)\s+(\S+)", line.decode())
+        assert(match is not None)
+        start = int(match.group(1))
+        end = (int(match.group(2)) + 1)
+    output.wait()
+
+    subprocess.check_call(["dd", "if=" + img, "of=img%d.fs" % number,
+                           "skip=%d" % start, "count=%d" % (end - start)])
 
 
 class bitbake_env_from:
@@ -531,7 +541,6 @@ def version_is_minimum(bitbake_variables, component, min_version):
 def make_tempdir(delete=True):
     """context manager for temporary directories"""
     tdir = tempfile.mkdtemp(prefix='meta-mender-acceptance.')
-    print('created dir', tdir)
     try:
         yield tdir
     finally:

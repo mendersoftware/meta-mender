@@ -23,7 +23,6 @@ import shutil
 import subprocess
 import tempfile
 
-# Make sure common is imported after fabric, because we override some functions.
 from common import *
 
 
@@ -32,12 +31,6 @@ class Helpers:
     def upload_to_s3(artifact):
         subprocess.call(["s3cmd", "--follow-symlinks", "put", artifact, "s3://mender/temp/"])
         subprocess.call(["s3cmd", "setacl", "s3://mender/temp/%s" % artifact, "--acl-public"])
-
-    @staticmethod
-    # TODO: Use this when mender is more stable. Spurious errors are currently generated.
-    def check_journal_errors():
-        output = run("journalctl -a -u mender | grep error")
-        assert output == 1
 
     @staticmethod
     def get_env_offsets(bitbake_variables):
@@ -54,18 +47,18 @@ class Helpers:
         return offsets
 
     @staticmethod
-    def get_env_checksums(bitbake_variables):
+    def get_env_checksums(bitbake_variables, connection):
         checksums = [0, 0]
 
         offsets = Helpers.get_env_offsets(bitbake_variables)
         dev = bitbake_variables["MENDER_STORAGE_DEVICE"]
 
-        run("dd if=%s of=env1.tmp bs=1 count=4 skip=%d" % (dev, offsets[0]))
-        run("dd if=%s of=env2.tmp bs=1 count=4 skip=%d" % (dev, offsets[1]))
+        connection.run("dd if=%s of=env1.tmp bs=1 count=4 skip=%d" % (dev, offsets[0]))
+        connection.run("dd if=%s of=env2.tmp bs=1 count=4 skip=%d" % (dev, offsets[1]))
 
-        get("env1.tmp")
-        get("env2.tmp")
-        run("rm -f env1.tmp env2.tmp")
+        get_no_sftp("env1.tmp", conn=connection)
+        get_no_sftp("env2.tmp", conn=connection)
+        connection.run("rm -f env1.tmp env2.tmp")
 
         env = open("env1.tmp")
         checksums[0] = env.read()
@@ -97,21 +90,23 @@ class Helpers:
             return "-u"
 
     @staticmethod
-    def get_install_flag():
-        with settings(warn_only=True):
-            output = run("mender --help 2>&1")
-            if re.search("^\s*-install(\s|$)", output, flags=re.MULTILINE):
-                return "-install"
-            else:
-                return "-rootfs"
+    def get_install_flag(connection):
+
+        output = connection.run("mender --help 2>&1", warn=True).stdout
+
+        # TODO: invalid escape sequence \s
+        if re.search("^\s*-install(\s|$)", output, flags=re.MULTILINE):
+            return "-install"
+        else:
+            return "-rootfs"
 
     @staticmethod
     # Note: `image` needs to be in current directory.
-    def install_update(image):
+    def install_update(image, conn):
         http_server_location = pytest.config.getoption("--http-server")
         use_s3 = pytest.config.getoption("--use-s3")
         board = pytest.config.getoption("--board-type")
-        install_flag = Helpers.get_install_flag()
+        install_flag = Helpers.get_install_flag(conn)
 
         http_server = None
         if "qemu" not in board or use_s3:
@@ -123,7 +118,7 @@ class Helpers:
             assert(http_server)
 
         try:
-            output = run("mender %s http://%s/%s" % (install_flag, http_server_location, image))
+            output = conn.run("mender %s http://%s/%s" % (install_flag, http_server_location, image))
             print("output from rootfs update: ", output)
         finally:
             if http_server:
@@ -168,33 +163,34 @@ class SignatureCase:
 class TestUpdates:
 
     @pytest.mark.min_mender_version('1.0.0')
-    def test_broken_image_update(self, bitbake_variables):
-
-        if not env.host_string:
-            # This means we are not inside execute(). Recurse into it!
-            execute(self.test_broken_image_update, bitbake_variables)
-            return
+    def test_broken_image_update(self, bitbake_variables, connection):
 
         file_flag = Helpers.get_file_flag(bitbake_variables)
-        install_flag = Helpers.get_install_flag()
-        (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
+        install_flag = Helpers.get_install_flag(connection)
+        (active_before, passive_before) = determine_active_passive_part(bitbake_variables, conn=connection)
 
         image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         try:
             # Make a dummy/broken update
-            subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
-            subprocess.call("mender-artifact write rootfs-image -t %s -n test-update %s image.dat -o image.mender"
+            retcode = subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
+            if retcode != 0:
+                raise Exception("error creating dummy image")
+            retcode = subprocess.call("mender-artifact write rootfs-image -t %s -n test-update %s image.dat -o image.mender"
                             % (image_type, file_flag), shell=True)
-            put("image.mender", remote_path="/var/tmp/image.mender")
-            run("mender %s /var/tmp/image.mender" % install_flag)
-            reboot()
+            if retcode != 0:
+                raise Exception("error writing mender artifact using command: mender-artifact write rootfs-image -t %s -n test-update %s image.dat -o image.mender"
+                             % (image_type, file_flag))
+
+            put_no_sftp("image.mender", remote="/var/tmp/image.mender", conn=connection)
+            connection.run("mender %s /var/tmp/image.mender" % install_flag)
+            reboot(conn=connection)
 
             # Now qemu is auto-rebooted twice; once to boot the dummy image,
             # where it fails, and uboot auto-reboots a second time into the
             # original partition.
 
-            output = run_after_connect("mount")
+            output = run_after_connect("mount", conn=connection)
 
             # The update should have reverted to the original active partition,
             # since the image was bogus.
@@ -203,18 +199,16 @@ class TestUpdates:
 
         finally:
             # Cleanup.
-            os.remove("image.mender")
-            os.remove("image.dat")
+            if os.path.exists("image.mender"):
+                os.remove("image.mender")
+            if os.path.exists("image.dat"):
+                os.remove("image.dat")
 
     @pytest.mark.min_mender_version('1.0.0')
-    def test_too_big_image_update(self, bitbake_variables):
-        if not env.host_string:
-            # This means we are not inside execute(). Recurse into it!
-            execute(self.test_too_big_image_update, bitbake_variables)
-            return
-
+    def test_too_big_image_update(self, bitbake_variables, connection):
+        
         file_flag = Helpers.get_file_flag(bitbake_variables)
-        install_flag = Helpers.get_install_flag()
+        install_flag = Helpers.get_install_flag(connection)
         image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
         try:
@@ -222,75 +216,75 @@ class TestUpdates:
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=1024", shell=True)
             subprocess.call("mender-artifact write rootfs-image -t %s -n test-update-too-big %s image.dat -o image-too-big.mender"
                             % (image_type, file_flag), shell=True)
-            put("image-too-big.mender", remote_path="/var/tmp/image-too-big.mender")
-            output = run("mender %s /var/tmp/image-too-big.mender ; echo 'ret_code=$?'" % install_flag)
+            put_no_sftp("image-too-big.mender", remote="/var/tmp/image-too-big.mender", conn=connection)
+            output = connection.run(
+                "mender %s /var/tmp/image-too-big.mender ; echo 'ret_code=$?'" % install_flag).stdout
 
             assert(output.find("no space left on device") >= 0)
             assert(output.find("ret_code=0") < 0)
 
         finally:
             # Cleanup.
-            os.remove("image-too-big.mender")
-            os.remove("image.dat")
+            if os.path.exists("image-too-big.mender"):
+                os.remove("image-too-big.mender")
+            if os.path.exists("image.dat"):
+                os.remove("image.dat")
 
     @pytest.mark.min_mender_version('1.0.0')
-    def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables):
-        if not env.host_string:
-            # This means we are not inside execute(). Recurse into it!
-            execute(self.test_network_based_image_update, successful_image_update_mender, bitbake_variables)
-            return
+    def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables, connection):
 
-        (active_before, passive_before) = determine_active_passive_part(bitbake_variables)
+        (active_before, passive_before) = determine_active_passive_part(bitbake_variables, conn=connection)
 
-        Helpers.install_update(successful_image_update_mender)
+        Helpers.install_update(successful_image_update_mender, connection)
 
-        output = run("fw_printenv bootcount")
-        assert(output == "bootcount=0")
+        # TODO: can't we do multiple at once?
+        output = connection.run("fw_printenv bootcount").stdout
+        assert(output.rstrip('\n') == "bootcount=0")
 
-        output = run("fw_printenv upgrade_available")
-        assert(output == "upgrade_available=1")
+        output = connection.run("fw_printenv upgrade_available").stdout
+        assert(output.rstrip('\n') == "upgrade_available=1")
 
-        output = run("fw_printenv mender_boot_part")
-        assert(output == "mender_boot_part=" + passive_before[-1:])
+        output = connection.run("fw_printenv mender_boot_part").stdout
+        assert(output.rstrip('\n') == "mender_boot_part=" + passive_before[-1:])
 
         # Delete kernel and associated files from currently running partition,
         # so that the boot will fail if U-Boot for any reason tries to grab the
         # kernel from the wrong place.
-        run("rm -f /boot/* || true")
+        connection.run("rm -f /boot/* || true")
 
-        reboot()
-
-        run_after_connect("true")
-        (active_after, passive_after) = determine_active_passive_part(bitbake_variables)
+        reboot(conn=connection)
+ 
+        run_after_connect("true", conn=connection)
+        (active_after, passive_after) = determine_active_passive_part(bitbake_variables, conn=connection)
 
         # The OS should have moved to a new partition, since the image was fine.
         assert(active_after == passive_before)
         assert(passive_after == active_before)
 
-        output = run("fw_printenv bootcount")
-        assert(output == "bootcount=1")
+        output = connection.run("fw_printenv bootcount").stdout
+        assert(output.rstrip('\n') == "bootcount=1")
 
-        output = run("fw_printenv upgrade_available")
-        assert(output == "upgrade_available=1")
+        output = connection.run("fw_printenv upgrade_available").stdout
+        assert(output.rstrip('\n') == "upgrade_available=1")
 
-        output = run("fw_printenv mender_boot_part")
-        assert(output == "mender_boot_part=" + active_after[-1:])
+        output = connection.run("fw_printenv mender_boot_part").stdout
+        assert(output.rstrip('\n') == "mender_boot_part=" + active_after[-1:])
 
-        run("mender -commit")
+        connection.run("mender -commit")
 
-        output = run("fw_printenv upgrade_available")
-        assert(output == "upgrade_available=0")
+        output = connection.run("fw_printenv upgrade_available").stdout
+        assert(output.rstrip('\n') == "upgrade_available=0")
 
-        output = run("fw_printenv mender_boot_part")
-        assert(output == "mender_boot_part=" + active_after[-1:])
+        output = connection.run("fw_printenv mender_boot_part").stdout
+        assert(output.rstrip('\n') == "mender_boot_part=" + active_after[-1:])
 
         active_before = active_after
         passive_before = passive_after
 
-        reboot()
+        reboot(conn=connection)
 
-        run_after_connect("true")
-        (active_after, passive_after) = determine_active_passive_part(bitbake_variables)
+        run_after_connect("true", conn=connection)
+        (active_after, passive_after) = determine_active_passive_part(bitbake_variables, conn=connection)
 
         # The OS should have stayed on the same partition, since we committed.
         assert(active_after == active_before)
@@ -570,21 +564,16 @@ class TestUpdates:
                                             success=False),
                              ])
     @pytest.mark.min_mender_version('1.1.0')
-    def test_signed_updates(self, sig_case, bitbake_path, bitbake_variables):
+    def test_signed_updates(self, sig_case, bitbake_path, bitbake_variables, connection):
         """Test various combinations of signed and unsigned, present and non-
         present verification keys."""
 
-        if not env.host_string:
-            # This means we are not inside execute(). Recurse into it!
-            execute(self.test_signed_updates, sig_case, bitbake_path, bitbake_variables)
-            return
-
         file_flag = Helpers.get_file_flag(bitbake_variables)
-        install_flag = Helpers.get_install_flag()
+        install_flag = Helpers.get_install_flag(connection)
 
         # mmc mount points are named: /dev/mmcblk0p1
         # ubi volumes are named: ubi0_1
-        (active, passive) = determine_active_passive_part(bitbake_variables)
+        (active, passive) = determine_active_passive_part(bitbake_variables, conn=connection)
         if passive.startswith('ubi'):
             passive = '/dev/' + passive
 
@@ -678,22 +667,22 @@ class TestUpdates:
             finally:
                 shutil.rmtree(tmpdir, ignore_errors=True)
 
-        put("image.mender")
+        put_no_sftp("image.mender", conn=connection)
         try:
             # Update key configuration on device.
-            run("cp /etc/mender/mender.conf /etc/mender/mender.conf.bak")
-            get("mender.conf", remote_path="/etc/mender")
+            connection.run("cp /etc/mender/mender.conf /etc/mender/mender.conf.bak")
+            get_no_sftp("/etc/mender/mender.conf", conn=connection)
             with open("mender.conf") as fd:
                 config = json.load(fd)
             if sig_case.key:
                 config['ArtifactVerifyKey'] = "/etc/mender/%s" % os.path.basename(sig_key.public)
-                put(sig_key.public, remote_path="/etc/mender")
+                put_no_sftp(sig_key.public, remote=os.path.join("/etc/mender", os.path.basename(sig_key.public)), conn=connection)
             else:
                 if config.get('ArtifactVerifyKey'):
                     del config['ArtifactVerifyKey']
             with open("mender.conf", "w") as fd:
                 json.dump(config, fd)
-            put("mender.conf", remote_path="/etc/mender")
+            put_no_sftp("mender.conf", remote="/etc/mender/mender.conf", conn=connection)
             os.remove("mender.conf")
 
             # Start by writing known "old" content in the partition.
@@ -701,14 +690,13 @@ class TestUpdates:
             if 'ubi' in passive:
                 # ubi volumes cannot be directly written to, we have to use
                 # ubiupdatevol
-                run('echo "%s" | dd of=/tmp/update.tmp && ' \
+                connection.run('echo "%s" | dd of=/tmp/update.tmp && ' \
                     'ubiupdatevol %s /tmp/update.tmp; ' \
                     'rm -f /tmp/update.tmp' % (old_content, passive))
             else:
-                run('echo "%s" | dd of=%s' % (old_content, passive))
+                connection.run('echo "%s" | dd of=%s' % (old_content, passive))
 
-            with settings(warn_only=True):
-                result = run("mender %s image.mender" % install_flag)
+            result = connection.run("mender %s image.mender" % install_flag, warn=True)
 
             if sig_case.success:
                 if result.return_code != 0:
@@ -723,7 +711,7 @@ class TestUpdates:
                 expected_content = old_content
 
             try:
-                content = run("dd if=%s bs=%d count=1"
+                content = connection.run("dd if=%s bs=%d count=1"
                               % (passive, len(expected_content)))
                 assert content == expected_content, "Case: %s" % sig_case.label
 
@@ -744,18 +732,18 @@ class TestUpdates:
 
         finally:
             # Reset environment to what it was.
-            run("fw_setenv mender_boot_part %s" % active[-1:])
-            run("fw_setenv mender_boot_part_hex %x" % int(active[-1:]))
-            run("fw_setenv upgrade_available 0")
-            run("mv /etc/mender/mender.conf.bak /etc/mender/mender.conf")
+            connection.run("fw_setenv mender_boot_part %s" % active[-1:])
+            connection.run("fw_setenv mender_boot_part_hex %x" % int(active[-1:]))
+            connection.run("fw_setenv upgrade_available 0")
+            connection.run("mv /etc/mender/mender.conf.bak /etc/mender/mender.conf")
             if sig_key:
-                run("rm -f /etc/mender/%s" % os.path.basename(sig_key.public))
+                connection.run("rm -f /etc/mender/%s" % os.path.basename(sig_key.public))
 
 
     @pytest.mark.only_for_machine('vexpress-qemu')
     @pytest.mark.only_with_distro_feature('mender-uboot')
     @pytest.mark.min_mender_version('1.0.0')
-    def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables):
+    def test_redundant_uboot_env(self, successful_image_update_mender, bitbake_variables, connection):
         """This tests a very specific scenario: Consider the following production
         scenario: You are currently running an update on rootfs partition
         B. Then you attempt another update, which happens to be broken (but you
@@ -782,12 +770,7 @@ class TestUpdates:
 
         """
 
-        if not env.host_string:
-            # This means we are not inside execute(). Recurse into it!
-            execute(self.test_redundant_uboot_env, successful_image_update_mender, bitbake_variables)
-            return
-
-        (active, passive) = determine_active_passive_part(bitbake_variables)
+        (active, passive) = determine_active_passive_part(bitbake_variables, conn=connection)
 
         if active != bitbake_variables["MENDER_ROOTFS_PART_B"]:
             # We are not running the secondary partition. This is a requirement
@@ -797,17 +780,17 @@ class TestUpdates:
             # build, the correct partition will usually be selected already.
             self.test_network_based_image_update(successful_image_update_mender, bitbake_variables)
 
-            (active, passive) = determine_active_passive_part(bitbake_variables)
+            (active, passive) = determine_active_passive_part(bitbake_variables, conn=connection)
             assert(active == bitbake_variables["MENDER_ROOTFS_PART_B"])
 
         file_flag = Helpers.get_file_flag(bitbake_variables)
-        install_flag = Helpers.get_install_flag()
+        install_flag = Helpers.get_install_flag(connection)
 
         # Make a note of the checksums of each environment. We use this later to
         # determine which one changed.
         old_checksums = Helpers.get_env_checksums(bitbake_variables)
 
-        orig_env = run("fw_printenv")
+        orig_env = connection.run("fw_printenv")
 
         image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
@@ -816,8 +799,8 @@ class TestUpdates:
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
             subprocess.call("mender-artifact write rootfs-image -t %s -n test-update %s image.dat -o image.mender"
                             % (image_type, file_flag), shell=True)
-            put("image.mender", remote_path="/var/tmp/image.mender")
-            run("mender %s /var/tmp/image.mender" % install_flag)
+            put_no_sftp("image.mender", remote="/var/tmp/image.mender", conn=connection)
+            connection.run("mender %s /var/tmp/image.mender" % install_flag)
 
             new_checksums = Helpers.get_env_checksums(bitbake_variables)
 
@@ -834,9 +817,9 @@ class TestUpdates:
 
             # Now manually corrupt the environment.
             # A few bytes should do it!
-            run("dd if=/dev/zero of=%s bs=1 count=64 seek=%d"
+            connection.run("dd if=/dev/zero of=%s bs=1 count=64 seek=%d"
                 % (bitbake_variables["MENDER_STORAGE_DEVICE"], offsets[to_corrupt]))
-            run("sync")
+            connection.run("sync")
 
             # Check atomicity of Mender environment update: The contents of the
             # environment before the update should be identical to the
@@ -844,16 +827,16 @@ class TestUpdates:
             # environment. If it's not identical, it's an indication that there
             # were intermediary steps. This is important to avoid so that the
             # environment is not in a half updated state.
-            new_env = run("fw_printenv")
+            new_env = connection.run("fw_printenv")
             assert orig_env == new_env
 
-            reboot()
+            reboot(conn=connection)
 
             # We should have recovered.
             run_after_connect("true")
 
             # And we should be back at the second rootfs partition.
-            (active, passive) = determine_active_passive_part(bitbake_variables)
+            (active, passive) = determine_active_passive_part(bitbake_variables, conn=connection)
             assert(active == bitbake_variables["MENDER_ROOTFS_PART_B"])
 
         finally:
@@ -863,7 +846,7 @@ class TestUpdates:
 
     @pytest.mark.only_with_distro_feature('mender-grub')
     @pytest.mark.min_mender_version('1.0.0')
-    def test_redundant_grub_env(self, successful_image_update_mender, bitbake_variables):
+    def test_redundant_grub_env(self, successful_image_update_mender, bitbake_variables, connection):
         """This tests pretty much the same thing as the test_redundant_uboot_env
         above, but the details differ. U-Boot maintains a counter in each
         environment, and then only updates one of them. However, the GRUB
@@ -871,15 +854,10 @@ class TestUpdates:
         cannot do this, so instead we update both, and use the validity of the
         variables instead as a crude checksum."""
 
-        if not env.host_string:
-            # This means we are not inside execute(). Recurse into it!
-            execute(self.test_redundant_grub_env, successful_image_update_mender, bitbake_variables)
-            return
-
-        (active, passive) = determine_active_passive_part(bitbake_variables)
+        (active, passive) = determine_active_passive_part(bitbake_variables, conn=connection)
 
         # Corrupt the passive partition.
-        run("dd if=/dev/zero of=%s bs=1024 count=1024" % passive)
+        connection.run("dd if=/dev/zero of=%s bs=1024 count=1024" % passive)
 
         if "mender-bios" in bitbake_variables['DISTRO_FEATURES'].split():
             env_dir = "/boot/grub"
@@ -889,46 +867,41 @@ class TestUpdates:
         # Now try to corrupt the environment, and make sure it doesn't get booted into.
         for env_num in [1, 2]:
             # Make a copy of the two environments.
-            run("cp %s/{mender_grubenv1/env,mender_grubenv1/env.backup}" % env_dir)
-            run("cp %s/{mender_grubenv1/lock,mender_grubenv1/lock.backup}" % env_dir)
-            run("cp %s/{mender_grubenv2/env,mender_grubenv2/env.backup}" % env_dir)
-            run("cp %s/{mender_grubenv2/lock,mender_grubenv2/lock.backup}" % env_dir)
+            connection.run("cp %s/{mender_grubenv1/env,mender_grubenv1/env.backup}" % env_dir)
+            connection.run("cp %s/{mender_grubenv1/lock,mender_grubenv1/lock.backup}" % env_dir)
+            connection.run("cp %s/{mender_grubenv2/env,mender_grubenv2/env.backup}" % env_dir)
+            connection.run("cp %s/{mender_grubenv2/lock,mender_grubenv2/lock.backup}" % env_dir)
 
             try:
                 env_file = "%s/mender_grubenv%d/env" % (env_dir, env_num)
                 lock_file = "%s/mender_grubenv%d/lock" % (env_dir, env_num)
-                run('sed -e "s/editing=.*/editing=1/" %s' % lock_file)
-                run('sed -e "s/mender_boot_part=.*/mender_boot_part=%s/" %s' % (passive[-1], lock_file))
+                connection.run('sed -e "s/editing=.*/editing=1/" %s' % lock_file)
+                connection.run('sed -e "s/mender_boot_part=.*/mender_boot_part=%s/" %s' % (passive[-1], lock_file))
 
-                reboot()
+                reboot(conn=connection)
                 run_after_connect("true")
 
-                (new_active, new_passive) = determine_active_passive_part(bitbake_variables)
+                (new_active, new_passive) = determine_active_passive_part(bitbake_variables, conn=connection)
                 assert new_active == active
                 assert new_passive == passive
 
             finally:
                 # Restore the two environments.
-                run("mv %s/{mender_grubenv1/env.backup,mender_grubenv1/env}" % env_dir)
-                run("mv %s/{mender_grubenv1/lock.backup,mender_grubenv1/lock}" % env_dir)
-                run("mv %s/{mender_grubenv2/env.backup,mender_grubenv2/env}" % env_dir)
-                run("mv %s/{mender_grubenv2/lock.backup,mender_grubenv2/lock}" % env_dir)
+                connection.run("mv %s/{mender_grubenv1/env.backup,mender_grubenv1/env}" % env_dir)
+                connection.run("mv %s/{mender_grubenv1/lock.backup,mender_grubenv1/lock}" % env_dir)
+                connection.run("mv %s/{mender_grubenv2/env.backup,mender_grubenv2/env}" % env_dir)
+                connection.run("mv %s/{mender_grubenv2/lock.backup,mender_grubenv2/lock}" % env_dir)
 
     @pytest.mark.only_with_distro_feature('mender-uboot')
     @pytest.mark.only_with_image('sdimg', 'uefiimg')
     @pytest.mark.min_mender_version('1.6.0')
-    def test_uboot_mender_saveenv_canary(self, bitbake_variables):
+    def test_uboot_mender_saveenv_canary(self, bitbake_variables, connection):
         """Tests that the mender_saveenv_canary works correctly, which tests
         that Mender will not proceed unless the U-Boot boot loader has saved the
         environment."""
 
-        if not env.host_string:
-            # This means we are not inside execute(). Recurse into it!
-            execute(self.test_uboot_mender_saveenv_canary, bitbake_variables)
-            return
-
         file_flag = Helpers.get_file_flag(bitbake_variables)
-        install_flag = Helpers.get_install_flag()
+        install_flag = Helpers.get_install_flag(connection)
         image_type = bitbake_variables["MACHINE"]
 
         try:
@@ -936,34 +909,34 @@ class TestUpdates:
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
             subprocess.call("mender-artifact write rootfs-image -t %s -n test-update %s image.dat -o image.mender"
                             % (image_type, file_flag), shell=True)
-            put("image.mender", remote_path="/var/tmp/image.mender")
+            put_no_sftp("image.mender", remote="/var/tmp/image.mender", conn=connection)
 
             # Zero the environment, causing the fw-utils to use their built in
             # default.
-            env_conf = run("cat /etc/fw_env.config")
+            env_conf = connection.run("cat /etc/fw_env.config")
             env_conf_lines = env_conf.split('\n')
             assert len(env_conf_lines) == 2
             for i in [0, 1]:
                 entry = env_conf_lines[i].split()
-                run("dd if=%s skip=%d bs=%d count=1 iflag=skip_bytes > /old_env%d"
+                connection.run("dd if=%s skip=%d bs=%d count=1 iflag=skip_bytes > /old_env%d"
                     % (entry[0], int(entry[1], 0), int(entry[2], 0), i))
-                run("dd if=/dev/zero of=%s seek=%d bs=%d count=1 oflag=seek_bytes"
+                connection.run("dd if=/dev/zero of=%s seek=%d bs=%d count=1 oflag=seek_bytes"
                     % (entry[0], int(entry[1], 0), int(entry[2], 0)))
 
             try:
-                output = run("mender %s /var/tmp/image.mender", install_flag)
+                output = connection.run("mender %s /var/tmp/image.mender", install_flag)
                 pytest.fail("Update succeeded when canary was not present!")
             except:
-                output = run("fw_printenv upgrade_available")
+                output = connection.run("fw_printenv upgrade_available")
                 # Upgrade should not have been triggered.
                 assert(output == "upgrade_available=0")
             finally:
                 # Restore environment to what it was.
                 for i in [0, 1]:
                     entry = env_conf_lines[i].split()
-                    run("dd of=%s seek=%d bs=%d count=1 oflag=seek_bytes < /old_env%d"
+                    connection.run("dd of=%s seek=%d bs=%d count=1 oflag=seek_bytes < /old_env%d"
                         % (entry[0], int(entry[1], 0), int(entry[2], 0), i))
-                    run("rm -f /old_env%d" % i)
+                    connection.run("rm -f /old_env%d" % i)
 
         finally:
             # Cleanup.
@@ -971,32 +944,27 @@ class TestUpdates:
             os.remove("image.dat")
 
     @pytest.mark.min_mender_version('2.0.0')
-    def test_upgrade_from_pre_2_0(self, successful_image_update_mender, bitbake_variables, prepared_test_build):
+    def test_upgrade_from_pre_2_0(self, successful_image_update_mender, bitbake_variables, prepared_test_build, connection):
         """Tests that we can upgrade from any pre-2.0.0 mender version to this version."""
 
-        if not env.host_string:
-            # This means we are not inside execute(). Recurse into it!
-            execute(self.test_upgrade_from_pre_2_0, successful_image_update_mender, bitbake_variables, prepared_test_build)
-            return
-
         # Build a pre-2.0.0 mender version.
-        add_to_local_conf(prepared_test_build, 'PREFERRED_VERSION_pn-mender = "1.%"')
-        add_to_local_conf(prepared_test_build, 'EXTERNALSRC_pn-mender = ""')
-        add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_remove_pn-mender = "split-mender-config"')
-        run_bitbake(prepared_test_build['image_name'], 
-                    prepared_test_build['env_setup'])
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['PREFERRED_VERSION_pn-mender = "1.%"', 
+                    'EXTERNALSRC_pn-mender = ""',
+                    'PACKAGECONFIG_remove_pn-mender = "split-mender-config"'])
 
         image = "pre-mender-2.0.0.mender"
         shutil.copyfile(latest_build_artifact(prepared_test_build["build_dir"], "*.mender"), image)
         try:
-            Helpers.install_update(image)
-            reboot()
+            Helpers.install_update(image, connection)
+            reboot(conn=connection)
             run_after_connect("true")
         finally:
             os.remove(image)
 
         def is_pre_mender_2_0():
-            output = run("mender -version")
+            output = connection.run("mender -version")
             return any([line.startswith("1.") for line in output.split("\n")])
 
         # Double check that it is a pre-2.0.0 version. For future readers: If
@@ -1004,23 +972,21 @@ class TestUpdates:
         # whole test can be removed.
         assert is_pre_mender_2_0()
 
-        run("mender -commit")
-
-        reset_local_conf(prepared_test_build)
+        connection.run("mender -commit")
 
         # Build an image that the pre-2.0.0 mender will accept.
-        add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS_append = " -v 2"')
-        run_bitbake(prepared_test_build['image_name'], 
-                    prepared_test_build['env_setup'])
-        build_image = latest_build_artifact(prepared_test_build["build_dir"], "*.mender")
+        build_img = latest_build_artifact(prepared_test_build["build_dir"], "*.mender")
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    ['MENDER_ARTIFACT_EXTRA_ARGS_append = " -v 2"'])
         image = "test_upgrade_from_pre_2_0.mender"
-        shutil.copyfile(build_image, image)
+        shutil.copyfile(build_img, image)
 
         try:
-            reset_local_conf(prepared_test_build)
+            reset_local_conf(prepared_test_build['build_dir'])
 
             # Delete existing database, if any.
-            run("rm -f /data/mender/mender-store*")
+            connection.run("rm -f /data/mender/mender-store*")
 
             # Carry out rest of the test using the existing upgrade test.
             self.test_network_based_image_update(image, bitbake_variables)
@@ -1032,8 +998,7 @@ class TestUpdates:
             os.remove(image)
 
         # Make sure committing is not possible anymore afterwards.
-        with settings(warn_only=True):
-            output = run("mender -commit")
-            assert output.return_code == 2
-            # Earlier versions used the first string.
-            assert "No artifact installation in progress" in output or "There is nothing to commit" in output
+        output = connection.run("mender -commit", warn=True)
+        assert output.return_code == 2
+        # Earlier versions used the first string.
+        assert "No artifact installation in progress" in output or "There is nothing to commit" in output

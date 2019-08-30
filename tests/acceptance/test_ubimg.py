@@ -13,15 +13,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from fabric import Connection
-
 import os
 import pytest
 import shutil
 import subprocess
 import tempfile
 
-# Make sure common is imported after fabric, because we override some functions.
 from common import *
 
 def extract_ubimg(path, outdir):
@@ -133,8 +130,8 @@ def extract_ubimg_info(path):
     return data
 
 
-@pytest.fixture(scope="session")
-def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build_base):
+@pytest.fixture(scope="function")
+def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build):
     """The ubireader_utils_info tool and friends don't support our UBI volumes
     that contain the U-Boot environment and hence not valid UBIFS structures.
     Therefore, make a new temporary image that doesn't contain U-Boot."""
@@ -147,13 +144,11 @@ def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build_base):
     if not latest_ubimg:
         pytest.skip("No ubimg found")
 
-    reset_local_conf(prepared_test_build_base['local_conf_orig'], prepared_test_build_base['local_conf'])
+    build_image(prepared_test_build['build_dir'], 
+                prepared_test_build['bitbake_corebase'],
+                ['MENDER_FEATURES_DISABLE_append = " mender-uboot"'])
 
-    add_to_local_conf(prepared_test_build_base, 'MENDER_FEATURES_DISABLE_append = " mender-uboot"')
-    run_bitbake(prepared_test_build_base['image_name'], 
-                prepared_test_build_base['env_setup'])
-
-    ubimg = latest_build_artifact(prepared_test_build_base['build_dir'], "core-image*.ubimg")
+    ubimg = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ubimg")
     imgdir = tempfile.mkdtemp()
     tmpimg = os.path.join(imgdir, os.path.basename(ubimg))
     shutil.copyfile(ubimg, tmpimg)
