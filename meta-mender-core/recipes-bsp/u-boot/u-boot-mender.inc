@@ -50,4 +50,4 @@ do_deploy_append_mender-uboot() {
     dd if=/dev/zero of=${WORKDIR}/uboot.env bs=${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} count=1
     install -m 644 ${WORKDIR}/uboot.env ${DEPLOYDIR}/uboot.env
 }
-addtask deploy after do_compile
+addtask deploy after do_compile before do_package

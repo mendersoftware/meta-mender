@@ -62,7 +62,8 @@ class TestInventory:
         else:
             pytest.fail("Unknown platform combination. Please add a test case for this combination.")
 
-    @pytest.mark.min_mender_version('1.6.0')
+    @pytest.mark.skip(reason="Test mostly relevant for rofs feature, which is not ported beyond thud. Skipping for older releases")
+    @pytest.mark.min_mender_version('2.0.0')
     def test_inventory_os(self, bitbake_variables):
         """Test that "os" inventory attribute is reported correctly by the
         inventory script."""
@@ -98,6 +99,13 @@ VERSION_ID="2.5-snapshot-20180731"
 """,
                 "mode": 0644,
                 "expected": "os=Poky (Yocto Project Reference Distro) 2.5+snapshot-20180731 (master)",
+            },
+            {
+                "name": "/bin/lsb_release",
+                "content": """#!/bin/sh
+echo Base LSB OS""",
+                "mode": 0755,
+                "expected": "os=Base LSB OS",
             },
             {
                 "name": "/usr/bin/lsb_release",
