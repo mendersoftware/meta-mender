@@ -460,12 +460,23 @@ def add_to_local_conf(prepared_test_build, string):
         fd.write('\n## ADDED BY TEST\n')
         fd.write("%s\n" % string)
 
-def reset_local_conf(prepared_test_build):
-    new_file = prepared_test_build['local_conf']
-    old_file = prepared_test_build['local_conf_orig']
+def add_to_bblayers_conf(prepared_test_build, string):
+    """Add given string to bblayers.conf before the build. Newline is added
+    automatically."""
 
-    # Restore original local.conf
-    run_verbose("cp %s %s" % (old_file, new_file))
+    with open(prepared_test_build['bblayers_conf'], "a") as fd:
+        fd.write('\n## ADDED BY TEST\n')
+        fd.write("%s\n" % string)
+
+def reset_build_conf(prepared_test_build, full_cleanup=False):
+    for conf in ["local", "bblayers"]:
+        new_file = prepared_test_build[conf + '_conf']
+        old_file = prepared_test_build[conf + '_conf_orig']
+
+        if os.path.exists(old_file):
+            run_verbose("cp %s %s" % (old_file, new_file))
+            if full_cleanup:
+                os.remove(old_file)
 
 
 class bitbake_env_from:

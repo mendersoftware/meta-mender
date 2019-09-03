@@ -146,7 +146,7 @@ def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build_base):
     if not latest_ubimg:
         pytest.skip("No ubimg found")
 
-    reset_local_conf(prepared_test_build_base)
+    reset_build_conf(prepared_test_build_base)
 
     add_to_local_conf(prepared_test_build_base, 'MENDER_FEATURES_DISABLE_append = " mender-uboot"')
     run_bitbake(prepared_test_build_base)

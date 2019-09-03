@@ -37,6 +37,7 @@ COPY $DISK_IMAGE .
 
 ADD scripts/mender-qemu ./
 ADD scripts/docker/entrypoint.sh ./
+ADD scripts/docker/ext4_manipulator.py ./
 ADD scripts/docker/setup-mender-configuration.py ./
 ADD env.txt ./
 
