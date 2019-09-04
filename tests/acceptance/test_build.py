@@ -231,6 +231,7 @@ class TestBuild:
                 "ArtifactInstall_Leave_99": False,
                 "ArtifactReboot_Leave_50": False,
                 "ArtifactCommit_Enter_50": False,
+                "ArtifactCommit_Leave_50": False,
             }
 
             # Check new rootfs.
