@@ -51,6 +51,8 @@ def pytest_addoption(parser):
                      help="configuration file holding settings for dedicated platform")
     parser.addoption("--mender-image", action="store", default="default",
                      help="Mender compliant raw disk image")
+    parser.addoption("--commercial-tests", action="store_true",
+                     help="Enable tests of commercial features")
 
 def pytest_configure(config):
     if not config.getoption("--no-pull"):
