@@ -2,6 +2,9 @@ inherit mender-helpers
 
 # ------------------------------ CONFIGURATION ---------------------------------
 
+# Extra global options that should be passed to mender-artifact.
+MENDER_ARTIFACT_EXTRA_OPTS ?= ""
+
 # Extra arguments that should be passed to mender-artifact.
 MENDER_ARTIFACT_EXTRA_ARGS ?= ""
 
@@ -55,7 +58,8 @@ IMAGE_CMD_mender () {
         image_flag=-f
     fi
 
-    mender-artifact write rootfs-image \
+    mender-artifact ${MENDER_ARTIFACT_EXTRA_OPTS} \
+        write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} \
         $extra_args \
         $image_flag ${IMGDEPLOYDIR}/${ARTIFACTIMG_NAME}.${ARTIFACTIMG_FSTYPE} \
