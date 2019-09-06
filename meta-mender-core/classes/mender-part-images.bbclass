@@ -44,7 +44,7 @@ IMAGE_NAME_SUFFIX = ""
 
 mender_part_image() {
     suffix="$1"
-    part_type="$2"
+    ptable_type="$2"
     boot_part_params="$3"
 
     set -ex
@@ -105,6 +105,13 @@ EOF
 
     alignment_kb=$(expr ${MENDER_PARTITION_ALIGNMENT} / 1024)
 
+    # Used for all Linux filesystem partitions.
+    if [ "$ptable_type" = "gpt" ]; then
+        part_type_params="--part-type 8300"
+    else
+        part_type_params=
+    fi
+
     # remove leading and trailing spaces
     IMAGE_BOOT_FILES_STRIPPED=$(echo "${IMAGE_BOOT_FILES}" | sed -r 's/(^\s*)|(\s*$)//g')
 
@@ -118,8 +125,8 @@ EOF
     fi
 
     cat >> "$wks" <<EOF
-part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
-part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k
+part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $part_type_params
+part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $part_type_params
 EOF
 
     if [ "${MENDER_SWAP_PART_SIZE_MB}" -ne "0" ]; then
@@ -129,8 +136,8 @@ EOF
     fi
 
     cat >> "$wks" <<EOF
-part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.dataimg" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_DATA_PART_SIZE_MB} --mkfs-extraopts='${MENDER_DATA_PART_FSOPTS}'
-bootloader --ptable $part_type
+part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.dataimg" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_DATA_PART_SIZE_MB} --mkfs-extraopts='${MENDER_DATA_PART_FSOPTS}' $part_type_params
+bootloader --ptable $ptable_type
 EOF
 
 
@@ -168,12 +175,31 @@ EOF
 
     # If we padded above, and the partition table type is GPT, we need to
     # relocate the trailing backup header to the new end to avoid warnings.
-    if [ "$part_type" = "gpt" ]; then
+    if [ "$ptable_type" = "gpt" ]; then
         sgdisk -e "$outimgname"
     fi
 
+    if [ "$ptable_type" = "msdos" ]; then
+        # Fix partition entry types for MBR style partition table.
+        (
+            echo t                                  # Partition type
+            echo ${MENDER_ROOTFS_PART_A_NUMBER}     # Number of partition
+            echo 83                                 # "Linux filesystem" type
+
+            echo t                                  # Partition type
+            echo ${MENDER_ROOTFS_PART_B_NUMBER}     # Number of partition
+            echo 83                                 # "Linux filesystem" type
+
+            echo t                                  # Partition type
+            echo ${MENDER_DATA_PART_NUMBER}         # Number of partition
+            echo 83                                 # "Linux filesystem" type
+
+            echo w                                  # Save and exit
+        ) | fdisk ${outimgname}
+    fi
+
     if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
-        if [ "$part_type" = "gpt" ]; then
+        if [ "$ptable_type" = "gpt" ]; then
             # Set Fixed PARTUUID for all devices
             sgdisk -u ${MENDER_BOOT_PART_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_BOOT_PART}')} "$outimgname"
             sgdisk -u ${MENDER_ROOTFS_PART_A_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_A}')} "$outimgname"
