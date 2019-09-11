@@ -473,3 +473,97 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             assert "modules" not in entries
         else:
             assert "modules" in entries
+
+    @pytest.mark.only_with_image('sdimg', 'uefiimg', 'gptimg', 'biosimg')
+    @pytest.mark.min_mender_version('1.0.0')
+    def test_correct_partition_types(self, latest_part_image):
+        """Test that all the partitions in the image have the correct type."""
+
+        sdimg   = latest_part_image.endswith(".sdimg")
+        uefiimg = latest_part_image.endswith(".uefiimg")
+        gptimg  = latest_part_image.endswith(".gptimg")
+        biosimg = latest_part_image.endswith(".biosimg")
+
+        if sdimg or biosimg:
+            # MBR partition table.
+
+            # Example MBR table:
+            #
+            # Device       Boot  Start     End Sectors  Size Id Type
+            # image.sdimg1 *     16384   49151   32768   16M  c W95 FAT
+            # image.sdimg2       49152  507903  458752  224M 83 Linux
+            # image.sdimg3      507904  966655  458752  224M 83 Linux
+            # image.sdimg4      966656 1228799  262144  128M 83 Linux
+
+            output = subprocess.check_output(["fdisk", "-l", latest_part_image])
+            lines = output.split('\n')
+
+            # Find the line which starts with "Device".
+            table_start = 0
+            for line in lines:
+                if line.startswith("Device "):
+                    break
+                table_start += 1
+            else:
+                assert False, 'No "Device" found in:\n%s' % output
+            table_start += 1
+
+            # Let's get rid of the annoying Boot marker which messes up split().
+            lines[table_start] = lines[table_start].replace("*", " ")
+
+            expected = [
+                ("1", "c"),
+                ("2", "83"),
+                ("3", "83"),
+                ("4", "83"),
+            ]
+
+            actual = [(line.split()[0][-1:], line.split()[5]) for line in lines[table_start:] if line != ""]
+
+            assert expected == actual, "Did not expect table:\n%s" % output
+
+        elif uefiimg or gptimg:
+            # GPT partition table.
+
+            # Example GPT table.
+            #
+            # Number  Start (sector)    End (sector)  Size       Code  Name
+            #    1           16384           49151   16.0 MiB    EF00  boot
+            #    2           49152          507903   224.0 MiB   8300  primary
+            #    3          507904          966655   224.0 MiB   8300  primary
+            #    4          966656         1228799   128.0 MiB   8300  primary
+
+            output = subprocess.check_output(["sgdisk", "-p", latest_part_image])
+            lines = output.split('\n')
+
+            # Find the line which starts with "Number".
+            table_start = 0
+            for line in lines:
+                if line.startswith("Number "):
+                    break
+                table_start += 1
+            else:
+                assert False, 'No "Number" found in:\n%s' % output
+            table_start += 1
+
+            if uefiimg:
+                expected = [
+                    ("1", "EF00"),
+                    ("2", "8300"),
+                    ("3", "8300"),
+                    ("4", "8300"),
+                ]
+            else:
+                expected = [
+                    ("1", "0700"),
+                    ("2", "8300"),
+                    ("3", "8300"),
+                    ("4", "8300"),
+                ]
+
+            actual = [(line.split()[0], line.split()[5]) for line in lines[table_start:] if line != ""]
+
+            assert expected == actual, "Did not expect table:\n%s" % output
+
+        else:
+            assert False, "Should not get here!"
