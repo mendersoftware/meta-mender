@@ -52,8 +52,12 @@ MENDER_CALC_ROOTFS_SIZE = "${@mender_calculate_rootfs_size_kb(${MENDER_STORAGE_T
 IMAGE_ROOTFS_SIZE ?= "${MENDER_IMAGE_ROOTFS_SIZE_DEFAULT}"
 MENDER_IMAGE_ROOTFS_SIZE_DEFAULT ?= "${@eval('${MENDER_CALC_ROOTFS_SIZE} - (${IMAGE_ROOTFS_EXTRA_SPACE})')}"
 
-# Set hard limit on maximum rootfs size. Calculated rootfs size is used when
-# partitioning the disk image (be it SD card or UBI image), and defines an upper
-# bound of the space allocated for rootfs partition/volume.
-IMAGE_ROOTFS_MAXSIZE ?= "${MENDER_IMAGE_ROOTFS_MAXSIZE_DEFAULT}"
-MENDER_IMAGE_ROOTFS_MAXSIZE_DEFAULT ?= "${MENDER_CALC_ROOTFS_SIZE}"
+# Disable rootfs upper bound checking by setting a large default value (100GB)
+#
+# This is primarily done because of the mender-dataimg.bbclass, which is an
+# image that is created from a sub-directory in the rootfs tree and this size
+# check is not applicable in this case (generates false negatives)
+#
+# We have custom sanity checks of image sizes that ensures that the generated
+# filesystem images fit in to the defined partition sizes of the disk image.
+IMAGE_ROOTFS_MAXSIZE_forcevariable = "102400000"
