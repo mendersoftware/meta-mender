@@ -262,6 +262,9 @@ python() {
 
         # Setup the systemd machine ID to be persistent across OTA updates.
         'mender-persist-systemd-machine-id',
+
+        # Enable dynamic resizing of the data filesystem through systemd's growfs
+        'mender-growfs-data',
     }
 
     mfe = d.getVar('MENDER_FEATURES_ENABLE')
@@ -392,6 +395,8 @@ python mender_vars_handler() {
         with open (path, 'w') as f:
             json.dump(mender_vars, f, sort_keys=True, indent=4)
 }
+
+MENDER_DATA_PART_FSTAB_OPTS_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-growfs-data', ',x-systemd.growfs', '', d)}"
 
 # Including these does not mean that all these features will be enabled, just
 # that their configuration will be considered. Use DISTRO_FEATURES to enable and
