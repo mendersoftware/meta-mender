@@ -158,9 +158,19 @@ python() {
     d.appendVarFlag("do_rootfs", "vardeps", " IMAGE_ROOTFS_EXCLUDE_PATH")
 
     fstypes = d.getVar('IMAGE_FSTYPES') + " " + d.getVar("ARTIFACTIMG_FSTYPE")
+    handled = set()
 
-    for image_type in set(fstypes.split()):
+    for image_type in fstypes.split():
+        image_name, image_extension = os.path.splitext(image_type)
+        if image_extension:
+            image_type = image_name
+
+        if image_type in handled:
+            continue
+
         task = "do_image_%s" % image_type
         d.appendVarFlag(task, "prefuncs", " prepare_excluded_directories")
         d.appendVarFlag(task, "postfuncs", " cleanup_excluded_directories")
+
+        handled.add(image_type)
 }
