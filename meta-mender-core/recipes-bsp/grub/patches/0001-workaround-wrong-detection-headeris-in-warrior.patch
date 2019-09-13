@@ -1,0 +1,76 @@
+From 469bf02510cda9d7bb3d3f3521a221845054786a Mon Sep 17 00:00:00 2001
+From: Lluis Campos <lluis.campos@northern.tech>
+Date: Fri, 13 Sep 2019 17:10:43 +0200
+Subject: [PATCH] Workaround wrong detection headeris in warrior
+
+For some uknown reason, in Yocto warrior the grub configure script is
+not able to find two header files: wchar.h and sysmacros.h, which
+triggers the build to abort with compile errors.
+
+The header files are actually there for glibc and probably most of libc
+versions used for native compile. As we are interested in grub-editenv,
+and not compiling grub itself, it should be safe to assume tha the
+headers are present in the sysroot for the toolchain.
+
+Signed-off-by: Lluis Campos <lluis.campos@northern.tech>
+---
+ grub-core/gnulib/wchar.in.h     | 5 +++--
+ grub-core/osdep/linux/getroot.c | 7 +++----
+ grub-core/osdep/unix/getroot.c  | 7 +++----
+ 3 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/grub-core/gnulib/wchar.in.h b/grub-core/gnulib/wchar.in.h
+index b6e4362..6de02fd 100644
+--- a/grub-core/gnulib/wchar.in.h
++++ b/grub-core/gnulib/wchar.in.h
+@@ -74,9 +74,10 @@
+ /* Include the original <wchar.h> if it exists.
+    Some builds of uClibc lack it.  */
+ /* The include_next requires a split double-inclusion guard.  */
+-#if @HAVE_WCHAR_H@
++/* Assume the header file exists. For some strange reason,
++ * configure resolves the header to no exist when building
++ * on Yocto warrior branch */
+ # @INCLUDE_NEXT@ @NEXT_WCHAR_H@
+-#endif
+ 
+ #undef _GL_ALREADY_INCLUDING_WCHAR_H
+ 
+diff --git a/grub-core/osdep/linux/getroot.c b/grub-core/osdep/linux/getroot.c
+index 90d92d3..00fd6e2 100644
+--- a/grub-core/osdep/linux/getroot.c
++++ b/grub-core/osdep/linux/getroot.c
+@@ -35,11 +35,10 @@
+ #include <limits.h>
+ #endif
+ 
+-#if defined(MAJOR_IN_MKDEV)
+-#include <sys/mkdev.h>
+-#elif defined(MAJOR_IN_SYSMACROS)
++/* Assume the header file exists. For some strange reason,
++ * configure resolves the header to no exist when building
++ * on Yocto warrior branch */
+ #include <sys/sysmacros.h>
+-#endif
+ 
+ #include <grub/types.h>
+ #include <sys/ioctl.h>         /* ioctl */
+diff --git a/grub-core/osdep/unix/getroot.c b/grub-core/osdep/unix/getroot.c
+index 4bf37b0..18ae6b9 100644
+--- a/grub-core/osdep/unix/getroot.c
++++ b/grub-core/osdep/unix/getroot.c
+@@ -51,11 +51,10 @@
+ #endif
+ 
+ #include <sys/types.h>
+-#if defined(MAJOR_IN_MKDEV)
+-#include <sys/mkdev.h>
+-#elif defined(MAJOR_IN_SYSMACROS)
++/* Assume the header file exists. For some strange reason,
++ * configure resolves the header to no exist when building
++ * on Yocto warrior branch */
+ #include <sys/sysmacros.h>
+-#endif
+ 
+ #if defined(HAVE_LIBZFS) && defined(HAVE_LIBNVPAIR)
+ # include <grub/util/libzfs.h>
