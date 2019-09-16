@@ -10,7 +10,7 @@ require mender.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.1.x"
 
-# Tag: 2.1.0b1
+# Tag: 2.1.0
 SRCREV = "77342fbd78e9dac33aca9a3f49f181a0440b064c"
 
 # Enable this in Betas, not in finals.
