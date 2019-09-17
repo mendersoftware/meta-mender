@@ -1,2 +1,2 @@
-DEPENDS_remove_vexpress-qemu-flash = "openssl"
-DEPENDS_append_vexpress-qemu-flash = " openssl10"
+DEPENDS_remove = "openssl"
+DEPENDS_append = " openssl10"
