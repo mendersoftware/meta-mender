@@ -1,8 +1,8 @@
 LICENSE = "CLOSED"
 LICENSE_FLAGS = "commercial"
 
-SUB_FOLDER_arm = "armhf"
-SUB_FOLDER_aarch64 = "arm64"
+SUB_FOLDER_arm = "arm"
+SUB_FOLDER_aarch64 = "aarch64"
 SUB_FOLDER_x86-64 = "x86_64"
 
 SRC_URI = "file://${SUB_FOLDER}/mender-binary-delta"
