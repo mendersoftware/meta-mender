@@ -291,7 +291,7 @@ def clean_image(request, prepared_test_build_base):
     builds in between."""
 
     def getter():
-        reset_local_conf(prepared_test_build_base)
+        reset_build_conf(prepared_test_build_base)
         add_to_local_conf(prepared_test_build_base,
                           'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
         add_to_local_conf(prepared_test_build_base,
@@ -312,17 +312,28 @@ def prepared_test_build_base(request, bitbake_variables):
 
     local_conf = os.path.join(build_dir, "conf", "local.conf")
     local_conf_orig = local_conf + ".orig"
+    bblayers_conf = os.path.join(build_dir, "conf", "bblayers.conf")
+    bblayers_conf_orig = bblayers_conf + ".orig"
+    env_setup = "cd %s && . oe-init-build-env %s" % (bitbake_variables['COREBASE'], build_dir)
+    image_name = pytest.config.getoption("--bitbake-image")
+
+    build_object = {'build_dir': build_dir,
+            'image_name': image_name,
+            'env_setup': env_setup,
+            'local_conf': local_conf,
+            'local_conf_orig': local_conf_orig,
+            'bblayers_conf': bblayers_conf,
+            'bblayers_conf_orig': bblayers_conf_orig,
+    }
 
     def cleanup_test_build():
         if not pytest.config.getoption('--no-tmp-build-dir'):
             run_verbose("rm -rf %s" % build_dir)
-        if os.path.exists(local_conf_orig):
-            run_verbose("mv %s %s" % (local_conf_orig, local_conf))
+        else:
+            reset_build_conf(build_object, full_cleanup=True)
 
     cleanup_test_build()
     request.addfinalizer(cleanup_test_build)
-
-    env_setup = "cd %s && . oe-init-build-env %s" % (bitbake_variables['COREBASE'], build_dir)
 
     run_verbose(env_setup)
 
@@ -333,15 +344,9 @@ def prepared_test_build_base(request, bitbake_variables):
             fd.write('DL_DIR = "%s"\n' % bitbake_variables['DL_DIR'])
 
     run_verbose("cp %s %s" % (local_conf, local_conf_orig))
+    run_verbose("cp %s %s" % (bblayers_conf, bblayers_conf_orig))
 
-    image_name = pytest.config.getoption("--bitbake-image")
-
-    return {'build_dir': build_dir,
-            'image_name': image_name,
-            'env_setup': env_setup,
-            'local_conf': local_conf,
-            'local_conf_orig': local_conf_orig,
-    }
+    return build_object
 
 
 @pytest.fixture(scope="function")
@@ -352,9 +357,10 @@ def prepared_test_build(prepared_test_build_base):
     - image_name
     - env_setup (passed to some functions)
     - local_conf
+    - bblayers_conf
     """
 
-    reset_local_conf(prepared_test_build_base)
+    reset_build_conf(prepared_test_build_base)
 
     return prepared_test_build_base
 
@@ -478,3 +484,9 @@ def only_with_distro_feature(request, bitbake_variables):
             pytest.skip('no supported distro feature in {} ' \
                         '(supports {})'.format(', '.join(current),
                                                ', '.join(features)))
+
+@pytest.fixture(autouse=True)
+def commercial_test(request, bitbake_variables):
+    mark = request.node.get_closest_marker('commercial')
+    if mark is not None and not request.config.getoption("--commercial-tests"):
+        pytest.skip("Tests of commercial features are disabled.")
