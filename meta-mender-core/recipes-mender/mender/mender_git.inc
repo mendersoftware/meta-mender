@@ -11,7 +11,7 @@ def mender_autorev_if_git_version(d):
     version = d.getVar("PREFERRED_VERSION")
     if version is None or version == "":
         version = d.getVar("PREFERRED_VERSION_%s" % d.getVar('PN'))
-    if version is not None and "git" in version:
+    if not d.getVar("EXTERNALSRC") and version is not None and "git" in version:
         return d.getVar("AUTOREV")
     else:
         return "f6ffa190892202263fdb75975059fbb201adab6a"
