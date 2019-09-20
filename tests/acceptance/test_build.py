@@ -132,7 +132,7 @@ class TestBuild:
         add_to_local_conf(prepared_test_build, 'MENDER_TENANT_TOKEN = "%s"'
                           %  "authtentoken")
 
-        add_to_local_conf(prepared_test_build, 'IMAGE_FSTYPES_append = " dataimg"')
+        add_to_local_conf(prepared_test_build, 'IMAGE_FSTYPES += "dataimg"')
 
         run_bitbake(prepared_test_build)
 

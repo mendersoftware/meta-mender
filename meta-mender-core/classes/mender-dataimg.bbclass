@@ -28,4 +28,5 @@ IMAGE_CMD_dataimg_mender-image-ubi() {
 do_image_dataimg[respect_exclude_path] = "0"
 
 do_image_dataimg[depends] += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', 'mtd-utils-native:do_populate_sysroot', '', d)}"
-do_image_dataimg[depends] += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE', 'btrfs','btrfs-tools-native:do_populate_sysroot','',d)}"
+do_image_dataimg[depends] += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE_TO_GEN', 'btrfs','btrfs-tools-native:do_populate_sysroot','',d)}"
+do_image_dataimg[depends] += "${@bb.utils.contains_any('MENDER_DATA_PART_FSTYPE_TO_GEN', 'ext2 ext3 ext4','e2fsprogs-native:do_populate_sysroot','',d)}"
