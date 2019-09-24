@@ -1,6 +1,8 @@
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
+RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted"
+
 def cert_location_if_server_crt_in(src_uri, d):
     for src in src_uri.split():
         if src.endswith("/server.crt"):
@@ -36,6 +38,9 @@ SRC_URI_append_mender-persist-systemd-machine-id = " file://mender-systemd-machi
                                                      file://mender-set-systemd-machine-id.sh"
 FILES_${PN}_append_mender-image_mender-systemd = " ${systemd_unitdir}/system/mender-data-dir.service \
                                                    ${systemd_unitdir}/system/mender.service.wants/mender-data-dir.service"
+FILES_${PN}_append_mender-growfs-data_mender-systemd = " ${systemd_unitdir}/system/mender-grow-data.service \
+                                                         ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service"
+
 FILES_${PN}_append_mender-persist-systemd-machine-id = " ${systemd_unitdir}/system/mender-systemd-machine-id.service \
                                                          ${systemd_unitdir}/system/mender.service.wants/mender-systemd-machine-id.service \
                                                          ${bindir}/mender-set-systemd-machine-id.sh"
@@ -240,6 +245,27 @@ do_install_append_mender-image_mender-systemd() {
     install -m 644 ${WORKDIR}/mender-data-dir.service ${D}${systemd_unitdir}/system/
     install -d -m 755 ${D}${systemd_unitdir}/system/mender.service.wants
     ln -sf ../mender-data-dir.service ${D}${systemd_unitdir}/system/mender.service.wants/
+}
+
+do_install_append_mender-growfs-data_mender-systemd() {
+    cat <<-EOF > ${D}${systemd_unitdir}/system/mender-grow-data.service
+[Unit]
+Description=Mender service to grow data partition size
+DefaultDependencies=no
+Before=data.mount
+Before=systemd-growfs@data.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/sbin/parted -s ${MENDER_STORAGE_DEVICE} resizepart ${MENDER_DATA_PART_NUMBER} 100%
+
+[Install]
+WantedBy=data.mount
+EOF
+    install -d ${D}${systemd_unitdir}/system/data.mount.wants/
+    ln -sf ../mender-grow-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
 }
 
 do_install_append_mender-persist-systemd-machine-id() {

@@ -6,6 +6,7 @@ MENDER_FEATURES_ENABLE_append = " \
     ${_MENDER_IMAGE_TYPE_DEFAULT} \
     mender-install \
     mender-systemd \
+    mender-growfs-data \
 "
 
 _MENDER_IMAGE_TYPE_DEFAULT ?= "mender-image-uefi"
