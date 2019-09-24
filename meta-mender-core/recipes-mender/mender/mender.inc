@@ -33,6 +33,8 @@ FILES_${PN} += "${systemd_unitdir}/system/mender.service \
                 ${sysconfdir}/udev/mount.blacklist.d/mender \
                "
 
+SYSROOT_DIRS += "/data"
+
 SRC_URI_append_mender-image_mender-systemd = " file://mender-data-dir.service"
 SRC_URI_append_mender-persist-systemd-machine-id = " file://mender-systemd-machine-id.service \
                                                      file://mender-set-systemd-machine-id.sh"
