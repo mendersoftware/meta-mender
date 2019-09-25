@@ -14,6 +14,16 @@ ALLOW_EMPTY_${PN} = "1"
 
 RDEPENDS_${PN} += "jq"
 
+DEPENDS += "mender"
+
+do_check_split_conf() {
+    if [ -f ${STAGING_DIR_TARGET}/data/mender/mender.conf ]; then
+        bbfatal "A persistent Mender configuration file was found on the /data partition. To migrate the configuration, \
+disable split-mender-config by adding PACKAGECONFIG_remove = \" split-mender-config\" to your local.conf"
+    fi
+}
+addtask do_check_split_conf before do_compile
+
 do_compile[vardeps] += "MENDER_PERSISTENT_CONFIGURATION_VARS"
 do_compile() {
 
@@ -31,8 +41,7 @@ do_compile() {
     # Replace the program markers in the script with the jq programs generated above.
     sed -i "s/%jq-program-marker%/${MENDER_JQ_PROGRAM}/" mender-migrate-configuration
     sed -i "s/%jq-delete-fields-marker%/${MENDER_JQ_DELETE}/" mender-migrate-configuration
-}
 
-do_install() {
+    # Deploy script as an State Script
     cp mender-migrate-configuration ${MENDER_STATE_SCRIPTS_DIR}/ArtifactCommit_Enter_10_migrate-configuration
 }
