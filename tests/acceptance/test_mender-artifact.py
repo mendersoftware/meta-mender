@@ -31,7 +31,7 @@ from common import *
 LAST_BUILD_VERSION = None
 
 # params is the versions we will test.
-@pytest.fixture(scope="function", params=[1, 2, 3])
+@pytest.fixture(scope="function", params=[2, 3])
 def versioned_mender_image(request, prepared_test_build, latest_mender_image, bitbake_variables):
     """Gets the correct version of the artifact, whether it's the one we
     build by default, or one we have to produce ourselves.
@@ -40,6 +40,9 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image, bi
     global LAST_BUILD_VERSION
 
     version = request.param
+
+    if version == 1:
+        pytest.failNow()
 
     if ((version >= 2 and not version_is_minimum(bitbake_variables, "mender-artifact", "2.0.0"))
         or (version >= 3 and not version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"))):
@@ -50,7 +53,7 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image, bi
     elif version_is_minimum(bitbake_variables, "mender-artifact", "2.0.0"):
         default_version = 2
     else:
-        default_version = 1
+        default_version = 2
 
     if LAST_BUILD_VERSION != version:
         # Run a separate build for this artifact. This doesn't conflict with the
@@ -79,32 +82,19 @@ class TestMenderArtifact:
             if line_no == 1:
                 assert(line == "version")
             elif line_no == 2:
-                if version == 1:
-                    assert(line == "header.tar.gz")
-                else:
-                    assert(line == "manifest")
+                assert(line == "manifest")
             elif line_no == 3:
-                if version == 1:
-                    assert(line == "data/0000.tar.gz")
-                else:
-                    assert(line == "header.tar.gz")
+                assert(line == "header.tar.gz")
             elif line_no == 4:
-                if version != 1:
-                    assert(line == "data/0000.tar.gz")
+                assert(line == "data/0000.tar.gz")
 
-            if version == 1:
-                assert(line_no <= 3)
-            else:
-                assert(line_no <= 4)
+            assert(line_no <= 4)
 
             line_no = line_no + 1
 
         output.wait()
 
-        if version == 1:
-            assert(line_no == 4)
-        else:
-            assert(line_no == 5)
+        assert(line_no == 5)
 
         output = subprocess.Popen(["tar xOf " + mender_image + " header.tar.gz | tar tz"],
                                   stdout=subprocess.PIPE, shell=True)
@@ -125,11 +115,6 @@ class TestMenderArtifact:
                 assert(type_info_found)
                 meta_data_found = True
 
-            elif ((version == 1 and (line.startswith("headers/0000/checksums/") or
-                                     line.startswith("headers/0000/signatures/"))) or
-                  line.startswith("headers/0000/scripts/")):
-                assert(type_info_found)
-
             else:
                 assert(False), "Unrecognized line: %s" % line
 
@@ -148,31 +133,17 @@ class TestMenderArtifact:
         version = versioned_mender_image[0]
         mender_image = versioned_mender_image[1]
 
-        if version == 1:
-            output = subprocess.Popen(["tar xOf " + mender_image +
-                                       " header.tar.gz | tar xzO headers/0000/files"],
-                                      stdout=subprocess.PIPE, shell=True)
-            loaded_json = json.load(output.stdout)
-            manifest_list = loaded_json["files"]
-            output.wait()
-        else:
-            output = subprocess.check_output(["tar", "xOf", mender_image, "manifest"])
-            manifest_list = [line.split()[1] for line in output.strip().split('\n')]
+        output = subprocess.check_output(["tar", "xOf", mender_image, "manifest"])
+        manifest_list = [line.split()[1] for line in output.strip().split('\n')]
 
-        if version == 1:
-            tar_list = []
-        else:
-            # By now we know this is present, and superfluous files are tested
-            # for elsewhere.
-            tar_list = ["version", "header.tar.gz"]
+        # By now we know this is present, and superfluous files are tested
+        # for elsewhere.
+        tar_list = ["version", "header.tar.gz"]
         output = subprocess.Popen(["tar xOf " + mender_image + " data/0000.tar.gz | tar tz"],
                                   stdout=subprocess.PIPE, shell=True)
         for line in output.stdout:
             line = line.rstrip('\n\r')
-            if version == 1:
-                tar_list.append(line)
-            else:
-                tar_list.append("data/0000/" + line)
+            tar_list.append("data/0000/" + line)
         output.wait()
 
         assert(sorted(manifest_list) == sorted(tar_list))
@@ -185,36 +156,23 @@ class TestMenderArtifact:
         version = versioned_mender_image[0]
         mender_image = versioned_mender_image[1]
 
-        if version == 1:
-            output = subprocess.Popen(["tar xOf " + mender_image +
-                                       " header.tar.gz | tar xzO headers/0000/files"],
-                                      stdout=subprocess.PIPE, shell=True)
-            loaded_json = json.load(output.stdout)
-            manifest_list = loaded_json["files"]
-            output.wait()
-        else:
-            output = subprocess.check_output(["tar", "xOf", mender_image, "manifest"])
-            manifest_list = []
-            hash_map = {}
-            for line in output.strip().split('\n'):
-                manifest_list.append(line.split()[1])
-                hash_map[line.split()[1]] = line.split()[0]
+        output = subprocess.check_output(["tar", "xOf", mender_image, "manifest"])
+        manifest_list = []
+        hash_map = {}
+        for line in output.strip().split('\n'):
+            manifest_list.append(line.split()[1])
+            hash_map[line.split()[1]] = line.split()[0]
 
         for file in manifest_list:
-            if version == 1:
+            if file.startswith("data/0000/"):
+                # Data file, we need to look inside sub-tar.
                 output = subprocess.Popen(["tar xOf " + mender_image +
-                                           " data/0000.tar.gz | tar xzO " + file],
-                                          stdout=subprocess.PIPE, shell=True)
+                                            " data/0000.tar.gz | tar xzO " + file[len("data/0000/"):]],
+                                            stdout=subprocess.PIPE, shell=True)
             else:
-                if file.startswith("data/0000/"):
-                    # Data file, we need to look inside sub-tar.
-                    output = subprocess.Popen(["tar xOf " + mender_image +
-                                               " data/0000.tar.gz | tar xzO " + file[len("data/0000/"):]],
-                                              stdout=subprocess.PIPE, shell=True)
-                else:
-                    # Header file, we look in outer tar.
-                    output = subprocess.Popen(["tar", "xOf", mender_image, file],
-                                              stdout=subprocess.PIPE)
+                # Header file, we look in outer tar.
+                output = subprocess.Popen(["tar", "xOf", mender_image, file],
+                                            stdout=subprocess.PIPE)
             hasher = hashlib.sha256()
             while True:
                 block = output.stdout.read(4096)
@@ -223,17 +181,7 @@ class TestMenderArtifact:
                     break
             output.wait()
 
-            if version == 1:
-                output = subprocess.Popen(["tar xOf " + mender_image +
-                                           " header.tar.gz | tar xzO headers/0000/checksums/" +
-                                           file + ".sha256sum"],
-                                          stdout=subprocess.PIPE, shell=True)
-                lines = output.stdout.readlines()
-                assert(len(lines) == 1)
-                output.wait()
-                recorded_hash = lines[0].rstrip('\n\r')
-            else:
-                recorded_hash = hash_map[file]
+            recorded_hash = hash_map[file]
 
             assert hasher.hexdigest() == recorded_hash, "%s doesn't match" % file
 
