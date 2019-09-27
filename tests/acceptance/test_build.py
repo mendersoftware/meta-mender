@@ -36,7 +36,7 @@ class TestBuild:
 
     @pytest.mark.only_with_image('sdimg')
     @pytest.mark.min_mender_version("1.0.0")
-    def test_bootloader_embed(self, prepared_test_build):
+    def test_bootloader_embed(self, prepared_test_build, bitbake_image):
         """Test that MENDER_IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
         correctly in the resulting sdimg."""
 
@@ -45,7 +45,7 @@ class TestBuild:
      
         init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'], 
                                                             prepared_test_build['build_dir'])
-        new_bb_vars = get_bitbake_variables("core-image-minimal", init_env_cmd)
+        new_bb_vars = get_bitbake_variables("core-image-minimal", env_setup=init_env_cmd)
 
         loader_dir = new_bb_vars['DEPLOY_DIR_IMAGE']
         loader_path = os.path.join(loader_dir, loader_file)
@@ -55,6 +55,7 @@ class TestBuild:
 
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['MENDER_IMAGE_BOOTLOADER_FILE = "%s"' % loader_file,
                     'MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET = "%d"' % loader_offset])
 
@@ -82,12 +83,13 @@ class TestBuild:
 
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     @pytest.mark.min_mender_version("1.0.0")
-    def test_image_rootfs_extra_space(self, prepared_test_build, bitbake_variables):
+    def test_image_rootfs_extra_space(self, prepared_test_build, bitbake_variables, bitbake_image):
         """Test that setting IMAGE_ROOTFS_EXTRA_SPACE to arbitrary values does
         not break the build."""
 
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['IMAGE_ROOTFS_EXTRA_SPACE_append = " + 640 - 222 + 900"'])
 
         built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")
@@ -97,11 +99,12 @@ class TestBuild:
 
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     @pytest.mark.min_mender_version("1.0.0")
-    def test_tenant_token(self, prepared_test_build):
+    def test_tenant_token(self, prepared_test_build, bitbake_image):
         """Test setting a custom tenant-token"""
 
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['MENDER_TENANT_TOKEN = "%s"' % "authtentoken"])
 
         built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
@@ -121,12 +124,13 @@ class TestBuild:
 
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     @pytest.mark.min_mender_version("1.1.0")
-    def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path):
+    def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path, bitbake_image):
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
 
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['MENDER_ARTIFACT_SIGNING_KEY = "%s"' % os.path.join(os.getcwd(), signing_key("RSA").private),
                     'MENDER_ARTIFACT_VERIFY_KEY = "%s"' % os.path.join(os.getcwd(), signing_key("RSA").public)])
 
@@ -148,7 +152,8 @@ class TestBuild:
 
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     @pytest.mark.min_mender_version("1.2.0")
-    def test_state_scripts(self, prepared_test_build, bitbake_variables, bitbake_path, latest_rootfs, latest_mender_image):
+    def test_state_scripts(self, prepared_test_build, bitbake_variables, bitbake_path, 
+                           latest_rootfs, latest_mender_image, bitbake_image):
         """Test that state scripts that are specified in the build are included
         correctly."""
 
@@ -185,6 +190,7 @@ class TestBuild:
             # Alright, now build a new image containing scripts.
             build_image(prepared_test_build['build_dir'], 
                         prepared_test_build['bitbake_corebase'],
+                        bitbake_image,
                         ['IMAGE_INSTALL_append = " example-state-scripts"'])
 
             found_rootfs_scripts = {
@@ -237,6 +243,7 @@ class TestBuild:
             # we have to do it manually.
             build_image(prepared_test_build['build_dir'], 
                         prepared_test_build['bitbake_corebase'],
+                        bitbake_image,
                         target="-c clean example-state-scripts")
 
     @pytest.mark.min_mender_version('1.0.0')
@@ -277,11 +284,12 @@ class TestBuild:
             run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
 
     @pytest.mark.min_mender_version('1.1.0')
-    def test_multiple_device_types_compatible(self, prepared_test_build, bitbake_path, bitbake_variables):
+    def test_multiple_device_types_compatible(self, prepared_test_build, bitbake_path, bitbake_variables, bitbake_image):
         """Tests that we can include multiple device_types in the artifact."""
 
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['MENDER_DEVICE_TYPES_COMPATIBLE = "machine1 machine2"'])
 
         image = latest_build_artifact(prepared_test_build['build_dir'], 'core-image*.mender')
@@ -353,13 +361,14 @@ class TestBuild:
             },
         }),
     ])
-    def test_various_mtd_combinations(self, test_case_name, test_case, prepared_test_build):
+    def test_various_mtd_combinations(self, test_case_name, test_case, prepared_test_build, bitbake_image):
         """Tests that we can build with various combinations of MTD variables,
         and that they receive the correct values."""
 
         try:
             build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ["\n".join(test_case["vars"])])
             assert test_case['success'], "Build succeeded, but should fail"
         except subprocess.CalledProcessError:
@@ -367,20 +376,20 @@ class TestBuild:
 
         init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'], 
                                                             prepared_test_build['build_dir'])
-        variables = get_bitbake_variables(pytest.config.getoption("--bitbake-image"),
-                                          init_env_cmd)
+        variables = get_bitbake_variables(bitbake_image, env_setup=init_env_cmd)
 
         for key in test_case['expected']:
             assert test_case['expected'][key] == variables[key]
 
     @pytest.mark.only_with_image('sdimg', 'uefiimg')
     @pytest.mark.min_mender_version('1.0.0')
-    def test_boot_partition_population(self, prepared_test_build, bitbake_path):
+    def test_boot_partition_population(self, prepared_test_build, bitbake_path, bitbake_image):
         # Notice in particular a mix of tabs, newlines and spaces. All there to
         # check that whitespace it treated correctly.
         
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ["""
 IMAGE_INSTALL_append = " test-boot-files"
 
@@ -414,6 +423,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             try:
                 build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['IMAGE_BOOT_FILES_append = " conflict-test1"'])
                 pytest.fail("Bitbake succeeded, but should have failed with a file conflict")
             except subprocess.CalledProcessError:
@@ -423,7 +433,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
     @pytest.mark.only_with_image('sdimg', 'uefiimg')
     @pytest.mark.min_mender_version('2.0.0')
-    def test_module_install(self, prepared_test_build, bitbake_path, latest_rootfs):
+    def test_module_install(self, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image):
         mender_vars = get_bitbake_variables("mender")
         if "modules" in mender_vars['PACKAGECONFIG'].split():
             originally_on = True
@@ -437,11 +447,13 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             assert "modules" in entries
             build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['PACKAGECONFIG_remove = "modules"'])
         else:
             assert "modules" not in entries
             build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['PACKAGECONFIG_append = " modules"'])
 
         new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")

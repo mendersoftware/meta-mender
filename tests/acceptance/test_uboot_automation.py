@@ -306,7 +306,7 @@ class TestUbootAutomation:
 
     @pytest.mark.only_with_image('sdimg')
     @pytest.mark.min_mender_version('1.0.0')
-    def test_auto_provided_fw_utils(self, prepared_test_build, latest_rootfs):
+    def test_auto_provided_fw_utils(self, prepared_test_build, latest_rootfs, bitbake_image):
         """Test that we can provide our own custom U-Boot provider, and that
         this will trigger auto provision of the corresponding fw-utils."""
 
@@ -322,11 +322,13 @@ class TestUbootAutomation:
         # Get rid of build outputs in deploy directory that may get in the way.
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     target="-c clean u-boot")
 
         try:
             build_image(prepared_test_build['build_dir'], 
                         prepared_test_build['bitbake_corebase'],
+                        bitbake_image,
                         ['PREFERRED_PROVIDER_u-boot = "u-boot-testing"',
                         'PREFERRED_RPROVIDER_u-boot = "u-boot-testing"'])
 
@@ -346,6 +348,7 @@ class TestUbootAutomation:
             # way.
             build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     target="-c clean u-boot-testing")
 
         # Reset local.conf.
@@ -361,6 +364,7 @@ class TestUbootAutomation:
             # Capture and discard output, it looks very ugly in the log.
             build_image(prepared_test_build['build_dir'], 
                         prepared_test_build['bitbake_corebase'],
+                        bitbake_image,
                         ['MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"'],
                         capture=True)
 
@@ -369,7 +373,7 @@ class TestUbootAutomation:
             pass
 
     @pytest.mark.min_mender_version('1.0.0')
-    def test_save_mender_auto_configured_patch(self, bitbake_variables, prepared_test_build):
+    def test_save_mender_auto_configured_patch(self, bitbake_variables, prepared_test_build, bitbake_image):
         """Test that we can invoke the save_mender_auto_configured_patch task,
         that it produces a patch file, and that this patch file can be used
         instead of MENDER_UBOOT_AUTO_CONFIGURE."""
@@ -382,6 +386,7 @@ class TestUbootAutomation:
 
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     target="-c save_mender_auto_configured_patch u-boot")
 
         patch_name = os.path.join(bitbake_variables['WORKDIR'], 'mender_auto_configured.patch')
@@ -405,17 +410,20 @@ class TestUbootAutomation:
             # associated python snippet, we need to clean the build manually.
             build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"',
                     'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"'],
                     target="-c clean u-boot")
             
             build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     target="u-boot")
 
         finally:
             build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     target="-c clean u-boot")
             os.unlink(new_patch_name)
 
@@ -425,7 +433,7 @@ class TestUbootAutomation:
     # do_check_mender_defines.
     @pytest.mark.only_with_distro_feature('mender-ubi')
     @pytest.mark.min_mender_version('1.0.0')
-    def test_incorrect_Kconfig_setting(self, bitbake_variables, prepared_test_build):
+    def test_incorrect_Kconfig_setting(self, bitbake_variables, prepared_test_build, bitbake_image):
         """First produce a patch using the auto-patcher, then disable
         auto-patching and apply the patch with a slight modification that makes
         its settings incompatible, and check that this is detected."""
@@ -438,6 +446,7 @@ class TestUbootAutomation:
 
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     target="-c save_mender_auto_configured_patch u-boot")
 
         try:
@@ -461,6 +470,7 @@ class TestUbootAutomation:
             
             build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"',
                     'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"' % os.path.basename(new_patch_name)],
                     target="-c clean u-boot")
@@ -468,6 +478,7 @@ class TestUbootAutomation:
             try:
                 build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     target="-c compile u-boot")
 
                 # Should never get here.
@@ -479,5 +490,6 @@ class TestUbootAutomation:
         finally:
             build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     target="-c clean u-boot")
             os.unlink(new_patch_name)

@@ -31,8 +31,8 @@ from common import *
 #     config['always_use_pty'] = False
 #     Config: run.pty.
 
-def config_host():
-    host_info = pytest.config.getoption("host").split(':')
+def config_host(host):
+    host_info = host.split(':')
 
     if len(host_info) == 2:
         return host_info[0], int(host_info[1])
@@ -42,10 +42,10 @@ def config_host():
         return 'localhost', 22
 
 @pytest.fixture(scope="function")
-def connection(request):
-    host, port = config_host()
+def connection(request, user, host):
+    host, port = config_host(host)
     conn = Connection(host=host,
-            user=pytest.config.getoption("user"),
+            user=user,
             port=port,
             connect_timeout=60,
             connect_kwargs={
@@ -154,33 +154,33 @@ def setup_qemu(req, build_dir, conn):
     req.addfinalizer(qemu_finalizer)
 
 @pytest.fixture(scope="function")
-def setup_board(request, build_image_fn, connection):
-    bt = pytest.config.getoption("--board-type")
-    print("board type: ", bt)
+def setup_board(request, build_image_fn, connection, board_type):
 
-    if "qemu" in bt:
+    print("board type: ", board_type)
+
+    if "qemu" in board_type:
         image_dir = build_image_fn()
         return setup_qemu(request, image_dir, connection)
-    elif bt == "beagleboneblack":
+    elif board_type == "beagleboneblack":
         return setup_bbb(request)
-    elif bt == "raspberrypi3":
+    elif board_type == "raspberrypi3":
         return setup_rpi3(request)
-    elif bt == "colibri-imx7":
+    elif board_type == "colibri-imx7":
         image_dir = build_image_fn()
         return setup_colibri_imx7(request, image_dir, connection)
     else:
-        pytest.fail('unsupported board type {}'.format(bt))
+        pytest.fail('unsupported board type {}'.format(board_type))
 
     """Make sure 'image.dat' is not present on the device."""
     connection.run("rm -f image.dat")
 
 @pytest.fixture(scope="session")
-def latest_rootfs():
+def latest_rootfs(conversion, mender_image):
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    if pytest.config.getoption('--test-conversion'):
-        image_name = os.path.splitext(pytest.config.getoption('--mender-image'))[0]
+    if conversion:
+        image_name = os.path.splitext(mender_image)[0]
         return latest_build_artifact(os.environ['BUILDDIR'], "%s.ext[234]" % image_name)
     else:
         return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.ext[234]")
@@ -223,11 +223,11 @@ def latest_mender_image():
     return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.mender")
 
 @pytest.fixture(scope="session")
-def latest_part_image():
+def latest_part_image(conversion, mender_image):
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
-    if pytest.config.getoption('--test-conversion'):
-        pattern = os.path.splitext(pytest.config.getoption('--mender-image'))[0]
+    if conversion:
+        pattern = os.path.splitext(mender_image)[0]
     else:
         pattern = "core-image*"
 
@@ -271,27 +271,27 @@ def successful_image_update_mender(request, build_image_fn):
 # bitbake related fixtures
 #  
 @pytest.fixture(scope="session")
-def bitbake_variables():
+def bitbake_variables(conversion):
     """Returns a map of all bitbake variables active for the build."""
 
-    if pytest.config.getoption('--test-conversion'):
+    if conversion:
         os.environ['BUILDDIR'] = os.getcwd()
 
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
-    if pytest.config.getoption('--test-conversion'):
+    if conversion:
         return get_bitbake_variables("mender-image", test_conversion=True)
     else:
         # TODO: why not pytest.config.getoption('--bitbake-image'):
         return get_bitbake_variables("core-image-minimal")
 
 @pytest.fixture(scope="session")
-def bitbake_path(request):
+def bitbake_path(request, conversion):
     """Fixture that enables the PATH we need for our testing tools."""
 
     old_path = os.environ['PATH']
 
-    if not pytest.config.getoption('--test-conversion'):
+    if not conversion:
         bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
         os.environ['PATH'] = bb_testing_variables['PATH'] + ":" + os.environ['PATH']
 
@@ -302,7 +302,7 @@ def bitbake_path(request):
     return os.environ['PATH']
 
 @pytest.fixture(scope="session")
-def build_image_fn(request, prepared_test_build_base):
+def build_image_fn(request, prepared_test_build_base, bitbake_image):
     """
     Returns a function which returns a clean image. The reason it does not
     return the clean image directly is that it may need to be reset to a clean
@@ -312,7 +312,7 @@ def build_image_fn(request, prepared_test_build_base):
 
     def img_builder():
         reset_local_conf(prepared_test_build_base['build_dir'])
-        build_image(prepared_test_build_base['build_dir'], prepared_test_build_base['bitbake_corebase'], 
+        build_image(prepared_test_build_base['build_dir'], prepared_test_build_base['bitbake_corebase'], bitbake_image,
             ['SYSTEMD_AUTO_ENABLE_pn-mender = "disable"', 'EXTRA_IMAGE_FEATURES_append = " ssh-server-openssh"'],
             )
         return prepared_test_build_base['build_dir']
@@ -321,9 +321,9 @@ def build_image_fn(request, prepared_test_build_base):
 
 #TODO: is this session scope?
 @pytest.fixture(scope="session")
-def prepared_test_build_base(request, bitbake_variables):
+def prepared_test_build_base(request, bitbake_variables, no_tmp_build_dir):
 
-    if pytest.config.getoption('--no-tmp-build-dir'):
+    if no_tmp_build_dir:
         build_dir = os.environ['BUILDDIR']
     else:
         build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
@@ -332,7 +332,7 @@ def prepared_test_build_base(request, bitbake_variables):
     local_conf_orig = get_local_conf_orig_path(build_dir)
 
     def cleanup_test_build():
-        if not pytest.config.getoption('--no-tmp-build-dir'):
+        if not no_tmp_build_dir:
             run_verbose("rm -rf %s" % build_dir)
         if os.path.exists(local_conf_orig):
             run_verbose("mv %s %s" % (local_conf_orig, local_conf))
@@ -343,7 +343,7 @@ def prepared_test_build_base(request, bitbake_variables):
     env_setup = "cd %s && . oe-init-build-env %s" % (bitbake_variables['COREBASE'], build_dir)
     run_verbose(env_setup)
 
-    if not pytest.config.getoption('--no-tmp-build-dir'):
+    if not no_tmp_build_dir:
         run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
         with open(local_conf, "a") as fd:
             fd.write('SSTATE_MIRRORS = " file://.* file://%s/PATH"\n' % bitbake_variables['SSTATE_DIR'])

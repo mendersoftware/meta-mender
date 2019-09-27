@@ -279,10 +279,10 @@ def common_boot_from_internal(conn=None):
 
     run_after_connect("true", conn=conn)
 
-
-def latest_build_artifact(builddir, extension):
-    if pytest.config.getoption('--test-conversion'):
-        sdimg_location = pytest.config.getoption('--sdimg-location')
+#TODO: will not work with the conversion tests; need to refactor passing parameters
+# and conftest.py fixtures
+def latest_build_artifact(builddir, extension, conversion=False, sdimg_location=None):
+    if conversion:
         output = subprocess.check_output(["sh", "-c", "ls -t %s/%s/*%s | grep -v data*%s| head -n 1" % (builddir, sdimg_location, extension, extension)])
     else:
         output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
@@ -290,12 +290,12 @@ def latest_build_artifact(builddir, extension):
     print("Found latest image of type '%s' to be: %s" % (extension, output))
     return output
 
-def get_bitbake_variables(target, env_setup="true", export_only=False, test_conversion=False):
+def get_bitbake_variables(target, env_setup="true", export_only=False, test_conversion=False, test_variables=None):
     current_dir = os.open(".", os.O_RDONLY)
     os.chdir(os.environ['BUILDDIR'])
 
     if test_conversion:
-        config_file_path = os.path.abspath(pytest.config.getoption('--test-variables'))
+        config_file_path = os.path.abspath(test_variables)
         with open(config_file_path, 'r') as config:
             output = config.readlines()
     else:
@@ -371,7 +371,8 @@ def run_verbose(cmd, capture=False):
         return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
 
 # Capture is true or false and conditonally returns output.
-def build_image(build_dir, bitbake_corebase, extra_conf_params=None, target=None, capture=False):
+def build_image(build_dir, bitbake_corebase, bitbake_image, 
+                extra_conf_params=None, target=None, capture=False):
     try:
         for param in extra_conf_params:
             _add_to_local_conf(build_dir, param)
@@ -384,8 +385,7 @@ def build_image(build_dir, bitbake_corebase, extra_conf_params=None, target=None
         _run_bitbake(target,
                      init_env_cmd, capture)
     else:
-        _run_bitbake(pytest.config.getoption("--bitbake-image"),
-                     init_env_cmd, capture)
+        _run_bitbake(bitbake_image, init_env_cmd, capture)
 
 def _run_bitbake(target, env_setup_cmd, capture=False):
     cmd = "%s && bitbake %s" % (env_setup_cmd, target)

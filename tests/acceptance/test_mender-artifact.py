@@ -29,7 +29,7 @@ LAST_BUILD_VERSION = None
 
 # params is the versions we will test.
 @pytest.fixture(scope="function", params=[1, 2, 3])
-def versioned_mender_image(request, prepared_test_build, latest_mender_image, bitbake_variables):
+def versioned_mender_image(request, prepared_test_build, latest_mender_image, bitbake_variables, bitbake_image):
     """Gets the correct version of the artifact, whether it's the one we
     build by default, or one we have to produce ourselves.
     Returns a tuple of version and built image."""
@@ -56,10 +56,11 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image, bi
         if version != default_version:
             build_image(prepared_test_build['build_dir'], 
                 prepared_test_build['bitbake_corebase'],
+                bitbake_image,
                 ['MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version])
         else:
             build_image(prepared_test_build['build_dir'], 
-                prepared_test_build['bitbake_corebase'])
+                prepared_test_build['bitbake_corebase'], bitbake_image)
 
         LAST_BUILD_VERSION = version
     return (version, latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender"))

@@ -21,11 +21,12 @@ from common import *
 
 class TestDataImg:
     @pytest.mark.min_mender_version('1.0.0')
-    def test_dataimg_creation(self, bitbake_variables, prepared_test_build):
+    def test_dataimg_creation(self, bitbake_variables, prepared_test_build, bitbake_image):
         """Test that we can build a dataimg successfully."""
 
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['IMAGE_FSTYPES = "dataimg"'])
 
         built_img = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.dataimg")

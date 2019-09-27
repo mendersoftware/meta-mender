@@ -102,16 +102,13 @@ class Helpers:
 
     @staticmethod
     # Note: `image` needs to be in current directory.
-    def install_update(image, conn):
-        http_server_location = pytest.config.getoption("--http-server")
-        use_s3 = pytest.config.getoption("--use-s3")
-        board = pytest.config.getoption("--board-type")
+    def install_update(image, conn, http_server, board_type, use_s3, s3_address):
+        http_server_location = http_server
         install_flag = Helpers.get_install_flag(conn)
 
         http_server = None
-        if "qemu" not in board or use_s3:
+        if "qemu" not in board_type or use_s3:
             Helpers.upload_to_s3(image)
-            s3_address = pytest.config.getoption("--s3-address")
             http_server_location = "{}/mender/temp".format(s3_address)
         else:
             http_server = subprocess.Popen(["python", "-m", "SimpleHTTPServer"])
@@ -231,11 +228,12 @@ class TestUpdates:
                 os.remove("image.dat")
 
     @pytest.mark.min_mender_version('1.0.0')
-    def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables, connection):
+    def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables, 
+                                        connection, http_server, board_type, use_s3, s3_address):
 
         (active_before, passive_before) = determine_active_passive_part(bitbake_variables, conn=connection)
 
-        Helpers.install_update(successful_image_update_mender, connection)
+        Helpers.install_update(successful_image_update_mender, connection, http_server, board_type, use_s3, s3_address)
 
         # TODO: can't we do multiple at once?
         output = connection.run("fw_printenv bootcount").stdout
@@ -944,12 +942,14 @@ class TestUpdates:
             os.remove("image.dat")
 
     @pytest.mark.min_mender_version('2.0.0')
-    def test_upgrade_from_pre_2_0(self, successful_image_update_mender, bitbake_variables, prepared_test_build, connection):
+    def test_upgrade_from_pre_2_0(self, successful_image_update_mender, bitbake_variables, 
+                                  prepared_test_build, connection, http_server, board_type, use_s3, s3_address, bitbake_image):
         """Tests that we can upgrade from any pre-2.0.0 mender version to this version."""
 
         # Build a pre-2.0.0 mender version.
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['PREFERRED_VERSION_pn-mender = "1.%"', 
                     'EXTERNALSRC_pn-mender = ""',
                     'PACKAGECONFIG_remove_pn-mender = "split-mender-config"'])
@@ -957,7 +957,7 @@ class TestUpdates:
         image = "pre-mender-2.0.0.mender"
         shutil.copyfile(latest_build_artifact(prepared_test_build["build_dir"], "*.mender"), image)
         try:
-            Helpers.install_update(image, connection)
+            Helpers.install_update(image, connection, http_server, board_type, use_s3, s3_address)
             reboot(conn=connection)
             run_after_connect("true")
         finally:
@@ -978,6 +978,7 @@ class TestUpdates:
         build_img = latest_build_artifact(prepared_test_build["build_dir"], "*.mender")
         build_image(prepared_test_build['build_dir'], 
                     prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
                     ['MENDER_ARTIFACT_EXTRA_ARGS_append = " -v 2"'])
         image = "test_upgrade_from_pre_2_0.mender"
         shutil.copyfile(build_img, image)

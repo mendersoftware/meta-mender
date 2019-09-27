@@ -131,7 +131,7 @@ def extract_ubimg_info(path):
 
 
 @pytest.fixture(scope="function")
-def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build):
+def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build, bitbake_image):
     """The ubireader_utils_info tool and friends don't support our UBI volumes
     that contain the U-Boot environment and hence not valid UBIFS structures.
     Therefore, make a new temporary image that doesn't contain U-Boot."""
@@ -146,6 +146,7 @@ def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build):
 
     build_image(prepared_test_build['build_dir'], 
                 prepared_test_build['bitbake_corebase'],
+                bitbake_image,
                 ['MENDER_FEATURES_DISABLE_append = " mender-uboot"'])
 
     ubimg = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ubimg")
