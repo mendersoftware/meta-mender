@@ -1,0 +1,37 @@
+Index: git/configs/rpi_4_32b_defconfig
+===================================================================
+--- git.orig/configs/rpi_4_32b_defconfig
++++ git/configs/rpi_4_32b_defconfig
+@@ -16,8 +16,6 @@ CONFIG_SYS_PROMPT="U-Boot> "
+ CONFIG_CMD_GPIO=y
+ CONFIG_CMD_MMC=y
+ CONFIG_CMD_FS_UUID=y
+-CONFIG_ENV_FAT_INTERFACE="mmc"
+-CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
+ CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
+ CONFIG_DM_KEYBOARD=y
+ CONFIG_DM_MMC=y
+@@ -31,3 +29,5 @@ CONFIG_SYS_WHITE_ON_BLACK=y
+ CONFIG_CONSOLE_SCROLL_LINES=10
+ CONFIG_PHYS_TO_BUS=y
+ CONFIG_OF_LIBFDT_OVERLAY=y
++CONFIG_ENV_IS_IN_MMC=y
++
+Index: git/configs/rpi_4_defconfig
+===================================================================
+--- git.orig/configs/rpi_4_defconfig
++++ git/configs/rpi_4_defconfig
+@@ -16,8 +16,6 @@ CONFIG_SYS_PROMPT="U-Boot> "
+ CONFIG_CMD_GPIO=y
+ CONFIG_CMD_MMC=y
+ CONFIG_CMD_FS_UUID=y
+-CONFIG_ENV_FAT_INTERFACE="mmc"
+-CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
+ CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
+ CONFIG_DM_KEYBOARD=y
+ CONFIG_DM_MMC=y
+@@ -31,3 +29,4 @@ CONFIG_SYS_WHITE_ON_BLACK=y
+ CONFIG_CONSOLE_SCROLL_LINES=10
+ CONFIG_PHYS_TO_BUS=y
+ CONFIG_OF_LIBFDT_OVERLAY=y
++CONFIG_ENV_IS_IN_MMC=y
