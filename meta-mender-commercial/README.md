@@ -1,3 +1,3 @@
-This layer is for using Mender commercial components. There has not been an
-official release of these yet, so more information will be available at a later
-time.
+Mender 2.2 introduced Enterprise features. Please email
+[contact@mender.io](mailto:contact@mender.io) to request a license and get
+install instructions.
