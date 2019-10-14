@@ -567,3 +567,162 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
         else:
             assert False, "Should not get here!"
+
+    class BuildDependsProvides(object):
+        """
+        BuildDependsProvides is a utility class for handling the depends and
+        provides parameters of a Mender Artifact build
+        """
+        def __init__(
+                self,
+                name_depends=[],
+                depends={},
+                provides={},
+                depends_groups=[],
+                provides_group=""):
+            self.name_depends = name_depends
+            self.provides = provides
+            self.provides_group = provides_group
+            self.depends = depends
+            self.depends_groups = depends_groups
+
+        def _flatten_dict(self, d):
+            l = ""
+            for pair in d.items():
+                l += ":".join(pair)
+                l += " "
+            return l
+
+        def __str__(self):
+            s = ""
+            if self.name_depends:
+                s += "MENDER_ARTIFACT_NAME_DEPENDS = \"{}\"\n".format(" ".join(self.name_depends))
+
+            if self.provides:
+                l = self._flatten_dict(self.provides)
+                s += "MENDER_ARTIFACT_PROVIDES = \"{}\"\n".format(l)
+
+            if self.provides_group:
+                s += "MENDER_ARTIFACT_PROVIDES_GROUP = \"{}\"\n".format(self.provides_group)
+
+            if self.depends:
+                l = self._flatten_dict(self.depends)
+                s += "MENDER_ARTIFACT_DEPENDS = \"{}\"\n".format(l)
+
+            if self.depends_groups:
+                s += "MENDER_ARTIFACT_DEPENDS_GROUPS = \"{}\"\n".format(
+                    " ".join(self.depends_groups))
+
+            return s
+
+        @staticmethod
+        def parse(output):
+            """
+            Parses the output from Mender Artifact read
+            into a BuildDependsProvides instance
+            """
+            d = TestBuild.BuildDependsProvides()
+            lines = output.split("\n")
+            for i in range(len(lines)):
+                line = lines[i]
+
+                if "Provides group:" in line:
+                    s = line[line.index(":") + 1:].strip()
+                    if s is not "":
+                        d.provides_group = s
+
+                if "Depends on one of artifact" in line:
+                    if "[]" not in line:
+                        dps = line[line.index("[") + 1:line.index("]")].split()
+                        dps = [word.replace(',', '') for word in dps]
+                        if dps:
+                            d.name_depends = dps
+
+                if "Depends on one of group(s)" in line:
+                    if "[]" not in line:
+                        depends_groups = line[line.index("[") + 1:line.index("]")].split()
+                        depends_groups = [word.replace(',', '') for word in depends_groups]
+                        if depends_groups:
+                            d.depends_groups = depends_groups
+
+                if "Provides:" in line:
+                    k = i + 1
+                    tmp = {}
+                    # Parse all provides on the following lines
+                    while True:
+                        if "Depends:" in lines[k]:
+                            break
+                        l = [s.strip() for s in lines[k].split(": ")]
+                        assert len(l) == 2, "Line should only contain a key value pair"
+                        key, val = l[0], l[1]
+                        tmp[key] = val
+                        k += 1
+                    d.provides = tmp
+
+                if "Depends:" in line:
+                    k = i + 1
+                    tmp = {}
+                    # Parse all depends on the following lines
+                    while True:
+                        if "Metadata:" in lines[k]:
+                            break
+                        l = [s.strip() for s in lines[k].split(": ")]
+                        assert len(l) == 2, "Line should only contain a key value pair"
+                        key, val = l[0], l[1]
+                        tmp[key] = val
+                        k += 1
+                    d.depends = tmp
+
+            return d
+
+    test_cases = [
+        BuildDependsProvides(name_depends=["dependsname1"]),
+        BuildDependsProvides(
+            name_depends=["dependsname1"],
+            provides={"artifactprovidesname": "artifactprovidesvalue"}),
+        BuildDependsProvides(
+            name_depends=["dependsname1"],
+            provides={"artifactprovidesname": "artifactprovidesvalue"},
+            provides_group="providesgroupname",
+        ),
+        BuildDependsProvides(
+            name_depends=["dependsname1"],
+            provides={"artifactprovidesname": "artifactprovidesvalue"},
+            provides_group="providesgroupname",
+            depends={
+                "dependskey1": "dependsval1",
+                "dependskey2": "dependsval2"
+            },
+        ),
+        BuildDependsProvides(
+            name_depends=["dependsname0",
+                          "dependsname2"],
+            provides={"artifactprovidesname": "artifactprovidesvalue"},
+            provides_group="providesgroupname",
+            depends={
+                "dependskey1": "dependsval1",
+                "dependskey2": "dependsval2"
+            },
+            depends_groups=["depenceygroup1",
+                            "depenceygroup2"])
+    ]
+
+    @pytest.mark.min_mender_version('2.0.0')
+    @pytest.mark.parametrize('dependsprovides', test_cases)
+    def test_build_artifact_depends_and_provides(
+            self,
+            prepared_test_build,
+            bitbake_path,
+            dependsprovides):
+        """Test whether a build with enabled Artifact Provides and Depends does
+        indeed add the parameters to the built Artifact"""
+
+        add_to_local_conf(prepared_test_build, str(dependsprovides))
+        run_bitbake(prepared_test_build)
+
+        image = latest_build_artifact(prepared_test_build['build_dir'], 'core-image*.mender')
+
+        output = run_verbose("mender-artifact read %s" % image, capture=True)
+        other = TestBuild.BuildDependsProvides.parse(output)
+
+        assert dependsprovides.__dict__ == other.__dict__
