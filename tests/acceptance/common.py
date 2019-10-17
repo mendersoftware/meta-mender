@@ -80,8 +80,10 @@ def start_qemu(qenv=None, conn=None):
 
     print("will start a QEMU instance in a second")
 
-    proc = ProcessGroupPopen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
-                             env=env)
+    # proc = ProcessGroupPopen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+    #                          env=env)
+    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+                             env=env, start_new_session=True)
 
     print("QEMU instance should be started now")
 
