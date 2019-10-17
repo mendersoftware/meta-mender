@@ -49,12 +49,15 @@ class ProcessGroupPopen(subprocess.Popen):
                                                 **kwargs)
 
     def __signal(self, sig):
+        print("the session received some signal", sig)
         os.killpg(self.pid, sig)
 
     def terminate(self):
+        print("the session is going to be terminated")
         self.__signal(signal.SIGTERM)
 
     def kill(self):
+        print("the session is going to be killed")
         self.__signal(signal.SIGKILL)
 
 
@@ -75,8 +78,12 @@ def start_qemu(qenv=None, conn=None):
     if qenv:
         env.update(qenv)
 
+    print("will start a QEMU instance in a second")
+
     proc = ProcessGroupPopen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
                              env=env)
+
+    print("QEMU instance should be started now")
 
     try:
         # make sure we are connected.
@@ -104,8 +111,12 @@ def start_qemu_block_storage(latest_sdimg, suffix, conn):
     # don't need an open fd to temp file
     os.close(fh)
 
+    print("trying to start QEMU block storage")
+
     # Make a disposable image.
     shutil.copy(latest_sdimg, img_path)
+
+    print("copying images over")
 
     # pass QEMU drive directly
     qenv = {}

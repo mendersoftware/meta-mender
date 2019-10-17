@@ -831,7 +831,7 @@ class TestUpdates:
             reboot(conn=connection)
 
             # We should have recovered.
-            run_after_connect("true")
+            run_after_connect("true", conn=connection)
 
             # And we should be back at the second rootfs partition.
             (active, passive) = determine_active_passive_part(bitbake_variables, conn=connection)
@@ -877,7 +877,7 @@ class TestUpdates:
                 connection.run('sed -e "s/mender_boot_part=.*/mender_boot_part=%s/" %s' % (passive[-1], lock_file))
 
                 reboot(conn=connection)
-                run_after_connect("true")
+                run_after_connect("true", conn=connection)
 
                 (new_active, new_passive) = determine_active_passive_part(bitbake_variables, conn=connection)
                 assert new_active == active
@@ -959,7 +959,7 @@ class TestUpdates:
         try:
             Helpers.install_update(image, connection, http_server, board_type, use_s3, s3_address)
             reboot(conn=connection)
-            run_after_connect("true")
+            run_after_connect("true", conn=connection)
         finally:
             os.remove(image)
 

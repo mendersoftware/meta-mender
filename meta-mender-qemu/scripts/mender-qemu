@@ -17,9 +17,9 @@ set -e
 set -x
 
 TMPDIR=${TMPDIR:-$(mktemp -d /tmp/mender-qemu.XXXXXXXX)}
-trap cleanup 1 15
+trap cleanupqemu 1 15
 
-cleanup() {
+cleanupqemu() {
     if [ -n "$TMPDIR" -a -e "$TMPDIR" ]; then
         rm -rf $TMPDIR
     fi
@@ -139,6 +139,6 @@ for maybe_kvm in -enable-kvm ""; do
     fi
 done
 
-cleanup
+cleanupqemu
 
 exit $ret
