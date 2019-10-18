@@ -80,10 +80,10 @@ def start_qemu(qenv=None, conn=None):
 
     print("will start a QEMU instance in a second")
 
-    # proc = ProcessGroupPopen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
-    #                          env=env)
-    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
-                             env=env, start_new_session=True)
+    proc = ProcessGroupPopen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+                             env=env)
+    #proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+    #                         env=env, start_new_session=True)
 
     print("QEMU instance should be started now")
 
@@ -91,12 +91,14 @@ def start_qemu(qenv=None, conn=None):
         # make sure we are connected.
         run_after_connect("true", conn=conn)
     except:
+        print("exception happened, will try to do the cleanup")
         # or do the necessary cleanup if we're not
         try:
             # qemu might have exited and this would raise an exception
             print('cleaning up qemu instance with pid {}'.format(proc.pid))
             proc.terminate()
         except:
+            print("got the exception while terminating process")
             pass
 
         proc.wait()
@@ -193,15 +195,19 @@ def reboot(wait=120, conn=None):
 
 
 def run_after_connect(cmd, wait=360, conn=None):
-    # override the Connection parameters 
+    # override the Connection parameters
+    print("running after connect ") 
     conn.timeout = 60
 
-    start_time = time.time()
+    print("is our connection valid ", conn)
+    print("we will try to run the command", cmd)
     timeout = time.time() + 60*3
 
     while time.time() < timeout:
         try:
+            print("will try to connect ", time.time())
             result = conn.run(cmd, hide=True)
+            print("connection was started ", result)
             return result.stdout
         except NoValidConnectionsError as e:
             print("connection not ready yet")
@@ -213,6 +219,17 @@ def run_after_connect(cmd, wait=360, conn=None):
                     str(e).endswith("Error reading SSH protocol banner") or 
                     str(e).endswith("No existing session")):
                 raise e
+        except Exception as e:
+            print("got the generic exception")
+            print(e)
+            print(type(e))
+            print(e.args)
+            raise e
+        else:
+            print("no exception happened in run after connect")
+        finally:
+            print("we are leaving the run after connect!")
+
 
 
 def determine_active_passive_part(bitbake_variables, conn=None):
