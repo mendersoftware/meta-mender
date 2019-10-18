@@ -37,9 +37,9 @@ def config_host(host):
     if len(host_info) == 2:
         return host_info[0], int(host_info[1])
     elif len(host_info) == 1:
-        return host_info[0], 22
+        return host_info[0], 8822
     else:
-        return 'localhost', 22
+        return 'localhost', 8822
 
 @pytest.fixture(scope="function")
 def connection(request, user, host):
