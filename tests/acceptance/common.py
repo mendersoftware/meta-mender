@@ -28,6 +28,8 @@ import shutil
 import signal
 import sys
 
+import traceback
+
 from contextlib import contextmanager
 
 class ProcessGroupPopen(subprocess.Popen):
@@ -224,7 +226,22 @@ def run_after_connect(cmd, wait=360, conn=None):
             print(e)
             print(type(e))
             print(e.args)
-            raise e
+            print(traceback.print_exc())
+
+            try:
+                conn.host = '0.0.0.0'
+                print("will try to connect ", time.time())
+                result = conn.run(cmd, hide=True)
+                print("connection was started ", result)
+                return result.stdout
+            except Exception as e:
+                print("got the generic exception from 0.0.0.0")
+                print(e)
+                print(type(e))
+                print(e.args)
+                print(traceback.print_exc())
+                raise e
+
         else:
             print("no exception happened in run after connect")
         finally:
