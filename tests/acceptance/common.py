@@ -217,9 +217,14 @@ def run_after_connect(cmd, wait=360, conn=None):
             continue
         except SSHException as e:
             print("Could not connect to host %s: %s" % (conn.host, e))
-            if not (str(e).endswith("Connection reset by peer") or 
-                    str(e).endswith("Error reading SSH protocol banner") or 
-                    str(e).endswith("No existing session")):
+            if not ("Connection reset by peer" in str(e) or 
+                    "Error reading SSH protocol banner" in str(e) or 
+                    "No existing session" in str(e)):
+                raise e
+        except OSError as e:
+            print("got the OSError exception")
+            print(e)
+            if not "Cannot assign requested address" in str(e):
                 raise e
         except Exception as e:
             print("got the generic exception")
@@ -227,20 +232,7 @@ def run_after_connect(cmd, wait=360, conn=None):
             print(type(e))
             print(e.args)
             print(traceback.print_exc())
-
-            try:
-                conn.host = '0.0.0.0'
-                print("will try to connect ", time.time())
-                result = conn.run(cmd, hide=True)
-                print("connection was started ", result)
-                return result.stdout
-            except Exception as e:
-                print("got the generic exception from 0.0.0.0")
-                print(e)
-                print(type(e))
-                print(e.args)
-                print(traceback.print_exc())
-                raise e
+            raise e
 
         else:
             print("no exception happened in run after connect")
