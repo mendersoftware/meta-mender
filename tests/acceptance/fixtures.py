@@ -110,7 +110,6 @@ def setup_qemu(req, build_dir, conn):
     if latest_sdimg:
         qemu, img_path = start_qemu_block_storage(latest_sdimg, suffix=".sdimg", conn=conn)
     elif latest_uefiimg:
-        print("got the UEFI image")
         qemu, img_path = start_qemu_block_storage(latest_uefiimg, suffix=".uefiimg", conn=conn)
     elif latest_biosimg:
         qemu, img_path = start_qemu_block_storage(latest_biosimg, suffix=".biosimg", conn=conn)
