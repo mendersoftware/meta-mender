@@ -32,34 +32,6 @@ import traceback
 
 from contextlib import contextmanager
 
-class ProcessGroupPopen(subprocess.Popen):
-    """
-    Wrapper for subprocess.Popen that starts the underlying process in a
-    separate process group. The wrapper overrides kill() and terminate() so
-    that the corresponding SIGKILL/SIGTERM are sent to the whole process group
-    and not just the forked process.
-
-    Note that ProcessGroupPopen() constructor hijacks preexec_fn parameter.
-    """
-
-    def __init__(self, *args, **kwargs):
-        def start_new_session():
-            os.setsid()
-        # for Python > 3.2 it's enough to set start_new_session=True
-        super(ProcessGroupPopen, self).__init__(*args,
-                                                preexec_fn=start_new_session,
-                                                **kwargs)
-
-    def __signal(self, sig):
-        os.killpg(self.pid, sig)
-
-    def terminate(self):
-        self.__signal(signal.SIGTERM)
-
-    def kill(self):
-        self.__signal(signal.SIGKILL)
-
-
 def start_qemu(qenv=None, conn=None):
     """
     Start qemu and return a subprocess.Popen object corresponding to a running
@@ -77,16 +49,14 @@ def start_qemu(qenv=None, conn=None):
     if qenv:
         env.update(qenv)
 
-    proc = ProcessGroupPopen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
-                             env=env)
-    #proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
-    #                         env=env, start_new_session=True)
+    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+                             env=env, start_new_session=True)
 
     try:
         # make sure we are connected.
         run_after_connect("true", conn=conn)
     except:
-        print("exception happened, will try to do the cleanup")
+        print("exception happened after trying to connect to QEMU, will try to do the cleanup")
         # or do the necessary cleanup if we're not
         try:
             # qemu might have exited and this would raise an exception
