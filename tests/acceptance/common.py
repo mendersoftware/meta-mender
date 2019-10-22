@@ -198,46 +198,38 @@ def reboot(wait=120, conn=None):
 
 def run_after_connect(cmd, wait=360, conn=None):
     # override the Connection parameters
-    print("running after connect ") 
     conn.timeout = 60
-
-    print("is our connection valid ", conn)
-    print("we will try to run the command", cmd)
     timeout = time.time() + 60*3
 
     while time.time() < timeout:
         try:
-            print("will try to connect ", time.time())
+            print("will try to connect to host", conn.host)
             result = conn.run(cmd, hide=True)
-            print("connection was started ", result)
             return result.stdout
         except NoValidConnectionsError as e:
-            print("connection not ready yet")
+            print("Could not connect to host %s: %s" % (conn.host, e))
             time.sleep(30)
             continue
         except SSHException as e:
-            print("Could not connect to host %s: %s" % (conn.host, e))
+            print("Got SSH exception while connecting to host %s: %s" % (conn.host, e))
             if not ("Connection reset by peer" in str(e) or 
                     "Error reading SSH protocol banner" in str(e) or 
                     "No existing session" in str(e)):
                 raise e
+            time.sleep(30)
+            continue
         except OSError as e:
-            print("got the OSError exception")
-            print(e)
+            # The OSError is happening while there is no QEMU instance initialized
+            print("Got OSError exception while connecting to host %s: %s" % (conn.host, e))
             if not "Cannot assign requested address" in str(e):
                 raise e
+            time.sleep(30)
+            continue
         except Exception as e:
-            print("got the generic exception")
-            print(e)
+            print("Generic exception happened while connecting to host %s: %s" % (conn.host, e))
             print(type(e))
             print(e.args)
-            print(traceback.print_exc())
             raise e
-
-        else:
-            print("no exception happened in run after connect")
-        finally:
-            print("we are leaving the run after connect!")
 
 
 

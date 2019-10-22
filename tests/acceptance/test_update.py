@@ -77,7 +77,7 @@ class Helpers:
         # Corrupt the middle byte in the contents.
         middle = int(os.fstat(fd.fileno()).st_size / 2)
         fd.seek(middle)
-        middle_byte = int(fd.read(1).encode("hex"), base=16)
+        middle_byte = int(fd.read(1).encode().hex())
         fd.seek(middle)
         # Flip lowest bit.
         fd.write("%c" % (middle_byte ^ 0x1))
@@ -116,7 +116,7 @@ class Helpers:
 
         try:
             output = conn.run("mender %s http://%s/%s" % (install_flag, http_server_location, image))
-            print("output from rootfs update: ", output)
+            print("output from rootfs update: ", output.stdout)
         finally:
             if http_server:
                 http_server.terminate()
@@ -694,7 +694,7 @@ class TestUpdates:
             else:
                 connection.run('echo "%s" | dd of=%s' % (old_content, passive))
 
-            result = connection.run("mender %s image.mender" % install_flag, warn=True)
+            result = connection.run("mender %s image.mender" % install_flag, warn=True).stdout
 
             if sig_case.success:
                 if result.return_code != 0:
@@ -710,7 +710,7 @@ class TestUpdates:
 
             try:
                 content = connection.run("dd if=%s bs=%d count=1"
-                              % (passive, len(expected_content)))
+                              % (passive, len(expected_content))).stdout
                 assert content == expected_content, "Case: %s" % sig_case.label
 
             # In Fabric context, SystemExit means CalledProcessError. We should
@@ -788,7 +788,7 @@ class TestUpdates:
         # determine which one changed.
         old_checksums = Helpers.get_env_checksums(bitbake_variables)
 
-        orig_env = connection.run("fw_printenv")
+        orig_env = connection.run("fw_printenv").stdout
 
         image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
@@ -825,7 +825,7 @@ class TestUpdates:
             # environment. If it's not identical, it's an indication that there
             # were intermediary steps. This is important to avoid so that the
             # environment is not in a half updated state.
-            new_env = connection.run("fw_printenv")
+            new_env = connection.run("fw_printenv").stdout
             assert orig_env == new_env
 
             reboot(conn=connection)
@@ -911,7 +911,7 @@ class TestUpdates:
 
             # Zero the environment, causing the fw-utils to use their built in
             # default.
-            env_conf = connection.run("cat /etc/fw_env.config")
+            env_conf = connection.run("cat /etc/fw_env.config").stdout
             env_conf_lines = env_conf.split('\n')
             assert len(env_conf_lines) == 2
             for i in [0, 1]:
@@ -922,10 +922,10 @@ class TestUpdates:
                     % (entry[0], int(entry[1], 0), int(entry[2], 0)))
 
             try:
-                output = connection.run("mender %s /var/tmp/image.mender", install_flag)
+                output = connection.run("mender %s /var/tmp/image.mender", install_flag).stdout
                 pytest.fail("Update succeeded when canary was not present!")
             except:
-                output = connection.run("fw_printenv upgrade_available")
+                output = connection.run("fw_printenv upgrade_available").stdout
                 # Upgrade should not have been triggered.
                 assert(output == "upgrade_available=0")
             finally:
@@ -964,7 +964,7 @@ class TestUpdates:
             os.remove(image)
 
         def is_pre_mender_2_0():
-            output = connection.run("mender -version")
+            output = connection.run("mender -version").stdout
             return any([line.startswith("1.") for line in output.split("\n")])
 
         # Double check that it is a pre-2.0.0 version. For future readers: If
