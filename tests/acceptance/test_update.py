@@ -694,7 +694,7 @@ class TestUpdates:
             else:
                 connection.run('echo "%s" | dd of=%s' % (old_content, passive))
 
-            result = connection.run("mender %s image.mender" % install_flag, warn=True).stdout
+            result = connection.run("mender %s image.mender" % install_flag, warn=True)
 
             if sig_case.success:
                 if result.return_code != 0:
@@ -990,7 +990,8 @@ class TestUpdates:
             connection.run("rm -f /data/mender/mender-store*")
 
             # Carry out rest of the test using the existing upgrade test.
-            self.test_network_based_image_update(image, bitbake_variables)
+            self.test_network_based_image_update(image, bitbake_variables, connection, http_server, 
+                                                 board_type, use_s3, s3_address)
 
             # Double check that it is now a 2.0.0+ version.
             assert not is_pre_mender_2_0()
