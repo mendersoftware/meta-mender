@@ -17,6 +17,7 @@ import os
 import subprocess
 from fixtures import *
 
+from common import configuration
 
 def pytest_addoption(parser):
     parser.addoption("--host", action="store", default="localhost:8822",
@@ -56,3 +57,76 @@ def pytest_configure(config):
     if not config.getoption("--no-pull"):
         print("Automatically pulling submodules. Use --no-pull to disable")
         subprocess.check_call("git submodule update --init --remote", shell=True)
+
+    # ugly hack to access cli parameters inside common.py functions
+    global configuration
+
+    if config.getoption("--test-conversion"):
+        configuration['conversion'] = True
+    if config.getoption("--test-variables"):
+        configuration['test_variables'] = config.getoption("--test-variables")
+
+
+@pytest.fixture(scope="session")
+def host(request):
+    return request.config.getoption("--host")
+
+@pytest.fixture(scope="session")
+def user(request):
+    return request.config.getoption("--user")
+
+@pytest.fixture(scope="session")
+def http_server(request):
+    return request.config.getoption("--http-server")
+
+@pytest.fixture(scope="session")
+def board_type(request):
+    return request.config.getoption("--board-type")
+
+@pytest.fixture(scope="session")
+def sdimg_location(request):
+    return request.config.getoption("--sdimg-location")
+
+@pytest.fixture(scope="session")
+def mender_image(request):
+    return request.config.getoption("--mender-image")
+
+@pytest.fixture(scope="session")
+def bitbake_image(request):
+    return request.config.getoption("--bitbake-image")
+
+@pytest.fixture(scope="session")
+def conversion(request):
+    return request.config.getoption("--test-conversion")
+
+@pytest.fixture(scope="session")
+def use_s3(request):
+    return request.config.getoption("--use-s3")
+
+@pytest.fixture(scope="session")
+def s3_address(request):
+    return request.config.getoption("--s3-address")
+
+@pytest.fixture(scope="session")
+def no_tmp_build_dir(request):
+    return request.config.getoption("--no-tmp-build-dir")
+
+@pytest.fixture(scope="session")
+def test_variables(request):
+    return request.config.getoption("--test-variables")
+
+@pytest.fixture(autouse=True)
+def commercial_test(request, bitbake_variables):
+    mark = request.node.get_closest_marker('commercial')
+    if mark is not None and not request.config.getoption("--commercial-tests"):
+        pytest.skip("Tests of commercial features are disabled.")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--test-conversion"):
+        # --test-conversion given so do not skip conversion tests
+        return
+    skip_conversion = pytest.mark.skip(reason="not yet working in mender-convert")
+    for item in items:
+        if "conversion" in item.keywords:
+            item.add_marker(skip_conversion)

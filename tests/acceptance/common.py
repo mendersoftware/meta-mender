@@ -33,6 +33,9 @@ from contextlib import contextmanager
 
 import conftest
 
+# ugly hack to access cli parameters inside common.py functions
+configuration = {}
+
 class ProcessGroupPopen(subprocess.Popen):
     """Wrapper for subprocess.Popen that starts the underlying process in a
     separate process group. The wrapper overrides kill() and terminate() so
@@ -340,7 +343,9 @@ def common_boot_from_internal(conn=None):
 
 
 def latest_build_artifact(builddir, extension):
-    if pytest.config.getoption('--test-conversion'):
+    global configuration
+    
+    if "conversion" in configuration:
         sdimg_location = pytest.config.getoption('--sdimg-location')
         output = subprocess.check_output(["sh", "-c", "ls -t %s/%s/*%s | grep -v data*%s| head -n 1" % (builddir, sdimg_location, extension, extension)])
     else:
@@ -353,8 +358,10 @@ def get_bitbake_variables(target, env_setup="true", export_only=False, test_conv
     current_dir = os.open(".", os.O_RDONLY)
     os.chdir(os.environ['BUILDDIR'])
 
-    if test_conversion:
-        config_file_path = os.path.abspath(pytest.config.getoption('--test-variables'))
+    global configuration
+
+    if "conversion" in configuration:
+        config_file_path = os.path.abspath(configuration["test_variables"])
         with open(config_file_path, 'r') as config:
             output = config.readlines()
     else:
@@ -376,7 +383,7 @@ def get_bitbake_variables(target, env_setup="true", export_only=False, test_conv
         if match is not None:
             ret[match.group(1)] = match.group(2)
 
-    if not test_conversion:
+    if not "conversion" in configuration:
         ps.wait()
 
     os.fchdir(current_dir)
