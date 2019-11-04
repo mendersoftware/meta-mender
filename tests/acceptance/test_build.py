@@ -38,21 +38,6 @@ def extract_partition(img, number):
     subprocess.check_call(["dd", "if=" + img, "of=img%d.fs" % number,
                            "skip=%d" % start, "count=%d" % (end - start)])
 
-class EmbeddedBootloader:
-    loader = None
-    offset = 0
-
-    def __init__(self, bitbake_variables, loader_base, offset):
-        loader_dir = bitbake_variables['DEPLOY_DIR_IMAGE']
-        loader = None
-
-        if loader_base is not None and loader_base != "":
-            loader = os.path.join(loader_dir, file)
-
-        self.loader = loader
-        self.offset = offset
-
-
 class TestBuild:
     @pytest.mark.min_mender_version("1.0.0")
     def test_default_server_certificate(self):

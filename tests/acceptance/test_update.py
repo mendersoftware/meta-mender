@@ -34,12 +34,6 @@ class Helpers:
         subprocess.call(["s3cmd", "setacl", "s3://mender/temp/%s" % artifact, "--acl-public"])
 
     @staticmethod
-    # TODO: Use this when mender is more stable. Spurious errors are currently generated.
-    def check_journal_errors():
-        output = run("journalctl -a -u mender | grep error")
-        assert output == 1
-
-    @staticmethod
     def get_env_offsets(bitbake_variables):
         offsets = [0, 0]
 
