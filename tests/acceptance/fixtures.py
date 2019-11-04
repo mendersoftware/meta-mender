@@ -266,49 +266,28 @@ def successful_image_update_mender(request, clean_image):
 
     return "successful_image_update.mender"
 
+#
+# bitbake related fixtures
+#
 @pytest.fixture(scope="session")
-def bitbake_variables():
+def bitbake_variables(conversion):
     """Returns a map of all bitbake variables active for the build."""
 
-    if pytest.config.getoption('--test-conversion'):
+    if conversion:
         os.environ['BUILDDIR'] = os.getcwd()
 
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
-
-    if pytest.config.getoption('--test-conversion'):
-        return get_bitbake_variables("mender-image", test_conversion=True)
-    else:
-        return get_bitbake_variables("core-image-minimal")
+    return get_bitbake_variables("core-image-minimal")
 
 @pytest.fixture(scope="session")
-def mender_test_dependencies_bitbaked():
-    """Fixture that makes sure mender-test-dependencies is bitbaked."""
-
-    assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
-
-    if not pytest.config.getoption('--test-conversion'):
-        # See the recipe for details about this call.
-        subprocess.check_output(["bitbake", "-c", "prepare_recipe_sysroot",
-                                 "mender-test-dependencies"],
-                                cwd=os.environ['BUILDDIR'])
-
-@pytest.fixture(scope="session")
-def bitbake_path_string(mender_test_dependencies_bitbaked):
-    """Fixture that returns the PATH we need for our testing tools"""
-
-    if not pytest.config.getoption('--test-conversion'):
-        bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
-        return bb_testing_variables['PATH'] + ":" + os.environ['PATH']
-    else:
-        return os.environ['PATH']
-
-@pytest.fixture(scope="function")
-def bitbake_path(request, bitbake_path_string):
+def bitbake_path(request, conversion):
     """Fixture that enables the PATH we need for our testing tools."""
 
     old_path = os.environ['PATH']
 
-    os.environ['PATH'] = bitbake_path_string
+    if not conversion:
+        bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
+        os.environ['PATH'] = bb_testing_variables['PATH'] + ":" + os.environ['PATH']
 
     def path_restore():
         os.environ['PATH'] = old_path
@@ -318,82 +297,49 @@ def bitbake_path(request, bitbake_path_string):
     return os.environ['PATH']
 
 @pytest.fixture(scope="session")
-def bitbake_env_dict(mender_test_dependencies_bitbaked):
-    """Fixture that returns the PATH we need for our testing tools"""
-
-    bb_testing_variables = get_bitbake_variables("mender-test-dependencies", export_only=True)
-
-    return bb_testing_variables
-
-@pytest.fixture(scope="function")
-def bitbake_env(request, bitbake_env_dict):
-    """Fixture that runs the test using entire bitbake environment."""
-
-    env_obj = bitbake_env_from(bitbake_env_dict)
-    env_obj.setup()
-
-    def env_restore():
-        env_obj.teardown()
-
-    request.addfinalizer(env_restore)
-
-    return os.environ
-
-@pytest.fixture(scope="session")
-def clean_image(request, prepared_test_build_base):
-    """Returns a function which returns a clean image. The reason it does not
+def build_image_fn(request, prepared_test_build_base, bitbake_image):
+    """
+    Returns a function which returns a clean image. The reason it does not
     return the clean image directly is that it may need to be reset to a clean
     state if several independent fixtures invoke it, and there have been unclean
-    builds in between."""
+    builds in between.
+    """
 
-    def getter():
-        reset_build_conf(prepared_test_build_base)
-        add_to_local_conf(prepared_test_build_base,
-                          'SYSTEMD_AUTO_ENABLE_pn-mender = "disable"')
-        add_to_local_conf(prepared_test_build_base,
-                          'EXTRA_IMAGE_FEATURES_append = " ssh-server-openssh"')
-        run_bitbake(prepared_test_build_base)
-        return prepared_test_build_base
-    return getter
+    def img_builder():
+        reset_build_conf(prepared_test_build_base['build_dir'])
+        build_image(prepared_test_build_base['build_dir'], prepared_test_build_base['bitbake_corebase'], bitbake_image,
+            ['SYSTEMD_AUTO_ENABLE_pn-mender = "disable"', 'EXTRA_IMAGE_FEATURES_append = " ssh-server-openssh"'],
+            )
+        return prepared_test_build_base['build_dir']
 
+    return img_builder
 
 @pytest.fixture(scope="session")
-def prepared_test_build_base(request, bitbake_variables):
-    """Base fixture for prepared_test_build. Returns the same as that one."""
+def prepared_test_build_base(request, bitbake_variables, no_tmp_build_dir):
 
-    if pytest.config.getoption('--no-tmp-build-dir'):
+    if no_tmp_build_dir:
         build_dir = os.environ['BUILDDIR']
     else:
         build_dir = tempfile.mkdtemp(prefix="test-build-", dir=os.environ['BUILDDIR'])
 
-    local_conf = os.path.join(build_dir, "conf", "local.conf")
-    local_conf_orig = local_conf + ".orig"
-    bblayers_conf = os.path.join(build_dir, "conf", "bblayers.conf")
-    bblayers_conf_orig = bblayers_conf + ".orig"
-    env_setup = "cd %s && . oe-init-build-env %s" % (bitbake_variables['COREBASE'], build_dir)
-    image_name = pytest.config.getoption("--bitbake-image")
-
-    build_object = {'build_dir': build_dir,
-            'image_name': image_name,
-            'env_setup': env_setup,
-            'local_conf': local_conf,
-            'local_conf_orig': local_conf_orig,
-            'bblayers_conf': bblayers_conf,
-            'bblayers_conf_orig': bblayers_conf_orig,
-    }
+    local_conf = get_local_conf_path(build_dir)
+    local_conf_orig = get_local_conf_orig_path(build_dir)
+    bblayers_conf = get_bblayers_conf_path(build_dir)
+    bblayers_conf_orig = get_bblayers_conf_orig_path(build_dir)
 
     def cleanup_test_build():
-        if not pytest.config.getoption('--no-tmp-build-dir'):
+        if not no_tmp_build_dir:
             run_verbose("rm -rf %s" % build_dir)
         else:
-            reset_build_conf(build_object, full_cleanup=True)
+            reset_build_conf(build_dir, full_cleanup=True)
 
     cleanup_test_build()
     request.addfinalizer(cleanup_test_build)
 
+    env_setup = "cd %s && . oe-init-build-env %s" % (bitbake_variables['COREBASE'], build_dir)
     run_verbose(env_setup)
 
-    if not pytest.config.getoption('--no-tmp-build-dir'):
+    if not no_tmp_build_dir:
         run_verbose("cp %s/conf/* %s/conf" % (os.environ['BUILDDIR'], build_dir))
         with open(local_conf, "a") as fd:
             fd.write('SSTATE_MIRRORS = " file://.* file://%s/PATH"\n' % bitbake_variables['SSTATE_DIR'])
@@ -401,23 +347,18 @@ def prepared_test_build_base(request, bitbake_variables):
 
     run_verbose("cp %s %s" % (local_conf, local_conf_orig))
     run_verbose("cp %s %s" % (bblayers_conf, bblayers_conf_orig))
-
-    return build_object
+    
+    return {'build_dir':build_dir, 'bitbake_corebase':bitbake_variables['COREBASE']}
 
 
 @pytest.fixture(scope="function")
 def prepared_test_build(prepared_test_build_base):
-    """Prepares a separate test build directory where a custom build can be
-    made, which reuses the sstate-cache. Returns a dictionary with:
-    - build_dir
-    - image_name
-    - env_setup (passed to some functions)
-    - local_conf
-    - bblayers_conf
+    """
+    Prepares a separate test build directory where a custom build can be
+    made, which reuses the sstate-cache. 
     """
 
-    reset_build_conf(prepared_test_build_base)
-
+    reset_build_conf(prepared_test_build_base['build_dir'])
     return prepared_test_build_base
 
 
