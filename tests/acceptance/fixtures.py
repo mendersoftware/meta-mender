@@ -15,7 +15,10 @@
 
 import os
 import shutil
+import time
+import errno
 
+from paramiko.client import WarningPolicy
 from common import *
 
 def config_host(host):
@@ -49,27 +52,9 @@ def connection(request, user, host):
     return conn
 
 @pytest.fixture(scope="session")
-def setup_board(request, clean_image, bitbake_variables):
-    bt = pytest.config.getoption("--board-type")
-
-    print('board type:', bt)
-    if "qemu" in bt:
-        return qemu_running(request, clean_image())
-    elif bt == "beagleboneblack":
-        return setup_bbb(request)
-    elif bt == "raspberrypi3":
-        return setup_rpi3(request)
-    elif bt == "colibri-imx7":
-        return setup_colibri_imx7(request, clean_image())
-    else:
-        pytest.fail('unsupported board type {}'.format(bt))
-
-
-@pytest.fixture(scope="session")
-def setup_colibri_imx7(request, clean_image):
-    image = clean_image()
-    latest_uboot = latest_build_artifact(image['build_dir'], "u-boot-nand.imx")
-    latest_ubimg = latest_build_artifact(image['build_dir'], ".ubimg")
+def setup_colibri_imx7(request, build_dir, connection):
+    latest_uboot = latest_build_artifact(build_dir, "u-boot-nand.imx")
+    latest_ubimg = latest_build_artifact(build_dir, ".ubimg")
 
     if not latest_uboot:
         pytest.fail('failed to find U-Boot binary')
@@ -77,53 +62,49 @@ def setup_colibri_imx7(request, clean_image):
     if not latest_ubimg:
         pytest.failed('failed to find latest ubimg for the board')
 
-    def board_setup():
-        common_board_setup(files=[latest_ubimg, latest_uboot],
-                           remote_path='/tmp',
-                           image_file=os.path.basename(latest_ubimg))
-
-    execute(board_setup, hosts=conftest.current_hosts())
+    common_board_setup(files=[latest_ubimg, latest_uboot],
+                        remote_path='/tmp',
+                        image_file=os.path.basename(latest_ubimg),
+                        conn=connection)
 
     def board_cleanup():
-        def board_cleanup_impl():
-            common_board_cleanup()
-        execute(board_cleanup_impl, hosts=conftest.current_hosts())
+        common_board_cleanup(conn=connection)
 
     request.addfinalizer(board_cleanup)
 
 @pytest.fixture(scope="session")
-def setup_bbb(request):
+def setup_bbb(request, connection):
     def board_cleanup():
-        execute(common_board_cleanup, hosts=conftest.current_hosts())
+        common_board_cleanup(conn=connection)
 
-    execute(common_boot_from_internal, hosts=conftest.current_hosts())
+    common_boot_from_internal(conn=connection)
     request.addfinalizer(board_cleanup)
 
 @pytest.fixture(scope="session")
-def setup_rpi3(request):
+def setup_rpi3(request, connection):
     def board_cleanup():
-        execute(common_board_cleanup, hosts=conftest.current_hosts())
+        common_board_cleanup(conn=connection)
 
-    execute(common_boot_from_internal, hosts=conftest.current_hosts())
+    common_boot_from_internal(conn=connection)
     request.addfinalizer(board_cleanup)
 
-def qemu_running(request, clean_image):
-    latest_sdimg = latest_build_artifact(clean_image['build_dir'], "core-image*.sdimg")
-    latest_uefiimg = latest_build_artifact(clean_image['build_dir'], "core-image*.uefiimg")
-    latest_biosimg = latest_build_artifact(clean_image['build_dir'], "core-image*.biosimg")
-    latest_gptimg = latest_build_artifact(clean_image['build_dir'], "core-image*.gptimg")
-    latest_vexpress_nor = latest_build_artifact(clean_image['build_dir'], "core-image*.vexpress-nor")
+def setup_qemu(request, build_dir, conn):
+    latest_sdimg = latest_build_artifact(build_dir, "core-image*.sdimg")
+    latest_uefiimg = latest_build_artifact(build_dir, "core-image*.uefiimg")
+    latest_biosimg = latest_build_artifact(build_dir, "core-image*.biosimg")
+    latest_gptimg = latest_build_artifact(build_dir, "core-image*.gptimg")
+    latest_vexpress_nor = latest_build_artifact(build_dir, "core-image*.vexpress-nor")
 
     if latest_sdimg:
-        qemu, img_path = start_qemu_block_storage(latest_sdimg, suffix=".sdimg")
+        qemu, img_path = start_qemu_block_storage(latest_sdimg, suffix=".sdimg", conn=conn)
     elif latest_uefiimg:
-        qemu, img_path = start_qemu_block_storage(latest_uefiimg, suffix=".uefiimg")
+        qemu, img_path = start_qemu_block_storage(latest_uefiimg, suffix=".uefiimg", conn=conn)
     elif latest_biosimg:
-        qemu, img_path = start_qemu_block_storage(latest_biosimg, suffix=".biosimg")
+        qemu, img_path = start_qemu_block_storage(latest_biosimg, suffix=".biosimg", conn=conn)
     elif latest_gptimg:
-        qemu, img_path = start_qemu_block_storage(latest_gptimg, suffix=".gptimg")
+        qemu, img_path = start_qemu_block_storage(latest_gptimg, suffix=".gptimg", conn=conn)
     elif latest_vexpress_nor:
-        qemu, img_path = start_qemu_flash(latest_vexpress_nor)
+        qemu, img_path = start_qemu_flash(latest_vexpress_nor, conn=conn)
     else:
         pytest.fail("cannot find a suitable image type")
 
@@ -132,10 +113,10 @@ def qemu_running(request, clean_image):
     # Make sure we revert to the first root partition on next reboot, makes test
     # cases more predictable.
     def qemu_finalizer():
-        def qemu_finalizer_impl():
+        def qemu_finalizer_impl(conn):
             try:
-                manual_uboot_commit()
-                run("poweroff")
+                manual_uboot_commit(conn)
+                conn.run("poweroff")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
                 while halt_time + 30 > time.time() and qemu.poll() is None:
@@ -156,26 +137,38 @@ def qemu_running(request, clean_image):
 
             qemu.wait()
             os.remove(img_path)
-
-        execute(qemu_finalizer_impl, hosts=conftest.current_hosts())
+        qemu_finalizer_impl(conn=conn)
 
     request.addfinalizer(qemu_finalizer)
 
 @pytest.fixture(scope="function")
-def no_image_file(setup_board):
+def setup_board(request, build_image_fn, connection, board_type):
+
+    print("board type: ", board_type)
+
+    if "qemu" in board_type:
+        image_dir = build_image_fn()
+        return setup_qemu(request, image_dir, connection)
+    elif board_type == "beagleboneblack":
+        return setup_bbb(request)
+    elif board_type == "raspberrypi3":
+        return setup_rpi3(request)
+    elif board_type == "colibri-imx7":
+        image_dir = build_image_fn()
+        return setup_colibri_imx7(request, image_dir, connection)
+    else:
+        pytest.fail('unsupported board type {}'.format(board_type))
+
     """Make sure 'image.dat' is not present on the device."""
-    execute(no_image_file_impl, hosts=conftest.current_hosts())
+    connection.run("rm -f image.dat")
 
-
-def no_image_file_impl():
-    run("rm -f image.dat")
 @pytest.fixture(scope="session")
-def latest_rootfs():
+def latest_rootfs(conversion, mender_image):
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    if pytest.config.getoption('--test-conversion'):
-        image_name = os.path.splitext(pytest.config.getoption('--mender-image'))[0]
+    if conversion:
+        image_name = os.path.splitext(mender_image)[0]
         return latest_build_artifact(os.environ['BUILDDIR'], "%s.ext[234]" % image_name)
     else:
         return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.ext[234]")
@@ -211,22 +204,22 @@ def latest_vexpress_nor():
     return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.vexpress-nor")
 
 @pytest.fixture(scope="session")
-def latest_mender_image():
+def latest_mender_image(conversion):
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
-    if pytest.config.getoption('--test-conversion'):
+    if conversion:
         image_name = os.path.splitext(pytest.config.getoption('--mender-image'))[0]
         return latest_build_artifact(os.environ['BUILDDIR'], "%s.mender" % image_name)
     else:
         return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.mender")
 
 @pytest.fixture(scope="session")
-def latest_part_image():
+def latest_part_image(conversion, mender_image):
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
-    if pytest.config.getoption('--test-conversion'):
-        pattern = os.path.splitext(pytest.config.getoption('--mender-image'))[0]
+    if conversion:
+        pattern = os.path.splitext(mender_image)[0]
     else:
         pattern = "core-image*"
 
@@ -249,11 +242,11 @@ def latest_part_image():
         return None
 
 @pytest.fixture(scope="function")
-def successful_image_update_mender(request, clean_image):
+def successful_image_update_mender(request, build_image_fn):
     """Provide a 'successful_image_update.mender' file in the current directory that
     contains the latest built update."""
 
-    latest_mender_image = latest_build_artifact(clean_image()['build_dir'], "core-image*.mender")
+    latest_mender_image = latest_build_artifact(build_image_fn(), "core-image*.mender")
 
     shutil.copy(latest_mender_image, "successful_image_update.mender")
 
@@ -486,8 +479,3 @@ def only_with_distro_feature(request, bitbake_variables):
                         '(supports {})'.format(', '.join(current),
                                                ', '.join(features)))
 
-@pytest.fixture(autouse=True)
-def commercial_test(request, bitbake_variables):
-    mark = request.node.get_closest_marker('commercial')
-    if mark is not None and not request.config.getoption("--commercial-tests"):
-        pytest.skip("Tests of commercial features are disabled.")

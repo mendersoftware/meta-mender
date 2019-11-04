@@ -24,14 +24,13 @@ import re
 import subprocess
 import time
 import tempfile
-import errno
 import shutil
 import signal
 import sys
 
 from contextlib import contextmanager
+import traceback
 
-import conftest
 
 # ugly hack to access cli parameters inside common.py functions
 configuration = {}
@@ -57,7 +56,7 @@ def start_qemu(qenv=None, conn=None):
 
     try:
         # make sure we are connected.
-        run_after_connect("true", wait=wait, conn=conn)
+        run_after_connect("true", conn=conn)
     except:
         # or do the necessary cleanup if we're not
         try:
@@ -68,13 +67,12 @@ def start_qemu(qenv=None, conn=None):
             pass
 
         proc.wait()
-
         raise
 
     return proc
 
 
-def start_qemu_block_storage(latest_sdimg, suffix):
+def start_qemu_block_storage(latest_sdimg, suffix, conn):
     """Start qemu instance running block storage"""
     fh, img_path = tempfile.mkstemp(suffix=suffix, prefix="test-image")
     # don't need an open fd to temp file
@@ -88,7 +86,7 @@ def start_qemu_block_storage(latest_sdimg, suffix):
     qenv["DISK_IMG"] = img_path
 
     try:
-        qemu = start_qemu(qenv)
+        qemu = start_qemu(qenv, conn)
     except:
         os.remove(img_path)
         raise
@@ -96,7 +94,7 @@ def start_qemu_block_storage(latest_sdimg, suffix):
     return qemu, img_path
 
 
-def start_qemu_flash(latest_vexpress_nor):
+def start_qemu_flash(latest_vexpress_nor, conn):
     """Start qemu instance running *.vexpress-nor image"""
 
     print("qemu raw flash with image {}".format(latest_vexpress_nor))
@@ -120,7 +118,7 @@ def start_qemu_flash(latest_vexpress_nor):
     qenv["MACHINE"] = "vexpress-qemu-flash"
 
     try:
-        qemu = start_qemu(qenv)
+        qemu = start_qemu(qenv, conn)
     except:
         os.remove(img_path)
         raise
@@ -190,11 +188,11 @@ def run_after_connect(cmd, wait=360, conn=None):
             raise e
 
 
-def determine_active_passive_part(bitbake_variables):
+def determine_active_passive_part(bitbake_variables, conn=None):
     """Given the output from mount, determine the currently active and passive
     partitions, returning them as a pair in that order."""
 
-    mount_output = run("mount")
+    mount_output = conn.run("mount").stdout
     a = bitbake_variables["MENDER_ROOTFS_PART_A"]
     b = bitbake_variables["MENDER_ROOTFS_PART_B"]
 
@@ -208,28 +206,30 @@ def determine_active_passive_part(bitbake_variables):
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
-def put(file, local_path = ".", remote_path = "."):
-    (scp, host, port) = scp_prep_args()
+def put_no_sftp(file, remote = ".", conn=None):
+    cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
-    local("%s %s %s/%s %s@%s:%s" %
-          (scp, port, local_path, file, env.user, host, remote_path))
+    try:
+        conn.local("%s -P %s %s %s@%s:%s" %
+            (cmd, conn.port, file, conn.user, conn.host, remote))
+    except Exception as e:
+        print("exception while putting file: ", e)
+        raise e
 
-
-# See comment for put().
-def get(file, local_path = ".", remote_path = "."):
-    (scp, host, port) = scp_prep_args()
-
-    local("%s %s %s@%s:%s/%s %s" %
-          (scp, port, env.user, host, remote_path, file, local_path))
-
-
-def manual_uboot_commit():
-    run("fw_setenv upgrade_available 0")
-    run("fw_setenv bootcount 0")
+# Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
+def get_no_sftp(file, local = ".", conn=None):
+    cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    conn.local("%s -P %s %s@%s:%s %s" %
+          (cmd, conn.port, conn.user, conn.host, file, local))
 
 
+def manual_uboot_commit(conn=None):
+    conn.run("fw_setenv upgrade_available 0")
+    conn.run("fw_setenv bootcount 0")
 
-def common_board_setup(files=None, remote_path='/tmp', image_file=None):
+
+
+def common_board_setup(files=None, remote_path='/tmp', image_file=None, conn=None):
     """
     Deploy and activate an image to a board that usese mender-qa tools.
 
@@ -238,48 +238,43 @@ def common_board_setup(files=None, remote_path='/tmp', image_file=None):
     :param files: list of files to deploy
     """
     for f in files:
-        put(os.path.basename(f), local_path=os.path.dirname(f),
-            remote_path=remote_path)
+        put_no_sftp(os.path.basename(f),
+                    remote=os.path.join(remote_path, os.path.basename(f)),
+                    conn=conn)
 
     env_overrides = {}
     if image_file:
         env_overrides['IMAGE_FILE'] = image_file
 
-    run("{} mender-qa deploy-test-image".format(' '.join(
+    conn.run("{} mender-qa deploy-test-image".format(' '.join(
         ['{}={}'.format(k, v) for k, v in env_overrides.items()])))
 
-    with settings(warn_only=True):
-        sudo("mender-qa activate-test-image")
+    conn.sudo("mender-qa activate-test-image")
 
 def common_board_cleanup(conn=None):
-    sudo("mender-qa activate-test-image off")
-    with settings(warn_only=True):
-        sudo("reboot")
+    conn.sudo("mender-qa activate-test-image off")
+    conn.sudo("reboot", warn=True)
 
     run_after_connect("true", conn=conn)
 
 def common_boot_from_internal(conn=None):
-    sudo("mender-qa activate-test-image on")
-    with settings(warn_only=True):
-        sudo("reboot")
+    conn.sudo("mender-qa activate-test-image on")
+    conn.sudo("reboot", warn=True)
 
     run_after_connect("true", conn=conn)
 
-
-
-def latest_build_artifact(builddir, extension):
+def latest_build_artifact(builddir, extension, sdimg_location=None):
     global configuration
     
     if "conversion" in configuration:
-        sdimg_location = pytest.config.getoption('--sdimg-location')
         output = subprocess.check_output(["sh", "-c", "ls -t %s/%s/*%s | grep -v data*%s| head -n 1" % (builddir, sdimg_location, extension, extension)])
     else:
         output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
-    output = output.rstrip('\r\n')
+    output = output.decode().rstrip('\r\n')
     print("Found latest image of type '%s' to be: %s" % (extension, output))
     return output
 
-def get_bitbake_variables(target, env_setup="true", export_only=False, test_conversion=False):
+def get_bitbake_variables(target, env_setup="true", export_only=False):
     current_dir = os.open(".", os.O_RDONLY)
     os.chdir(os.environ['BUILDDIR'])
 
@@ -294,7 +289,6 @@ def get_bitbake_variables(target, env_setup="true", export_only=False, test_conv
                                   stdout=subprocess.PIPE,
                                   shell=True,
                                   executable="/bin/bash")
-        output= ps.stdout
 
     if export_only:
         export_only_expr = ""
@@ -302,8 +296,11 @@ def get_bitbake_variables(target, env_setup="true", export_only=False, test_conv
         export_only_expr = "?"
     matcher = re.compile('^(?:export )%s([A-Za-z][^=]*)="(.*)"$' % export_only_expr)
     ret = {}
-    for line in output:
-        line = line.strip()
+    while True:
+        line = ps.stdout.readline()
+        if not line:
+            break
+        line = line.decode().strip()
         match = matcher.match(line)
         if match is not None:
             ret[match.group(1)] = match.group(2)
