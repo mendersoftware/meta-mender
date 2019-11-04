@@ -707,7 +707,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                             "depenceygroup2"])
     ]
 
-    @pytest.mark.min_mender_version('2.0.0')
+    @pytest.mark.min_mender_version('2.2.0')
     @pytest.mark.parametrize('dependsprovides', test_cases)
     def test_build_artifact_depends_and_provides(
             self,
