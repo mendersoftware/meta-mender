@@ -23,15 +23,18 @@ from common import *
 class TestDeltaUpdateModule:
 
     @pytest.mark.only_with_image('ext4')
-    def test_build_and_run_module(self, bitbake_variables, prepared_test_build):
-        add_to_local_conf(prepared_test_build, 'IMAGE_INSTALL_append = " mender-binary-delta"')
-        add_to_bblayers_conf(prepared_test_build, 'BBLAYERS_append = " %s/../meta-mender-commercial"'
-                             % bitbake_variables['LAYERDIR_MENDER'])
+    def test_build_and_run_module(self, bitbake_variables, prepared_test_build, bitbake_image):
 
-        run_bitbake(prepared_test_build)
+        build_image(prepared_test_build['build_dir'],
+                    prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
+                    ['IMAGE_INSTALL_append = " mender-binary-delta"'],
+                    ['BBLAYERS_append = " %s/../meta-mender-commercial"' % bitbake_variables['LAYERDIR_MENDER']])
+
+
 
         image = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")
-        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", image])
+        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", image]).decode()
 
         # Debugfs has output like this:
         #   /3018/100755/0/0/mender-binary-delta/142672/

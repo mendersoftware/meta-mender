@@ -17,23 +17,24 @@ import os
 import pytest
 import subprocess
 
-# Make sure common is imported after fabric, because we override some functions.
 from common import *
 
 class TestDataImg:
     @pytest.mark.min_mender_version('1.0.0')
-    def test_dataimg_creation(self, bitbake_variables, prepared_test_build):
+    def test_dataimg_creation(self, bitbake_variables, prepared_test_build, bitbake_image):
         """Test that we can build a dataimg successfully."""
 
-        add_to_local_conf(prepared_test_build, 'IMAGE_FSTYPES = "dataimg"')
-        run_bitbake(prepared_test_build)
+        build_image(prepared_test_build['build_dir'], 
+                    prepared_test_build['bitbake_corebase'],
+                    bitbake_image,
+                    ['IMAGE_FSTYPES = "dataimg"'])
 
         built_img = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.dataimg")
 
         # Check that it contains the device_type file, as we expect.
         with make_tempdir() as tmpdir:
             menderdir = os.path.join(tmpdir, "mender")
-            if bitbake_variables['ARTIFACTIMG_FSTYPE'] == "ubifs":
+            if 'ARTIFACTIMG_FSTYPE' in bitbake_variables and bitbake_variables['ARTIFACTIMG_FSTYPE'] == "ubifs":
                 subprocess.check_call(["ubireader_extract_files", "-o", tmpdir, built_img])
             else:
                 os.mkdir(menderdir)
