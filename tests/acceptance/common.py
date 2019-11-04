@@ -13,9 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from fabric.api import *
-from fabric.contrib.files import append
-import fabric.network
+from fabric import Connection
+from paramiko import SSHException
+from paramiko.ssh_exception import NoValidConnectionsError
 
 from distutils.version import LooseVersion
 import pytest
@@ -61,7 +61,7 @@ class ProcessGroupPopen(subprocess.Popen):
         self.__signal(signal.SIGKILL)
 
 
-def start_qemu(qenv=None):
+def start_qemu(qenv=None, conn=None):
     """Start qemu and return a subprocess.Popen object corresponding to a running
     qemu process. `qenv` is a dict of environment variables that will be added
     to `subprocess.Popen(..,env=)`.
@@ -82,7 +82,7 @@ def start_qemu(qenv=None):
 
     try:
         # make sure we are connected.
-        execute(run_after_connect, "true", hosts = conftest.current_hosts())
+        run_after_connect("true", wait=wait, conn=conn)
         execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
     except:
         # or do the necessary cleanup if we're not
@@ -154,23 +154,22 @@ def start_qemu_flash(latest_vexpress_nor):
     return qemu, img_path
 
 
-def reboot(wait = 120):
-    with settings(warn_only = True):
-        try:
-            run("reboot")
-        except:
-            # qemux86-64 is so fast that sometimes the above call fails with
-            # an exception because the connection was broken before we returned.
-            # So catch everything, even though it might hide real errors (but
-            # those will probably be caught below after the timeout).
-            pass
+def reboot(wait=120, conn=None):
+    try:
+        conn.run("reboot", warn=True)
+    except:
+        # qemux86-64 is so fast that sometimes the above call fails with
+        # an exception because the connection was broken before we returned.
+        # So catch everything, even though it might hide real errors (but
+        # those will probably be caught below after the timeout).
+        pass
 
     # Make sure reboot has had time to take effect.
     time.sleep(5)
 
     for attempt in range(5):
         try:
-            fabric.network.disconnect_all()
+            conn.close()
             break
         except IOError:
             # Occasionally we get an IO error here because resource is temporarily
@@ -178,30 +177,46 @@ def reboot(wait = 120):
             time.sleep(5)
             continue
 
-    run_after_connect("true", wait)
+    run_after_connect("true", wait=wait, conn=conn)
 
     qemu_prep_after_boot()
 
 
-def run_after_connect(cmd, wait=360):
-    output = ""
-    start_time = time.time()
+def run_after_connect(cmd, wait=360, conn=None):
+    # override the Connection parameters
+    conn.timeout = 60
+    timeout = time.time() + 60*3
 
-    with settings(timeout=30, abort_exception=Exception):
-        while True:
-            attempt_time = time.time()
-            try:
-                output = run(cmd)
-                break
-            except BaseException as e:
-                print("Could not connect to host %s: %s" % (env.host_string, e))
-                if attempt_time >= start_time + wait:
-                    raise Exception("Could not reconnect to host")
-                now = time.time()
-                if now - attempt_time < 5:
-                    time.sleep(60)
-                continue
-    return output
+    while time.time() < timeout:
+        try:
+            print("will try to connect to host", conn.host)
+            result = conn.run(cmd, hide=True)
+            return result.stdout
+        except NoValidConnectionsError as e:
+            print("Could not connect to host %s: %s" % (conn.host, e))
+            time.sleep(30)
+            continue
+        except SSHException as e:
+            print("Got SSH exception while connecting to host %s: %s" % (conn.host, e))
+            if not ("Connection reset by peer" in str(e) or 
+                    "Error reading SSH protocol banner" in str(e) or 
+                    "No existing session" in str(e)):
+                raise e
+            time.sleep(30)
+            continue
+        except OSError as e:
+            # The OSError is happening while there is no QEMU instance initialized
+            print("Got OSError exception while connecting to host %s: %s" % (conn.host, e))
+            if not "Cannot assign requested address" in str(e):
+                raise e
+            time.sleep(30)
+            continue
+        except Exception as e:
+            print("Generic exception happened while connecting to host %s: %s" % (conn.host, e))
+            print(type(e))
+            print(e.args)
+            raise e
+
 
 
 def ssh_prep_args():
@@ -308,19 +323,19 @@ def common_board_setup(files=None, remote_path='/tmp', image_file=None):
     with settings(warn_only=True):
         sudo("mender-qa activate-test-image")
 
-def common_board_cleanup():
+def common_board_cleanup(conn=None):
     sudo("mender-qa activate-test-image off")
     with settings(warn_only=True):
         sudo("reboot")
 
-    execute(run_after_connect, "true", hosts = conftest.current_hosts())
+    run_after_connect("true", conn=conn)
 
-def common_boot_from_internal():
+def common_boot_from_internal(conn=None):
     sudo("mender-qa activate-test-image on")
     with settings(warn_only=True):
         sudo("reboot")
 
-    execute(run_after_connect, "true", hosts = conftest.current_hosts())
+    run_after_connect("true", conn=conn)
 
 
 

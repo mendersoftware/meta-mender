@@ -18,6 +18,36 @@ import shutil
 
 from common import *
 
+def config_host(host):
+    host_info = host.split(':')
+
+    if len(host_info) == 2:
+        return host_info[0], int(host_info[1])
+    elif len(host_info) == 1:
+        return host_info[0], 8822
+    else:
+        return 'localhost', 8822
+
+@pytest.fixture(scope="function")
+def connection(request, user, host):
+    host, port = config_host(host)
+    conn = Connection(host=host,
+            user=user,
+            port=port,
+            connect_timeout=60,
+            connect_kwargs={
+                "password": "",
+                "banner_timeout": 60,
+                "auth_timeout": 60,
+                })
+    conn.client.set_missing_host_key_policy(WarningPolicy())
+
+    def fin():
+        conn.close()
+    request.addfinalizer(fin)
+
+    return conn
+
 @pytest.fixture(scope="session")
 def setup_board(request, clean_image, bitbake_variables):
     bt = pytest.config.getoption("--board-type")

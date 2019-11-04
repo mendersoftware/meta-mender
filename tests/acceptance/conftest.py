@@ -14,13 +14,7 @@
 #    limitations under the License.
 
 import os
-import os.path
 import subprocess
-
-from fabric.api import *
-
-import unittest
-
 from fixtures import *
 
 
@@ -59,44 +53,6 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    env.hosts = config.getoption("host")
-    env.user = config.getoption("user")
-
-    env.password = ""
-
-    # Bash not always available, nor currently required:
-    env.shell = "/bin/sh -c"
-
-    # Disable known_hosts file, to avoid "host identification changed" errors.
-    env.disable_known_hosts = True
-
-    env.abort_on_prompts = True
-
-    # Don't allocate pseudo-TTY by default, since it is not fully functional.
-    # It can still be overriden on a case by case basis by passing
-    # "pty = True/False" to the various fabric functions. See
-    # http://www.fabfile.org/faq.html about init scripts.
-    env.always_use_pty = False
-
-    # Don't combine stderr with stdout. The login profile sometimes prints
-    # terminal specific codes there, and we don't want it interfering with our
-    # output. It can still be turned on on a case by case basis by passing
-    # combine_stderr to each run() or sudo() command.
-    env.combine_stderr = False
-
-    env.connection_attempts = 10
-    env.timeout = 30
-
     if not config.getoption("--no-pull"):
         print("Automatically pulling submodules. Use --no-pull to disable")
         subprocess.check_call("git submodule update --init --remote", shell=True)
-
-
-def current_hosts():
-    # Workaround for being inside/outside execute().
-    if env.host_string:
-        # Inside execute(), return current host.
-        return [env.host_string]
-    else:
-        # Outside execute(), return the host(s) we want to run.
-        return env.hosts
