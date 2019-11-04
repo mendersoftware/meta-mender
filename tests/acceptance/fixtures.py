@@ -161,9 +161,6 @@ def qemu_running(request, clean_image):
 
     request.addfinalizer(qemu_finalizer)
 
-    execute(qemu_prep_fresh_host, hosts=conftest.current_hosts())
-
-
 @pytest.fixture(scope="function")
 def no_image_file(setup_board):
     """Make sure 'image.dat' is not present on the device."""

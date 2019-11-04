@@ -36,34 +36,6 @@ import conftest
 # ugly hack to access cli parameters inside common.py functions
 configuration = {}
 
-class ProcessGroupPopen(subprocess.Popen):
-    """Wrapper for subprocess.Popen that starts the underlying process in a
-    separate process group. The wrapper overrides kill() and terminate() so
-    that the corresponding SIGKILL/SIGTERM are sent to the whole process group
-    and not just the forked process.
-
-    Note that ProcessGroupPopen() constructor hijacks preexec_fn parameter.
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        def start_new_session():
-            os.setsid()
-        # for Python > 3.2 it's enough to set start_new_session=True
-        super(ProcessGroupPopen, self).__init__(*args,
-                                                preexec_fn=start_new_session,
-                                                **kwargs)
-
-    def __signal(self, sig):
-        os.killpg(self.pid, sig)
-
-    def terminate(self):
-        self.__signal(signal.SIGTERM)
-
-    def kill(self):
-        self.__signal(signal.SIGKILL)
-
-
 def start_qemu(qenv=None, conn=None):
     """Start qemu and return a subprocess.Popen object corresponding to a running
     qemu process. `qenv` is a dict of environment variables that will be added
@@ -80,13 +52,12 @@ def start_qemu(qenv=None, conn=None):
     if qenv:
         env.update(qenv)
 
-    proc = ProcessGroupPopen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
-                             env=env)
+    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+                             env=env, start_new_session=True)
 
     try:
         # make sure we are connected.
         run_after_connect("true", wait=wait, conn=conn)
-        execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
     except:
         # or do the necessary cleanup if we're not
         try:
@@ -182,8 +153,6 @@ def reboot(wait=120, conn=None):
 
     run_after_connect("true", wait=wait, conn=conn)
 
-    qemu_prep_after_boot()
-
 
 def run_after_connect(cmd, wait=360, conn=None):
     # override the Connection parameters
@@ -221,40 +190,6 @@ def run_after_connect(cmd, wait=360, conn=None):
             raise e
 
 
-
-def ssh_prep_args():
-    return ssh_prep_args_impl("ssh")
-
-
-def scp_prep_args():
-    return ssh_prep_args_impl("scp")
-
-
-def ssh_prep_args_impl(tool):
-    if not env.host_string:
-        raise Exception("get()/put() called outside of execute()")
-
-    cmd = ("%s -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" %
-           tool)
-
-    host_parts = env.host_string.split(":")
-    host = ""
-    port = ""
-    port_flag = "-p"
-    if tool == "scp":
-        port_flag = "-P"
-    if len(host_parts) == 2:
-        host = host_parts[0]
-        port = "%s%s" % (port_flag, host_parts[1])
-    elif len(host_parts) == 1:
-        host = host_parts[0]
-        port = ""
-    else:
-        raise Exception("Malformed host string")
-
-    return (cmd, host, port)
-
-
 def determine_active_passive_part(bitbake_variables):
     """Given the output from mount, determine the currently active and passive
     partitions, returning them as a pair in that order."""
@@ -286,16 +221,6 @@ def get(file, local_path = ".", remote_path = "."):
 
     local("%s %s %s@%s:%s/%s %s" %
           (scp, port, env.user, host, remote_path, file, local_path))
-
-
-def qemu_prep_after_boot():
-    # Nothing needed ATM.
-    pass
-
-
-def qemu_prep_fresh_host():
-    # Nothing needed ATM.
-    pass
 
 
 def manual_uboot_commit():
