@@ -1,5 +1,3 @@
-pytest>=4.0
-fabric>=2.0
-paramiko
+Fabric
 python-lzo
 ubi-reader
