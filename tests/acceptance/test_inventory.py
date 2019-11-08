@@ -123,7 +123,7 @@ echo LSB OS""",
                         # Write a final newline if there isn't one.
                         fd.write('\n')
                 try:
-                    put_no_sftp("tmpfile", remote=src['name'], conn=connection)
+                    put_no_sftp("tmpfile", connection, remote=src['name'])
                     connection.run("chmod 0%o %s" % (src['mode'], src['name']))
                 finally:
                     os.remove("tmpfile")

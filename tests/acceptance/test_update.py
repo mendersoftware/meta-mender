@@ -58,8 +58,8 @@ class Helpers:
         connection.run("dd if=%s of=/data/env1.tmp bs=1 count=4 skip=%d" % (dev, offsets[0]))
         connection.run("dd if=%s of=/data/env2.tmp bs=1 count=4 skip=%d" % (dev, offsets[1]))
 
-        get_no_sftp("/data/env1.tmp", conn=connection)
-        get_no_sftp("/data/env2.tmp", conn=connection)
+        get_no_sftp("/data/env1.tmp", connection)
+        get_no_sftp("/data/env2.tmp", connection)
         connection.run("rm -f /data/env1.tmp /data/env2.tmp")
 
         env = open("env1.tmp", "rb")
@@ -165,7 +165,7 @@ class TestUpdates:
 
         file_flag = Helpers.get_file_flag(bitbake_variables)
         install_flag = Helpers.get_install_flag(connection)
-        (active_before, passive_before) = determine_active_passive_part(bitbake_variables, conn=connection)
+        (active_before, passive_before) = determine_active_passive_part(bitbake_variables, connection)
 
         image_type = bitbake_variables["MENDER_DEVICE_TYPE"]
 
@@ -180,15 +180,15 @@ class TestUpdates:
                 raise Exception("error writing mender artifact using command: mender-artifact write rootfs-image -t %s -n test-update %s image.dat -o image.mender"
                              % (image_type, file_flag))
 
-            put_no_sftp("image.mender", remote="/var/tmp/image.mender", conn=connection)
+            put_no_sftp("image.mender", connection, remote="/var/tmp/image.mender")
             connection.run("mender %s /var/tmp/image.mender" % install_flag)
-            reboot(conn=connection)
+            reboot(connection)
 
             # Now qemu is auto-rebooted twice; once to boot the dummy image,
             # where it fails, and uboot auto-reboots a second time into the
             # original partition.
 
-            output = run_after_connect("mount", conn=connection)
+            output = run_after_connect("mount", connection)
 
             # The update should have reverted to the original active partition,
             # since the image was bogus.
@@ -214,7 +214,7 @@ class TestUpdates:
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=1024", shell=True)
             subprocess.call("mender-artifact write rootfs-image -t %s -n test-update-too-big %s image.dat -o image-too-big.mender"
                             % (image_type, file_flag), shell=True)
-            put_no_sftp("image-too-big.mender", remote="/var/tmp/image-too-big.mender", conn=connection)
+            put_no_sftp("image-too-big.mender", connection, remote="/var/tmp/image-too-big.mender")
             output = connection.run(
                 "mender %s /var/tmp/image-too-big.mender ; echo 'ret_code=$?'" % install_flag).stdout
 
@@ -232,11 +232,10 @@ class TestUpdates:
     def test_network_based_image_update(self, successful_image_update_mender, bitbake_variables, 
                                         connection, http_server, board_type, use_s3, s3_address):
 
-        (active_before, passive_before) = determine_active_passive_part(bitbake_variables, conn=connection)
+        (active_before, passive_before) = determine_active_passive_part(bitbake_variables, connection)
 
         Helpers.install_update(successful_image_update_mender, connection, http_server, board_type, use_s3, s3_address)
 
-        # TODO: can't we do multiple at once?
         output = connection.run("fw_printenv bootcount").stdout
         assert(output.rstrip('\n') == "bootcount=0")
 
@@ -251,10 +250,10 @@ class TestUpdates:
         # kernel from the wrong place.
         connection.run("rm -f /boot/* || true")
 
-        reboot(conn=connection)
+        reboot(connection)
  
-        run_after_connect("true", conn=connection)
-        (active_after, passive_after) = determine_active_passive_part(bitbake_variables, conn=connection)
+        run_after_connect("true", connection)
+        (active_after, passive_after) = determine_active_passive_part(bitbake_variables, connection)
 
         # The OS should have moved to a new partition, since the image was fine.
         assert(active_after == passive_before)
@@ -280,10 +279,10 @@ class TestUpdates:
         active_before = active_after
         passive_before = passive_after
 
-        reboot(conn=connection)
+        reboot(connection)
 
-        run_after_connect("true", conn=connection)
-        (active_after, passive_after) = determine_active_passive_part(bitbake_variables, conn=connection)
+        run_after_connect("true", connection)
+        (active_after, passive_after) = determine_active_passive_part(bitbake_variables, connection)
 
         # The OS should have stayed on the same partition, since we committed.
         assert(active_after == active_before)
@@ -542,7 +541,7 @@ class TestUpdates:
 
         # mmc mount points are named: /dev/mmcblk0p1
         # ubi volumes are named: ubi0_1
-        (active, passive) = determine_active_passive_part(bitbake_variables, conn=connection)
+        (active, passive) = determine_active_passive_part(bitbake_variables, connection)
         if passive.startswith('ubi'):
             passive = '/dev/' + passive
 
@@ -636,22 +635,22 @@ class TestUpdates:
             finally:
                 shutil.rmtree(tmpdir, ignore_errors=True)
 
-        put_no_sftp("image.mender", remote="/data/image.mender", conn=connection)
+        put_no_sftp("image.mender", connection, remote="/data/image.mender")
         try:
             # Update key configuration on device.
             connection.run("cp /etc/mender/mender.conf /data/etc/mender/mender.conf.bak")
-            get_no_sftp("/etc/mender/mender.conf", conn=connection)
+            get_no_sftp("/etc/mender/mender.conf", connection)
             with open("mender.conf") as fd:
                 config = json.load(fd)
             if sig_case.key:
                 config['ArtifactVerifyKey'] = "/data/etc/mender/%s" % os.path.basename(sig_key.public)
-                put_no_sftp(sig_key.public, remote="/data/etc/mender/%s" % os.path.basename(sig_key.public), conn=connection)
+                put_no_sftp(sig_key.public, connection, remote="/data/etc/mender/%s" % os.path.basename(sig_key.public))
             else:
                 if config.get('ArtifactVerifyKey'):
                     del config['ArtifactVerifyKey']
             with open("mender.conf", "w") as fd:
                 json.dump(config, fd)
-            put_no_sftp("mender.conf", remote="/etc/mender/mender.conf", conn=connection)
+            put_no_sftp("mender.conf", connection, remote="/etc/mender/mender.conf")
             os.remove("mender.conf")
 
             # Start by writing known "old" content in the partition.
@@ -742,7 +741,7 @@ class TestUpdates:
 
         """
 
-        (active, passive) = determine_active_passive_part(bitbake_variables, conn=connection)
+        (active, passive) = determine_active_passive_part(bitbake_variables, connection)
 
         if active != bitbake_variables["MENDER_ROOTFS_PART_B"]:
             # We are not running the secondary partition. This is a requirement
@@ -753,7 +752,7 @@ class TestUpdates:
             self.test_network_based_image_update(successful_image_update_mender, bitbake_variables, 
                                                  connection, http_server, board_type, use_s3, s3_address)
 
-            (active, passive) = determine_active_passive_part(bitbake_variables, conn=connection)
+            (active, passive) = determine_active_passive_part(bitbake_variables, connection)
             assert(active == bitbake_variables["MENDER_ROOTFS_PART_B"])
 
         file_flag = Helpers.get_file_flag(bitbake_variables)
@@ -772,7 +771,7 @@ class TestUpdates:
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=8", shell=True)
             subprocess.call("mender-artifact write rootfs-image -t %s -n test-update %s image.dat -o image.mender"
                             % (image_type, file_flag), shell=True)
-            put_no_sftp("image.mender", remote="/var/tmp/image.mender", conn=connection)
+            put_no_sftp("image.mender", connection, remote="/var/tmp/image.mender")
             connection.run("mender %s /var/tmp/image.mender" % install_flag)
 
             new_checksums = Helpers.get_env_checksums(bitbake_variables, connection)
@@ -803,13 +802,13 @@ class TestUpdates:
             new_env = connection.run("fw_printenv").stdout
             assert orig_env == new_env
 
-            reboot(conn=connection)
+            reboot(connection)
 
             # We should have recovered.
-            run_after_connect("true", conn=connection)
+            run_after_connect("true", connection)
 
             # And we should be back at the second rootfs partition.
-            (active, passive) = determine_active_passive_part(bitbake_variables, conn=connection)
+            (active, passive) = determine_active_passive_part(bitbake_variables, connection)
             assert(active == bitbake_variables["MENDER_ROOTFS_PART_B"])
 
         finally:
@@ -827,7 +826,7 @@ class TestUpdates:
         cannot do this, so instead we update both, and use the validity of the
         variables instead as a crude checksum."""
 
-        (active, passive) = determine_active_passive_part(bitbake_variables, conn=connection)
+        (active, passive) = determine_active_passive_part(bitbake_variables, connection)
 
         # Corrupt the passive partition.
         connection.run("dd if=/dev/zero of=%s bs=1024 count=1024" % passive)
@@ -851,10 +850,10 @@ class TestUpdates:
                 connection.run('sed -e "s/editing=.*/editing=1/" %s' % lock_file)
                 connection.run('sed -e "s/mender_boot_part=.*/mender_boot_part=%s/" %s' % (passive[-1], lock_file))
 
-                reboot(conn=connection)
-                run_after_connect("true", conn=connection)
+                reboot(connection)
+                run_after_connect("true", connection)
 
-                (new_active, new_passive) = determine_active_passive_part(bitbake_variables, conn=connection)
+                (new_active, new_passive) = determine_active_passive_part(bitbake_variables, connection)
                 assert new_active == active
                 assert new_passive == passive
 
@@ -882,7 +881,7 @@ class TestUpdates:
             subprocess.call("dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True)
             subprocess.call("mender-artifact write rootfs-image -t %s -n test-update %s image.dat -o image.mender"
                             % (image_type, file_flag), shell=True)
-            put_no_sftp("image.mender", remote="/var/tmp/image.mender", conn=connection)
+            put_no_sftp("image.mender", connection, remote="/var/tmp/image.mender")
 
             # Zero the environment, causing the fw-utils to use their built in
             # default.

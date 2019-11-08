@@ -56,7 +56,7 @@ def start_qemu(qenv=None, conn=None):
 
     try:
         # make sure we are connected.
-        run_after_connect("true", conn=conn)
+        run_after_connect("true", conn)
     except:
         # or do the necessary cleanup if we're not
         try:
@@ -126,7 +126,7 @@ def start_qemu_flash(latest_vexpress_nor, conn):
     return qemu, img_path
 
 
-def reboot(wait=120, conn=None):
+def reboot(conn, wait=120):
     try:
         conn.run("reboot", warn=True)
     except:
@@ -149,12 +149,13 @@ def reboot(wait=120, conn=None):
             time.sleep(5)
             continue
 
-    run_after_connect("true", wait=wait, conn=conn)
+    run_after_connect("true", conn, wait=wait)
 
 
-def run_after_connect(cmd, wait=360, conn=None):
+def run_after_connect(cmd, conn, wait=360):
     # override the Connection parameters
-    conn.timeout = 60
+    orig_timeout = conn.connect_timeout
+    conn.connect_timeout = 60
     timeout = time.time() + 60*3
 
     while time.time() < timeout:
@@ -186,9 +187,12 @@ def run_after_connect(cmd, wait=360, conn=None):
             print(type(e))
             print(e.args)
             raise e
+        finally:
+            # Restore the original connection parameters
+            conn.connect_timeout = orig_timeout
 
 
-def determine_active_passive_part(bitbake_variables, conn=None):
+def determine_active_passive_part(bitbake_variables, conn):
     """Given the output from mount, determine the currently active and passive
     partitions, returning them as a pair in that order."""
 
@@ -206,7 +210,7 @@ def determine_active_passive_part(bitbake_variables, conn=None):
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
-def put_no_sftp(file, remote = ".", conn=None):
+def put_no_sftp(file, conn, remote = "."):
     cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
     try:
@@ -217,19 +221,19 @@ def put_no_sftp(file, remote = ".", conn=None):
         raise e
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
-def get_no_sftp(file, local = ".", conn=None):
+def get_no_sftp(file, conn, local = "."):
     cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
     conn.local("%s -P %s %s@%s:%s %s" %
           (cmd, conn.port, conn.user, conn.host, file, local))
 
 
-def manual_uboot_commit(conn=None):
+def manual_uboot_commit(conn):
     conn.run("fw_setenv upgrade_available 0")
     conn.run("fw_setenv bootcount 0")
 
 
 
-def common_board_setup(files=None, remote_path='/tmp', image_file=None, conn=None):
+def common_board_setup(conn, files=None, remote_path='/tmp', image_file=None):
     """
     Deploy and activate an image to a board that usese mender-qa tools.
 
@@ -238,9 +242,8 @@ def common_board_setup(files=None, remote_path='/tmp', image_file=None, conn=Non
     :param files: list of files to deploy
     """
     for f in files:
-        put_no_sftp(os.path.basename(f),
-                    remote=os.path.join(remote_path, os.path.basename(f)),
-                    conn=conn)
+        put_no_sftp(os.path.basename(f), conn,
+                    remote=os.path.join(remote_path, os.path.basename(f)))
 
     env_overrides = {}
     if image_file:
@@ -251,22 +254,22 @@ def common_board_setup(files=None, remote_path='/tmp', image_file=None, conn=Non
 
     conn.sudo("mender-qa activate-test-image")
 
-def common_board_cleanup(conn=None):
+def common_board_cleanup(conn):
     conn.sudo("mender-qa activate-test-image off")
     conn.sudo("reboot", warn=True)
 
-    run_after_connect("true", conn=conn)
+    run_after_connect("true", conn)
 
-def common_boot_from_internal(conn=None):
+def common_boot_from_internal(conn):
     conn.sudo("mender-qa activate-test-image on")
     conn.sudo("reboot", warn=True)
 
-    run_after_connect("true", conn=conn)
+    run_after_connect("true", conn)
 
 def latest_build_artifact(builddir, extension, sdimg_location=None):
     global configuration
     
-    if "conversion" in configuration:
+    if configuration.get("conversion"):
         output = subprocess.check_output(["sh", "-c", "ls -t %s/%s/*%s | grep -v data*%s| head -n 1" % (builddir, sdimg_location, extension, extension)])
     else:
         output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
@@ -280,7 +283,7 @@ def get_bitbake_variables(target, env_setup="true", export_only=False):
 
     global configuration
 
-    if "conversion" in configuration:
+    if configuration.get("conversion"):
         config_file_path = os.path.abspath(configuration["test_variables"])
         with open(config_file_path, 'r') as config:
             output = config.readlines()
@@ -359,17 +362,11 @@ def run_verbose(cmd, capture=False):
 # Capture is true or false and conditonally returns output.
 def build_image(build_dir, bitbake_corebase, bitbake_image, 
                 extra_conf_params=None, extra_bblayers=None, target=None, capture=False):
-    try:
-        for param in extra_conf_params:
+    for param in extra_conf_params or []:
             _add_to_local_conf(build_dir, param)
-    except TypeError as te:
-        pass
-
-    try:
-        for layer in extra_bblayers:
+    
+    for layer in extra_bblayers or []:
             _add_to_bblayers_conf(build_dir, layer)
-    except TypeError as te:
-        pass
 
     init_env_cmd = "cd %s && . oe-init-build-env %s" % (bitbake_corebase, build_dir)
 

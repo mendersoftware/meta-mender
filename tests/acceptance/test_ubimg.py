@@ -149,7 +149,6 @@ def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build, bitbake_
     """The ubireader_utils_info tool and friends don't support our UBI volumes
     that contain the U-Boot environment and hence not valid UBIFS structures.
     Therefore, make a new temporary image that doesn't contain U-Boot."""
-    print("ubimg build\n\n")
 
     # The tests are marked with "only_with_image('ubimg')", but that is checked
     # using a function fixture, and this is a session fixture, which cannot

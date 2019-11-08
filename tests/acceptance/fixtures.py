@@ -62,30 +62,30 @@ def setup_colibri_imx7(request, build_dir, connection):
     if not latest_ubimg:
         pytest.failed('failed to find latest ubimg for the board')
 
-    common_board_setup(files=[latest_ubimg, latest_uboot],
+    common_board_setup(connection,
+                        files=[latest_ubimg, latest_uboot],
                         remote_path='/tmp',
-                        image_file=os.path.basename(latest_ubimg),
-                        conn=connection)
+                        image_file=os.path.basename(latest_ubimg))
 
     def board_cleanup():
-        common_board_cleanup(conn=connection)
+        common_board_cleanup(connection)
 
     request.addfinalizer(board_cleanup)
 
 @pytest.fixture(scope="session")
 def setup_bbb(request, connection):
     def board_cleanup():
-        common_board_cleanup(conn=connection)
+        common_board_cleanup(connection)
 
-    common_boot_from_internal(conn=connection)
+    common_boot_from_internal(connection)
     request.addfinalizer(board_cleanup)
 
 @pytest.fixture(scope="session")
 def setup_rpi3(request, connection):
     def board_cleanup():
-        common_board_cleanup(conn=connection)
+        common_board_cleanup(connection)
 
-    common_boot_from_internal(conn=connection)
+    common_boot_from_internal(connection)
     request.addfinalizer(board_cleanup)
 
 def setup_qemu(request, build_dir, conn):

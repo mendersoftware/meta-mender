@@ -126,7 +126,7 @@ def pytest_collection_modifyitems(config, items):
     if config.getoption("--test-conversion"):
         # --test-conversion given so do not skip conversion tests
         return
-    skip_conversion = pytest.mark.skip(reason="not yet working in mender-convert")
+    skip_conversion = pytest.mark.skip(reason="conversion tests not yet working in Yocto")
     for item in items:
         if "conversion" in item.keywords:
             item.add_marker(skip_conversion)
