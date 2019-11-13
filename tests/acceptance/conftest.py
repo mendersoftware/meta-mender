@@ -14,15 +14,10 @@
 #    limitations under the License.
 
 import os
-import os.path
 import subprocess
-
-from fabric.api import *
-
-import unittest
-
 from fixtures import *
 
+from common import configuration
 
 def pytest_addoption(parser):
     parser.addoption("--host", action="store", default="localhost:8822",
@@ -59,44 +54,79 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    env.hosts = config.getoption("host")
-    env.user = config.getoption("user")
-
-    env.password = ""
-
-    # Bash not always available, nor currently required:
-    env.shell = "/bin/sh -c"
-
-    # Disable known_hosts file, to avoid "host identification changed" errors.
-    env.disable_known_hosts = True
-
-    env.abort_on_prompts = True
-
-    # Don't allocate pseudo-TTY by default, since it is not fully functional.
-    # It can still be overriden on a case by case basis by passing
-    # "pty = True/False" to the various fabric functions. See
-    # http://www.fabfile.org/faq.html about init scripts.
-    env.always_use_pty = False
-
-    # Don't combine stderr with stdout. The login profile sometimes prints
-    # terminal specific codes there, and we don't want it interfering with our
-    # output. It can still be turned on on a case by case basis by passing
-    # combine_stderr to each run() or sudo() command.
-    env.combine_stderr = False
-
-    env.connection_attempts = 10
-    env.timeout = 30
-
     if not config.getoption("--no-pull"):
         print("Automatically pulling submodules. Use --no-pull to disable")
         subprocess.check_call("git submodule update --init --remote", shell=True)
 
+    # ugly hack to access cli parameters inside common.py functions
+    global configuration
 
-def current_hosts():
-    # Workaround for being inside/outside execute().
-    if env.host_string:
-        # Inside execute(), return current host.
-        return [env.host_string]
-    else:
-        # Outside execute(), return the host(s) we want to run.
-        return env.hosts
+    if config.getoption("--test-conversion"):
+        configuration['conversion'] = True
+    if config.getoption("--test-variables"):
+        configuration['test_variables'] = config.getoption("--test-variables")
+
+
+@pytest.fixture(scope="session")
+def host(request):
+    return request.config.getoption("--host")
+
+@pytest.fixture(scope="session")
+def user(request):
+    return request.config.getoption("--user")
+
+@pytest.fixture(scope="session")
+def http_server(request):
+    return request.config.getoption("--http-server")
+
+@pytest.fixture(scope="session")
+def board_type(request):
+    return request.config.getoption("--board-type")
+
+@pytest.fixture(scope="session")
+def sdimg_location(request):
+    return request.config.getoption("--sdimg-location")
+
+@pytest.fixture(scope="session")
+def mender_image(request):
+    return request.config.getoption("--mender-image")
+
+@pytest.fixture(scope="session")
+def bitbake_image(request):
+    return request.config.getoption("--bitbake-image")
+
+@pytest.fixture(scope="session")
+def conversion(request):
+    return request.config.getoption("--test-conversion")
+
+@pytest.fixture(scope="session")
+def use_s3(request):
+    return request.config.getoption("--use-s3")
+
+@pytest.fixture(scope="session")
+def s3_address(request):
+    return request.config.getoption("--s3-address")
+
+@pytest.fixture(scope="session")
+def no_tmp_build_dir(request):
+    return request.config.getoption("--no-tmp-build-dir")
+
+@pytest.fixture(scope="session")
+def test_variables(request):
+    return request.config.getoption("--test-variables")
+
+@pytest.fixture(autouse=True)
+def commercial_test(request, bitbake_variables):
+    mark = request.node.get_closest_marker('commercial')
+    if mark is not None and not request.config.getoption("--commercial-tests"):
+        pytest.skip("Tests of commercial features are disabled.")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--test-conversion"):
+        # --test-conversion given so do not skip conversion tests
+        return
+    skip_conversion = pytest.mark.skip(reason="conversion tests not yet working in Yocto")
+    for item in items:
+        if "conversion" in item.keywords:
+            item.add_marker(skip_conversion)

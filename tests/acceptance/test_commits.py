@@ -23,7 +23,7 @@ class TestCommits:
         # First find which range to check. Include HEAD and exclude all known
         # upstream branches.
         git_branch = subprocess.check_output(["git", "branch", "-r"])
-        all_branches = [line.split()[0] for line in git_branch.strip().split('\n')]
+        all_branches = [line.split()[0] for line in git_branch.decode().strip().split('\n')]
 
         # Exclude all non-pull requests.
         commit_range = ["HEAD", "--not"]
@@ -46,4 +46,4 @@ class TestCommits:
             # Print output, useful to make sure correct commit range is checked.
             print(output)
         except subprocess.CalledProcessError as e:
-            pytest.fail(e.output)
+            pytest.fail(e.output.decode())

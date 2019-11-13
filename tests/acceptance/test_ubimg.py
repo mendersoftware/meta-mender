@@ -13,8 +13,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from fabric.api import *
-
 import hashlib
 import os
 import pytest
@@ -22,7 +20,6 @@ import shutil
 import subprocess
 import tempfile
 
-# Make sure common is imported after fabric, because we override some functions.
 from common import *
 
 def extract_ubimg_files(path, outdir):
@@ -55,7 +52,7 @@ def extract_ubimg_images(path, outdir):
 
 def extract_ubimg_info(path):
 
-    output = subprocess.check_output("ubireader_utils_info -r {}".format(path), shell=True)
+    output = subprocess.check_output("ubireader_utils_info -r {}".format(path), shell=True).decode()
 
     # Example output from ubireader_utils_info:
     #
@@ -147,8 +144,8 @@ def extract_ubimg_info(path):
     return data
 
 
-@pytest.fixture(scope="session")
-def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build_base):
+@pytest.fixture(scope="function")
+def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build, bitbake_image):
     """The ubireader_utils_info tool and friends don't support our UBI volumes
     that contain the U-Boot environment and hence not valid UBIFS structures.
     Therefore, make a new temporary image that doesn't contain U-Boot."""
@@ -160,12 +157,13 @@ def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build_base):
     if not latest_ubimg:
         pytest.skip("No ubimg found")
 
-    reset_build_conf(prepared_test_build_base)
+    reset_build_conf(prepared_test_build['build_dir'])
+    build_image(prepared_test_build['build_dir'], 
+                prepared_test_build['bitbake_corebase'],
+                bitbake_image,
+                ['MENDER_FEATURES_DISABLE_append = " mender-uboot"'])
 
-    add_to_local_conf(prepared_test_build_base, 'MENDER_FEATURES_DISABLE_append = " mender-uboot"')
-    run_bitbake(prepared_test_build_base)
-
-    ubimg = latest_build_artifact(prepared_test_build_base['build_dir'], "core-image*.ubimg")
+    ubimg = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ubimg")
     imgdir = tempfile.mkdtemp()
     tmpimg = os.path.join(imgdir, os.path.basename(ubimg))
     shutil.copyfile(ubimg, tmpimg)
@@ -240,17 +238,19 @@ class TestUbimg:
             # TODO: verify contents of data partition
 
     @pytest.mark.min_yocto_version("warrior")
-    def test_equal_checksum_ubimg_and_artifact(self, prepared_test_build):
-        build_dir = prepared_test_build['build_dir']
+    def test_equal_checksum_ubimg_and_artifact(self, prepared_test_build, bitbake_image):
 
         # See ubimg_without_uboot_env() for why this is needed. We need to do it
         # explicitly here because we need both the artifact and the ubimg.
-        add_to_local_conf(prepared_test_build, 'MENDER_FEATURES_DISABLE_append = " mender-uboot"')
-        run_bitbake(prepared_test_build)
+
+        build_image(prepared_test_build['build_dir'], 
+                prepared_test_build['bitbake_corebase'],
+                bitbake_image,
+                ['MENDER_FEATURES_DISABLE_append = " mender-uboot"'])
 
         bufsize = 1048576 # 1MiB
         with tempfile.NamedTemporaryFile() as tmp_artifact:
-            latest_mender_image = latest_build_artifact(build_dir, "*.mender")
+            latest_mender_image = latest_build_artifact(prepared_test_build['build_dir'], "*.mender")
             subprocess.check_call("tar xOf %s data/0000.tar.gz | tar xzO > %s" % (latest_mender_image, tmp_artifact.name),
                                   shell=True)
             size = os.stat(tmp_artifact.name).st_size
@@ -266,11 +266,11 @@ class TestUbimg:
 
         tmpdir = tempfile.mkdtemp()
         try:
-            ubifsdir = extract_ubimg_images(latest_build_artifact(build_dir, "*.ubimg"), tmpdir)
+            ubifsdir = extract_ubimg_images(latest_build_artifact(prepared_test_build['build_dir'], "*.ubimg"), tmpdir)
             rootfsa = os.path.join(ubifsdir, [img for img in os.listdir(ubifsdir) if "rootfsa" in img][0])
             bytes_read = 0
             hash = hashlib.md5()
-            with open(rootfsa) as fd:
+            with open(rootfsa, 'rb') as fd:
                 while bytes_read < size:
                     buf = fd.read(min(size - bytes_read, bufsize))
                     if len(buf) == 0:

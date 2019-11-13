@@ -13,9 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from fabric.api import *
-from fabric.contrib.files import append
-import fabric.network
+from fabric import Connection
+from paramiko import SSHException
+from paramiko.ssh_exception import NoValidConnectionsError
 
 from distutils.version import LooseVersion
 import pytest
@@ -24,44 +24,18 @@ import re
 import subprocess
 import time
 import tempfile
-import errno
 import shutil
 import signal
 import sys
 
 from contextlib import contextmanager
-
-import conftest
-
-class ProcessGroupPopen(subprocess.Popen):
-    """Wrapper for subprocess.Popen that starts the underlying process in a
-    separate process group. The wrapper overrides kill() and terminate() so
-    that the corresponding SIGKILL/SIGTERM are sent to the whole process group
-    and not just the forked process.
-
-    Note that ProcessGroupPopen() constructor hijacks preexec_fn parameter.
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        def start_new_session():
-            os.setsid()
-        # for Python > 3.2 it's enough to set start_new_session=True
-        super(ProcessGroupPopen, self).__init__(*args,
-                                                preexec_fn=start_new_session,
-                                                **kwargs)
-
-    def __signal(self, sig):
-        os.killpg(self.pid, sig)
-
-    def terminate(self):
-        self.__signal(signal.SIGTERM)
-
-    def kill(self):
-        self.__signal(signal.SIGKILL)
+import traceback
 
 
-def start_qemu(qenv=None):
+# ugly hack to access cli parameters inside common.py functions
+configuration = {}
+
+def start_qemu(qenv=None, conn=None):
     """Start qemu and return a subprocess.Popen object corresponding to a running
     qemu process. `qenv` is a dict of environment variables that will be added
     to `subprocess.Popen(..,env=)`.
@@ -77,13 +51,12 @@ def start_qemu(qenv=None):
     if qenv:
         env.update(qenv)
 
-    proc = ProcessGroupPopen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
-                             env=env)
+    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+                             env=env, start_new_session=True)
 
     try:
         # make sure we are connected.
-        execute(run_after_connect, "true", hosts = conftest.current_hosts())
-        execute(qemu_prep_after_boot, hosts = conftest.current_hosts())
+        run_after_connect("true", conn)
     except:
         # or do the necessary cleanup if we're not
         try:
@@ -94,13 +67,12 @@ def start_qemu(qenv=None):
             pass
 
         proc.wait()
-
         raise
 
     return proc
 
 
-def start_qemu_block_storage(latest_sdimg, suffix):
+def start_qemu_block_storage(latest_sdimg, suffix, conn):
     """Start qemu instance running block storage"""
     fh, img_path = tempfile.mkstemp(suffix=suffix, prefix="test-image")
     # don't need an open fd to temp file
@@ -114,7 +86,7 @@ def start_qemu_block_storage(latest_sdimg, suffix):
     qenv["DISK_IMG"] = img_path
 
     try:
-        qemu = start_qemu(qenv)
+        qemu = start_qemu(qenv, conn)
     except:
         os.remove(img_path)
         raise
@@ -122,7 +94,7 @@ def start_qemu_block_storage(latest_sdimg, suffix):
     return qemu, img_path
 
 
-def start_qemu_flash(latest_vexpress_nor):
+def start_qemu_flash(latest_vexpress_nor, conn):
     """Start qemu instance running *.vexpress-nor image"""
 
     print("qemu raw flash with image {}".format(latest_vexpress_nor))
@@ -146,7 +118,7 @@ def start_qemu_flash(latest_vexpress_nor):
     qenv["MACHINE"] = "vexpress-qemu-flash"
 
     try:
-        qemu = start_qemu(qenv)
+        qemu = start_qemu(qenv, conn)
     except:
         os.remove(img_path)
         raise
@@ -154,23 +126,22 @@ def start_qemu_flash(latest_vexpress_nor):
     return qemu, img_path
 
 
-def reboot(wait = 120):
-    with settings(warn_only = True):
-        try:
-            run("reboot")
-        except:
-            # qemux86-64 is so fast that sometimes the above call fails with
-            # an exception because the connection was broken before we returned.
-            # So catch everything, even though it might hide real errors (but
-            # those will probably be caught below after the timeout).
-            pass
+def reboot(conn, wait=120):
+    try:
+        conn.run("reboot", warn=True)
+    except:
+        # qemux86-64 is so fast that sometimes the above call fails with
+        # an exception because the connection was broken before we returned.
+        # So catch everything, even though it might hide real errors (but
+        # those will probably be caught below after the timeout).
+        pass
 
     # Make sure reboot has had time to take effect.
     time.sleep(5)
 
     for attempt in range(5):
         try:
-            fabric.network.disconnect_all()
+            conn.close()
             break
         except IOError:
             # Occasionally we get an IO error here because resource is temporarily
@@ -178,70 +149,54 @@ def reboot(wait = 120):
             time.sleep(5)
             continue
 
-    run_after_connect("true", wait)
-
-    qemu_prep_after_boot()
+    run_after_connect("true", conn, wait=wait)
 
 
-def run_after_connect(cmd, wait=360):
-    output = ""
-    start_time = time.time()
+def run_after_connect(cmd, conn, wait=360):
+    # override the Connection parameters
+    orig_timeout = conn.connect_timeout
+    conn.connect_timeout = 60
+    timeout = time.time() + 60*3
 
-    with settings(timeout=30, abort_exception=Exception):
-        while True:
-            attempt_time = time.time()
-            try:
-                output = run(cmd)
-                break
-            except BaseException as e:
-                print("Could not connect to host %s: %s" % (env.host_string, e))
-                if attempt_time >= start_time + wait:
-                    raise Exception("Could not reconnect to host")
-                now = time.time()
-                if now - attempt_time < 5:
-                    time.sleep(60)
-                continue
-    return output
-
-
-def ssh_prep_args():
-    return ssh_prep_args_impl("ssh")
-
-
-def scp_prep_args():
-    return ssh_prep_args_impl("scp")
-
-
-def ssh_prep_args_impl(tool):
-    if not env.host_string:
-        raise Exception("get()/put() called outside of execute()")
-
-    cmd = ("%s -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" %
-           tool)
-
-    host_parts = env.host_string.split(":")
-    host = ""
-    port = ""
-    port_flag = "-p"
-    if tool == "scp":
-        port_flag = "-P"
-    if len(host_parts) == 2:
-        host = host_parts[0]
-        port = "%s%s" % (port_flag, host_parts[1])
-    elif len(host_parts) == 1:
-        host = host_parts[0]
-        port = ""
-    else:
-        raise Exception("Malformed host string")
-
-    return (cmd, host, port)
+    while time.time() < timeout:
+        try:
+            print("will try to connect to host", conn.host)
+            result = conn.run(cmd, hide=True)
+            return result.stdout
+        except NoValidConnectionsError as e:
+            print("Could not connect to host %s: %s" % (conn.host, e))
+            time.sleep(30)
+            continue
+        except SSHException as e:
+            print("Got SSH exception while connecting to host %s: %s" % (conn.host, e))
+            if not ("Connection reset by peer" in str(e) or 
+                    "Error reading SSH protocol banner" in str(e) or 
+                    "No existing session" in str(e)):
+                raise e
+            time.sleep(30)
+            continue
+        except OSError as e:
+            # The OSError is happening while there is no QEMU instance initialized
+            print("Got OSError exception while connecting to host %s: %s" % (conn.host, e))
+            if not "Cannot assign requested address" in str(e):
+                raise e
+            time.sleep(30)
+            continue
+        except Exception as e:
+            print("Generic exception happened while connecting to host %s: %s" % (conn.host, e))
+            print(type(e))
+            print(e.args)
+            raise e
+        finally:
+            # Restore the original connection parameters
+            conn.connect_timeout = orig_timeout
 
 
-def determine_active_passive_part(bitbake_variables):
+def determine_active_passive_part(bitbake_variables, conn):
     """Given the output from mount, determine the currently active and passive
     partitions, returning them as a pair in that order."""
 
-    mount_output = run("mount")
+    mount_output = conn.run("mount").stdout
     a = bitbake_variables["MENDER_ROOTFS_PART_A"]
     b = bitbake_variables["MENDER_ROOTFS_PART_B"]
 
@@ -255,38 +210,30 @@ def determine_active_passive_part(bitbake_variables):
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
-def put(file, local_path = ".", remote_path = "."):
-    (scp, host, port) = scp_prep_args()
+def put_no_sftp(file, conn, remote = "."):
+    cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
-    local("%s %s %s/%s %s@%s:%s" %
-          (scp, port, local_path, file, env.user, host, remote_path))
+    try:
+        conn.local("%s -P %s %s %s@%s:%s" %
+            (cmd, conn.port, file, conn.user, conn.host, remote))
+    except Exception as e:
+        print("exception while putting file: ", e)
+        raise e
 
-
-# See comment for put().
-def get(file, local_path = ".", remote_path = "."):
-    (scp, host, port) = scp_prep_args()
-
-    local("%s %s %s@%s:%s/%s %s" %
-          (scp, port, env.user, host, remote_path, file, local_path))
-
-
-def qemu_prep_after_boot():
-    # Nothing needed ATM.
-    pass
+# Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
+def get_no_sftp(file, conn, local = "."):
+    cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    conn.local("%s -P %s %s@%s:%s %s" %
+          (cmd, conn.port, conn.user, conn.host, file, local))
 
 
-def qemu_prep_fresh_host():
-    # Nothing needed ATM.
-    pass
-
-
-def manual_uboot_commit():
-    run("fw_setenv upgrade_available 0")
-    run("fw_setenv bootcount 0")
+def manual_uboot_commit(conn):
+    conn.run("fw_setenv upgrade_available 0")
+    conn.run("fw_setenv bootcount 0")
 
 
 
-def common_board_setup(files=None, remote_path='/tmp', image_file=None):
+def common_board_setup(conn, files=None, remote_path='/tmp', image_file=None):
     """
     Deploy and activate an image to a board that usese mender-qa tools.
 
@@ -295,51 +242,49 @@ def common_board_setup(files=None, remote_path='/tmp', image_file=None):
     :param files: list of files to deploy
     """
     for f in files:
-        put(os.path.basename(f), local_path=os.path.dirname(f),
-            remote_path=remote_path)
+        put_no_sftp(os.path.basename(f), conn,
+                    remote=os.path.join(remote_path, os.path.basename(f)))
 
     env_overrides = {}
     if image_file:
         env_overrides['IMAGE_FILE'] = image_file
 
-    run("{} mender-qa deploy-test-image".format(' '.join(
+    conn.run("{} mender-qa deploy-test-image".format(' '.join(
         ['{}={}'.format(k, v) for k, v in env_overrides.items()])))
 
-    with settings(warn_only=True):
-        sudo("mender-qa activate-test-image")
+    conn.sudo("mender-qa activate-test-image")
 
-def common_board_cleanup():
-    sudo("mender-qa activate-test-image off")
-    with settings(warn_only=True):
-        sudo("reboot")
+def common_board_cleanup(conn):
+    conn.sudo("mender-qa activate-test-image off")
+    conn.sudo("reboot", warn=True)
 
-    execute(run_after_connect, "true", hosts = conftest.current_hosts())
+    run_after_connect("true", conn)
 
-def common_boot_from_internal():
-    sudo("mender-qa activate-test-image on")
-    with settings(warn_only=True):
-        sudo("reboot")
+def common_boot_from_internal(conn):
+    conn.sudo("mender-qa activate-test-image on")
+    conn.sudo("reboot", warn=True)
 
-    execute(run_after_connect, "true", hosts = conftest.current_hosts())
+    run_after_connect("true", conn)
 
-
-
-def latest_build_artifact(builddir, extension):
-    if pytest.config.getoption('--test-conversion'):
-        sdimg_location = pytest.config.getoption('--sdimg-location')
+def latest_build_artifact(builddir, extension, sdimg_location=None):
+    global configuration
+    
+    if configuration.get("conversion"):
         output = subprocess.check_output(["sh", "-c", "ls -t %s/%s/*%s | grep -v data*%s| head -n 1" % (builddir, sdimg_location, extension, extension)])
     else:
         output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
-    output = output.rstrip('\r\n')
+    output = output.decode().rstrip('\r\n')
     print("Found latest image of type '%s' to be: %s" % (extension, output))
     return output
 
-def get_bitbake_variables(target, env_setup="true", export_only=False, test_conversion=False):
+def get_bitbake_variables(target, env_setup="true", export_only=False):
     current_dir = os.open(".", os.O_RDONLY)
     os.chdir(os.environ['BUILDDIR'])
 
-    if test_conversion:
-        config_file_path = os.path.abspath(pytest.config.getoption('--test-variables'))
+    global configuration
+
+    if configuration.get("conversion"):
+        config_file_path = os.path.abspath(configuration["test_variables"])
         with open(config_file_path, 'r') as config:
             output = config.readlines()
     else:
@@ -347,7 +292,6 @@ def get_bitbake_variables(target, env_setup="true", export_only=False, test_conv
                                   stdout=subprocess.PIPE,
                                   shell=True,
                                   executable="/bin/bash")
-        output= ps.stdout
 
     if export_only:
         export_only_expr = ""
@@ -355,13 +299,16 @@ def get_bitbake_variables(target, env_setup="true", export_only=False, test_conv
         export_only_expr = "?"
     matcher = re.compile('^(?:export )%s([A-Za-z][^=]*)="(.*)"$' % export_only_expr)
     ret = {}
-    for line in output:
-        line = line.strip()
+    while True:
+        line = ps.stdout.readline()
+        if not line:
+            break
+        line = line.decode().strip()
         match = matcher.match(line)
         if match is not None:
             ret[match.group(1)] = match.group(2)
 
-    if not test_conversion:
+    if not "conversion" in configuration:
         ps.wait()
 
     os.fchdir(current_dir)
@@ -413,16 +360,30 @@ def run_verbose(cmd, capture=False):
         return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
 
 # Capture is true or false and conditonally returns output.
-def run_bitbake(prepared_test_build, target=None, capture=False):
-    if target is None:
-        target = prepared_test_build['image_name']
-    cmd = "%s && bitbake %s" % (prepared_test_build['env_setup'], target)
+def build_image(build_dir, bitbake_corebase, bitbake_image, 
+                extra_conf_params=None, extra_bblayers=None, target=None, capture=False):
+    for param in extra_conf_params or []:
+            _add_to_local_conf(build_dir, param)
+    
+    for layer in extra_bblayers or []:
+            _add_to_bblayers_conf(build_dir, layer)
+
+    init_env_cmd = "cd %s && . oe-init-build-env %s" % (bitbake_corebase, build_dir)
+
+    if target:
+        _run_bitbake(target,
+                     init_env_cmd, capture)
+    else:
+        _run_bitbake(bitbake_image, init_env_cmd, capture)
+
+def _run_bitbake(target, env_setup_cmd, capture=False):
+    cmd = "%s && bitbake %s" % (env_setup_cmd, target)
     ps = run_verbose(cmd, capture=subprocess.PIPE)
     output = ""
     try:
         # Cannot use for loop here due to buffering and iterators.
         while True:
-            line = ps.stdout.readline()
+            line = ps.stdout.readline().decode()
             if not line:
                 break
 
@@ -437,7 +398,7 @@ def run_bitbake(prepared_test_build, target=None, capture=False):
         # Empty any remaining lines.
         try:
             if capture:
-                output += ps.stdout.readlines()
+                output += ps.stdout.readlines().decode()
             else:
                 ps.stdout.readlines()
         except:
@@ -451,27 +412,38 @@ def run_bitbake(prepared_test_build, target=None, capture=False):
 
     return output
 
+# Make sure we are constructing the paths the same way always
+def get_local_conf_path(build_dir):
+    return os.path.join(build_dir, "conf", "local.conf")
 
-def add_to_local_conf(prepared_test_build, string):
+def get_local_conf_orig_path(build_dir):
+    return os.path.join(build_dir, "conf", "local.conf.orig")
+
+def get_bblayers_conf_path(build_dir):
+    return os.path.join(build_dir, "conf", "bblayers.conf")
+
+def get_bblayers_conf_orig_path(build_dir):
+    return os.path.join(build_dir, "conf", "bblayers.conf.orig")
+
+def _add_to_local_conf(build_dir, string):
     """Add given string to local.conf before the build. Newline is added
     automatically."""
-
-    with open(prepared_test_build['local_conf'], "a") as fd:
+    with open(os.path.join(build_dir, "conf", "local.conf"), "a") as fd:
         fd.write('\n## ADDED BY TEST\n')
         fd.write("%s\n" % string)
 
-def add_to_bblayers_conf(prepared_test_build, string):
+def _add_to_bblayers_conf(build_dir, string):
     """Add given string to bblayers.conf before the build. Newline is added
     automatically."""
-
-    with open(prepared_test_build['bblayers_conf'], "a") as fd:
+    with open(os.path.join(build_dir, "conf", "bblayers.conf"), "a") as fd:
         fd.write('\n## ADDED BY TEST\n')
         fd.write("%s\n" % string)
 
-def reset_build_conf(prepared_test_build, full_cleanup=False):
+def reset_build_conf(build_dir, full_cleanup=False):
+    # Restore original build configuration
     for conf in ["local", "bblayers"]:
-        new_file = prepared_test_build[conf + '_conf']
-        old_file = prepared_test_build[conf + '_conf_orig']
+        new_file = os.path.join(build_dir, "conf", conf+".conf")
+        old_file = new_file + ".orig"
 
         if os.path.exists(old_file):
             run_verbose("cp %s %s" % (old_file, new_file))

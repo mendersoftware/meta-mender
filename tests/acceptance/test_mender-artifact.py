@@ -13,8 +13,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from fabric.api import *
-
 import pytest
 import subprocess
 import os
@@ -22,7 +20,6 @@ import re
 import json
 import hashlib
 
-# Make sure common is imported after fabric, because we override some functions.
 from common import *
 
 # The format of the artifact file which is tested here is documented at:
@@ -32,7 +29,7 @@ LAST_BUILD_VERSION = None
 
 # params is the versions we will test.
 @pytest.fixture(scope="function", params=[2, 3])
-def versioned_mender_image(request, prepared_test_build, latest_mender_image, bitbake_variables):
+def versioned_mender_image(request, prepared_test_build, latest_mender_image, bitbake_variables, bitbake_image):
     """Gets the correct version of the artifact, whether it's the one we
     build by default, or one we have to produce ourselves.
     Returns a tuple of version and built image."""
@@ -60,8 +57,14 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image, bi
         # above version because the non-default version ends up in a different
         # directory.
         if version != default_version:
-            add_to_local_conf(prepared_test_build, 'MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version)
-        run_bitbake(prepared_test_build)
+            build_image(prepared_test_build['build_dir'], 
+                prepared_test_build['bitbake_corebase'],
+                bitbake_image,
+                ['MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version])
+        else:
+            build_image(prepared_test_build['build_dir'], 
+                prepared_test_build['bitbake_corebase'], bitbake_image)
+
         LAST_BUILD_VERSION = version
     return (version, latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender"))
 
@@ -77,7 +80,12 @@ class TestMenderArtifact:
 
         output = subprocess.Popen(["tar", "tf", mender_image], stdout=subprocess.PIPE)
         line_no = 1
-        for line in output.stdout:
+        
+        while True:
+            line = output.stdout.readline().decode()
+            if not line:
+                break
+
             line = line.rstrip('\n\r')
             if line_no == 1:
                 assert(line == "version")
@@ -101,10 +109,15 @@ class TestMenderArtifact:
         line_no = 1
         type_info_found = False
         meta_data_found = False
-        for line in output.stdout:
+
+        while True:
+            line = output.stdout.readline().decode()
+            if not line:
+                break
             line = line.rstrip('\n\r')
             if line_no == 1:
                 assert(line == "header-info")
+    
             elif line_no == 2 and version < 3:
                 assert(line == "headers/0000/files")
 
@@ -134,14 +147,18 @@ class TestMenderArtifact:
         mender_image = versioned_mender_image[1]
 
         output = subprocess.check_output(["tar", "xOf", mender_image, "manifest"])
-        manifest_list = [line.split()[1] for line in output.strip().split('\n')]
+        manifest_list = [line.split()[1] for line in output.decode().strip().split('\n')]
 
         # By now we know this is present, and superfluous files are tested
         # for elsewhere.
         tar_list = ["version", "header.tar.gz"]
         output = subprocess.Popen(["tar xOf " + mender_image + " data/0000.tar.gz | tar tz"],
                                   stdout=subprocess.PIPE, shell=True)
-        for line in output.stdout:
+        while True:
+            line = output.stdout.readline().decode()
+            if not line:
+                break
+
             line = line.rstrip('\n\r')
             tar_list.append("data/0000/" + line)
         output.wait()
@@ -159,7 +176,8 @@ class TestMenderArtifact:
         output = subprocess.check_output(["tar", "xOf", mender_image, "manifest"])
         manifest_list = []
         hash_map = {}
-        for line in output.strip().split('\n'):
+
+        for line in output.decode().strip().split('\n'):
             manifest_list.append(line.split()[1])
             hash_map[line.split()[1]] = line.split()[0]
 
@@ -204,7 +222,7 @@ class TestMenderArtifact:
         output = subprocess.check_output(["mender-artifact", "read", mender_image])
 
         match = re.search('.*name:\s+(?P<image>[a-z-.0-9]+).*\n.*size:\s+(?P<size>[0-9]+)',
-                          output, flags=re.MULTILINE)
+                          output.decode(), flags=re.MULTILINE)
         assert match
 
         gd = match.groupdict()
