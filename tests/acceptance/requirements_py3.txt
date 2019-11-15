@@ -1,5 +1,6 @@
 pytest>=4.0
 fabric>=2.0
+pytest-html
 paramiko
 python-lzo
 ubi-reader
