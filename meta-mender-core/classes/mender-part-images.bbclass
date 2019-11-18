@@ -263,6 +263,7 @@ _MENDER_PART_IMAGE_DEPENDS = " \
     wic-tools:do_populate_sysroot \
     dosfstools-native:do_populate_sysroot \
     mtools-native:do_populate_sysroot \
+    ${@' '.join([x + ':do_populate_sysroot' for x in d.getVar('WKS_FILE_DEPENDS').split()])} \
 "
 
 
