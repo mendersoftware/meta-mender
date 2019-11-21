@@ -16,6 +16,22 @@ parser.add_argument("option", metavar="OPTION", nargs=1,
                     help="Option to add to Kconfig, expressed as KEY=VALUE.")
 args = parser.parse_args()
 
+def parse_dependencies(depends_string):
+    # if depends_string has multiple alternative dependencies ("A || B"),
+    # select the first one ("A")
+    depends_string = re.split("\s*\|\|\s*", depends_string)[0]
+
+    # if there are parentheses around ("(A && B)"), remove them ("A && B")
+    match = re.match("^\(\s*(.*)\s*\)$", depends_string)
+    if match:
+        depends_string = match[1]
+
+    # if depends_string has multiple required dependencies ("A && B"),
+    # return all of them
+    dependencies = re.split("\s*&&\s*", depends_string)
+
+    return dependencies
+
 def add_kconfig_option(option):
     key, value = option.split("=", 1)
 
@@ -44,14 +60,14 @@ def add_kconfig_option(option):
                     if not inside_option:
                         continue
 
-                    match = re.match("^\s*depends *on *(\S+)", line)
+                    match = re.match("^\s*depends\s*on\s*(.+)", line)
                     if not match:
                         continue
-                    dependee = match.group(1)
-                    if dependee.startswith("!"):
-                        # We're not handling negative dependencies right now.
-                        continue
-                    add_kconfig_option("CONFIG_%s=y" % dependee)
+                    for dependee in parse_dependencies(match.group(1)):
+                        if dependee.startswith("!"):
+                            # We're not handling negative dependencies right now.
+                            continue
+                        add_kconfig_option("CONFIG_%s=y" % dependee)
 
     with open(args.defconfig_file, "a") as fd:
         fd.write("%s\n" % option)
