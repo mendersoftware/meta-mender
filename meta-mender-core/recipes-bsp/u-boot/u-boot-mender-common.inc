@@ -289,7 +289,8 @@ SRC_URI_append_mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE
                                                     '1', \
                                                     ' file://uboot_auto_configure.sh \
                                                       file://uboot_auto_patch.sh \
-                                                      file://add_kconfig_option_with_depends.py', \
+                                                      file://add_kconfig_option_with_depends.py \
+                                                      file://boolean.py', \
                                                     '', \
                                                     d)}"
 
