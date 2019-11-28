@@ -269,6 +269,9 @@ def common_boot_from_internal(conn):
 def latest_build_artifact(builddir, extension, sdimg_location=None):
     global configuration
 
+    # Force the builddir to be an absolute path
+    builddir = os.path.abspath(builddir)
+
     if configuration.get("conversion"):
         output = subprocess.check_output(["sh", "-c", "ls -t %s/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
     else:
