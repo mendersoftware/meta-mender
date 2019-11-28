@@ -268,9 +268,9 @@ def common_boot_from_internal(conn):
 
 def latest_build_artifact(builddir, extension, sdimg_location=None):
     global configuration
-    
+
     if configuration.get("conversion"):
-        output = subprocess.check_output(["sh", "-c", "ls -t %s/%s/*%s | grep -v data*%s| head -n 1" % (builddir, sdimg_location, extension, extension)])
+        output = subprocess.check_output(["sh", "-c", "ls -t %s/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
     else:
         output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
     output = output.decode().rstrip('\r\n')

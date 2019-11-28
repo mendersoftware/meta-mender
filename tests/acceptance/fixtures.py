@@ -263,11 +263,11 @@ def successful_image_update_mender(request, build_image_fn):
 # bitbake related fixtures
 #
 @pytest.fixture(scope="session")
-def bitbake_variables(conversion):
+def bitbake_variables(conversion, sdimg_location):
     """Returns a map of all bitbake variables active for the build."""
 
     if conversion:
-        os.environ['BUILDDIR'] = os.getcwd()
+        os.environ['BUILDDIR'] = sdimg_location
 
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
     return get_bitbake_variables("core-image-minimal")
