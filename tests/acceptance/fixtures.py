@@ -204,12 +204,12 @@ def latest_vexpress_nor():
     return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.vexpress-nor")
 
 @pytest.fixture(scope="session")
-def latest_mender_image(conversion):
+def latest_mender_image(conversion, mender_image):
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
 
     # Find latest built rootfs.
     if conversion:
-        image_name = os.path.splitext(pytest.config.getoption('--mender-image'))[0]
+        image_name = os.path.splitext(mender_image)[0]
         return latest_build_artifact(os.environ['BUILDDIR'], "%s.mender" % image_name)
     else:
         return latest_build_artifact(os.environ['BUILDDIR'], "core-image*.mender")
@@ -263,11 +263,11 @@ def successful_image_update_mender(request, build_image_fn):
 # bitbake related fixtures
 #
 @pytest.fixture(scope="session")
-def bitbake_variables(conversion):
+def bitbake_variables(conversion, sdimg_location):
     """Returns a map of all bitbake variables active for the build."""
 
     if conversion:
-        os.environ['BUILDDIR'] = os.getcwd()
+        os.environ['BUILDDIR'] = sdimg_location
 
     assert(os.environ.get('BUILDDIR', False)), "BUILDDIR must be set"
     return get_bitbake_variables("core-image-minimal")

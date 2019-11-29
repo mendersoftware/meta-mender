@@ -268,9 +268,12 @@ def common_boot_from_internal(conn):
 
 def latest_build_artifact(builddir, extension, sdimg_location=None):
     global configuration
-    
+
+    # Force the builddir to be an absolute path
+    builddir = os.path.abspath(builddir)
+
     if configuration.get("conversion"):
-        output = subprocess.check_output(["sh", "-c", "ls -t %s/%s/*%s | grep -v data*%s| head -n 1" % (builddir, sdimg_location, extension, extension)])
+        output = subprocess.check_output(["sh", "-c", "ls -t %s/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
     else:
         output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
     output = output.decode().rstrip('\r\n')
@@ -278,20 +281,29 @@ def latest_build_artifact(builddir, extension, sdimg_location=None):
     return output
 
 def get_bitbake_variables(target, env_setup="true", export_only=False):
-    current_dir = os.open(".", os.O_RDONLY)
-    os.chdir(os.environ['BUILDDIR'])
-
     global configuration
+    lines = []
 
     if configuration.get("conversion"):
         config_file_path = os.path.abspath(configuration["test_variables"])
         with open(config_file_path, 'r') as config:
-            output = config.readlines()
+            lines = config.readlines()
     else:
+        current_dir = os.open(".", os.O_RDONLY)
+        os.chdir(os.environ['BUILDDIR'])
         ps = subprocess.Popen("%s && bitbake -e %s" % (env_setup, target),
                                   stdout=subprocess.PIPE,
                                   shell=True,
                                   executable="/bin/bash")
+        os.fchdir(current_dir)
+
+        while True:
+            line = ps.stdout.readline()
+            if not line:
+                break
+            lines.append(line.decode())
+
+        ps.wait()
 
     if export_only:
         export_only_expr = ""
@@ -299,19 +311,11 @@ def get_bitbake_variables(target, env_setup="true", export_only=False):
         export_only_expr = "?"
     matcher = re.compile('^(?:export )%s([A-Za-z][^=]*)="(.*)"$' % export_only_expr)
     ret = {}
-    while True:
-        line = ps.stdout.readline()
-        if not line:
-            break
-        line = line.decode().strip()
+    for line in lines:
+        line = line.strip()
         match = matcher.match(line)
         if match is not None:
             ret[match.group(1)] = match.group(2)
-
-    if not "conversion" in configuration:
-        ps.wait()
-
-    os.fchdir(current_dir)
 
     # For some unknown reason, 'MACHINE' is not included in the 'bitbake -e' output.
     # We set MENDER_MACHINE in mender-setup.bbclass as a proxy so look for that instead.
