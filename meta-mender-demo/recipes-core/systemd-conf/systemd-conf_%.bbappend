@@ -5,6 +5,11 @@ SRC_URI += " \
     file://enp.network \
 "
 
+FILES_${PN} += " \
+    ${sysconfdir}/systemd/network/eth.network \
+    ${sysconfdir}/systemd/network/enp.network \
+"
+
 do_install_append() {
         install -d ${D}${sysconfdir}/systemd/network
         install -m 0755 ${WORKDIR}/eth.network ${D}${sysconfdir}/systemd/network
