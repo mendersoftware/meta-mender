@@ -3,20 +3,20 @@
 set -ue
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
-devnode=@MENDER_STORAGE_DEVICE@
+devnode="@MENDER_STORAGE_DEVICE@"
 bootdev="$(echo /dev/$1 | sed 's@/$@@')"
 
-if [ -z ${devnode} ]; then
+if [ -z ${devnode} ] || [ ! -b ${devnode} ]; then
     echo "Searching for hard drives ..."
     devlist=$(fdisk -l 2>&1 | \
-                  grep ^Disk\ /dev | \
+                  grep ^Disk\ /dev.\*: | \
                   grep -v loop | \
                   grep -v sr0 | \
                   grep -v mapper | \
                   grep -v ram | \
                   grep -v 'mmcblk.*boot' | \
                   grep -v ${bootdev} | \
-                  cut -d: -f 1 | cut -d\  -f 2)
+                  cut -d: -f 1 | cut -d\  -f 2 | sort | uniq)
     for dev in ${devlist}; do
         devbase=$(echo $dev | sed 's@/dev/@@')
         echo "Detected block device " ${dev}
