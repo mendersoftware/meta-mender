@@ -10,4 +10,4 @@ RDEPENDS_${PN}_append_qemux86 = " mender-reboot-detector"
 # In our demo package we use busybox, which is built in a generic, non-Yocto
 # way. Therefore we need LSB support so that the dynamic linker is found.
 # Specifically, this creates the symlink /lib64 -> /lib.
-RDEPENDS_${PN}_append = " lsb"
+RDEPENDS_${PN}_append = " lsb-ld"

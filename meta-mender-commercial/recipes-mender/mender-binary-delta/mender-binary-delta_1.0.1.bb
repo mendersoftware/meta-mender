@@ -9,10 +9,10 @@ SRC_URI = "file://${SUB_FOLDER}/mender-binary-delta"
 
 COMPATIBLE_HOSTS = "arm|aarch64|x86_64"
 
-# "lsb" is needed because Yocto by default does not provide a cross platform
+# "lsb-ld" is needed because Yocto by default does not provide a cross platform
 # dynamic linker. On x86_64 this manifests as a missing
 # `/lib64/ld-linux-x86-64.so.2`
-RDEPENDS_${PN} = "lsb xz"
+RDEPENDS_${PN} = "lsb-ld xz"
 
 FILES_${PN} = " \
     ${sysconfdir}/mender/mender-binary-delta.conf \
