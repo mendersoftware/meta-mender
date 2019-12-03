@@ -75,7 +75,7 @@ if [ $BUILD_DEFAULTS = 1 ]; then
     eval "$(bitbake -e $IMAGE_NAME | egrep '^DISTRO_FEATURES=')"
 
     if egrep -q '\bmender-image-uefi\b' <<<"$DISTRO_FEATURES"; then
-        DISK_IMG="$IMAGE_NAME-$MACHINE.uefiimg"
+        DISK_IMG="$(basename $(ls --sort=time $BUILDDIR/tmp/deploy/images/$MACHINE/$IMAGE_NAME-$MACHINE*.uefiimg | head -n1))"
     elif egrep -q '\bmender-image-sd\b' <<<"$DISTRO_FEATURES"; then
         DISK_IMG="$IMAGE_NAME-$MACHINE.sdimg"
     else
