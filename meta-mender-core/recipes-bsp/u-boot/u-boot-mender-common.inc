@@ -98,7 +98,7 @@ do_provide_mender_defines() {
     fi
 
     case "$MENDER_KERNEL_IMAGETYPE" in
-        *uImage*)
+        *uImage*|*fitImage*)
             MENDER_BOOT_KERNEL_TYPE=bootm
             ;;
         *zImage*)
