@@ -86,26 +86,25 @@ python prepare_excluded_directories() {
     exclude_list = exclude_var.split()
 
     rootfs_orig = d.getVar('IMAGE_ROOTFS')
-    # We need a new rootfs directory we can delete files from. Copy to
-    # workdir.
-    new_rootfs = os.path.realpath(os.path.join(d.getVar("WORKDIR"), "rootfs.%s" % taskname))
+    # We need a backup rootfs directory so we can restore during the cleanup phase.
+    rootfs_backup = os.path.realpath(os.path.join(d.getVar("WORKDIR"), "rootfs.%s" % taskname))
 
-    if os.path.lexists(new_rootfs):
-        shutil.rmtree(os.path.join(new_rootfs))
+    if os.path.lexists(rootfs_backup):
+        shutil.rmtree(os.path.join(rootfs_backup))
 
-    copyhardlinktree(rootfs_orig, new_rootfs)
+    copyhardlinktree(rootfs_orig, rootfs_backup)
 
     for orig_path in exclude_list:
         path = orig_path
         if os.path.isabs(path):
             bb.fatal("IMAGE_ROOTFS_EXCLUDE_PATH: Must be relative: %s" % orig_path)
 
-        full_path = os.path.realpath(os.path.join(new_rootfs, path))
+        full_path = os.path.realpath(os.path.join(rootfs_orig, path))
 
         # Disallow climbing outside of parent directory using '..',
         # because doing so could be quite disastrous (we will delete the
         # directory).
-        if not full_path.startswith(new_rootfs):
+        if not full_path.startswith(rootfs_orig):
             bb.fatal("'%s' points to a path outside the rootfs" % orig_path)
 
         if not os.path.lexists(full_path):
@@ -125,8 +124,7 @@ python prepare_excluded_directories() {
             shutil.rmtree(full_path)
 
     # Save old value for cleanup later.
-    d.setVar('IMAGE_ROOTFS_ORIG', rootfs_orig)
-    d.setVar('IMAGE_ROOTFS', new_rootfs)
+    d.setVar('IMAGE_ROOTFS_BACKUP', rootfs_backup)
 }
 
 python cleanup_excluded_directories() {
@@ -140,15 +138,16 @@ python cleanup_excluded_directories() {
         return
 
     import shutil
+    from oe.path import copyhardlinktree
 
-    rootfs_dirs_excluded = d.getVar('IMAGE_ROOTFS')
-    rootfs_orig = d.getVar('IMAGE_ROOTFS_ORIG')
+    rootfs_orig = d.getVar('IMAGE_ROOTFS')
+    rootfs_backup = d.getVar('IMAGE_ROOTFS_BACKUP')
     # This should never happen, since we should have set it to a different
     # directory in the prepare function.
-    assert rootfs_dirs_excluded != rootfs_orig
+    assert rootfs_backup != rootfs_orig
 
-    shutil.rmtree(rootfs_dirs_excluded)
-    d.setVar('IMAGE_ROOTFS', rootfs_orig)
+    copyhardlinktree(rootfs_backup, rootfs_orig)
+    shutil.rmtree(os.path.join(rootfs_backup))
 }
 
 python() {
