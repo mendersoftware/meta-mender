@@ -28,6 +28,7 @@ PACKAGECONFIG[debug-log] = ",,,"
 DEBUG_LOG_CATEGORY ?= "all"
 
 do_provide_debug_log() {
+    install -d ${B}
     echo "debug=${DEBUG_LOG_CATEGORY}" > ${WORKDIR}/01_mender_debug_log_grub.cfg
 }
 python() {
