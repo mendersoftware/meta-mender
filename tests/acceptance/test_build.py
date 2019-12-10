@@ -718,7 +718,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                             "depenceygroup2"])
     ]
 
-    @pytest.mark.min_mender_version('2.2.0')
+    @pytest.mark.min_mender_version('2.3.0')
     @pytest.mark.parametrize('dependsprovides', test_cases)
     def test_build_artifact_depends_and_provides(
             self,
@@ -738,5 +738,11 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
         output = run_verbose("mender-artifact read %s" % image, capture=True).decode()
         other = TestBuild.BuildDependsProvides.parse(output)
+
+        # MEN-2956: Mender-Artifact now writes rootfs-image-checksum by default.
+        # Hence, the checksum should be present in all these test cases.
+        assert "rootfs_image_checksum" in other.provides, "Empty rootfs_image_checksum in the built rootfs-image artifact, this should be added by default by `mender-artifact write rootfs-image`"
+        # Then remove it, not to mess up the expected test output
+        del other.provides["rootfs_image_checksum"]
 
         assert dependsprovides.__dict__ == other.__dict__
