@@ -59,7 +59,7 @@ class TestBuild:
         loader_file = "bootloader.bin"
         loader_offset = 4
 
-        init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'], 
+        init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'],
                                                             prepared_test_build['build_dir'])
         new_bb_vars = get_bitbake_variables("core-image-minimal", env_setup=init_env_cmd)
 
@@ -69,7 +69,7 @@ class TestBuild:
         run_verbose("mkdir -p %s" % os.path.dirname(loader_path))
         run_verbose("cp /etc/os-release %s" % loader_path)
 
-        build_image(prepared_test_build['build_dir'], 
+        build_image(prepared_test_build['build_dir'],
                     prepared_test_build['bitbake_corebase'],
                     bitbake_image,
                     ['MENDER_IMAGE_BOOTLOADER_FILE = "%s"' % loader_file,
@@ -103,7 +103,7 @@ class TestBuild:
         """Test that setting IMAGE_ROOTFS_EXTRA_SPACE to arbitrary values does
         not break the build."""
 
-        build_image(prepared_test_build['build_dir'], 
+        build_image(prepared_test_build['build_dir'],
                     prepared_test_build['bitbake_corebase'],
                     bitbake_image,
                     ['IMAGE_ROOTFS_EXTRA_SPACE_append = " + 640 - 222 + 900"'])
@@ -119,7 +119,7 @@ class TestBuild:
         """Test setting a custom tenant-token"""
 
 
-        build_image(prepared_test_build['build_dir'], 
+        build_image(prepared_test_build['build_dir'],
                     prepared_test_build['bitbake_corebase'],
                     bitbake_image,
                     ['MENDER_TENANT_TOKEN = "%s"' % "authtentoken",
@@ -146,7 +146,7 @@ class TestBuild:
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
 
-        build_image(prepared_test_build['build_dir'], 
+        build_image(prepared_test_build['build_dir'],
                     prepared_test_build['bitbake_corebase'],
                     bitbake_image,
                     ['MENDER_ARTIFACT_SIGNING_KEY = "%s"' % os.path.join(os.getcwd(), signing_key("RSA").private),
@@ -170,7 +170,7 @@ class TestBuild:
 
     @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
     @pytest.mark.min_mender_version("1.2.0")
-    def test_state_scripts(self, prepared_test_build, bitbake_variables, bitbake_path, 
+    def test_state_scripts(self, prepared_test_build, bitbake_variables, bitbake_path,
                            latest_rootfs, latest_mender_image, bitbake_image):
         """Test that state scripts that are specified in the build are included
         correctly."""
@@ -206,7 +206,7 @@ class TestBuild:
 
         try:
             # Alright, now build a new image containing scripts.
-            build_image(prepared_test_build['build_dir'], 
+            build_image(prepared_test_build['build_dir'],
                         prepared_test_build['bitbake_corebase'],
                         bitbake_image,
                         ['IMAGE_INSTALL_append = " example-state-scripts"'])
@@ -260,7 +260,7 @@ class TestBuild:
             # necessary, but unfortunately bitbake does not clean up deployment
             # files from recipes that are not included in the current build, so
             # we have to do it manually.
-            build_image(prepared_test_build['build_dir'], 
+            build_image(prepared_test_build['build_dir'],
                         prepared_test_build['bitbake_corebase'],
                         bitbake_image,
                         target="-c clean example-state-scripts")
@@ -298,7 +298,7 @@ class TestBuild:
                     new_fd.write('PREFERRED_VERSION_%s%s = "%s"\n' % (pn_style, base_recipe, version))
                     new_fd.write('PREFERRED_VERSION_%s%s-native = "%s"\n' % (pn_style, base_recipe, version))
 
-            init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'], 
+            init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'],
                                                             prepared_test_build['build_dir'])
             run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
 
@@ -306,7 +306,7 @@ class TestBuild:
     def test_multiple_device_types_compatible(self, prepared_test_build, bitbake_path, bitbake_variables, bitbake_image):
         """Tests that we can include multiple device_types in the artifact."""
 
-        build_image(prepared_test_build['build_dir'], 
+        build_image(prepared_test_build['build_dir'],
                     prepared_test_build['bitbake_corebase'],
                     bitbake_image,
                     ['MENDER_DEVICE_TYPES_COMPATIBLE = "machine1 machine2"'])
@@ -385,7 +385,7 @@ class TestBuild:
         and that they receive the correct values."""
 
         try:
-            build_image(prepared_test_build['build_dir'], 
+            build_image(prepared_test_build['build_dir'],
                     prepared_test_build['bitbake_corebase'],
                     bitbake_image,
                     ["\n".join(test_case["vars"])])
@@ -393,7 +393,7 @@ class TestBuild:
         except subprocess.CalledProcessError:
             assert not test_case['success'], "Build failed"
 
-        init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'], 
+        init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'],
                                                             prepared_test_build['build_dir'])
         variables = get_bitbake_variables(bitbake_image, env_setup=init_env_cmd)
 
@@ -405,15 +405,15 @@ class TestBuild:
     def test_boot_partition_population(self, prepared_test_build, bitbake_path, bitbake_image):
         # Notice in particular a mix of tabs, newlines and spaces. All there to
         # check that whitespace it treated correctly.
-        
-        build_image(prepared_test_build['build_dir'], 
+
+        build_image(prepared_test_build['build_dir'],
                     prepared_test_build['bitbake_corebase'],
                     bitbake_image,
                     ["""
 IMAGE_INSTALL_append = " test-boot-files"
 
 IMAGE_BOOT_FILES_append = " deployed-test1 deployed-test-dir2/deployed-test2 \
-	deployed-test3;renamed-deployed-test3 \
+    deployed-test3;renamed-deployed-test3 \
  deployed-test-dir4/deployed-test4;renamed-deployed-test4	deployed-test5;renamed-deployed-test-dir5/renamed-deployed-test5 \
 deployed-test-dir6/deployed-test6;renamed-deployed-test-dir6/renamed-deployed-test6 \
 deployed-test-dir7/* \
@@ -440,7 +440,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             assert(all([item in listing for item in expected]))
 
             try:
-                build_image(prepared_test_build['build_dir'], 
+                build_image(prepared_test_build['build_dir'],
                     prepared_test_build['bitbake_corebase'],
                     bitbake_image,
                     ['IMAGE_BOOT_FILES_append = " conflict-test1"'])
@@ -464,13 +464,13 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
         if originally_on:
             assert "modules" in entries
-            build_image(prepared_test_build['build_dir'], 
+            build_image(prepared_test_build['build_dir'],
                     prepared_test_build['bitbake_corebase'],
                     bitbake_image,
                     ['PACKAGECONFIG_remove = "modules"'])
         else:
             assert "modules" not in entries
-            build_image(prepared_test_build['build_dir'], 
+            build_image(prepared_test_build['build_dir'],
                     prepared_test_build['bitbake_corebase'],
                     bitbake_image,
                     ['PACKAGECONFIG_append = " modules"'])
@@ -732,7 +732,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                     prepared_test_build['bitbake_corebase'],
                     bitbake_image,
                     [param for param in str(dependsprovides).splitlines()])
-        
+
 
         image = latest_build_artifact(prepared_test_build['build_dir'], 'core-image*.mender')
 
