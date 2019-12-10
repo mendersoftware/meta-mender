@@ -244,6 +244,7 @@ _MENDER_PART_IMAGE_DEPENDS = " \
     wic-tools:do_populate_sysroot \
     dosfstools-native:do_populate_sysroot \
     mtools-native:do_populate_sysroot \
+    ${@' '.join([x + ':do_populate_sysroot' for x in d.getVar('WKS_FILE_DEPENDS').split()])} \
 "
 _MENDER_PART_IMAGE_DEPENDS += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE', 'btrfs','btrfs-tools-native:do_populate_sysroot','',d)}"
 
