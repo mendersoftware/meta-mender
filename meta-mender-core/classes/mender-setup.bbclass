@@ -156,7 +156,7 @@ MENDER_UBOOT_POST_SETUP_COMMANDS_DEFAULT = ""
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 IMAGE_INSTALL_append = " mender"
-IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg"
+IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg mender-datatar"
 
 # MENDER_FEATURES_ENABLE and MENDER_FEATURES_DISABLE map to
 # DISTRO_FEATURES_BACKFILL and DISTRO_FEATURES_BACKFILL_CONSIDERED,
@@ -204,6 +204,9 @@ python() {
 
         # Use Mender together with U-Boot.
         'mender-uboot',
+
+        # Setup the systemd machine ID to be persistent across OTA updates.
+        'mender-persist-systemd-machine-id',
     }
 
     mfe = d.getVar('MENDER_FEATURES_ENABLE')
