@@ -15,7 +15,7 @@ SRCREV = "1bdd3da8203ec274ad4ff9d0bc6de7907372b074"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
-#DEFAULT_PREFERENCE = "-1"
+DEFAULT_PREFERENCE = "-1"
 
 ################################################################################
 
