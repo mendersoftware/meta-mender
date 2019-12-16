@@ -1,6 +1,6 @@
 include grub-mender-grubenv.inc
 
-SRC_URI = "git://github.com/mendersoftware/grub-mender-grubenv;protocol=https;branch=master"
+SRC_URI = "git://github.com/mendersoftware/grub-mender-grubenv;protocol=https;branch=pr_10"
 
 SRCREV = "b33bb7685454345f8f80da27b7447bdc59e9db55"
 PV = "1.3.0+git${SRCREV}"
