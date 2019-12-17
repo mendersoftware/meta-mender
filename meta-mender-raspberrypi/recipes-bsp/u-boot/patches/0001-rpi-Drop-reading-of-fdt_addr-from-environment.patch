@@ -1,0 +1,33 @@
+From 2daa5becef4560b3b09485162a1978135dbe1e78 Mon Sep 17 00:00:00 2001
+From: Marek Belisko <marek.belisko@open-nandra.com>
+Date: Mon, 20 May 2019 09:10:13 +0200
+Subject: [PATCH 1/1] rpi: Drop reading of fdt_addr from environment
+
+Use always one reported by firmware. It can happen that with manipulation
+with e.g. cmdline.txt fdt_addr is different then stored in in env.
+
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+
+Upstream-status: Pending
+
+---
+ board/raspberrypi/rpi/rpi.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/board/raspberrypi/rpi/rpi.c b/board/raspberrypi/rpi/rpi.c
+index 9dac64b920..de7648cff9 100644
+--- a/board/raspberrypi/rpi/rpi.c
++++ b/board/raspberrypi/rpi/rpi.c
+@@ -324,9 +324,6 @@ static void set_fdtfile(void)
+  */
+ static void set_fdt_addr(void)
+ {
+-	if (env_get("fdt_addr"))
+-		return;
+-
+ 	if (fdt_magic(fw_dtb_pointer) != FDT_MAGIC)
+ 		return;
+
+--
+2.23.0
+
