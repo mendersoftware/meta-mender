@@ -24,6 +24,8 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
+import requests
 
 from common import *
 
@@ -112,14 +114,22 @@ class Helpers:
             Helpers.upload_to_s3(image)
             http_server_location = "{}/mender/temp".format(s3_address)
         else:
-            http_server = subprocess.Popen(["python", "-m", "SimpleHTTPServer"])
+            http_server = subprocess.Popen(["python3", "-m", "http.server"])
             assert(http_server)
+            time.sleep(1)
+            assert requests.head("http://localhost:8000/%s" % (image)).status_code == 200
 
         try:
             output = conn.run("mender %s http://%s/%s" % (install_flag, http_server_location, image))
             print("output from rootfs update: ", output.stdout)
         finally:
             if http_server:
+                try:
+                    status_code = requests.head("http://localhost:8000/%s" % (image)).status_code
+                    if status_code != 200:
+                        print("warning: http server is not accessible, status code %d" % (status_code))
+                except Exception as e:
+                    print("Exception during request" + str(e))
                 http_server.terminate()
 
 

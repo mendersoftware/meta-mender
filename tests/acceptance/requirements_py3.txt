@@ -4,3 +4,4 @@ pytest-html
 paramiko
 python-lzo
 ubi-reader
+requests
