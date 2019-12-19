@@ -122,7 +122,7 @@ ret=0
 for maybe_kvm in -enable-kvm ""; do
     if QEMU_AUDIO_DRV=none \
             $QEMU_SYSTEM \
-            -m 256M \
+            -m 512M \
             $BOOTLOADER_ARG \
             -net nic,macaddr="$RANDOM_MAC" \
             -net user,hostfwd=tcp::8822-:22$QEMU_NET_HOSTFWD \
