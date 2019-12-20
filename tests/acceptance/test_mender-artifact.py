@@ -29,7 +29,9 @@ LAST_BUILD_VERSION = None
 
 # params is the versions we will test.
 @pytest.fixture(scope="function", params=[2, 3])
-def versioned_mender_image(request, prepared_test_build, latest_mender_image, bitbake_variables, bitbake_image):
+def versioned_mender_image(
+    request, prepared_test_build, latest_mender_image, bitbake_variables, bitbake_image
+):
     """Gets the correct version of the artifact, whether it's the one we
     build by default, or one we have to produce ourselves.
     Returns a tuple of version and built image."""
@@ -41,8 +43,13 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image, bi
     if version == 1:
         pytest.failNow()
 
-    if ((version >= 2 and not version_is_minimum(bitbake_variables, "mender-artifact", "2.0.0"))
-        or (version >= 3 and not version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"))):
+    if (
+        version >= 2
+        and not version_is_minimum(bitbake_variables, "mender-artifact", "2.0.0")
+    ) or (
+        version >= 3
+        and not version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0")
+    ):
         pytest.skip("Requires version %d of mender-artifact format." % version)
 
     if version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"):
@@ -57,19 +64,27 @@ def versioned_mender_image(request, prepared_test_build, latest_mender_image, bi
         # above version because the non-default version ends up in a different
         # directory.
         if version != default_version:
-            build_image(prepared_test_build['build_dir'], 
-                prepared_test_build['bitbake_corebase'],
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version])
+                ['MENDER_ARTIFACT_EXTRA_ARGS = "-v %d"' % version],
+            )
         else:
-            build_image(prepared_test_build['build_dir'], 
-                prepared_test_build['bitbake_corebase'], bitbake_image)
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                bitbake_image,
+            )
 
         LAST_BUILD_VERSION = version
-    return (version, latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender"))
+    return (
+        version,
+        latest_build_artifact(prepared_test_build["build_dir"], "core-image*.mender"),
+    )
 
 
-@pytest.mark.only_with_image('mender')
+@pytest.mark.only_with_image("mender")
 class TestMenderArtifact:
     @pytest.mark.min_mender_version("1.0.0")
     def test_order(self, versioned_mender_image):
@@ -80,32 +95,35 @@ class TestMenderArtifact:
 
         output = subprocess.Popen(["tar", "tf", mender_image], stdout=subprocess.PIPE)
         line_no = 1
-        
+
         while True:
             line = output.stdout.readline().decode()
             if not line:
                 break
 
-            line = line.rstrip('\n\r')
+            line = line.rstrip("\n\r")
             if line_no == 1:
-                assert(line == "version")
+                assert line == "version"
             elif line_no == 2:
-                assert(line == "manifest")
+                assert line == "manifest"
             elif line_no == 3:
-                assert(line == "header.tar.gz")
+                assert line == "header.tar.gz"
             elif line_no == 4:
-                assert(line == "data/0000.tar.gz")
+                assert line == "data/0000.tar.gz"
 
-            assert(line_no <= 4)
+            assert line_no <= 4
 
             line_no = line_no + 1
 
         output.wait()
 
-        assert(line_no == 5)
+        assert line_no == 5
 
-        output = subprocess.Popen(["tar xOf " + mender_image + " header.tar.gz | tar tz"],
-                                  stdout=subprocess.PIPE, shell=True)
+        output = subprocess.Popen(
+            ["tar xOf " + mender_image + " header.tar.gz | tar tz"],
+            stdout=subprocess.PIPE,
+            shell=True,
+        )
         line_no = 1
         type_info_found = False
         meta_data_found = False
@@ -114,29 +132,28 @@ class TestMenderArtifact:
             line = output.stdout.readline().decode()
             if not line:
                 break
-            line = line.rstrip('\n\r')
+            line = line.rstrip("\n\r")
             if line_no == 1:
-                assert(line == "header-info")
-    
+                assert line == "header-info"
+
             elif line_no == 2 and version < 3:
-                assert(line == "headers/0000/files")
+                assert line == "headers/0000/files"
 
             elif line == "headers/0000/type-info":
                 type_info_found = True
 
             elif line == "headers/0000/meta-data":
-                assert(type_info_found)
+                assert type_info_found
                 meta_data_found = True
 
             else:
-                assert(False), "Unrecognized line: %s" % line
+                assert False, "Unrecognized line: %s" % line
 
             line_no = line_no + 1
 
         output.wait()
 
-        assert(meta_data_found)
-
+        assert meta_data_found
 
     @pytest.mark.min_mender_version("1.0.0")
     def test_files_list_integrity(self, versioned_mender_image):
@@ -147,24 +164,28 @@ class TestMenderArtifact:
         mender_image = versioned_mender_image[1]
 
         output = subprocess.check_output(["tar", "xOf", mender_image, "manifest"])
-        manifest_list = [line.split()[1] for line in output.decode().strip().split('\n')]
+        manifest_list = [
+            line.split()[1] for line in output.decode().strip().split("\n")
+        ]
 
         # By now we know this is present, and superfluous files are tested
         # for elsewhere.
         tar_list = ["version", "header.tar.gz"]
-        output = subprocess.Popen(["tar xOf " + mender_image + " data/0000.tar.gz | tar tz"],
-                                  stdout=subprocess.PIPE, shell=True)
+        output = subprocess.Popen(
+            ["tar xOf " + mender_image + " data/0000.tar.gz | tar tz"],
+            stdout=subprocess.PIPE,
+            shell=True,
+        )
         while True:
             line = output.stdout.readline().decode()
             if not line:
                 break
 
-            line = line.rstrip('\n\r')
+            line = line.rstrip("\n\r")
             tar_list.append("data/0000/" + line)
         output.wait()
 
-        assert(sorted(manifest_list) == sorted(tar_list))
-
+        assert sorted(manifest_list) == sorted(tar_list)
 
     @pytest.mark.min_mender_version("1.0.0")
     def test_files_checksum_integrity(self, versioned_mender_image):
@@ -177,20 +198,28 @@ class TestMenderArtifact:
         manifest_list = []
         hash_map = {}
 
-        for line in output.decode().strip().split('\n'):
+        for line in output.decode().strip().split("\n"):
             manifest_list.append(line.split()[1])
             hash_map[line.split()[1]] = line.split()[0]
 
         for file in manifest_list:
             if file.startswith("data/0000/"):
                 # Data file, we need to look inside sub-tar.
-                output = subprocess.Popen(["tar xOf " + mender_image +
-                                            " data/0000.tar.gz | tar xzO " + file[len("data/0000/"):]],
-                                            stdout=subprocess.PIPE, shell=True)
+                output = subprocess.Popen(
+                    [
+                        "tar xOf "
+                        + mender_image
+                        + " data/0000.tar.gz | tar xzO "
+                        + file[len("data/0000/") :]
+                    ],
+                    stdout=subprocess.PIPE,
+                    shell=True,
+                )
             else:
                 # Header file, we look in outer tar.
-                output = subprocess.Popen(["tar", "xOf", mender_image, file],
-                                            stdout=subprocess.PIPE)
+                output = subprocess.Popen(
+                    ["tar", "xOf", mender_image, file], stdout=subprocess.PIPE
+                )
             hasher = hashlib.sha256()
             while True:
                 block = output.stdout.read(4096)
@@ -203,7 +232,6 @@ class TestMenderArtifact:
 
             assert hasher.hexdigest() == recorded_hash, "%s doesn't match" % file
 
-
     @pytest.mark.min_mender_version("1.0.0")
     def test_artifacts_validation(self, versioned_mender_image, bitbake_path):
         """Test that the mender-artifact tool validates the update successfully."""
@@ -213,7 +241,9 @@ class TestMenderArtifact:
         subprocess.check_call(["mender-artifact", "validate", mender_image])
 
     @pytest.mark.min_mender_version("1.0.0")
-    def test_artifacts_rootfs_size(self, versioned_mender_image, bitbake_path, bitbake_variables):
+    def test_artifacts_rootfs_size(
+        self, versioned_mender_image, bitbake_path, bitbake_variables
+    ):
         """Test that the rootfs has the expected size. This relies on
         IMAGE_ROOTFS_SIZE *not* being overridden in the build."""
 
@@ -221,18 +251,21 @@ class TestMenderArtifact:
 
         output = subprocess.check_output(["mender-artifact", "read", mender_image])
 
-        match = re.search('.*name:\s+(?P<image>[a-z-.0-9]+).*\n.*size:\s+(?P<size>[0-9]+)',
-                          output.decode(), flags=re.MULTILINE)
+        match = re.search(
+            ".*name:\s+(?P<image>[a-z-.0-9]+).*\n.*size:\s+(?P<size>[0-9]+)",
+            output.decode(),
+            flags=re.MULTILINE,
+        )
         assert match
 
         gd = match.groupdict()
-        assert 'image' in gd and 'size' in gd
+        assert "image" in gd and "size" in gd
 
-        size_from_artifact = int(gd['size'])
+        size_from_artifact = int(gd["size"])
         size_from_build = int(bitbake_variables["MENDER_CALC_ROOTFS_SIZE"]) * 1024
 
-        print('matched:', gd)
-        if re.match('.*\.ubifs', gd['image']):
+        print("matched:", gd)
+        if re.match(".*\.ubifs", gd["image"]):
             # some filesystems (eg. ubifs) may use compression or empty space may
             # not be a part of the image, in which case the image will be smaller
             # or equal to MENDER_CALC_ROOTFS_SIZE
@@ -240,7 +273,7 @@ class TestMenderArtifact:
             # assume that the compressed image will be not less than 30% of
             # allocated rootfs size size
             assert size_from_artifact >= 0.3 * size_from_build
-        elif re.match('.*\.ext[234]', gd['image']):
+        elif re.match(".*\.ext[234]", gd["image"]):
             assert size_from_artifact == size_from_build
         else:
-            pytest.skip('unsupported image artifact {}'.format(gd['image']))
+            pytest.skip("unsupported image artifact {}".format(gd["image"]))

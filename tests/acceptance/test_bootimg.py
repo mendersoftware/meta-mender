@@ -20,19 +20,28 @@ import subprocess
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
 
+
 class TestBootImg:
-    @pytest.mark.min_mender_version('1.0.0')
-    def test_bootimg_creation(self, bitbake_variables, prepared_test_build, bitbake_image):
+    @pytest.mark.min_mender_version("1.0.0")
+    def test_bootimg_creation(
+        self, bitbake_variables, prepared_test_build, bitbake_image
+    ):
         """Test that we can build a bootimg successfully."""
 
-        build_image(prepared_test_build['build_dir'], 
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    ['IMAGE_FSTYPES = "bootimg"'])
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            ['IMAGE_FSTYPES = "bootimg"'],
+        )
 
-        built_img = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.bootimg")
+        built_img = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.bootimg"
+        )
 
-        distro_features = bitbake_variables['DISTRO_FEATURES'].split()
+        distro_features = bitbake_variables["DISTRO_FEATURES"].split()
         if "mender-grub" in distro_features and "mender-image-uefi" in distro_features:
-            output = subprocess.check_output(["mdir", "-i", built_img, "-b", "/EFI/BOOT"]).decode()
-            assert "mender_grubenv1" in output.split('/')
+            output = subprocess.check_output(
+                ["mdir", "-i", built_img, "-b", "/EFI/BOOT"]
+            ).decode()
+            assert "mender_grubenv1" in output.split("/")

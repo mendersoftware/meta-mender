@@ -22,13 +22,15 @@ import tempfile
 
 from common import *
 
+
 def extract_ubimg_files(path, outdir):
     """Extract ubi image to a directory inside `outdir`. Returns path to a the
     directory, where contents of each volume are in direct sub-directories.
     Sub-directories are named after volumes.
     """
-    subprocess.check_call("ubireader_extract_files -o {} {}".format(outdir, path),
-                          shell=True)
+    subprocess.check_call(
+        "ubireader_extract_files -o {} {}".format(outdir, path), shell=True
+    )
     # extract to the following directories:
     # /tmp/meta-mender-acceptance.xzkPVM/148052886/data
     # /tmp/meta-mender-acceptance.xzkPVM/148052886/rootfsa
@@ -36,12 +38,14 @@ def extract_ubimg_files(path, outdir):
     volumes_root = os.path.join(outdir, os.listdir(outdir)[0])
     return volumes_root
 
+
 def extract_ubimg_images(path, outdir):
     """Extract ubi image to a directory inside `outdir`. Returns path to a the
     directory with each image, named after volumes.
     """
-    subprocess.check_call("ubireader_extract_images -o {} {}".format(outdir, path),
-                          shell=True)
+    subprocess.check_call(
+        "ubireader_extract_images -o {} {}".format(outdir, path), shell=True
+    )
     # extract to the following files:
     # /tmp/tmpoJ1z_s/core-image-full-cmdline-vexpress-qemu-flash.ubimg/img-1823796814_vol-rootfsb.ubifs
     # /tmp/tmpoJ1z_s/core-image-full-cmdline-vexpress-qemu-flash.ubimg/img-1823796814_vol-rootfsa.ubifs
@@ -52,7 +56,9 @@ def extract_ubimg_images(path, outdir):
 
 def extract_ubimg_info(path):
 
-    output = subprocess.check_output("ubireader_utils_info -r {}".format(path), shell=True).decode()
+    output = subprocess.check_output(
+        "ubireader_utils_info -r {}".format(path), shell=True
+    ).decode()
 
     # Example output from ubireader_utils_info:
     #
@@ -88,7 +94,7 @@ def extract_ubimg_info(path):
     volume = None
     ubinize = None
 
-    for line in output.split('\n'):
+    for line in output.split("\n"):
         line = line.strip()
         if not line:
             continue
@@ -96,35 +102,35 @@ def extract_ubimg_info(path):
         pieces = line.split()
         # print("pieces", pieces, line)
 
-        if pieces[0] == 'Volume':
+        if pieces[0] == "Volume":
             # reached 'Volume <volname>' banner
 
             # save old volume information
             if ubinize and volume:
-                volume['ubinize'] = ubinize
+                volume["ubinize"] = ubinize
             if volume:
-                data[volume['name']] = volume
+                data[volume["name"]] = volume
 
             # start new volume and ubinize
-            volume = {'name': pieces[1]}
+            volume = {"name": pieces[1]}
             ubinize = None
 
         elif volume is not None:
             # inside volume
 
-            if pieces[0] == '#ubinize.ini#':
+            if pieces[0] == "#ubinize.ini#":
                 # reached '#ubinize.ini#' banner
                 ubinize = {}
 
             elif ubinize is not None:
                 # currently parsing ubninize.ini part
 
-                if pieces[0] == '[{}]'.format(volume['name']):
+                if pieces[0] == "[{}]".format(volume["name"]):
                     # hit [<volname>] line
                     continue
 
-                elif '=' in pieces[0]:
-                    param, val = pieces[0].split('=')
+                elif "=" in pieces[0]:
+                    param, val = pieces[0].split("=")
                     ubinize[param] = val
 
             else:
@@ -135,10 +141,10 @@ def extract_ubimg_info(path):
     # parsing finished
 
     # save last parsed volume information
-    if ubinize and not 'ubinize' in volume:
-        volume['ubinize'] = ubinize
-    if volume and not volume['name'] in data:
-        data[volume['name']] = volume
+    if ubinize and not "ubinize" in volume:
+        volume["ubinize"] = ubinize
+    if volume and not volume["name"] in data:
+        data[volume["name"]] = volume
 
     # print('volume data:', data)
     return data
@@ -157,38 +163,43 @@ def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build, bitbake_
     if not latest_ubimg:
         pytest.skip("No ubimg found")
 
-    reset_build_conf(prepared_test_build['build_dir'])
-    build_image(prepared_test_build['build_dir'], 
-                prepared_test_build['bitbake_corebase'],
-                bitbake_image,
-                ['MENDER_FEATURES_DISABLE_append = " mender-uboot"'])
+    reset_build_conf(prepared_test_build["build_dir"])
+    build_image(
+        prepared_test_build["build_dir"],
+        prepared_test_build["bitbake_corebase"],
+        bitbake_image,
+        ['MENDER_FEATURES_DISABLE_append = " mender-uboot"'],
+    )
 
-    ubimg = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ubimg")
+    ubimg = latest_build_artifact(prepared_test_build["build_dir"], "core-image*.ubimg")
     imgdir = tempfile.mkdtemp()
     tmpimg = os.path.join(imgdir, os.path.basename(ubimg))
     shutil.copyfile(ubimg, tmpimg)
 
     def remove_ubimg():
         os.unlink(tmpimg)
+
     request.addfinalizer(remove_ubimg)
 
     return tmpimg
 
 
-@pytest.mark.only_with_image('ubimg')
-@pytest.mark.min_mender_version('1.2.0')
+@pytest.mark.only_with_image("ubimg")
+@pytest.mark.min_mender_version("1.2.0")
 class TestUbimg:
     def test_total_size(self, bitbake_variables, ubimg_without_uboot_env):
         """Test that the size of the ubimg and its volumes are correct."""
 
         total_size_file = os.stat(ubimg_without_uboot_env).st_size
-        total_size_max_expected = int(bitbake_variables['MENDER_STORAGE_TOTAL_SIZE_MB']) * 1024 * 1024
+        total_size_max_expected = (
+            int(bitbake_variables["MENDER_STORAGE_TOTAL_SIZE_MB"]) * 1024 * 1024
+        )
 
         assert total_size_file <= total_size_max_expected
 
-        data_size = int(bitbake_variables['MENDER_DATA_PART_SIZE_MB']) * 1024 * 1024
+        data_size = int(bitbake_variables["MENDER_DATA_PART_SIZE_MB"]) * 1024 * 1024
         # rootfs size is in kB
-        rootfs_size = int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024
+        rootfs_size = int(bitbake_variables["MENDER_CALC_ROOTFS_SIZE"]) * 1024
 
         expected_total = data_size + rootfs_size * 2
 
@@ -196,7 +207,7 @@ class TestUbimg:
         # will be less than what we calculated
         assert total_size_file < expected_total
 
-        if rootfs_size < 100*1024*1024:
+        if rootfs_size < 100 * 1024 * 1024:
             # assume the image will not be less than 30% of expected size, but
             # only if calculated rootfs is of modest size
             assert total_size_file > 0.3 * expected_total
@@ -215,17 +226,17 @@ class TestUbimg:
 
         # we're expecting 3 volumes, rootfsa, rootfsb and data
         assert len(ubinfo) == 3
-        assert all([volname in ubinfo for volname in ['rootfsa', 'rootfsb', 'data']])
+        assert all([volname in ubinfo for volname in ["rootfsa", "rootfsb", "data"]])
 
-        data_size = int(bitbake_variables['MENDER_DATA_PART_SIZE_MB']) * 1024 * 1024
+        data_size = int(bitbake_variables["MENDER_DATA_PART_SIZE_MB"]) * 1024 * 1024
         # rootfs size is in kB
-        rootfs_size = int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024
+        rootfs_size = int(bitbake_variables["MENDER_CALC_ROOTFS_SIZE"]) * 1024
 
         # UBI adds overhead, so the actual volume size will be slightly more
         # than what requested. add 2% for overhead
-        assert int(ubinfo['data']['ubinize']['vol_size']) <= 1.02 * data_size
-        assert int(ubinfo['rootfsa']['ubinize']['vol_size']) <= 1.02 * rootfs_size
-        assert int(ubinfo['rootfsb']['ubinize']['vol_size']) <= 1.02 * rootfs_size
+        assert int(ubinfo["data"]["ubinize"]["vol_size"]) <= 1.02 * data_size
+        assert int(ubinfo["rootfsa"]["ubinize"]["vol_size"]) <= 1.02 * rootfs_size
+        assert int(ubinfo["rootfsb"]["ubinize"]["vol_size"]) <= 1.02 * rootfs_size
 
     def test_volume_contents(self, bitbake_variables, ubimg_without_uboot_env):
         """Test that data volume has correct contents"""
@@ -233,26 +244,35 @@ class TestUbimg:
         with make_tempdir() as tmpdir:
             rootdir = extract_ubimg_files(ubimg_without_uboot_env, tmpdir)
 
-            assert os.path.exists(os.path.join(rootdir, 'rootfsa/usr/bin/mender'))
-            assert os.path.exists(os.path.join(rootdir, 'rootfsb/usr/bin/mender'))
+            assert os.path.exists(os.path.join(rootdir, "rootfsa/usr/bin/mender"))
+            assert os.path.exists(os.path.join(rootdir, "rootfsb/usr/bin/mender"))
             # TODO: verify contents of data partition
 
     @pytest.mark.min_yocto_version("warrior")
-    def test_equal_checksum_ubimg_and_artifact(self, prepared_test_build, bitbake_image):
+    def test_equal_checksum_ubimg_and_artifact(
+        self, prepared_test_build, bitbake_image
+    ):
 
         # See ubimg_without_uboot_env() for why this is needed. We need to do it
         # explicitly here because we need both the artifact and the ubimg.
 
-        build_image(prepared_test_build['build_dir'], 
-                prepared_test_build['bitbake_corebase'],
-                bitbake_image,
-                ['MENDER_FEATURES_DISABLE_append = " mender-uboot"'])
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            ['MENDER_FEATURES_DISABLE_append = " mender-uboot"'],
+        )
 
-        bufsize = 1048576 # 1MiB
+        bufsize = 1048576  # 1MiB
         with tempfile.NamedTemporaryFile() as tmp_artifact:
-            latest_mender_image = latest_build_artifact(prepared_test_build['build_dir'], "*.mender")
-            subprocess.check_call("tar xOf %s data/0000.tar.gz | tar xzO > %s" % (latest_mender_image, tmp_artifact.name),
-                                  shell=True)
+            latest_mender_image = latest_build_artifact(
+                prepared_test_build["build_dir"], "*.mender"
+            )
+            subprocess.check_call(
+                "tar xOf %s data/0000.tar.gz | tar xzO > %s"
+                % (latest_mender_image, tmp_artifact.name),
+                shell=True,
+            )
             size = os.stat(tmp_artifact.name).st_size
             hash = hashlib.md5()
             while True:
@@ -261,16 +281,23 @@ class TestUbimg:
                     break
                 hash.update(buf)
             artifact_hash = hash.hexdigest()
-            artifact_info = subprocess.check_output(["ubireader_display_info", tmp_artifact.name])
+            artifact_info = subprocess.check_output(
+                ["ubireader_display_info", tmp_artifact.name]
+            )
             artifact_ls = subprocess.check_output(["ls", "-l", tmp_artifact.name])
 
         tmpdir = tempfile.mkdtemp()
         try:
-            ubifsdir = extract_ubimg_images(latest_build_artifact(prepared_test_build['build_dir'], "*.ubimg"), tmpdir)
-            rootfsa = os.path.join(ubifsdir, [img for img in os.listdir(ubifsdir) if "rootfsa" in img][0])
+            ubifsdir = extract_ubimg_images(
+                latest_build_artifact(prepared_test_build["build_dir"], "*.ubimg"),
+                tmpdir,
+            )
+            rootfsa = os.path.join(
+                ubifsdir, [img for img in os.listdir(ubifsdir) if "rootfsa" in img][0]
+            )
             bytes_read = 0
             hash = hashlib.md5()
-            with open(rootfsa, 'rb') as fd:
+            with open(rootfsa, "rb") as fd:
                 while bytes_read < size:
                     buf = fd.read(min(size - bytes_read, bufsize))
                     if len(buf) == 0:
@@ -284,4 +311,7 @@ class TestUbimg:
             shutil.rmtree(tmpdir)
 
         assert artifact_info == image_info
-        assert artifact_hash == image_hash, "Artifact:\n%s\nImage:\n%s" % (artifact_ls, image_ls)
+        assert artifact_hash == image_hash, "Artifact:\n%s\nImage:\n%s" % (
+            artifact_ls,
+            image_ls,
+        )

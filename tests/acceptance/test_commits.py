@@ -17,13 +17,16 @@ import pytest
 import re
 import subprocess
 
+
 @pytest.mark.min_mender_version("1.0.0")
 class TestCommits:
     def test_commits(self):
         # First find which range to check. Include HEAD and exclude all known
         # upstream branches.
         git_branch = subprocess.check_output(["git", "branch", "-r"])
-        all_branches = [line.split()[0] for line in git_branch.decode().strip().split('\n')]
+        all_branches = [
+            line.split()[0] for line in git_branch.decode().strip().split("\n")
+        ]
 
         # Exclude all non-pull requests.
         commit_range = ["HEAD", "--not"]
@@ -41,8 +44,10 @@ class TestCommits:
             commit_range.append(branch)
 
         try:
-            output = subprocess.check_output(["3rdparty/mendertesting/check_commits.sh"] + commit_range,
-                                             stderr=subprocess.STDOUT)
+            output = subprocess.check_output(
+                ["3rdparty/mendertesting/check_commits.sh"] + commit_range,
+                stderr=subprocess.STDOUT,
+            )
             # Print output, useful to make sure correct commit range is checked.
             print(output)
         except subprocess.CalledProcessError as e:
