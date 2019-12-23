@@ -29,3 +29,6 @@ PREFERRED_PROVIDER_grub-efi ?= "grub-efi"
 PREFERRED_RPROVIDER_grub-efi ?= "grub-efi"
 PREFERRED_PROVIDER_grub-editenv ?= "grub"
 PREFERRED_RPROVIDER_grub-editenv ?= "grub"
+
+PREFERRED_PROVIDER_virtual/grub-bootconf ?= "grub-mender-grubenv"
+PREFERRED_RPROVIDER_virtual/grub-bootconf ?= "grub-mender-grubenv"
