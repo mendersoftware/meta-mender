@@ -1,5 +1,7 @@
 inherit mender-helpers
 
+RPROVIDES_${PN} += "virtual/grub-bootconf"
+
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 GRUB_CONF_LOCATION = "${MENDER_BOOT_PART_MOUNT_LOCATION}/EFI/BOOT"
