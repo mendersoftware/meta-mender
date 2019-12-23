@@ -25,3 +25,7 @@ PREFERRED_RPROVIDER_grub-editenv ?= "grub"
 
 PREFERRED_PROVIDER_virtual/grub-bootconf ?= "grub-mender-grubenv"
 PREFERRED_RPROVIDER_virtual/grub-bootconf ?= "grub-mender-grubenv"
+
+# Set EFI_PROVIDER.  Not all MACHINE configs use it but notably
+# intel-corei7-64 does and without this we use the default of systemd-boot.
+EFI_PROVIDER_mender-grub="grub-efi"
