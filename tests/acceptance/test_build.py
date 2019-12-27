@@ -432,7 +432,12 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             ]
             assert(all([item in listing for item in expected]))
 
+            # Conflicting file with the same content should pass.
             add_to_local_conf(prepared_test_build, 'IMAGE_BOOT_FILES_append = " conflict-test1"')
+            run_bitbake(prepared_test_build)
+
+            # Conflicting file with different content should fail.
+            add_to_local_conf(prepared_test_build, 'IMAGE_BOOT_FILES_append = " conflict-test2"')
             try:
                 run_bitbake(prepared_test_build)
                 pytest.fail("Bitbake succeeded, but should have failed with a file conflict")
