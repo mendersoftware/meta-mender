@@ -284,9 +284,12 @@ mender_merge_bootfs_and_image_boot_files() {
                 destfile="$W/$dest"
             fi
             if [ -e "$destfile" ]; then
-                bbfatal "$destfile already exists in boot partition. Please verify that packages do not put files in the boot partition that conflict with IMAGE_BOOT_FILES."
+                if ! cmp --quiet "$file" "$destfile"; then
+                    bbfatal "$destfile already exists in boot partition. Please verify that packages do not put files in the boot partition that conflict with IMAGE_BOOT_FILES."
+                fi
+            else
+                cp -l "$file" "$destfile"
             fi
-            cp -l "$file" "$destfile"
         done
     done
 }
