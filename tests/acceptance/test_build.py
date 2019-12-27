@@ -605,12 +605,21 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             ]
             assert all([item in listing for item in expected])
 
+            # Conflicting file with the same content should pass.
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                bitbake_image,
+                ['IMAGE_BOOT_FILES_append = " conflict-test1"'],
+            )
+
+            # Conflicting file with different content should fail.
             try:
                 build_image(
                     prepared_test_build["build_dir"],
                     prepared_test_build["bitbake_corebase"],
                     bitbake_image,
-                    ['IMAGE_BOOT_FILES_append = " conflict-test1"'],
+                    ['IMAGE_BOOT_FILES_append = " conflict-test2"'],
                 )
                 pytest.fail(
                     "Bitbake succeeded, but should have failed with a file conflict"
