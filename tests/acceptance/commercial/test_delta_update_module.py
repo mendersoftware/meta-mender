@@ -18,25 +18,36 @@ import subprocess
 
 from common import *
 
+
 @pytest.mark.commercial
 @pytest.mark.min_mender_version("2.1.0")
 class TestDeltaUpdateModule:
+    @pytest.mark.only_with_image("ext4")
+    def test_build_and_run_module(
+        self, bitbake_variables, prepared_test_build, bitbake_image
+    ):
 
-    @pytest.mark.only_with_image('ext4')
-    def test_build_and_run_module(self, bitbake_variables, prepared_test_build, bitbake_image):
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            ['IMAGE_INSTALL_append = " mender-binary-delta"'],
+            [
+                'BBLAYERS_append = " %s/../meta-mender-commercial"'
+                % bitbake_variables["LAYERDIR_MENDER"]
+            ],
+        )
 
-        build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    ['IMAGE_INSTALL_append = " mender-binary-delta"'],
-                    ['BBLAYERS_append = " %s/../meta-mender-commercial"' % bitbake_variables['LAYERDIR_MENDER']])
-
-
-
-        image = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")
-        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", image]).decode()
+        image = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.ext4"
+        )
+        output = subprocess.check_output(
+            ["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", image]
+        ).decode()
 
         # Debugfs has output like this:
         #   /3018/100755/0/0/mender-binary-delta/142672/
         #   /3015/100755/0/0/rootfs-image-v2/1606/
-        assert "mender-binary-delta" in [line.split('/')[5] for line in output.split('\n') if line.startswith('/')]
+        assert "mender-binary-delta" in [
+            line.split("/")[5] for line in output.split("\n") if line.startswith("/")
+        ]

@@ -21,21 +21,31 @@ import json
 
 from common import *
 
+
 def extract_partition(img, number):
-    output = subprocess.Popen(["fdisk", "-l", "-o", "device,start,end", img],
-                              stdout=subprocess.PIPE)
+    output = subprocess.Popen(
+        ["fdisk", "-l", "-o", "device,start,end", img], stdout=subprocess.PIPE
+    )
     for line in output.stdout:
         if re.search("img%d" % number, line.decode()) is None:
             continue
 
         match = re.match("\s*\S+\s+(\S+)\s+(\S+)", line.decode())
-        assert(match is not None)
+        assert match is not None
         start = int(match.group(1))
-        end = (int(match.group(2)) + 1)
+        end = int(match.group(2)) + 1
     output.wait()
 
-    subprocess.check_call(["dd", "if=" + img, "of=img%d.fs" % number,
-                           "skip=%d" % start, "count=%d" % (end - start)])
+    subprocess.check_call(
+        [
+            "dd",
+            "if=" + img,
+            "of=img%d.fs" % number,
+            "skip=%d" % start,
+            "count=%d" % (end - start),
+        ]
+    )
+
 
 class TestBuild:
     @pytest.mark.min_mender_version("1.0.0")
@@ -43,14 +53,18 @@ class TestBuild:
         """Test that the md5sum we have on record matches the server certificate.
         This makes sure the warning about this certificate is correct."""
 
-        output = subprocess.check_output(["md5sum", "../../meta-mender-demo/recipes-mender/mender/files/server.crt"])
+        output = subprocess.check_output(
+            ["md5sum", "../../meta-mender-demo/recipes-mender/mender/files/server.crt"]
+        )
 
         # Crude check, just make sure it occurs in the build file.
-        subprocess.check_call("fgrep %s ../../meta-mender-core/recipes-mender/mender/mender.inc >/dev/null 2>&1"
-                              % output.decode().split()[0], shell=True)
+        subprocess.check_call(
+            "fgrep %s ../../meta-mender-core/recipes-mender/mender/mender.inc >/dev/null 2>&1"
+            % output.decode().split()[0],
+            shell=True,
+        )
 
-
-    @pytest.mark.only_with_image('sdimg')
+    @pytest.mark.only_with_image("sdimg")
     @pytest.mark.min_mender_version("1.0.0")
     def test_bootloader_embed(self, prepared_test_build, bitbake_image):
         """Test that MENDER_IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
@@ -59,23 +73,33 @@ class TestBuild:
         loader_file = "bootloader.bin"
         loader_offset = 4
 
-        init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'],
-                                                            prepared_test_build['build_dir'])
-        new_bb_vars = get_bitbake_variables("core-image-minimal", env_setup=init_env_cmd)
+        init_env_cmd = "cd %s && . oe-init-build-env %s" % (
+            prepared_test_build["bitbake_corebase"],
+            prepared_test_build["build_dir"],
+        )
+        new_bb_vars = get_bitbake_variables(
+            "core-image-minimal", env_setup=init_env_cmd
+        )
 
-        loader_dir = new_bb_vars['DEPLOY_DIR_IMAGE']
+        loader_dir = new_bb_vars["DEPLOY_DIR_IMAGE"]
         loader_path = os.path.join(loader_dir, loader_file)
 
         run_verbose("mkdir -p %s" % os.path.dirname(loader_path))
         run_verbose("cp /etc/os-release %s" % loader_path)
 
-        build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    ['MENDER_IMAGE_BOOTLOADER_FILE = "%s"' % loader_file,
-                    'MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET = "%d"' % loader_offset])
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            [
+                'MENDER_IMAGE_BOOTLOADER_FILE = "%s"' % loader_file,
+                'MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET = "%d"' % loader_offset,
+            ],
+        )
 
-        built_sdimg = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.sdimg")
+        built_sdimg = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.sdimg"
+        )
 
         original = os.open(loader_path, os.O_RDONLY)
         embedded = os.open(built_sdimg, os.O_RDONLY)
@@ -88,7 +112,9 @@ class TestBuild:
             org_read_size = len(org_read)
             emb_read = os.read(embedded, org_read_size)
 
-            assert(org_read == emb_read), "Embedded bootloader is not identical to the file specified in MENDER_IMAGE_BOOTLOADER_FILE"
+            assert (
+                org_read == emb_read
+            ), "Embedded bootloader is not identical to the file specified in MENDER_IMAGE_BOOTLOADER_FILE"
 
             if org_read_size < block_size:
                 break
@@ -96,120 +122,179 @@ class TestBuild:
         os.close(original)
         os.close(embedded)
 
-
-    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.0.0")
-    def test_image_rootfs_extra_space(self, prepared_test_build, bitbake_variables, bitbake_image):
+    def test_image_rootfs_extra_space(
+        self, prepared_test_build, bitbake_variables, bitbake_image
+    ):
         """Test that setting IMAGE_ROOTFS_EXTRA_SPACE to arbitrary values does
         not break the build."""
 
-        build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    ['IMAGE_ROOTFS_EXTRA_SPACE_append = " + 640 - 222 + 900"'])
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            ['IMAGE_ROOTFS_EXTRA_SPACE_append = " + 640 - 222 + 900"'],
+        )
 
-        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")
+        built_rootfs = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.ext4"
+        )
 
-        assert(os.stat(built_rootfs).st_size == int(bitbake_variables['MENDER_CALC_ROOTFS_SIZE']) * 1024)
+        assert (
+            os.stat(built_rootfs).st_size
+            == int(bitbake_variables["MENDER_CALC_ROOTFS_SIZE"]) * 1024
+        )
 
-
-    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.0.0")
     def test_tenant_token(self, prepared_test_build, bitbake_image):
         """Test setting a custom tenant-token"""
 
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            [
+                'MENDER_TENANT_TOKEN = "%s"' % "authtentoken",
+                'IMAGE_FSTYPES += "dataimg"',
+            ],
+        )
 
-        build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    ['MENDER_TENANT_TOKEN = "%s"' % "authtentoken",
-                    'IMAGE_FSTYPES += "dataimg"'])
+        built_rootfs = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.dataimg"
+        )
 
-        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.dataimg")
-
-        subprocess.check_call(["debugfs", "-R",
-                                   "dump -p /etc/mender/mender.conf mender.conf", built_rootfs])
+        subprocess.check_call(
+            [
+                "debugfs",
+                "-R",
+                "dump -p /etc/mender/mender.conf mender.conf",
+                built_rootfs,
+            ]
+        )
 
         try:
             with open("mender.conf") as fd:
                 data = json.load(fd)
-            assert data['TenantToken'] == "authtentoken"
+            assert data["TenantToken"] == "authtentoken"
 
         finally:
             os.remove("mender.conf")
 
-
-
-    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.1.0")
-    def test_artifact_signing_keys(self, prepared_test_build, bitbake_variables, bitbake_path, bitbake_image):
+    def test_artifact_signing_keys(
+        self, prepared_test_build, bitbake_variables, bitbake_path, bitbake_image
+    ):
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
 
-        build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    ['MENDER_ARTIFACT_SIGNING_KEY = "%s"' % os.path.join(os.getcwd(), signing_key("RSA").private),
-                    'MENDER_ARTIFACT_VERIFY_KEY = "%s"' % os.path.join(os.getcwd(), signing_key("RSA").public)])
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            [
+                'MENDER_ARTIFACT_SIGNING_KEY = "%s"'
+                % os.path.join(os.getcwd(), signing_key("RSA").private),
+                'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
+                % os.path.join(os.getcwd(), signing_key("RSA").public),
+            ],
+        )
 
-        built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
+        built_rootfs = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.ext[234]"
+        )
         # Copy out the key we just added from the image and use that to
         # verify instead of the original, just to be sure.
-        subprocess.check_call(["debugfs", "-R",
-                               "dump -p /etc/mender/artifact-verify-key.pem artifact-verify-key.pem",
-                               built_rootfs])
+        subprocess.check_call(
+            [
+                "debugfs",
+                "-R",
+                "dump -p /etc/mender/artifact-verify-key.pem artifact-verify-key.pem",
+                built_rootfs,
+            ]
+        )
         try:
-            built_artifact = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender")
-            output = subprocess.check_output(["mender-artifact", "read", "-k",
-                                              os.path.join(os.getcwd(), "artifact-verify-key.pem"),
-                                              built_artifact]).decode()
-            assert(output.find("Signature: signed and verified correctly") >= 0)
+            built_artifact = latest_build_artifact(
+                prepared_test_build["build_dir"], "core-image*.mender"
+            )
+            output = subprocess.check_output(
+                [
+                    "mender-artifact",
+                    "read",
+                    "-k",
+                    os.path.join(os.getcwd(), "artifact-verify-key.pem"),
+                    built_artifact,
+                ]
+            ).decode()
+            assert output.find("Signature: signed and verified correctly") >= 0
 
         finally:
             os.remove("artifact-verify-key.pem")
 
-    @pytest.mark.only_with_image('ext4', 'ext3', 'ext2')
+    @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.2.0")
-    def test_state_scripts(self, prepared_test_build, bitbake_variables, bitbake_path,
-                           latest_rootfs, latest_mender_image, bitbake_image):
+    def test_state_scripts(
+        self,
+        prepared_test_build,
+        bitbake_variables,
+        bitbake_path,
+        latest_rootfs,
+        latest_mender_image,
+        bitbake_image,
+    ):
         """Test that state scripts that are specified in the build are included
         correctly."""
 
         # First verify that the base build does *not* contain any state scripts.
         # Check rootfs.
-        output = subprocess.check_output(["debugfs", "-R", "ls -p /etc/mender", latest_rootfs]).decode()
-        for line in output.split('\n'):
+        output = subprocess.check_output(
+            ["debugfs", "-R", "ls -p /etc/mender", latest_rootfs]
+        ).decode()
+        for line in output.split("\n"):
             if len(line) == 0:
                 continue
 
-            entry = line.split('/')
+            entry = line.split("/")
             if entry[5] == "scripts":
                 # The scripts directory exists. That is fine in itself, but it
                 # should not contain any script files ("version" is allowed).
-                output = subprocess.check_output(["debugfs", "-R", "ls -p /etc/mender/scripts", latest_rootfs]).decode()
-                for line in output.split('\n'):
+                output = subprocess.check_output(
+                    ["debugfs", "-R", "ls -p /etc/mender/scripts", latest_rootfs]
+                ).decode()
+                for line in output.split("\n"):
                     if len(line) == 0:
                         continue
 
-                    entry = line.split('/')
-                    assert entry[5] == "." or entry[5] == ".." or entry[5] == "version", "There should be no script file in /etc/mender/scripts"
+                    entry = line.split("/")
+                    assert (
+                        entry[5] == "." or entry[5] == ".." or entry[5] == "version"
+                    ), "There should be no script file in /etc/mender/scripts"
                 break
 
         # Check artifact.
-        output = subprocess.check_output("tar xOf %s header.tar.gz| tar tz"
-                                         % latest_mender_image, shell=True).decode()
-        for line in output.strip().split('\n'):
+        output = subprocess.check_output(
+            "tar xOf %s header.tar.gz| tar tz" % latest_mender_image, shell=True
+        ).decode()
+        for line in output.strip().split("\n"):
             if line == "scripts":
-                output = subprocess.check_output("tar xOf %s header.tar.gz| tar tz scripts"
-                                                 % latest_mender_image, shell=True).decode()
-                assert len(output.strip()) == 0, "Unexpected scripts in base image: %s" % output
+                output = subprocess.check_output(
+                    "tar xOf %s header.tar.gz| tar tz scripts" % latest_mender_image,
+                    shell=True,
+                ).decode()
+                assert len(output.strip()) == 0, (
+                    "Unexpected scripts in base image: %s" % output
+                )
 
         try:
             # Alright, now build a new image containing scripts.
-            build_image(prepared_test_build['build_dir'],
-                        prepared_test_build['bitbake_corebase'],
-                        bitbake_image,
-                        ['IMAGE_INSTALL_append = " example-state-scripts"'])
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                bitbake_image,
+                ['IMAGE_INSTALL_append = " example-state-scripts"'],
+            )
 
             found_rootfs_scripts = {
                 "version": False,
@@ -226,190 +311,265 @@ class TestBuild:
             }
 
             # Check new rootfs.
-            built_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext[234]")
-            output = subprocess.check_output(["debugfs", "-R", "ls -p /etc/mender/scripts", built_rootfs]).decode()
-            for line in output.split('\n'):
+            built_rootfs = latest_build_artifact(
+                prepared_test_build["build_dir"], "core-image*.ext[234]"
+            )
+            output = subprocess.check_output(
+                ["debugfs", "-R", "ls -p /etc/mender/scripts", built_rootfs]
+            ).decode()
+            for line in output.split("\n"):
                 if len(line) == 0:
                     continue
 
-                entry = line.split('/')
+                entry = line.split("/")
 
                 if entry[5] == "." or entry[5] == "..":
                     continue
 
-                assert found_rootfs_scripts.get(entry[5]) is not None, "Unexpected script in rootfs %s" % entry[5]
+                assert found_rootfs_scripts.get(entry[5]) is not None, (
+                    "Unexpected script in rootfs %s" % entry[5]
+                )
                 found_rootfs_scripts[entry[5]] = True
 
             for script in found_rootfs_scripts:
-                assert found_rootfs_scripts[script], "%s not found in rootfs script list" % script
+                assert found_rootfs_scripts[script], (
+                    "%s not found in rootfs script list" % script
+                )
 
             # Check new artifact.
-            built_mender_image = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.mender")
-            output = subprocess.check_output("tar xOf %s header.tar.gz| tar tz scripts"
-                                             % built_mender_image, shell=True).decode()
-            for line in output.strip().split('\n'):
+            built_mender_image = latest_build_artifact(
+                prepared_test_build["build_dir"], "core-image*.mender"
+            )
+            output = subprocess.check_output(
+                "tar xOf %s header.tar.gz| tar tz scripts" % built_mender_image,
+                shell=True,
+            ).decode()
+            for line in output.strip().split("\n"):
                 script = os.path.basename(line)
-                assert found_artifact_scripts.get(script) is not None, "Unexpected script in image: %s" % script
+                assert found_artifact_scripts.get(script) is not None, (
+                    "Unexpected script in image: %s" % script
+                )
                 found_artifact_scripts[script] = True
 
             for script in found_artifact_scripts:
-                assert found_artifact_scripts[script], "%s not found in artifact script list" % script
+                assert found_artifact_scripts[script], (
+                    "%s not found in artifact script list" % script
+                )
 
         finally:
             # Clean up the state scripts directory. Ideally this wouldn't be
             # necessary, but unfortunately bitbake does not clean up deployment
             # files from recipes that are not included in the current build, so
             # we have to do it manually.
-            build_image(prepared_test_build['build_dir'],
-                        prepared_test_build['bitbake_corebase'],
-                        bitbake_image,
-                        target="-c clean example-state-scripts")
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                bitbake_image,
+                target="-c clean example-state-scripts",
+            )
 
-    @pytest.mark.min_mender_version('1.0.0')
+    @pytest.mark.min_mender_version("1.0.0")
     # The extra None elements are to check for no preferred version,
     # e.g. latest.
-    @pytest.mark.parametrize('recipe,version', [('mender', version) for version in versions_of_recipe('mender')]
-                             + [('mender', None)]
-                             + [('mender-artifact-native', version) for version in versions_of_recipe('mender-artifact')]
-                             + [('mender-artifact-native', None)])
+    @pytest.mark.parametrize(
+        "recipe,version",
+        [("mender", version) for version in versions_of_recipe("mender")]
+        + [("mender", None)]
+        + [
+            ("mender-artifact-native", version)
+            for version in versions_of_recipe("mender-artifact")
+        ]
+        + [("mender-artifact-native", None)],
+    )
     def test_preferred_versions(self, prepared_test_build, recipe, version):
         """Most Jenkins builds build with PREFERRED_VERSION set, because we want to
         build from a specific SHA. This test tests that we can change that or
         turn it off and the build still works."""
 
-        old_file = get_local_conf_orig_path(prepared_test_build['build_dir'])
-        new_file = get_local_conf_path(prepared_test_build['build_dir'])
+        old_file = get_local_conf_orig_path(prepared_test_build["build_dir"])
+        new_file = get_local_conf_path(prepared_test_build["build_dir"])
 
         if recipe.endswith("-native"):
-            base_recipe = recipe[:-len("-native")]
+            base_recipe = recipe[: -len("-native")]
         else:
             base_recipe = recipe
 
         for pn_style in ["", "pn-"]:
             with open(old_file) as old_fd, open(new_file, "w") as new_fd:
                 for line in old_fd.readlines():
-                    if re.match('^EXTERNALSRC_pn-%s(-native)? *=' % base_recipe, line) is not None:
+                    if (
+                        re.match("^EXTERNALSRC_pn-%s(-native)? *=" % base_recipe, line)
+                        is not None
+                    ):
                         continue
-                    elif re.match("^PREFERRED_VERSION_(pn-)?%s(-native)? *=" % base_recipe, line) is not None:
+                    elif (
+                        re.match(
+                            "^PREFERRED_VERSION_(pn-)?%s(-native)? *=" % base_recipe,
+                            line,
+                        )
+                        is not None
+                    ):
                         continue
                     else:
                         new_fd.write(line)
                 if version is not None:
-                    new_fd.write('PREFERRED_VERSION_%s%s = "%s"\n' % (pn_style, base_recipe, version))
-                    new_fd.write('PREFERRED_VERSION_%s%s-native = "%s"\n' % (pn_style, base_recipe, version))
+                    new_fd.write(
+                        'PREFERRED_VERSION_%s%s = "%s"\n'
+                        % (pn_style, base_recipe, version)
+                    )
+                    new_fd.write(
+                        'PREFERRED_VERSION_%s%s-native = "%s"\n'
+                        % (pn_style, base_recipe, version)
+                    )
 
-            init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'],
-                                                            prepared_test_build['build_dir'])
+            init_env_cmd = "cd %s && . oe-init-build-env %s" % (
+                prepared_test_build["bitbake_corebase"],
+                prepared_test_build["build_dir"],
+            )
             run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
 
-    @pytest.mark.min_mender_version('1.1.0')
-    def test_multiple_device_types_compatible(self, prepared_test_build, bitbake_path, bitbake_variables, bitbake_image):
+    @pytest.mark.min_mender_version("1.1.0")
+    def test_multiple_device_types_compatible(
+        self, prepared_test_build, bitbake_path, bitbake_variables, bitbake_image
+    ):
         """Tests that we can include multiple device_types in the artifact."""
 
-        build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    ['MENDER_DEVICE_TYPES_COMPATIBLE = "machine1 machine2"'])
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            ['MENDER_DEVICE_TYPES_COMPATIBLE = "machine1 machine2"'],
+        )
 
-        image = latest_build_artifact(prepared_test_build['build_dir'], 'core-image*.mender')
+        image = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.mender"
+        )
 
         output = run_verbose("mender-artifact read %s" % image, capture=True)
         assert b"Compatible devices: '[machine1 machine2]'" in output
 
-        output = subprocess.check_output("tar xOf %s header.tar.gz | tar xOz header-info" % image, shell=True).decode()
+        output = subprocess.check_output(
+            "tar xOf %s header.tar.gz | tar xOz header-info" % image, shell=True
+        ).decode()
         data = json.loads(output)
         if version_is_minimum(bitbake_variables, "mender-artifact", "3.0.0"):
             assert data["artifact_depends"]["device_type"] == ["machine1", "machine2"]
         else:
             assert data["device_types_compatible"] == ["machine1", "machine2"]
 
-    @pytest.mark.only_for_machine('vexpress-qemu-flash')
-    @pytest.mark.min_mender_version('1.3.0')
-    @pytest.mark.parametrize('test_case_name,test_case', [
-        ("Default", {
-            "vars": [],
-            "success": True,
-            "expected": {
-                "MENDER_MTDIDS": "nor2=40000000.flash",
-                "MENDER_IS_ON_MTDID": "40000000.flash",
-                "MENDER_MTDPARTS": "40000000.flash:1m(u-boot)ro,-(ubi)",
-            },
-        }),
-        ("custom_mtdids", {
-            "vars": [
-                'MENDER_MTDIDS = "nor3=40000001.flash"',
-            ],
-            "success": True,
-            "expected": {
-                "MENDER_MTDIDS": "nor3=40000001.flash",
-                "MENDER_IS_ON_MTDID": "40000001.flash",
-                "MENDER_MTDPARTS": "40000001.flash:1m(u-boot)ro,-(ubi)",
-            },
-        }),
-        ("multiple_mtdids_no_selected_one", {
-            "vars": [
-                'MENDER_MTDIDS = "nor2=40000000.flash,nor3=50000000.flash"',
-            ],
-            "success": False,
-            "expected": {
-                "MENDER_MTDIDS": "nor2=40000000.flash,nor3=50000000.flash",
-            },
-        }),
-        ("multiple_mtdids_and_selected_one", {
-            "vars": [
-                'MENDER_MTDIDS = "nor2=40000001.flash,nor3=50000000.flash"',
-                'MENDER_IS_ON_MTDID = "40000001.flash"',
-            ],
-            "success": False,
-            "expected": {
-                "MENDER_MTDIDS": "nor2=40000001.flash,nor3=50000000.flash",
-                "MENDER_IS_ON_MTDID": "40000001.flash",
-            },
-        }),
-        ("multiple_mtdparts", {
-            "vars": [
-                'MENDER_MTDIDS = "nor2=40000000.flash,nor3=50000000.flash"',
-                'MENDER_IS_ON_MTDID = "40000000.flash"',
-                'MENDER_MTDPARTS = "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)"',
-            ],
-            "success": True,
-            "expected": {
-                "MENDER_MTDIDS": "nor2=40000000.flash,nor3=50000000.flash",
-                "MENDER_IS_ON_MTDID": "40000000.flash",
-                "MENDER_MTDPARTS": "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)",
-            },
-        }),
-    ])
-    def test_various_mtd_combinations(self, test_case_name, test_case, prepared_test_build, bitbake_image):
+    @pytest.mark.only_for_machine("vexpress-qemu-flash")
+    @pytest.mark.min_mender_version("1.3.0")
+    @pytest.mark.parametrize(
+        "test_case_name,test_case",
+        [
+            (
+                "Default",
+                {
+                    "vars": [],
+                    "success": True,
+                    "expected": {
+                        "MENDER_MTDIDS": "nor2=40000000.flash",
+                        "MENDER_IS_ON_MTDID": "40000000.flash",
+                        "MENDER_MTDPARTS": "40000000.flash:1m(u-boot)ro,-(ubi)",
+                    },
+                },
+            ),
+            (
+                "custom_mtdids",
+                {
+                    "vars": ['MENDER_MTDIDS = "nor3=40000001.flash"'],
+                    "success": True,
+                    "expected": {
+                        "MENDER_MTDIDS": "nor3=40000001.flash",
+                        "MENDER_IS_ON_MTDID": "40000001.flash",
+                        "MENDER_MTDPARTS": "40000001.flash:1m(u-boot)ro,-(ubi)",
+                    },
+                },
+            ),
+            (
+                "multiple_mtdids_no_selected_one",
+                {
+                    "vars": [
+                        'MENDER_MTDIDS = "nor2=40000000.flash,nor3=50000000.flash"'
+                    ],
+                    "success": False,
+                    "expected": {
+                        "MENDER_MTDIDS": "nor2=40000000.flash,nor3=50000000.flash"
+                    },
+                },
+            ),
+            (
+                "multiple_mtdids_and_selected_one",
+                {
+                    "vars": [
+                        'MENDER_MTDIDS = "nor2=40000001.flash,nor3=50000000.flash"',
+                        'MENDER_IS_ON_MTDID = "40000001.flash"',
+                    ],
+                    "success": False,
+                    "expected": {
+                        "MENDER_MTDIDS": "nor2=40000001.flash,nor3=50000000.flash",
+                        "MENDER_IS_ON_MTDID": "40000001.flash",
+                    },
+                },
+            ),
+            (
+                "multiple_mtdparts",
+                {
+                    "vars": [
+                        'MENDER_MTDIDS = "nor2=40000000.flash,nor3=50000000.flash"',
+                        'MENDER_IS_ON_MTDID = "40000000.flash"',
+                        'MENDER_MTDPARTS = "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)"',
+                    ],
+                    "success": True,
+                    "expected": {
+                        "MENDER_MTDIDS": "nor2=40000000.flash,nor3=50000000.flash",
+                        "MENDER_IS_ON_MTDID": "40000000.flash",
+                        "MENDER_MTDPARTS": "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)",
+                    },
+                },
+            ),
+        ],
+    )
+    def test_various_mtd_combinations(
+        self, test_case_name, test_case, prepared_test_build, bitbake_image
+    ):
         """Tests that we can build with various combinations of MTD variables,
         and that they receive the correct values."""
 
         try:
-            build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    ["\n".join(test_case["vars"])])
-            assert test_case['success'], "Build succeeded, but should fail"
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                bitbake_image,
+                ["\n".join(test_case["vars"])],
+            )
+            assert test_case["success"], "Build succeeded, but should fail"
         except subprocess.CalledProcessError:
-            assert not test_case['success'], "Build failed"
+            assert not test_case["success"], "Build failed"
 
-        init_env_cmd = "cd %s && . oe-init-build-env %s" % (prepared_test_build['bitbake_corebase'],
-                                                            prepared_test_build['build_dir'])
+        init_env_cmd = "cd %s && . oe-init-build-env %s" % (
+            prepared_test_build["bitbake_corebase"],
+            prepared_test_build["build_dir"],
+        )
         variables = get_bitbake_variables(bitbake_image, env_setup=init_env_cmd)
 
-        for key in test_case['expected']:
-            assert test_case['expected'][key] == variables[key]
+        for key in test_case["expected"]:
+            assert test_case["expected"][key] == variables[key]
 
-    @pytest.mark.only_with_image('sdimg', 'uefiimg')
-    @pytest.mark.min_mender_version('1.0.0')
-    def test_boot_partition_population(self, prepared_test_build, bitbake_path, bitbake_image):
+    @pytest.mark.only_with_image("sdimg", "uefiimg")
+    @pytest.mark.min_mender_version("1.0.0")
+    def test_boot_partition_population(
+        self, prepared_test_build, bitbake_path, bitbake_image
+    ):
         # Notice in particular a mix of tabs, newlines and spaces. All there to
         # check that whitespace it treated correctly.
 
-        build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    ["""
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            [
+                """
 IMAGE_INSTALL_append = " test-boot-files"
 
 IMAGE_BOOT_FILES_append = " deployed-test1 deployed-test-dir2/deployed-test2 \
@@ -420,12 +580,18 @@ deployed-test-dir7/* \
 deployed-test-dir8/*;./ \
 deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 "
-"""])
+"""
+            ],
+        )
 
-        image = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.*img")
+        image = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.*img"
+        )
         extract_partition(image, 1)
         try:
-            listing = run_verbose("mdir -i img1.fs -b -/", capture=True).decode().split()
+            listing = (
+                run_verbose("mdir -i img1.fs -b -/", capture=True).decode().split()
+            )
             expected = [
                 "::/deployed-test1",
                 "::/deployed-test2",
@@ -437,62 +603,82 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 "::/deployed-test8",
                 "::/renamed-deployed-test-dir9/deployed-test9",
             ]
-            assert(all([item in listing for item in expected]))
+            assert all([item in listing for item in expected])
 
             try:
-                build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
+                build_image(
+                    prepared_test_build["build_dir"],
+                    prepared_test_build["bitbake_corebase"],
                     bitbake_image,
-                    ['IMAGE_BOOT_FILES_append = " conflict-test1"'])
-                pytest.fail("Bitbake succeeded, but should have failed with a file conflict")
+                    ['IMAGE_BOOT_FILES_append = " conflict-test1"'],
+                )
+                pytest.fail(
+                    "Bitbake succeeded, but should have failed with a file conflict"
+                )
             except subprocess.CalledProcessError:
                 pass
         finally:
             os.remove("img1.fs")
 
-    @pytest.mark.only_with_image('sdimg', 'uefiimg')
-    @pytest.mark.min_mender_version('2.0.0')
-    def test_module_install(self, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image):
+    @pytest.mark.only_with_image("sdimg", "uefiimg")
+    @pytest.mark.min_mender_version("2.0.0")
+    def test_module_install(
+        self, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image
+    ):
         mender_vars = get_bitbake_variables("mender")
-        if "modules" in mender_vars['PACKAGECONFIG'].split():
+        if "modules" in mender_vars["PACKAGECONFIG"].split():
             originally_on = True
         else:
             originally_on = False
 
-        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender", latest_rootfs]).decode()
-        entries = [elem.split('/')[5] for elem in output.split('\n') if elem.startswith('/')]
+        output = subprocess.check_output(
+            ["debugfs", "-R", "ls -p /usr/share/mender", latest_rootfs]
+        ).decode()
+        entries = [
+            elem.split("/")[5] for elem in output.split("\n") if elem.startswith("/")
+        ]
 
         if originally_on:
             assert "modules" in entries
-            build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    ['PACKAGECONFIG_remove = "modules"'])
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                bitbake_image,
+                ['PACKAGECONFIG_remove = "modules"'],
+            )
         else:
             assert "modules" not in entries
-            build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    ['PACKAGECONFIG_append = " modules"'])
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                bitbake_image,
+                ['PACKAGECONFIG_append = " modules"'],
+            )
 
-        new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")
+        new_rootfs = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.ext4"
+        )
 
-        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender", new_rootfs]).decode()
-        entries = [elem.split('/')[5] for elem in output.split('\n') if elem.startswith('/')]
+        output = subprocess.check_output(
+            ["debugfs", "-R", "ls -p /usr/share/mender", new_rootfs]
+        ).decode()
+        entries = [
+            elem.split("/")[5] for elem in output.split("\n") if elem.startswith("/")
+        ]
 
         if originally_on:
             assert "modules" not in entries
         else:
             assert "modules" in entries
 
-    @pytest.mark.only_with_image('sdimg', 'uefiimg', 'gptimg', 'biosimg')
-    @pytest.mark.min_mender_version('1.0.0')
+    @pytest.mark.only_with_image("sdimg", "uefiimg", "gptimg", "biosimg")
+    @pytest.mark.min_mender_version("1.0.0")
     def test_correct_partition_types(self, latest_part_image):
         """Test that all the partitions in the image have the correct type."""
 
-        sdimg   = latest_part_image.endswith(".sdimg")
+        sdimg = latest_part_image.endswith(".sdimg")
         uefiimg = latest_part_image.endswith(".uefiimg")
-        gptimg  = latest_part_image.endswith(".gptimg")
+        gptimg = latest_part_image.endswith(".gptimg")
         biosimg = latest_part_image.endswith(".biosimg")
 
         if sdimg or biosimg:
@@ -506,8 +692,10 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             # image.sdimg3      507904  966655  458752  224M 83 Linux
             # image.sdimg4      966656 1228799  262144  128M 83 Linux
 
-            output = subprocess.check_output(["fdisk", "-l", latest_part_image]).decode()
-            lines = output.split('\n')
+            output = subprocess.check_output(
+                ["fdisk", "-l", latest_part_image]
+            ).decode()
+            lines = output.split("\n")
 
             # Find the line which starts with "Device".
             table_start = 0
@@ -522,14 +710,13 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             # Let's get rid of the annoying Boot marker which messes up split().
             lines[table_start] = lines[table_start].replace("*", " ")
 
-            expected = [
-                ("1", "c"),
-                ("2", "83"),
-                ("3", "83"),
-                ("4", "83"),
-            ]
+            expected = [("1", "c"), ("2", "83"), ("3", "83"), ("4", "83")]
 
-            actual = [(line.split()[0][-1:], line.split()[5]) for line in lines[table_start:] if line != ""]
+            actual = [
+                (line.split()[0][-1:], line.split()[5])
+                for line in lines[table_start:]
+                if line != ""
+            ]
 
             assert expected == actual, "Did not expect table:\n%s" % output
 
@@ -544,8 +731,10 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             #    3          507904          966655   224.0 MiB   8300  primary
             #    4          966656         1228799   128.0 MiB   8300  primary
 
-            output = subprocess.check_output(["sgdisk", "-p", latest_part_image]).decode()
-            lines = output.split('\n')
+            output = subprocess.check_output(
+                ["sgdisk", "-p", latest_part_image]
+            ).decode()
+            lines = output.split("\n")
 
             # Find the line which starts with "Number".
             table_start = 0
@@ -558,21 +747,15 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             table_start += 1
 
             if uefiimg:
-                expected = [
-                    ("1", "EF00"),
-                    ("2", "8300"),
-                    ("3", "8300"),
-                    ("4", "8300"),
-                ]
+                expected = [("1", "EF00"), ("2", "8300"), ("3", "8300"), ("4", "8300")]
             else:
-                expected = [
-                    ("1", "0700"),
-                    ("2", "8300"),
-                    ("3", "8300"),
-                    ("4", "8300"),
-                ]
+                expected = [("1", "0700"), ("2", "8300"), ("3", "8300"), ("4", "8300")]
 
-            actual = [(line.split()[0], line.split()[5]) for line in lines[table_start:] if line != ""]
+            actual = [
+                (line.split()[0], line.split()[5])
+                for line in lines[table_start:]
+                if line != ""
+            ]
 
             assert expected == actual, "Did not expect table:\n%s" % output
 
@@ -584,13 +767,15 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         BuildDependsProvides is a utility class for handling the depends and
         provides parameters of a Mender Artifact build
         """
+
         def __init__(
-                self,
-                name_depends=[],
-                depends={},
-                provides={},
-                depends_groups=[],
-                provides_group=""):
+            self,
+            name_depends=[],
+            depends={},
+            provides={},
+            depends_groups=[],
+            provides_group="",
+        ):
             self.name_depends = name_depends
             self.provides = provides
             self.provides_group = provides_group
@@ -607,22 +792,27 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         def __str__(self):
             s = ""
             if self.name_depends:
-                s += "MENDER_ARTIFACT_NAME_DEPENDS = \"{}\"\n".format(" ".join(self.name_depends))
+                s += 'MENDER_ARTIFACT_NAME_DEPENDS = "{}"\n'.format(
+                    " ".join(self.name_depends)
+                )
 
             if self.provides:
                 l = self._flatten_dict(self.provides)
-                s += "MENDER_ARTIFACT_PROVIDES = \"{}\"\n".format(l)
+                s += 'MENDER_ARTIFACT_PROVIDES = "{}"\n'.format(l)
 
             if self.provides_group:
-                s += "MENDER_ARTIFACT_PROVIDES_GROUP = \"{}\"\n".format(self.provides_group)
+                s += 'MENDER_ARTIFACT_PROVIDES_GROUP = "{}"\n'.format(
+                    self.provides_group
+                )
 
             if self.depends:
                 l = self._flatten_dict(self.depends)
-                s += "MENDER_ARTIFACT_DEPENDS = \"{}\"\n".format(l)
+                s += 'MENDER_ARTIFACT_DEPENDS = "{}"\n'.format(l)
 
             if self.depends_groups:
-                s += "MENDER_ARTIFACT_DEPENDS_GROUPS = \"{}\"\n".format(
-                    " ".join(self.depends_groups))
+                s += 'MENDER_ARTIFACT_DEPENDS_GROUPS = "{}"\n'.format(
+                    " ".join(self.depends_groups)
+                )
 
             return s
 
@@ -638,21 +828,25 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 line = lines[i]
 
                 if "Provides group:" in line:
-                    s = line[line.index(":") + 1:].strip()
+                    s = line[line.index(":") + 1 :].strip()
                     if s is not "":
                         d.provides_group = s
 
                 if "Depends on one of artifact" in line:
                     if "[]" not in line:
-                        dps = line[line.index("[") + 1:line.index("]")].split()
-                        dps = [word.replace(',', '') for word in dps]
+                        dps = line[line.index("[") + 1 : line.index("]")].split()
+                        dps = [word.replace(",", "") for word in dps]
                         if dps:
                             d.name_depends = dps
 
                 if "Depends on one of group(s)" in line:
                     if "[]" not in line:
-                        depends_groups = line[line.index("[") + 1:line.index("]")].split()
-                        depends_groups = [word.replace(',', '') for word in depends_groups]
+                        depends_groups = line[
+                            line.index("[") + 1 : line.index("]")
+                        ].split()
+                        depends_groups = [
+                            word.replace(",", "") for word in depends_groups
+                        ]
                         if depends_groups:
                             d.depends_groups = depends_groups
 
@@ -690,7 +884,8 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         BuildDependsProvides(name_depends=["dependsname1"]),
         BuildDependsProvides(
             name_depends=["dependsname1"],
-            provides={"artifactprovidesname": "artifactprovidesvalue"}),
+            provides={"artifactprovidesname": "artifactprovidesvalue"},
+        ),
         BuildDependsProvides(
             name_depends=["dependsname1"],
             provides={"artifactprovidesname": "artifactprovidesvalue"},
@@ -700,48 +895,44 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             name_depends=["dependsname1"],
             provides={"artifactprovidesname": "artifactprovidesvalue"},
             provides_group="providesgroupname",
-            depends={
-                "dependskey1": "dependsval1",
-                "dependskey2": "dependsval2"
-            },
+            depends={"dependskey1": "dependsval1", "dependskey2": "dependsval2"},
         ),
         BuildDependsProvides(
-            name_depends=["dependsname0",
-                          "dependsname2"],
+            name_depends=["dependsname0", "dependsname2"],
             provides={"artifactprovidesname": "artifactprovidesvalue"},
             provides_group="providesgroupname",
-            depends={
-                "dependskey1": "dependsval1",
-                "dependskey2": "dependsval2"
-            },
-            depends_groups=["depenceygroup1",
-                            "depenceygroup2"])
+            depends={"dependskey1": "dependsval1", "dependskey2": "dependsval2"},
+            depends_groups=["depenceygroup1", "depenceygroup2"],
+        ),
     ]
 
-    @pytest.mark.min_mender_version('2.3.0')
-    @pytest.mark.parametrize('dependsprovides', test_cases)
+    @pytest.mark.min_mender_version("2.3.0")
+    @pytest.mark.parametrize("dependsprovides", test_cases)
     def test_build_artifact_depends_and_provides(
-            self,
-            prepared_test_build,
-            bitbake_image,
-            dependsprovides):
+        self, prepared_test_build, bitbake_image, dependsprovides
+    ):
         """Test whether a build with enabled Artifact Provides and Depends does
         indeed add the parameters to the built Artifact"""
 
-        build_image(prepared_test_build['build_dir'],
-                    prepared_test_build['bitbake_corebase'],
-                    bitbake_image,
-                    [param for param in str(dependsprovides).splitlines()])
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            [param for param in str(dependsprovides).splitlines()],
+        )
 
-
-        image = latest_build_artifact(prepared_test_build['build_dir'], 'core-image*.mender')
+        image = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.mender"
+        )
 
         output = run_verbose("mender-artifact read %s" % image, capture=True).decode()
         other = TestBuild.BuildDependsProvides.parse(output)
 
         # MEN-2956: Mender-Artifact now writes rootfs-image-checksum by default.
         # Hence, the checksum should be present in all these test cases.
-        assert "rootfs_image_checksum" in other.provides, "Empty rootfs_image_checksum in the built rootfs-image artifact, this should be added by default by `mender-artifact write rootfs-image`"
+        assert (
+            "rootfs_image_checksum" in other.provides
+        ), "Empty rootfs_image_checksum in the built rootfs-image artifact, this should be added by default by `mender-artifact write rootfs-image`"
         # Then remove it, not to mess up the expected test output
         del other.provides["rootfs_image_checksum"]
 

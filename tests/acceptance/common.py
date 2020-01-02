@@ -35,6 +35,7 @@ import traceback
 # ugly hack to access cli parameters inside common.py functions
 configuration = {}
 
+
 def start_qemu(qenv=None, conn=None):
     """Start qemu and return a subprocess.Popen object corresponding to a running
     qemu process. `qenv` is a dict of environment variables that will be added
@@ -51,8 +52,11 @@ def start_qemu(qenv=None, conn=None):
     if qenv:
         env.update(qenv)
 
-    proc = subprocess.Popen(["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
-                             env=env, start_new_session=True)
+    proc = subprocess.Popen(
+        ["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+        env=env,
+        start_new_session=True,
+    )
 
     try:
         # make sure we are connected.
@@ -61,7 +65,7 @@ def start_qemu(qenv=None, conn=None):
         # or do the necessary cleanup if we're not
         try:
             # qemu might have exited and this would raise an exception
-            print('cleaning up qemu instance with pid {}'.format(proc.pid))
+            print("cleaning up qemu instance with pid {}".format(proc.pid))
             proc.terminate()
         except:
             pass
@@ -156,7 +160,7 @@ def run_after_connect(cmd, conn, wait=360):
     # override the Connection parameters
     orig_timeout = conn.connect_timeout
     conn.connect_timeout = 60
-    timeout = time.time() + 60*3
+    timeout = time.time() + 60 * 3
 
     while time.time() < timeout:
         try:
@@ -169,21 +173,28 @@ def run_after_connect(cmd, conn, wait=360):
             continue
         except SSHException as e:
             print("Got SSH exception while connecting to host %s: %s" % (conn.host, e))
-            if not ("Connection reset by peer" in str(e) or 
-                    "Error reading SSH protocol banner" in str(e) or 
-                    "No existing session" in str(e)):
+            if not (
+                "Connection reset by peer" in str(e)
+                or "Error reading SSH protocol banner" in str(e)
+                or "No existing session" in str(e)
+            ):
                 raise e
             time.sleep(30)
             continue
         except OSError as e:
             # The OSError is happening while there is no QEMU instance initialized
-            print("Got OSError exception while connecting to host %s: %s" % (conn.host, e))
+            print(
+                "Got OSError exception while connecting to host %s: %s" % (conn.host, e)
+            )
             if not "Cannot assign requested address" in str(e):
                 raise e
             time.sleep(30)
             continue
         except Exception as e:
-            print("Generic exception happened while connecting to host %s: %s" % (conn.host, e))
+            print(
+                "Generic exception happened while connecting to host %s: %s"
+                % (conn.host, e)
+            )
             print(type(e))
             print(e.args)
             raise e
@@ -205,26 +216,32 @@ def determine_active_passive_part(bitbake_variables, conn):
     elif mount_output.find(b) >= 0:
         return (b, a)
     else:
-        raise Exception("Could not determine active partition. Mount output:\n {}" \
-                        "\nwas looking for {}".format(mount_output, (a, b)))
+        raise Exception(
+            "Could not determine active partition. Mount output:\n {}"
+            "\nwas looking for {}".format(mount_output, (a, b))
+        )
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
-def put_no_sftp(file, conn, remote = "."):
+def put_no_sftp(file, conn, remote="."):
     cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
     try:
-        conn.local("%s -P %s %s %s@%s:%s" %
-            (cmd, conn.port, file, conn.user, conn.host, remote))
+        conn.local(
+            "%s -P %s %s %s@%s:%s"
+            % (cmd, conn.port, file, conn.user, conn.host, remote)
+        )
     except Exception as e:
         print("exception while putting file: ", e)
         raise e
 
+
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
-def get_no_sftp(file, conn, local = "."):
+def get_no_sftp(file, conn, local="."):
     cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-    conn.local("%s -P %s %s@%s:%s %s" %
-          (cmd, conn.port, conn.user, conn.host, file, local))
+    conn.local(
+        "%s -P %s %s@%s:%s %s" % (cmd, conn.port, conn.user, conn.host, file, local)
+    )
 
 
 def manual_uboot_commit(conn):
@@ -232,8 +249,7 @@ def manual_uboot_commit(conn):
     conn.run("fw_setenv bootcount 0")
 
 
-
-def common_board_setup(conn, files=None, remote_path='/tmp', image_file=None):
+def common_board_setup(conn, files=None, remote_path="/tmp", image_file=None):
     """
     Deploy and activate an image to a board that usese mender-qa tools.
 
@@ -242,17 +258,24 @@ def common_board_setup(conn, files=None, remote_path='/tmp', image_file=None):
     :param files: list of files to deploy
     """
     for f in files:
-        put_no_sftp(os.path.basename(f), conn,
-                    remote=os.path.join(remote_path, os.path.basename(f)))
+        put_no_sftp(
+            os.path.basename(f),
+            conn,
+            remote=os.path.join(remote_path, os.path.basename(f)),
+        )
 
     env_overrides = {}
     if image_file:
-        env_overrides['IMAGE_FILE'] = image_file
+        env_overrides["IMAGE_FILE"] = image_file
 
-    conn.run("{} mender-qa deploy-test-image".format(' '.join(
-        ['{}={}'.format(k, v) for k, v in env_overrides.items()])))
+    conn.run(
+        "{} mender-qa deploy-test-image".format(
+            " ".join(["{}={}".format(k, v) for k, v in env_overrides.items()])
+        )
+    )
 
     conn.sudo("mender-qa activate-test-image")
+
 
 def common_board_cleanup(conn):
     conn.sudo("mender-qa activate-test-image off")
@@ -260,11 +283,13 @@ def common_board_cleanup(conn):
 
     run_after_connect("true", conn)
 
+
 def common_boot_from_internal(conn):
     conn.sudo("mender-qa activate-test-image on")
     conn.sudo("reboot", warn=True)
 
     run_after_connect("true", conn)
+
 
 def latest_build_artifact(builddir, extension, sdimg_location=None):
     global configuration
@@ -273,12 +298,27 @@ def latest_build_artifact(builddir, extension, sdimg_location=None):
     builddir = os.path.abspath(builddir)
 
     if configuration.get("conversion"):
-        output = subprocess.check_output(["sh", "-c", "ls -t %s/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
+        output = subprocess.check_output(
+            [
+                "sh",
+                "-c",
+                "ls -t %s/*%s | grep -v data*%s| head -n 1"
+                % (builddir, extension, extension),
+            ]
+        )
     else:
-        output = subprocess.check_output(["sh", "-c", "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1" % (builddir, extension, extension)])
-    output = output.decode().rstrip('\r\n')
+        output = subprocess.check_output(
+            [
+                "sh",
+                "-c",
+                "ls -t %s/tmp*/deploy/images/*/*%s | grep -v data*%s| head -n 1"
+                % (builddir, extension, extension),
+            ]
+        )
+    output = output.decode().rstrip("\r\n")
     print("Found latest image of type '%s' to be: %s" % (extension, output))
     return output
+
 
 def get_bitbake_variables(target, env_setup="true", export_only=False):
     global configuration
@@ -286,15 +326,17 @@ def get_bitbake_variables(target, env_setup="true", export_only=False):
 
     if configuration.get("conversion"):
         config_file_path = os.path.abspath(configuration["test_variables"])
-        with open(config_file_path, 'r') as config:
+        with open(config_file_path, "r") as config:
             lines = config.readlines()
     else:
         current_dir = os.open(".", os.O_RDONLY)
-        os.chdir(os.environ['BUILDDIR'])
-        ps = subprocess.Popen("%s && bitbake -e %s" % (env_setup, target),
-                                  stdout=subprocess.PIPE,
-                                  shell=True,
-                                  executable="/bin/bash")
+        os.chdir(os.environ["BUILDDIR"])
+        ps = subprocess.Popen(
+            "%s && bitbake -e %s" % (env_setup, target),
+            stdout=subprocess.PIPE,
+            shell=True,
+            executable="/bin/bash",
+        )
         os.fchdir(current_dir)
 
         while True:
@@ -319,13 +361,14 @@ def get_bitbake_variables(target, env_setup="true", export_only=False):
 
     # For some unknown reason, 'MACHINE' is not included in the 'bitbake -e' output.
     # We set MENDER_MACHINE in mender-setup.bbclass as a proxy so look for that instead.
-    if ret.get('MACHINE') is None:
-        if ret.get('MENDER_MACHINE') is not None:
-            ret['MACHINE'] = ret.get('MENDER_MACHINE')
+    if ret.get("MACHINE") is None:
+        if ret.get("MENDER_MACHINE") is not None:
+            ret["MACHINE"] = ret.get("MENDER_MACHINE")
         else:
             raise Exception("Could not determine MACHINE or MENDER_MACHINE value.")
 
     return ret
+
 
 def signing_key(key_type):
     # RSA pregenerated using these.
@@ -347,38 +390,53 @@ def signing_key(key_type):
 
     return KeyPair()
 
+
 # `capture` can be a bool, meaning the captured output is returned, or a stream,
 # in which case the output is redirected there, and the process handle is
 # returned instead.
 def run_verbose(cmd, capture=False):
     if type(capture) is not bool:
-        print("subprocess.Popen(\"%s\")" % cmd)
-        return subprocess.Popen(cmd, shell=True, executable="/bin/bash",
-                                stderr=subprocess.STDOUT, stdout=capture)
+        print('subprocess.Popen("%s")' % cmd)
+        return subprocess.Popen(
+            cmd,
+            shell=True,
+            executable="/bin/bash",
+            stderr=subprocess.STDOUT,
+            stdout=capture,
+        )
     elif capture:
-        print("subprocess.check_output(\"%s\")" % cmd)
-        return subprocess.check_output(cmd, shell=True, executable="/bin/bash",
-                                       stderr=subprocess.STDOUT)
+        print('subprocess.check_output("%s")' % cmd)
+        return subprocess.check_output(
+            cmd, shell=True, executable="/bin/bash", stderr=subprocess.STDOUT
+        )
     else:
         print(cmd)
         return subprocess.check_call(cmd, shell=True, executable="/bin/bash")
 
+
 # Capture is true or false and conditonally returns output.
-def build_image(build_dir, bitbake_corebase, bitbake_image, 
-                extra_conf_params=None, extra_bblayers=None, target=None, capture=False):
+def build_image(
+    build_dir,
+    bitbake_corebase,
+    bitbake_image,
+    extra_conf_params=None,
+    extra_bblayers=None,
+    target=None,
+    capture=False,
+):
     for param in extra_conf_params or []:
-            _add_to_local_conf(build_dir, param)
-    
+        _add_to_local_conf(build_dir, param)
+
     for layer in extra_bblayers or []:
-            _add_to_bblayers_conf(build_dir, layer)
+        _add_to_bblayers_conf(build_dir, layer)
 
     init_env_cmd = "cd %s && . oe-init-build-env %s" % (bitbake_corebase, build_dir)
 
     if target:
-        _run_bitbake(target,
-                     init_env_cmd, capture)
+        _run_bitbake(target, init_env_cmd, capture)
     else:
         _run_bitbake(bitbake_image, init_env_cmd, capture)
+
 
 def _run_bitbake(target, env_setup_cmd, capture=False):
     cmd = "%s && bitbake %s" % (env_setup_cmd, target)
@@ -392,7 +450,9 @@ def _run_bitbake(target, env_setup_cmd, capture=False):
                 break
 
             if line.find("is not a recognized MENDER_ variable") >= 0:
-                pytest.fail("Found variable which is not in mender-vars.json: %s" % line.strip())
+                pytest.fail(
+                    "Found variable which is not in mender-vars.json: %s" % line.strip()
+                )
 
             if capture:
                 output += line
@@ -416,37 +476,44 @@ def _run_bitbake(target, env_setup_cmd, capture=False):
 
     return output
 
+
 # Make sure we are constructing the paths the same way always
 def get_local_conf_path(build_dir):
     return os.path.join(build_dir, "conf", "local.conf")
 
+
 def get_local_conf_orig_path(build_dir):
     return os.path.join(build_dir, "conf", "local.conf.orig")
+
 
 def get_bblayers_conf_path(build_dir):
     return os.path.join(build_dir, "conf", "bblayers.conf")
 
+
 def get_bblayers_conf_orig_path(build_dir):
     return os.path.join(build_dir, "conf", "bblayers.conf.orig")
+
 
 def _add_to_local_conf(build_dir, string):
     """Add given string to local.conf before the build. Newline is added
     automatically."""
     with open(os.path.join(build_dir, "conf", "local.conf"), "a") as fd:
-        fd.write('\n## ADDED BY TEST\n')
+        fd.write("\n## ADDED BY TEST\n")
         fd.write("%s\n" % string)
+
 
 def _add_to_bblayers_conf(build_dir, string):
     """Add given string to bblayers.conf before the build. Newline is added
     automatically."""
     with open(os.path.join(build_dir, "conf", "bblayers.conf"), "a") as fd:
-        fd.write('\n## ADDED BY TEST\n')
+        fd.write("\n## ADDED BY TEST\n")
         fd.write("%s\n" % string)
+
 
 def reset_build_conf(build_dir, full_cleanup=False):
     # Restore original build configuration
     for conf in ["local", "bblayers"]:
-        new_file = os.path.join(build_dir, "conf", conf+".conf")
+        new_file = os.path.join(build_dir, "conf", conf + ".conf")
         old_file = new_file + ".orig"
 
         if os.path.exists(old_file):
@@ -480,11 +547,11 @@ class bitbake_env_from:
             else:
                 self.old_env[key] = None
 
-        self.old_path = os.environ['PATH']
+        self.old_path = os.environ["PATH"]
 
         os.environ.update(vars)
         # Exception for PATH, keep old path at end.
-        os.environ['PATH'] += ":" + self.old_path
+        os.environ["PATH"] += ":" + self.old_path
 
         return os.environ
 
@@ -511,10 +578,11 @@ def versions_of_recipe(recipe):
             versions.append(match.group(1))
     return versions
 
+
 def version_is_minimum(bitbake_variables, component, min_version):
-    version = bitbake_variables.get('PREFERRED_VERSION_pn-%s' % component)
+    version = bitbake_variables.get("PREFERRED_VERSION_pn-%s" % component)
     if version is None:
-        version = bitbake_variables.get('PREFERRED_VERSION_%s' % component)
+        version = bitbake_variables.get("PREFERRED_VERSION_%s" % component)
     if version is None:
         version = "master"
 
@@ -529,11 +597,12 @@ def version_is_minimum(bitbake_variables, component, min_version):
         # minimum version.
         return True
 
+
 @contextmanager
 def make_tempdir(delete=True):
     """context manager for temporary directories"""
-    tdir = tempfile.mkdtemp(prefix='meta-mender-acceptance.')
-    print('created dir', tdir)
+    tdir = tempfile.mkdtemp(prefix="meta-mender-acceptance.")
+    print("created dir", tdir)
     try:
         yield tdir
     finally:
