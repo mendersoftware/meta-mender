@@ -8,6 +8,7 @@
 #    part3: second rootfs, inactive, mirror of first,
 #           available as failsafe for when some update fails
 #    part4: persistent data partition
+#    partx: extra user defined partition
 
 python() {
     deprecated_vars = ['SDIMG_DATA_PART_DIR', 'SDIMG_DATA_PART_SIZE_MB',
@@ -137,6 +138,13 @@ EOF
 
     cat >> "$wks" <<EOF
 part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.dataimg" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_DATA_PART_SIZE_MB} --mkfs-extraopts='${MENDER_DATA_PART_FSOPTS}' $part_type_params
+EOF
+    # added extra partitions if exists
+    cat >> "$wks" <<EOF
+${@get_extra_parts_wks(d)}
+EOF
+
+    cat >> "$wks" <<EOF
 bootloader --ptable $ptable_type
 EOF
 

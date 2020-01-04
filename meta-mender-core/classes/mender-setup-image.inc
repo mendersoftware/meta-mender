@@ -27,7 +27,8 @@ ROOTFS_POSTPROCESS_COMMAND_append = " mender_update_fstab_file;"
 mender_update_fstab_file() {
     local tmpBootPart="${MENDER_BOOT_PART}"
     local tmpDataPart="${MENDER_DATA_PART}"
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+    local partuuid="${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}"
+    if [ ${partuuid} = "true" ]; then
         tmpBootPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_BOOT_PART}')}"
         tmpDataPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')}"
     fi
@@ -44,6 +45,21 @@ mender_update_fstab_file() {
 
     mkdir -p ${IMAGE_ROOTFS}/data
     printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpDataPart} /data ${MENDER_DATA_PART_FSTYPE} ${MENDER_DATA_PART_FSTAB_OPTS} 0 0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+
+    if [ -n "${MENDER_EXTRA_PARTS}" ]; then
+        if [ ${partuuid} = "true" ]; then
+           bbfatal "MENDER_EXTRA_PARTS and DISTRO_FEATURE 'mender-partuuid' are both defined and incompatible"
+        fi
+        local labels="${@get_extra_parts_labels(d)}"
+        dev_nr="${@mender_get_extra_parts_offset(d)}"
+
+        for label in $labels; do
+            mkdir -p ${IMAGE_ROOTFS}/mnt/$label
+            device="${MENDER_STORAGE_DEVICE_BASE}${dev_nr}"
+            printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${device} /mnt/$label auto defaults 0 0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+            dev_nr=$(expr $dev_nr + 1)
+        done
+    fi
 }
 
 def mender_default_state_scripts_version(d):
