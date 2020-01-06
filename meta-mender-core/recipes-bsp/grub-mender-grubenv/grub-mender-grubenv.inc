@@ -1,5 +1,7 @@
 inherit mender-helpers
 
+RPROVIDES_${PN} += "virtual/grub-bootconf"
+
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 GRUB_CONF_LOCATION = "${MENDER_BOOT_PART_MOUNT_LOCATION}/EFI/BOOT"
@@ -28,6 +30,7 @@ PACKAGECONFIG[debug-log] = ",,,"
 DEBUG_LOG_CATEGORY ?= "all"
 
 do_provide_debug_log() {
+    install -d ${B}
     echo "debug=${DEBUG_LOG_CATEGORY}" > ${B}/01_mender_debug_log_grub.cfg
 }
 python() {
