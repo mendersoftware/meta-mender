@@ -4,24 +4,21 @@ GO_IMPORT = "github.com/mendersoftware/mender-artifact"
 inherit go
 
 S = "${WORKDIR}/git"
-B = "${WORKDIR}/build"
 
-GOPATHDIR = "${B}/src/${GO_IMPORT}"
+GO_LDFLAGS = '-ldflags="${GO_RPATH} ${GO_LINKMODE} ${GO_MENDER_LDFLAGS} -extldflags '${GO_EXTLDFLAGS}'"'
+
+do_configure_append () {
+    # Create dummy file, see https://github.com/golang/go/issues/22409
+    echo "package tesseract" > ${S}/src/${GO_IMPORT}/dummy.go
+}
+
+python extract_main_version() {
+    import bb.process
+    workdir = '%s/src/%s' % (d.getVar('S'), d.getVar('GO_IMPORT'))
+    rev, _ = bb.process.run('git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD', cwd=workdir)
+    d.appendVar("GO_MENDER_LDFLAGS", " -X main.Version=%s" % rev)
+}
+
+do_compile[prefuncs] += "extract_main_version"
 
 BBCLASSEXTEND = "native"
-
-do_compile() {
-    # we could check out the sources at some destsuffix and use default
-    # do_compile from go.bbclass, but that would prevent us from always building
-    # the most recent version due to recursive expansion if SRCPV
-
-    GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go go env
-    if test -n "${GO_INSTALL}" ; then
-       oe_runmake GOPATH=${B}:${STAGING_LIBDIR}/${TARGET_SYS}/go -C ${GOPATHDIR} V=1 install
-    fi
-}
-
-do_install() {
-    install -d ${D}${bindir}
-    install ${B}/bin/mender-artifact -m 0755 ${D}${bindir}
-}
