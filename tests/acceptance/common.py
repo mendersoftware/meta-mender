@@ -222,9 +222,13 @@ def determine_active_passive_part(bitbake_variables, conn):
         )
 
 
+def get_ssh_common_args():
+    return "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
 def put_no_sftp(file, conn, remote="."):
-    cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    cmd = "scp -C %s" % get_ssh_common_args()
 
     try:
         conn.local(
@@ -238,7 +242,7 @@ def put_no_sftp(file, conn, remote="."):
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
 def get_no_sftp(file, conn, local="."):
-    cmd = "scp -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    cmd = "scp -C %s" % get_ssh_common_args()
     conn.local(
         "%s -P %s %s@%s:%s %s" % (cmd, conn.port, conn.user, conn.host, file, local)
     )
