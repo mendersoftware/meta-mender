@@ -8,7 +8,7 @@ B = "${WORKDIR}/build"
 
 GOPATHDIR = "${B}/src/${GO_IMPORT}"
 
-BBCLASSEXTEND = "native"
+BBCLASSEXTEND = "native nativesdk"
 
 do_compile() {
     # we could check out the sources at some destsuffix and use default
