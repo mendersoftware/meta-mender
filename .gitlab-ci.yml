@@ -1,10 +1,3 @@
 include:
   - project: 'Northern.tech/Mender/mendertesting'
     file: '.gitlab-ci-check-python3-format.yml'
-
-stages:
-  - test
-
-test:check-python3-formatting:
-  variables:
-      FORMAT_PYTHON3_DIRECTORIES: "tests/acceptance"

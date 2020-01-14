@@ -1,2 +1,17 @@
+
 [tool.black]
-	target-version = ['py38']
+target-version = ['py38']
+include = '.*/tests/acceptance/.*\.py$' # Match all Python files in the acceptance tests
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories
+    | \.git
+    | \.mypy_cache
+    | .*\.venv
+    | .*venv
+    | build
+    | dist
+  )/
+)
+'''
