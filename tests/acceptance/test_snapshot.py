@@ -43,3 +43,38 @@ class TestSnapshot:
 
         finally:
             connection.run("umount /mnt || true")
+
+    @pytest.mark.min_mender_version("2.2.0")
+    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
+    def test_snapshot_using_mender_artifact(self, bitbake_variables, connection):
+        try:
+            (active, passive) = determine_active_passive_part(
+                bitbake_variables, connection
+            )
+
+            common_args = get_ssh_common_args()
+            # mender-artifact prefixes each ssh argument with "-S"
+            common_args = common_args.replace(" ", " -S ")
+
+            subprocess.check_call(
+                "mender-artifact write rootfs-image -S %s -n test -t test -o test_snapshot_using_mender_artifact.mender -f ssh://%s@%s:%s"
+                % (common_args, connection.user, connection.host, connection.port),
+                shell=True,
+            )
+
+            output = subprocess.check_output(
+                "mender-artifact read test_snapshot_using_mender_artifact.mender",
+                shell=True,
+            ).decode()
+
+            partsize = connection.run("blockdev --getsize64 %s" % active).stdout.strip()
+
+            # Ensure that the payload size of the produced artifact matches the
+            # partition.
+            assert re.search("size: *%s" % partsize, output) is not None
+
+        finally:
+            try:
+                os.remove("test_snapshot_using_mender_artifact.mender")
+            except:
+                pass
