@@ -33,7 +33,7 @@ def config_host(host):
         return "localhost", 8822
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def connection(request, user, host):
     host, port = config_host(host)
     conn = Connection(
@@ -158,7 +158,7 @@ def setup_qemu(request, build_dir, conn):
     request.addfinalizer(qemu_finalizer)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def setup_board(request, build_image_fn, connection, board_type):
 
     print("board type: ", board_type)
