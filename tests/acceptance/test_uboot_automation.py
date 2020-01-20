@@ -38,7 +38,7 @@ class TestUbootAutomation:
         # approximately 1G, and that we can use half of the memory for that.
         with open("/proc/meminfo") as fd:
             for line in fd.readlines():
-                match = re.match("^MemTotal:\s+([0-9]+)\s*kB", line)
+                match = re.match(r"^MemTotal:\s+([0-9]+)\s*kB", line)
                 if match:
                     memory_kb = int(match.group(1))
                     break

@@ -252,7 +252,7 @@ class TestMenderArtifact:
         output = subprocess.check_output(["mender-artifact", "read", mender_image])
 
         match = re.search(
-            ".*name:\s+(?P<image>[a-z-.0-9]+).*\n.*size:\s+(?P<size>[0-9]+)",
+            r".*name:\s+(?P<image>[a-z-.0-9]+).*\n.*size:\s+(?P<size>[0-9]+)",
             output.decode(),
             flags=re.MULTILINE,
         )
@@ -265,7 +265,7 @@ class TestMenderArtifact:
         size_from_build = int(bitbake_variables["MENDER_CALC_ROOTFS_SIZE"]) * 1024
 
         print("matched:", gd)
-        if re.match(".*\.ubifs", gd["image"]):
+        if re.match(r".*\.ubifs", gd["image"]):
             # some filesystems (eg. ubifs) may use compression or empty space may
             # not be a part of the image, in which case the image will be smaller
             # or equal to MENDER_CALC_ROOTFS_SIZE
@@ -273,7 +273,7 @@ class TestMenderArtifact:
             # assume that the compressed image will be not less than 30% of
             # allocated rootfs size size
             assert size_from_artifact >= 0.3 * size_from_build
-        elif re.match(".*\.ext[234]", gd["image"]):
+        elif re.match(r".*\.ext[234]", gd["image"]):
             assert size_from_artifact == size_from_build
         else:
             pytest.skip("unsupported image artifact {}".format(gd["image"]))

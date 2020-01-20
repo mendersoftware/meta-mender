@@ -30,7 +30,7 @@ def extract_partition(img, number):
         if re.search("img%d" % number, line.decode()) is None:
             continue
 
-        match = re.match("\s*\S+\s+(\S+)\s+(\S+)", line.decode())
+        match = re.match(r"\s*\S+\s+(\S+)\s+(\S+)", line.decode())
         assert match is not None
         start = int(match.group(1))
         end = int(match.group(2)) + 1
