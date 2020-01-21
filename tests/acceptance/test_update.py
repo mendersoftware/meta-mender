@@ -106,9 +106,9 @@ class Helpers:
     @staticmethod
     def get_install_flag(connection):
         output = connection.run("mender --help 2>&1", warn=True).stdout
-        if re.search("^\s*install(\s|$)", output, flags=re.MULTILINE):
+        if re.search(r"^\s*install(\s|$)", output, flags=re.MULTILINE):
             return "install"
-        elif re.search("^\s*-install(\s|$)", output, flags=re.MULTILINE):
+        elif re.search(r"^\s*-install(\s|$)", output, flags=re.MULTILINE):
             return "-install"
         else:
             return "-rootfs"
