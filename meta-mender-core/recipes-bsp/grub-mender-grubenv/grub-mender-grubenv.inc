@@ -1,4 +1,5 @@
 inherit mender-helpers
+inherit ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', 'user-key-store', '', d)}
 
 RPROVIDES_${PN} += "virtual/grub-bootconf"
 
@@ -19,6 +20,8 @@ FILES_${PN} += "/data/mender_grubenv.config \
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
+
+SRC_URI_append = "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', ' file://01_efi_secure_boot_grub.cfg;subdir=git', '', d)}"
 
 PACKAGECONFIG[debug-pause] = ",,,"
 SRC_URI_append = "${@bb.utils.contains('PACKAGECONFIG', 'debug-pause', ' file://06_mender_debug_pause_grub.cfg;subdir=git', '', d)}"
@@ -93,3 +96,35 @@ do_install() {
 
     oe_runmake -f ${S}/Makefile srcdir=${S} ENV_DIR=${GRUB_CONF_LOCATION} DESTDIR=${D} install
 }
+
+python() {
+    if bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', True, False, d):
+        bb.build.addtask('do_sign', 'do_deploy do_package', 'do_install', d)
+        bb.build.addtask('do_chownboot', 'do_package', 'do_sign', d)
+}
+
+python do_sign() {
+    uks_bl_sign("%s%s/grub.cfg" % (d.getVar("D"), d.getVar("GRUB_CONF_LOCATION")), d)
+    uks_bl_sign("%s%s/mender_grubenv1/lock" % (d.getVar("D"), d.getVar("GRUB_CONF_LOCATION")), d)
+    uks_bl_sign("%s%s/mender_grubenv2/lock" % (d.getVar("D"), d.getVar("GRUB_CONF_LOCATION")), d)
+    uks_bl_sign("%s%s/mender_grubenv1/lock.sha256sum" % (d.getVar("D"), d.getVar("GRUB_CONF_LOCATION")), d)
+    uks_bl_sign("%s%s/mender_grubenv2/lock.sha256sum" % (d.getVar("D"), d.getVar("GRUB_CONF_LOCATION")), d)
+}
+do_sign[prefuncs] += "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', 'check_deploy_keys', '', d)}"
+do_sign[prefuncs] += "${@'check_boot_public_key' if d.getVar('GRUB_SIGN_VERIFY', True) == '1' else ''}"
+
+fakeroot do_chownboot() {
+    chown root:root -R "${D}${GRUB_CONF_LOCATION}/grub.cfg${SB_FILE_EXT}" \
+           "${D}${GRUB_CONF_LOCATION}/mender_grubenv1/lock${SB_FILE_EXT}" \
+           "${D}${GRUB_CONF_LOCATION}/mender_grubenv2/lock${SB_FILE_EXT}" \
+           "${D}${GRUB_CONF_LOCATION}/mender_grubenv1/lock.sha256sum${SB_FILE_EXT}" \
+           "${D}${GRUB_CONF_LOCATION}/mender_grubenv2/lock.sha256sum${SB_FILE_EXT}"
+}
+FILES_${PN}_append = "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', \
+                                           ' \
+                                             ${GRUB_CONF_LOCATION}/grub.cfg${SB_FILE_EXT} \
+                                             ${GRUB_CONF_LOCATION}/mender_grubenv1/lock${SB_FILE_EXT} \
+                                             ${GRUB_CONF_LOCATION}/mender_grubenv2/lock${SB_FILE_EXT} \
+                                             ${GRUB_CONF_LOCATION}/mender_grubenv1/lock.sha256sum${SB_FILE_EXT} \
+                                             ${GRUB_CONF_LOCATION}/mender_grubenv2/lock.sha256sum${SB_FILE_EXT} \
+                                           ', '', d)}"
