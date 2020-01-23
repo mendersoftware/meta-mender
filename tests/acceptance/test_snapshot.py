@@ -78,21 +78,49 @@ class TestSnapshot:
     @pytest.mark.min_mender_version("2.2.0")
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     def test_snapshot_avoid_deadlock(self, connection):
+        loop = None
         try:
+            # We need to create a temporary writable filesystem, because the
+            # rootfs filesystem is by default tested with a read-only rootfs,
+            # and we need to write a file to the filesystem we dump.
+            connection.run(
+                "dd if=/dev/zero of=/data/tmp-file-system count=%d"
+                % (50 * 2048)  # 50 * 2048 * 512 = 50 MiB
+            )
+            connection.run("mkfs.ext4 /data/tmp-file-system")
+            loop = connection.run(
+                "losetup --show -f /data/tmp-file-system"
+            ).stdout.strip()
+            connection.run("mkdir /data/mnt")
+            connection.run("mount %s /data/mnt -t ext4" % loop)
+            # Fill with some garbage so that we get a bad compression rate and
+            # enough data to trigger buffering.
+            connection.run(
+                "dd if=/dev/urandom of=/data/mnt/random-data count=%d" % (10 * 2048)
+            )
+
             # Try to snapshot to same partition we are freezing.
-            result = connection.run("mender snapshot dump > /snapshot-test", warn=True)
+            result = connection.run(
+                "mender snapshot dump -fs-path /data/mnt > /data/mnt/snapshot-test",
+                warn=True,
+            )
             assert result.return_code != 0
+            assert "Dumping the filesystem to itself is not permitted" in result.stderr
 
             # Do it again, but this time indirectly.
             result = connection.run(
-                "bash -c 'set -o pipefail; mender snapshot dump | gzip -c > /snapshot-test'",
+                "bash -c 'set -o pipefail; mender snapshot dump -fs-path /data/mnt | gzip -c > /data/mnt/snapshot-test'",
                 warn=True,
             )
             assert result.return_code != 0
             assert "Watchdog timer expired" in result.stderr
 
         finally:
-            connection.run("rm -f /snapshot-test")
+            connection.run("umount /data/mnt || true")
+            connection.run("rmdir /data/mnt || true")
+            if loop is not None:
+                connection.run("losetup -d %s" % loop)
+            connection.run("rm -f /data/tmp-file-system")
 
     @pytest.mark.min_mender_version("2.2.0")
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
