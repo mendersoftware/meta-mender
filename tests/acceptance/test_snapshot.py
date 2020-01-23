@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2019 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ from common import *
 class TestSnapshot:
     @pytest.mark.min_mender_version("2.2.0")
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
-    def test_basic_snapshot(self, bitbake_variables, connection):
+    @pytest.mark.parametrize("compression", [("", ">"), ("-C gzip", "| gunzip -c >")])
+    def test_basic_snapshot(self, compression, bitbake_variables, connection):
         try:
             (active, passive) = determine_active_passive_part(
                 bitbake_variables, connection
@@ -32,7 +33,10 @@ class TestSnapshot:
             connection.run("dd if=/dev/zero of=%s bs=1M count=100" % passive)
 
             # Dump what we currently have to the inactive partition.
-            connection.run("mender snapshot dump > %s" % passive)
+            connection.run(
+                "mender snapshot dump %s %s %s"
+                % (compression[0], compression[1], passive)
+            )
 
             # Make sure this looks like a sane filesystem.
             connection.run("fsck.ext4 -p %s" % passive)
@@ -43,6 +47,52 @@ class TestSnapshot:
 
         finally:
             connection.run("umount /mnt || true")
+
+    @pytest.mark.min_mender_version("2.2.0")
+    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
+    def test_snapshot_inactive(self, bitbake_variables, connection):
+        try:
+            (active, passive) = determine_active_passive_part(
+                bitbake_variables, connection
+            )
+
+            test_str = "TeSt StrIng!#"
+
+            # Seed the initial part of the inactive partition with a test string
+            connection.run("echo '%s' | dd of=%s" % (test_str, passive))
+
+            # Try to snapshot inactive partition, keeping the initial part, and
+            # dumping the rest.
+            connection.run(
+                "mender snapshot dump -fs-path %s | ( dd of=/data/snapshot-test bs=%d count=1; cat > /dev/null )"
+                % (passive, len(test_str))
+            )
+
+            output = connection.run("cat /data/snapshot-test").stdout.strip()
+
+            assert output == test_str
+
+        finally:
+            connection.run("rm -f /data/snapshot-test")
+
+    @pytest.mark.min_mender_version("2.2.0")
+    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
+    def test_snapshot_avoid_deadlock(self, connection):
+        try:
+            # Try to snapshot to same partition we are freezing.
+            result = connection.run("mender snapshot dump > /snapshot-test", warn=True)
+            assert result.return_code != 0
+
+            # Do it again, but this time indirectly.
+            result = connection.run(
+                "bash -c 'set -o pipefail; mender snapshot dump | gzip -c > /snapshot-test'",
+                warn=True,
+            )
+            assert result.return_code != 0
+            assert "Watchdog timer expired" in result.stderr
+
+        finally:
+            connection.run("rm -f /snapshot-test")
 
     @pytest.mark.min_mender_version("2.2.0")
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
