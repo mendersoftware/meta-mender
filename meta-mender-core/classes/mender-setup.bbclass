@@ -208,7 +208,7 @@ IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-data
 # Originally defined in bitbake.conf. We define them here so that images with
 # the same MACHINE name, but different MENDER_DEVICE_TYPE, will not result in
 # the same image file name.
-IMAGE_NAME = "${IMAGE_BASENAME}-${MENDER_DEVICE_TYPE}-${IMAGE_VERSION_SUFFIX}"
+IMAGE_NAME = "${IMAGE_BASENAME}-${MENDER_DEVICE_TYPE}${IMAGE_VERSION_SUFFIX}"
 IMAGE_LINK_NAME = "${IMAGE_BASENAME}-${MENDER_DEVICE_TYPE}"
 
 # MENDER_FEATURES_ENABLE and MENDER_FEATURES_DISABLE map to
