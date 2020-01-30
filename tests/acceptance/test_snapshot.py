@@ -50,6 +50,34 @@ class TestSnapshot:
 
     @pytest.mark.min_mender_version("2.2.0")
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
+    def test_snapshot_device_file(self, bitbake_variables, connection):
+        try:
+            (active, passive) = determine_active_passive_part(
+                bitbake_variables, connection
+            )
+
+            # Wipe the inactive partition first.
+            connection.run("dd if=/dev/zero of=%s bs=1M count=100" % passive)
+
+            # Dump what we currently have to the inactive partition, using
+            # device file reference.
+            connection.run(
+                "mender snapshot dump -fs-path %s > %s"
+                % (active, passive)
+            )
+
+            # Make sure this looks like a sane filesystem.
+            connection.run("fsck.ext4 -p %s" % passive)
+
+            # And that it can be mounted with actual content.
+            connection.run("mount %s /mnt" % passive)
+            connection.run("test -f /mnt/etc/passwd")
+
+        finally:
+            connection.run("umount /mnt || true")
+
+    @pytest.mark.min_mender_version("2.2.0")
+    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     def test_snapshot_inactive(self, bitbake_variables, connection):
         try:
             (active, passive) = determine_active_passive_part(
