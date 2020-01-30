@@ -64,7 +64,7 @@ class TestSnapshot:
             # Try to snapshot inactive partition, keeping the initial part, and
             # dumping the rest.
             connection.run(
-                "mender snapshot dump -fs-path %s | ( dd of=/data/snapshot-test bs=%d count=1; cat > /dev/null )"
+                "mender snapshot dump --source %s | ( dd of=/data/snapshot-test bs=%d count=1; cat > /dev/null )"
                 % (passive, len(test_str))
             )
 
@@ -101,7 +101,7 @@ class TestSnapshot:
 
             # Try to snapshot to same partition we are freezing.
             result = connection.run(
-                "mender snapshot dump -fs-path /data/mnt > /data/mnt/snapshot-test",
+                "mender snapshot dump --source /data/mnt > /data/mnt/snapshot-test",
                 warn=True,
             )
             assert result.return_code != 0
@@ -109,7 +109,7 @@ class TestSnapshot:
 
             # Do it again, but this time indirectly.
             result = connection.run(
-                "bash -c 'set -o pipefail; mender snapshot dump -fs-path /data/mnt | gzip -c > /data/mnt/snapshot-test'",
+                "bash -c 'set -o pipefail; mender snapshot dump --source /data/mnt | gzip -c > /data/mnt/snapshot-test'",
                 warn=True,
             )
             assert result.return_code != 0
