@@ -62,7 +62,7 @@ class TestSnapshot:
             # Dump what we currently have to the inactive partition, using
             # device file reference.
             connection.run(
-                "mender snapshot dump -fs-path %s > %s"
+                "mender snapshot dump --source %s > %s"
                 % (active, passive)
             )
 
@@ -133,7 +133,7 @@ class TestSnapshot:
                 warn=True,
             )
             assert result.return_code != 0
-            assert "Dumping the filesystem to itself is not permitted" in result.stderr
+            assert "Freeze timer expired" in result.stderr
 
             # Do it again, but this time indirectly.
             result = connection.run(
@@ -141,7 +141,7 @@ class TestSnapshot:
                 warn=True,
             )
             assert result.return_code != 0
-            assert "Watchdog timer expired" in result.stderr
+            assert "Freeze timer expired" in result.stderr
 
         finally:
             connection.run("umount /data/mnt || true")
