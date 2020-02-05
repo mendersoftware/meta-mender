@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2019 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ from common import *
 class TestSnapshot:
     @pytest.mark.min_mender_version("2.2.0")
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
-    def test_basic_snapshot(self, bitbake_variables, connection):
+    @pytest.mark.parametrize("compression", [("", ">"), ("-C gzip", "| gunzip -c >")])
+    def test_basic_snapshot(self, compression, bitbake_variables, connection):
         try:
             (active, passive) = determine_active_passive_part(
                 bitbake_variables, connection
@@ -32,7 +33,10 @@ class TestSnapshot:
             connection.run("dd if=/dev/zero of=%s bs=1M count=100" % passive)
 
             # Dump what we currently have to the inactive partition.
-            connection.run("mender snapshot dump > %s" % passive)
+            connection.run(
+                "mender snapshot dump %s %s %s"
+                % (compression[0], compression[1], passive)
+            )
 
             # Make sure this looks like a sane filesystem.
             connection.run("fsck.ext4 -p %s" % passive)
@@ -43,6 +47,105 @@ class TestSnapshot:
 
         finally:
             connection.run("umount /mnt || true")
+
+    @pytest.mark.min_mender_version("2.2.0")
+    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
+    def test_snapshot_device_file(self, bitbake_variables, connection):
+        try:
+            (active, passive) = determine_active_passive_part(
+                bitbake_variables, connection
+            )
+
+            # Wipe the inactive partition first.
+            connection.run("dd if=/dev/zero of=%s bs=1M count=100" % passive)
+
+            # Dump what we currently have to the inactive partition, using
+            # device file reference.
+            connection.run("mender snapshot dump --source %s > %s" % (active, passive))
+
+            # Make sure this looks like a sane filesystem.
+            connection.run("fsck.ext4 -p %s" % passive)
+
+            # And that it can be mounted with actual content.
+            connection.run("mount %s /mnt" % passive)
+            connection.run("test -f /mnt/etc/passwd")
+
+        finally:
+            connection.run("umount /mnt || true")
+
+    @pytest.mark.min_mender_version("2.2.0")
+    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
+    def test_snapshot_inactive(self, bitbake_variables, connection):
+        try:
+            (active, passive) = determine_active_passive_part(
+                bitbake_variables, connection
+            )
+
+            test_str = "TeSt StrIng!#"
+
+            # Seed the initial part of the inactive partition with a test string
+            connection.run("echo '%s' | dd of=%s" % (test_str, passive))
+
+            # Try to snapshot inactive partition, keeping the initial part, and
+            # dumping the rest.
+            connection.run(
+                "mender snapshot dump --source %s | ( dd of=/data/snapshot-test bs=%d count=1; cat > /dev/null )"
+                % (passive, len(test_str))
+            )
+
+            output = connection.run("cat /data/snapshot-test").stdout.strip()
+
+            assert output == test_str
+
+        finally:
+            connection.run("rm -f /data/snapshot-test")
+
+    @pytest.mark.min_mender_version("2.2.0")
+    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
+    def test_snapshot_avoid_deadlock(self, connection):
+        loop = None
+        try:
+            # We need to create a temporary writable filesystem, because the
+            # rootfs filesystem is by default tested with a read-only rootfs,
+            # and we need to write a file to the filesystem we dump.
+            connection.run(
+                "dd if=/dev/zero of=/data/tmp-file-system count=%d"
+                % (50 * 2048)  # 50 * 2048 * 512 = 50 MiB
+            )
+            connection.run("mkfs.ext4 /data/tmp-file-system")
+            loop = connection.run(
+                "losetup --show -f /data/tmp-file-system"
+            ).stdout.strip()
+            connection.run("mkdir /data/mnt")
+            connection.run("mount %s /data/mnt -t ext4" % loop)
+            # Fill with some garbage so that we get a bad compression rate and
+            # enough data to trigger buffering.
+            connection.run(
+                "dd if=/dev/urandom of=/data/mnt/random-data count=%d" % (10 * 2048)
+            )
+
+            # Try to snapshot to same partition we are freezing.
+            result = connection.run(
+                "mender snapshot dump --source /data/mnt > /data/mnt/snapshot-test",
+                warn=True,
+            )
+            assert result.return_code != 0
+            assert "Freeze timer expired" in result.stderr
+
+            # Do it again, but this time indirectly.
+            result = connection.run(
+                "bash -c 'set -o pipefail; mender snapshot dump --source /data/mnt | gzip -c > /data/mnt/snapshot-test'",
+                warn=True,
+            )
+            assert result.return_code != 0
+            assert "Freeze timer expired" in result.stderr
+
+        finally:
+            connection.run("umount /data/mnt || true")
+            connection.run("rmdir /data/mnt || true")
+            if loop is not None:
+                connection.run("losetup -d %s" % loop)
+            connection.run("rm -f /data/tmp-file-system")
 
     @pytest.mark.min_mender_version("2.2.0")
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
