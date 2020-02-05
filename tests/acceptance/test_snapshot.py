@@ -61,10 +61,7 @@ class TestSnapshot:
 
             # Dump what we currently have to the inactive partition, using
             # device file reference.
-            connection.run(
-                "mender snapshot dump --source %s > %s"
-                % (active, passive)
-            )
+            connection.run("mender snapshot dump --source %s > %s" % (active, passive))
 
             # Make sure this looks like a sane filesystem.
             connection.run("fsck.ext4 -p %s" % passive)
