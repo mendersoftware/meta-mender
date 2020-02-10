@@ -8,7 +8,7 @@ def cert_location_if_server_crt_in(src_uri, d):
     return ""
 
 MENDER_SERVER_URL ?= "https://docker.mender.io"
-MENDER_CERT_LOCATION ?= "${@cert_location_if_server_crt_in('${SRC_URI}', d)}"
+MENDER_CERT_LOCATION ??= "${@cert_location_if_server_crt_in('${SRC_URI}', d)}"
 # Tenant token
 MENDER_TENANT_TOKEN ?= "dummy"
 SYSTEMD_AUTO_ENABLE ?= "enable"
@@ -172,7 +172,8 @@ do_install() {
 
     #install server certificate
     if [ -f ${WORKDIR}/server.crt ]; then
-        install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
+        install -m 0755 -d $(dirname ${D}${MENDER_CERT_LOCATION})
+        install -m 0444 ${WORKDIR}/server.crt ${D}${MENDER_CERT_LOCATION}
     fi
 
     install -d ${D}/${localstatedir}/lib/mender
