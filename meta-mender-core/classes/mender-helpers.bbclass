@@ -341,7 +341,14 @@ def get_extra_parts(d):
 
     return final_parts
 
-def get_extra_parts_by_id(d, id):
+def get_extra_parts_flags(d):
+    partsflags = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
+    if partsflags:
+        return partsflags.keys()
+
+    return []
+
+def get_extra_parts_by_id(d, id = None):
     partsflags = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
     if partsflags:
         if id in partsflags.keys():
@@ -350,14 +357,20 @@ def get_extra_parts_by_id(d, id):
 
 def get_extra_parts_labels(d):
     labels = []
-    parts = get_extra_parts(d)
-    if parts:
-        for part in parts:
-            s = part.find("--label")
-            if s > 0:
-                e = part.find("--", s + 2)
-                labels.append(part[s + len("--label="):e])
+    ids = get_extra_parts_flags(d)
+    if ids:
+        for id in ids:
+            labels.append(get_extra_parts_label(d, id))
     return ' '.join(labels)
+
+def get_extra_parts_label(d, id = None):
+    part = get_extra_parts_by_id(d, id)
+    if part:
+        import re
+        match = re.search(r'--label=(\S+)', part)
+        return match.group(1) if match else ""
+
+    return ""
 
 def get_extra_parts_wks(d):
     final_parts = []
@@ -366,3 +379,27 @@ def get_extra_parts_wks(d):
         for part in parts:
             final_parts.append("part --ondisk \"$ondisk_dev\" --align \"$alignment_kb\" {}".format(part))
     return '\n'.join(final_parts)
+
+def get_extra_parts_fstab_opts(d, id = None):
+    parts_fstab_flags = d.getVarFlags("MENDER_EXTRA_PARTS_FSTAB") or {}
+    extra_parts_flags = (d.getVar('MENDER_EXTRA_PARTS') or "").split()
+    if parts_fstab_flags:
+        if id in parts_fstab_flags:
+            if len(parts_fstab_flags[id].split()) < 2:
+                bb.fatal("MENDER_EXTRA_PARTS_FSTAB[%s] is invalid. You need to provide parameters for fs_vfstype and fs_mntops (see 'man fstab')" % id)	
+            else:
+                return parts_fstab_flags[id]
+
+    return "auto default"
+
+def get_extra_parts_fstab(d):
+    out = []
+    extra_parts_offset = mender_get_extra_parts_offset(d)
+    device = d.getVar('MENDER_STORAGE_DEVICE_BASE')
+    for part in get_extra_parts_flags(d):
+       label = get_extra_parts_label(d, part)
+       fstype_opts = get_extra_parts_fstab_opts(d, part).split()
+       out.append("{} {} {} {} 0 0".format(device + str(extra_parts_offset), "/mnt/{}".format(label), fstype_opts[0], fstype_opts[1]))
+       extra_parts_offset += 1
+
+    return '\n'.join(out)
