@@ -220,8 +220,8 @@ mender_get_clean_kernel_devicetree() {
     DTB_COUNT=$(echo "$MENDER_DTB_NAME" | wc -l)
 
     if [ "$DTB_COUNT" -ne 1 ]; then
-        bbwarn "Found more than one dtb specified in KERNEL_DEVICETREE. Only one should be specified. Choosing the last one."
         MENDER_DTB_NAME="$(echo "$MENDER_DTB_NAME" | tail -1)"
+        bbwarn "Found more than one dtb specified in KERNEL_DEVICETREE (${KERNEL_DEVICETREE}). Only one should be specified. Choosing the last one: ${MENDER_DTB_NAME}. Set KERNEL_DEVICETREE to the desired dtb file to silence this warning."
     fi
 
     # Now strip any subdirectories off.  Some kernel builds require KERNEL_DEVICETREE to be defined, for example,
@@ -284,9 +284,13 @@ mender_merge_bootfs_and_image_boot_files() {
                 destfile="$W/$dest"
             fi
             if [ -e "$destfile" ]; then
-                bbfatal "$destfile already exists in boot partition. Please verify that packages do not put files in the boot partition that conflict with IMAGE_BOOT_FILES."
+                if ! cmp --quiet "$file" "$destfile"; then
+                    bbfatal "$destfile already exists in boot partition. Please verify that packages do not put files in the boot partition that conflict with IMAGE_BOOT_FILES."
+                fi
+            else
+                # create a hardlink if possible (prerequisite: the paths are below the same mount point), do a normal copy otherwise
+                cp -l "$file" "$destfile" || cp "$file" "$destfile"
             fi
-            cp -l "$file" "$destfile"
         done
     done
 }
