@@ -267,7 +267,6 @@ _MENDER_PART_IMAGE_DEPENDS_append_mender-grub_arm =     " u-boot:do_deploy"
 _MENDER_PART_IMAGE_DEPENDS_append_mender-grub_aarch64 = " u-boot:do_deploy"
 
 _MENDER_PART_IMAGE_DEPENDS_append_mender-uboot = " u-boot:do_deploy"
-_MENDER_PART_IMAGE_DEPENDS_append_mender-grub = " grub-efi:do_deploy"
 _MENDER_PART_IMAGE_DEPENDS_append_mender-grub_mender-bios = " grub:do_deploy"
 
 do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"

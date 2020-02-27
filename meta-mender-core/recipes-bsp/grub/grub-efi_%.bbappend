@@ -1,12 +1,14 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI_append_cfg_file += " file://cfg"
 
+EFI_PROVIDER ?= "${_MENDER_EFI_PROVIDER_DEFAULT}"
+_MENDER_EFI_PROVIDER_DEFAULT = ""
+_MENDER_EFI_PROVIDER_DEFAULT_mender-grub = "grub-efi"
+_MENDER_EFI_PROVIDER_DEFAULT_mender-grub_mender-bios = ""
+
 include grub-mender.inc
 
 EFI_BOOT_PATH ?= ""
-
-FILES_${PN}_remove_mender-install = " /boot/EFI/BOOT/${GRUB_IMAGE} "
-FILES_${PN}_append_mender-install = " ${MENDER_BOOT_PART_MOUNT_LOCATION}/EFI/BOOT/${GRUB_IMAGE} "
 
 # When using mender and efi-secure-boot, these conf files will be provided by grub-mender-grubenv
 CONFFILES_${PN}_remove_mender-grub = " \
@@ -15,14 +17,6 @@ CONFFILES_${PN}_remove_mender-grub = " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '${EFI_BOOT_PATH}/boot-menu.inc', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '${EFI_BOOT_PATH}/efi-secure-boot.inc', '', d)} \
 "
-
-do_install_append_class-target() {
-    if "${@bb.utils.contains('DISTRO_FEATURES', 'mender-install', 'true', 'false', d)}"; then
-        install -d ${D}/${MENDER_BOOT_PART_MOUNT_LOCATION}
-        mv ${D}/boot/EFI ${D}/${MENDER_BOOT_PART_MOUNT_LOCATION}
-        rmdir ${D}/boot || true
-    fi
-}
 
 # Allow the cfg and signature files to be installed by grub-mender-grubenv
 python do_cleanconfigs_class-target() {
