@@ -13,6 +13,11 @@ MENDER_STORAGE_DEVICE_BASE_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE}_"
 MENDER_ROOTFS_PART_A_NUMBER_DEFAULT_mender-ubi = "0"
 MENDER_ROOTFS_PART_B_NUMBER_DEFAULT_mender-ubi = "1"
 
+# The numbers of the two kernel partitions in the A/B partition layout.
+# Not used in most situations.
+MENDER_KERNEL_PART_A_NUMBER_DEFAULT_mender-ubi = ""
+MENDER_KERNEL_PART_B_NUMBER_DEFAULT_mender-ubi = ""
+
 # The partition number holding the data partition.
 MENDER_DATA_PART_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE_BASE}2"
 MENDER_DATA_PART_FSTYPE_DEFAULT_mender-ubi = "ubifs"
@@ -25,6 +30,8 @@ MENDER_DATA_PART_FSTYPE_DEFAULT_mender-ubi = "ubifs"
 # ubifsmount ubi0:rootfsa
 MENDER_ROOTFS_PART_A_NAME_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE}:rootfsa"
 MENDER_ROOTFS_PART_B_NAME_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE}:rootfsb"
+MENDER_KERNEL_PART_A_NAME_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE}:kernela"
+MENDER_KERNEL_PART_B_NAME_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE}:kernelb"
 
 # The name of of the MTD part holding your UBI volumes.
 MENDER_MTD_UBI_DEVICE_NAME_DEFAULT_mender-ubi = "ubi"

@@ -4,7 +4,9 @@
 #    ubi0: first rootfs, active
 #    ubi1: second rootfs, inactive, mirror of first,
 #           available as failsafe for when some update fails
-#    ubi2: persistent data partition
+#    ubi2: (optional) kernel for active system
+#    ubi3: (optional) kernel for inactive system
+#    ubi2 or 4: persistent data partition
 
 
 inherit image
@@ -69,6 +71,35 @@ vol_id=1
 vol_size=${MENDER_CALC_ROOTFS_SIZE}KiB
 vol_type=dynamic
 vol_name=rootfsb
+EOF
+
+    if [ "${MENDER_KERNEL_PART_A_SIZE_MB" -ne "0" ]; then
+        cat >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg <<EOF
+
+[kernelA]
+mode=ubi
+vol_id=2
+vol_size=${MENDER_KERNEL_PART_A_SIZE_MB}MiB
+vol_type=dynamic
+vol_name=kernelA
+
+EOF
+    fi
+
+    if [ "${MENDER_KERNEL_PART_B_SIZE_MB" -ne "0" ]; then
+        cat >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg <<EOF
+
+[kernelB]
+mode=ubi
+vol_id=2
+vol_size=${MENDER_KERNEL_PART_B_SIZE_MB}MiB
+vol_type=dynamic
+vol_name=kernelB
+
+EOF
+    fi
+
+    cat >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg <<EOF
 
 [data]
 mode=ubi

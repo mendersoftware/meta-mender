@@ -27,9 +27,14 @@ ROOTFS_POSTPROCESS_COMMAND_append = " mender_update_fstab_file;"
 mender_update_fstab_file() {
     local tmpBootPart="${MENDER_BOOT_PART}"
     local tmpDataPart="${MENDER_DATA_PART}"
+    local tmpKernelAPart="${MENDER_KERNEL_PART_A}"
+    local tmpKernelBPart="${MENDER_KERNEL_PART_B}"
+
     if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
         tmpBootPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_BOOT_PART}')}"
         tmpDataPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')}"
+        tmpKernelAPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_KERNEL_PART_A}')}"
+        tmpKernelBPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_KERNEL_PART_B}')}"
     fi
 
     if ! ${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', 'true', 'false', d)}; then
@@ -44,6 +49,15 @@ mender_update_fstab_file() {
 
     mkdir -p ${IMAGE_ROOTFS}/data
     printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpDataPart} /data ${MENDER_DATA_PART_FSTYPE} ${MENDER_DATA_PART_FSTAB_OPTS} 0 0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+
+    if [ "${MENDER_KERNEL_PART_A_SIZE_MB}" != "0" ] && [ -n "${MENDER_KERNEL_PART_A}" ]; then
+        mkdir -p ${IMAGE_ROOTFS}/kernelA
+        printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpKernelAPart} /kernelA ${ARTIFACTIMG_FSTYPE} ${MENDER_KERNEL_PART_A_FSTAB_OPTS} 0 0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    fi
+    if [ "${MENDER_KERNEL_PART_B_SIZE_MB}" != "0" ] && [ -n "${MENDER_KERNEL_PART_B}" ]; then
+        mkdir -p ${IMAGE_ROOTFS}/kernelB
+        printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpKernelBPart} /kernelB ${ARTIFACTIMG_FSTYPE} ${MENDER_KERNEL_PART_B_FSTAB_OPTS} 0 0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    fi
 }
 
 def mender_default_state_scripts_version(d):

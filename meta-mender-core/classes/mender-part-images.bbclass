@@ -3,10 +3,12 @@
 # how to boot the image.
 
 # The partitioning scheme is:
-#    part1: FAT partition with bootloader
-#    part2: first rootfs, active
-#    part3: second rootfs, inactive, mirror of first,
-#           available as failsafe for when some update fails
+#    (optional) FAT partition with bootloader
+#    first rootfs, active
+#    second rootfs, inactive
+#    (optional) first kernel, paired with active rootfs
+#    (optional) second kernel, paired with inactive rootfs
+#    (optional) swap
 #    part4: persistent data partition
 
 python() {
@@ -135,6 +137,18 @@ part swap --ondisk "$ondisk_dev" --fstype=swap --label swap --align $alignment_k
 EOF
     fi
 
+    if [ "${MENDER_KERNEL_PART_A_SIZE_MB}" -ne "0" ]; then
+        cat >> "$wks" <<EOF
+part kernelA --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label kernelA --align $alignment_kb --size ${MENDER_KERNEL_PART_A_SIZE_MB}
+EOF
+    fi
+
+    if [ "${MENDER_KERNEL_PART_B_SIZE_MB}" -ne "0" ]; then
+        cat >> "$wks" <<EOF
+part kernelB --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --label kernelB --align $alignment_kb --size ${MENDER_KERNEL_PART_B_SIZE_MB}
+EOF
+    fi
+
     cat >> "$wks" <<EOF
 part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.dataimg" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_DATA_PART_SIZE_MB} --mkfs-extraopts='${MENDER_DATA_PART_FSOPTS}' $part_type_params
 bootloader --ptable $ptable_type
@@ -190,6 +204,18 @@ EOF
             echo ${MENDER_ROOTFS_PART_B_NUMBER}     # Number of partition
             echo 83                                 # "Linux filesystem" type
 
+            if [ "${MENDER_KERNEL_PART_A_SIZE_MB}" -ne "0" ]; then
+                echo t                               # Partition type
+                echo ${MENDER_KERNEL_PART_A_NUMBER}  # Number of partition
+                echo 83                              # "Linux filesystem" type
+            fi
+
+            if [ "${MENDER_KERNEL_PART_B_SIZE_MB}" -ne "0" ]; then
+                echo t                               # Partition type
+                echo ${MENDER_KERNEL_PART_A_NUMBER}  # Number of partition
+                echo 83                              # "Linux filesystem" type
+            fi
+
             echo t                                  # Partition type
             echo ${MENDER_DATA_PART_NUMBER}         # Number of partition
             echo 83                                 # "Linux filesystem" type
@@ -204,6 +230,12 @@ EOF
             sgdisk -u ${MENDER_BOOT_PART_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_BOOT_PART}')} "$outimgname"
             sgdisk -u ${MENDER_ROOTFS_PART_A_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_A}')} "$outimgname"
             sgdisk -u ${MENDER_ROOTFS_PART_B_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_B}')} "$outimgname"
+            if [ "${MENDER_KERNEL_PART_A_SIZE_MB}" -ne "0" ]; then
+                sgdisk -u ${MENDER_KERNEL_PART_A_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_KERNEL_PART_A}')} "$outimgname"
+            fi
+            if [ "${MENDER_KERNEL_PART_B_SIZE_MB}" -ne "0" ]; then
+                sgdisk -u ${MENDER_KERNEL_PART_B_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_KERNEL_PART_B}')} "$outimgname"
+            fi
             sgdisk -u ${MENDER_DATA_PART_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')} "$outimgname"
         else
             diskIdent=$(echo ${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_A}')} | cut -d- -f1)

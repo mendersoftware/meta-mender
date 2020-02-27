@@ -242,8 +242,12 @@ def mender_get_data_part_num(d):
     n = 3
     boot_part_size = d.getVar('MENDER_BOOT_PART_SIZE_MB')
     swap_part_size = d.getVar('MENDER_SWAP_PART_SIZE_MB')
+    kernel_a_part_size = d.getVar('MENDER_KERNEL_PART_A_SIZE_MB')
+    kernel_b_part_size = d.getVar('MENDER_KERNEL_PART_B_SIZE_MB')
     if (boot_part_size and boot_part_size != '0'): n += 1
     if (swap_part_size and swap_part_size != '0'): n += 1
+    if (kernel_a_part_size and kernel_a_part_size != '0'): n += 1
+    if (kernel_b_part_size and kernel_b_part_size != '0'): n += 1
 
     #is an msdos extended partion going to be required
     if n <= 4: return n
