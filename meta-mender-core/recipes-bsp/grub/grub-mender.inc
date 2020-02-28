@@ -8,7 +8,7 @@ RDEPENDS_${PN}_class-target_append_mender-install = " grub-mender-grubenv"
 EFI_BOOT_PATH = "${MENDER_BOOT_PART_MOUNT_LOCATION}/EFI/BOOT"
 
 # Mender needs these.
-GRUB_BUILDIN_append_mender-grub = " cat echo gcry_sha256 halt hashsum loadenv sleep reboot test"
+GRUB_BUILDIN_append_mender-grub = " cat echo gcry_sha256 halt hashsum loadenv sleep reboot test regexp"
 
 GRUBPLATFORM_arm_mender-grub = "efi"
 
