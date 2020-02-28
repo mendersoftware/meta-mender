@@ -39,3 +39,6 @@ python do_cleanconfigs_class-target() {
 python do_cleanconfigs() {
 }
 addtask cleanconfigs after do_sign do_chownboot before deploy do_package
+
+# Add regexp module for determining boot device in grub.cfg
+GRUB_BUILDIN_append = " regexp "
