@@ -19,9 +19,11 @@ import json
 import os
 import pytest
 import re
+import requests
 import shutil
 import subprocess
 import tempfile
+import time
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
@@ -123,6 +125,10 @@ class Helpers:
         else:
             http_server = subprocess.Popen(["python", "-m", "SimpleHTTPServer"])
             assert(http_server)
+            time.sleep(1)
+            assert (
+                requests.head("http://localhost:8000/%s" % (image)).status_code == 200
+            )
 
         try:
             output = run("mender %s http://%s/%s" % (install_flag, http_server_location, image))
