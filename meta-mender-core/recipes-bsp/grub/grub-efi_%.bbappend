@@ -1,11 +1,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI_append_cfg_file += " file://cfg"
 
-# It's actually U-Boot that needs the dtb files to be in the boot partition, in
-# order to load EFI apps correctly, but due to the wide range of U-Boot recipes
-# out there, it's easier to add the dependency here.
-RDEPENDS_${PN}_append_mender-image_mender-grub_arm = " boot-partition-devicetree"
-RDEPENDS_${PN}_append_mender-image_mender-grub_aarch64 = " boot-partition-devicetree"
+include version_logic.inc
 
 EFI_PROVIDER ?= "${_MENDER_EFI_PROVIDER_DEFAULT}"
 _MENDER_EFI_PROVIDER_DEFAULT = ""
