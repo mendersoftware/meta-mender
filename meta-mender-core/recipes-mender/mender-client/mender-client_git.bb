@@ -1,4 +1,4 @@
-require mender_git.inc
+require mender-client_git.inc
 
 def mender_version_of_this_recipe(d, srcpv):
     version = mender_version_from_preferred_version(d, srcpv)

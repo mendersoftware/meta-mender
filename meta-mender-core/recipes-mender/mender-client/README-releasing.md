@@ -4,7 +4,7 @@
    example:
 
    ```
-   cp mender_1.2.1.bb mender_1.2.2.bb
+   cp mender-client_1.2.1.bb mender-client_1.2.2.bb
    ```
 
 2. Edit the `branch` setting in the `SRC_URI` variable in the name, setting it

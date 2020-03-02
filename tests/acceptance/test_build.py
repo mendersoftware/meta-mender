@@ -54,12 +54,15 @@ class TestBuild:
         This makes sure the warning about this certificate is correct."""
 
         output = subprocess.check_output(
-            ["md5sum", "../../meta-mender-demo/recipes-mender/mender/files/server.crt"]
+            [
+                "md5sum",
+                "../../meta-mender-demo/recipes-mender/mender-client/files/server.crt",
+            ]
         )
 
         # Crude check, just make sure it occurs in the build file.
         subprocess.check_call(
-            "fgrep %s ../../meta-mender-core/recipes-mender/mender/mender.inc >/dev/null 2>&1"
+            "fgrep %s ../../meta-mender-core/recipes-mender/mender-client/mender-client.inc >/dev/null 2>&1"
             % output.decode().split()[0],
             shell=True,
         )
