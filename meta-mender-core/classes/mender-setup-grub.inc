@@ -6,7 +6,9 @@ EXTRA_IMAGEDEPENDS_append_mender-grub = " grub-efi"
 MENDER_GRUB_STORAGE_DEVICE ??= "${MENDER_GRUB_STORAGE_DEVICE_DEFAULT}"
 MENDER_GRUB_STORAGE_DEVICE_DEFAULT = ""
 
-IMAGE_BOOT_FILES_append = " ${_MENDER_EFI_BOOT_FILE}"
+# If we are using efi-secure-boot from the meta-secure-core layer, then it
+# handles adding these files.
+IMAGE_BOOT_FILES_append = '${@bb.utils.contains("DISTRO_FEATURES", "efi-secure-boot", "", " ${_MENDER_EFI_BOOT_FILE}", d)}'
 
 _MENDER_EFI_BOOT_FILE = ""
 _MENDER_EFI_BOOT_FILE_mender-grub_arm = "grub-efi-bootarm.efi;EFI/BOOT/bootarm.efi"
