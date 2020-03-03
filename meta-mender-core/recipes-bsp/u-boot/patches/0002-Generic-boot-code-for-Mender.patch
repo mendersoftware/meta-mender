@@ -1,7 +1,7 @@
-From 44ac4d653f1f0087a2e3fb75037d4d01fab49a76 Mon Sep 17 00:00:00 2001
+From f1937e9de512f335e13647d51101b65d5ec71086 Mon Sep 17 00:00:00 2001
 From: Drew Moseley <drew.moseley@northern.tech>
 Date: Sun, 28 Jan 2018 17:44:32 -0500
-Subject: [PATCH] Generic boot code for Mender.
+Subject: [PATCH 2/4] Generic boot code for Mender.
 
 Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
 Signed-off-by: Drew Moseley <drew.moseley@northern.tech>

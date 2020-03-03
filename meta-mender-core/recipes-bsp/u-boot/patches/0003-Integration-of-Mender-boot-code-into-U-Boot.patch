@@ -1,7 +1,7 @@
-From 512c08a0ed07c8798d628c5a6420c59ba5188656 Mon Sep 17 00:00:00 2001
+From f8cc3e077230572b4a0b557435833d24b89933f5 Mon Sep 17 00:00:00 2001
 From: Marcin Pasinski <marcin.pasinski@northern.tech>
 Date: Wed, 31 Jan 2018 18:10:04 +0100
-Subject: [PATCH 3/3] Integration of Mender boot code into U-Boot.
+Subject: [PATCH 3/4] Integration of Mender boot code into U-Boot.
 
 Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
 Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
@@ -12,7 +12,7 @@ Signed-off-by: Marcin Pasinski <marcin.pasinski@northern.tech>
  2 files changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/include/env_default.h b/include/env_default.h
-index 54d8124..9cf272c 100644
+index 56a8bae39a..472e2fda9a 100644
 --- a/include/env_default.h
 +++ b/include/env_default.h
 @@ -9,6 +9,8 @@
@@ -22,7 +22,7 @@ index 54d8124..9cf272c 100644
 +#include <env_mender.h>
 +
  #ifdef DEFAULT_ENV_INSTANCE_EMBEDDED
- env_t environment __UBOOT_ENV_SECTION__(environment) = {
+ env_t embedded_environment __UBOOT_ENV_SECTION__(environment) = {
  	ENV_CRC,	/* CRC Sum */
 @@ -21,6 +23,7 @@ static char default_environment[] = {
  #else
@@ -33,7 +33,7 @@ index 54d8124..9cf272c 100644
  #ifdef	CONFIG_ENV_CALLBACK_LIST_DEFAULT
  	ENV_CALLBACK_VAR "=" CONFIG_ENV_CALLBACK_LIST_DEFAULT "\0"
 diff --git a/scripts/Makefile.autoconf b/scripts/Makefile.autoconf
-index 00b8fb3..e312c80 100644
+index 00b8fb34aa..e312c8037d 100644
 --- a/scripts/Makefile.autoconf
 +++ b/scripts/Makefile.autoconf
 @@ -109,7 +109,8 @@ define filechk_config_h
@@ -47,5 +47,5 @@ index 00b8fb3..e312c80 100644
  
  include/config.h: scripts/Makefile.autoconf create_symlink FORCE
 -- 
-2.7.4
+2.17.1
 
