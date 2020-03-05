@@ -376,8 +376,8 @@ class TestBuild:
     # e.g. latest.
     @pytest.mark.parametrize(
         "recipe,version",
-        [("mender", version) for version in versions_of_recipe("mender")]
-        + [("mender", None)]
+        [("mender-client", version) for version in versions_of_recipe("mender-client")]
+        + [("mender-client", None)]
         + [
             ("mender-artifact-native", version)
             for version in versions_of_recipe("mender-artifact")
