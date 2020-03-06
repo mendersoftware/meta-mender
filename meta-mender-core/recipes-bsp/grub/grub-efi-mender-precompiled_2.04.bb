@@ -13,24 +13,33 @@
 # binaries from the deploy directory, and replace the precompiled binaries
 # supplied alongside this recipe.
 ################################################################################
+require conf/image-uefi.conf
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 LICENSE = "GPL-3.0"
-SRC_URI = "file://COPYING;subdir=src"
+LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-3.0;md5=c79ff39f19dfec6d293b95dea7b07891"
+
+URL_BASE ?= "https://d1b0l86ne08fsf.cloudfront.net/mender-convert/grub-efi"
+
+SRC_URI = " \
+    ${URL_BASE}/${PV}/${HOST_ARCH}/grub-efi-${EFI_BOOT_IMAGE};md5sum=f14815bed7a5e54fe5bb63aef3da96bf \
+    ${URL_BASE}/${PV}/${HOST_ARCH}/grub-editenv;md5sum=2c5e943a0acc4a6bd385a9d3f72b637b \
+"
 
 S = "${WORKDIR}/src"
 
-LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504"
+include version_logic.inc
 
-PROVIDES = "grub-efi"
-RPROVIDES_${PN} = "grub-efi"
+PROVIDES = "grub-efi grub-editenv"
+RPROVIDES_${PN} = "grub-efi grub-editenv"
 
-SRC_URI_append_arm = " file://grub-efi-bootarm.efi"
+COMPATIBLE_HOST = "arm|aarch64"
 
-COMPATIBLE_HOSTS = "arm"
-
-inherit deploy
+FILES_${PN} = " \
+    ${EFI_FILES_PATH}/${EFI_BOOT_IMAGE} \
+    ${bindir}/grub-editenv \
+"
 
 do_configure() {
     if [ "${KERNEL_IMAGETYPE}" = "uImage" ]; then
@@ -38,9 +47,12 @@ do_configure() {
     fi
 }
 
-do_deploy() {
-    install -m 644 ${WORKDIR}/grub-efi-bootarm.efi ${DEPLOYDIR}/
+do_install() {
+    install -d -m 755 ${D}${EFI_FILES_PATH}
+    install -m 644 ${WORKDIR}/grub-efi-${EFI_BOOT_IMAGE} ${D}${EFI_FILES_PATH}/${EFI_BOOT_IMAGE}
+
+    install -d -m 755 ${D}${bindir}
+    install -m 755 ${WORKDIR}/grub-editenv ${D}${bindir}/
 }
-addtask do_deploy after do_patch
 
 INSANE_SKIP_${PN} = "already-stripped"

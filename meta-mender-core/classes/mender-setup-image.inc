@@ -22,6 +22,9 @@ MENDER_BOOT_PART_MOUNT_LOCATION = "/boot/efi"
 MENDER_BOOT_PART_MOUNT_LOCATION_mender-uboot = "/uboot"
 MENDER_BOOT_PART_MOUNT_LOCATION_mender-grub_mender-bios = "/boot/grub"
 
+# Set Yocto variable.
+EFI_PREFIX_mender-image = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
+
 # Update fstab for Mender
 ROOTFS_POSTPROCESS_COMMAND_append = " mender_update_fstab_file;"
 mender_update_fstab_file() {
