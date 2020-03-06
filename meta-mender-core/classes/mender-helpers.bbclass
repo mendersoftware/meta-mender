@@ -195,8 +195,8 @@ mender_get_clean_kernel_devicetree() {
     DTB_COUNT=$(echo "$MENDER_DTB_NAME" | wc -l)
 
     if [ "$DTB_COUNT" -ne 1 ]; then
-        bbwarn "Found more than one dtb specified in KERNEL_DEVICETREE. Only one should be specified. Choosing the last one."
         MENDER_DTB_NAME="$(echo "$MENDER_DTB_NAME" | tail -1)"
+        bbwarn "Found more than one dtb specified in KERNEL_DEVICETREE (${KERNEL_DEVICETREE}). Only one should be specified. Choosing the last one: ${MENDER_DTB_NAME}. Set KERNEL_DEVICETREE to the desired dtb file to silence this warning."
     fi
 
     # Now strip any subdirectories off.  Some kernel builds require KERNEL_DEVICETREE to be defined, for example,

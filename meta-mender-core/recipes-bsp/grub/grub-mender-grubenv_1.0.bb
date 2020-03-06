@@ -5,6 +5,8 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=89aea4e17d99a7cacdbeed46a0096b10"
 S = "${WORKDIR}"
 
+RPROVIDES_${PN} += "virtual/grub-bootconf"
+
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 FILES_${PN} += "/data/mender_grubenv.config"
@@ -28,6 +30,7 @@ PACKAGECONFIG[debug-log] = ",,,"
 DEBUG_LOG_CATEGORY ?= "all"
 
 do_provide_debug_log() {
+    install -d ${B}
     echo "debug=${DEBUG_LOG_CATEGORY}" > ${WORKDIR}/01_mender_debug_log_grub.cfg
 }
 python() {
