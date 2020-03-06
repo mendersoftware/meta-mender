@@ -8,3 +8,6 @@ def mender_version_of_this_recipe(d, srcpv):
     else:
         return version
 PV = "${@mender_version_of_this_recipe(d, '${SRCPV}')}"
+
+# MEN-2948: systemd service for the client is now named mender-client.service
+MENDER_CLIENT="mender-client"

@@ -25,8 +25,8 @@ inherit go
 
 inherit systemd
 
-SYSTEMD_SERVICE_${PN} = "mender-client.service"
-FILES_${PN} += "${systemd_unitdir}/system/mender-client.service \
+SYSTEMD_SERVICE_${PN} = "${MENDER_CLIENT}.service"
+FILES_${PN} += "${systemd_unitdir}/system/${MENDER_CLIENT}.service \
                 ${sysconfdir}/mender.conf \
                 /data/mender/device_type \
                 /data/mender/mender.conf \
@@ -53,14 +53,14 @@ SRC_URI_append_mender-image_mender-systemd = " file://mender-client-data-dir.ser
                                                
 SRC_URI_append_mender-persist-systemd-machine-id = " file://mender-client-systemd-machine-id.service \
                                                      file://mender-client-set-systemd-machine-id.sh"
-FILES_${PN}_append_mender-image_mender-systemd = " ${systemd_unitdir}/system/mender-client-data-dir.service \
-                                                   ${systemd_unitdir}/system/mender-client.service.wants/mender-client-data-dir.service"
+FILES_${PN}_append_mender-image_mender-systemd = " ${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service \
+                                                   ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service"
 FILES_${PN}_append_mender-growfs-data_mender-systemd = " ${systemd_unitdir}/system/mender-grow-data.service \
                                                          ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service"
 
 FILES_${PN}_append_mender-persist-systemd-machine-id = " ${systemd_unitdir}/system/mender-systemd-machine-id.service \
-                                                         ${systemd_unitdir}/system/mender-client.service.wants/mender-client-systemd-machine-id.service \
-                                                         ${bindir}/mender-client-set-systemd-machine-id.sh"
+                                                         ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-systemd-machine-id.service \
+                                                         ${bindir}/${MENDER_CLIENT}-set-systemd-machine-id.sh"
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
 # like. We disable those checks here.
@@ -260,9 +260,9 @@ do_install() {
 }
 
 do_install_append_mender-image_mender-systemd() {
-    install -m 644 ${WORKDIR}/mender-client-data-dir.service ${D}${systemd_unitdir}/system/
-    install -d -m 755 ${D}${systemd_unitdir}/system/mender-client.service.wants
-    ln -sf ../mender-client-data-dir.service ${D}${systemd_unitdir}/system/mender-client.service.wants/
+    install -m 644 ${WORKDIR}/mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service
+    install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
+    ln -sf ../mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service
 }
 
 do_install_append_mender-growfs-data_mender-systemd() {
@@ -287,9 +287,9 @@ EOF
 }
 
 do_install_append_mender-persist-systemd-machine-id() {
-    install -m 644 ${WORKDIR}/mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/
-    install -d -m 755 ${D}${systemd_unitdir}/system/mender-client.service.wants
-    ln -sf ../mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/mender-client.service.wants/
+    install -m 644 ${WORKDIR}/mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}-systemd-machine-id.service
+    install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
+    ln -sf ../${MENDER_CLIENT}-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
     install -d -m 755 ${D}${bindir}
-    install -m 755 ${WORKDIR}/mender-client-set-systemd-machine-id.sh ${D}${bindir}
+    install -m 755 ${WORKDIR}/mender-client-set-systemd-machine-id.sh ${D}${bindir}/${MENDER_CLIENT}-set-systemd-machine-id.sh
 }
