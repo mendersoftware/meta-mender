@@ -637,7 +637,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     def test_module_install(
         self, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image
     ):
-        mender_vars = get_bitbake_variables("mender")
+        mender_vars = get_bitbake_variables("mender-client")
         if "modules" in mender_vars["PACKAGECONFIG"].split():
             originally_on = True
         else:
