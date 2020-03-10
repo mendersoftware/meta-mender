@@ -1,4 +1,4 @@
-require mender_git.inc
+require mender-client_git.inc
 
 def mender_version_of_this_recipe(d, srcpv):
     version = mender_version_from_preferred_version(d, srcpv)
@@ -8,3 +8,6 @@ def mender_version_of_this_recipe(d, srcpv):
     else:
         return version
 PV = "${@mender_version_of_this_recipe(d, '${SRCPV}')}"
+
+# MEN-2948: systemd service for the client is now named mender-client.service
+MENDER_CLIENT="mender-client"

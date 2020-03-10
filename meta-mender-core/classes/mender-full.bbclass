@@ -4,7 +4,7 @@ MENDER_FEATURES_ENABLE_append = " \
     ${_MENDER_BOOTLOADER_DEFAULT} \
     mender-image \
     ${_MENDER_IMAGE_TYPE_DEFAULT} \
-    mender-install \
+    mender-client-install \
     mender-systemd \
     ${_MENDER_GROWFS_DATA_DEFAULT} \
 "

@@ -10,4 +10,4 @@ Group=root
 ExecStart=/bin/mkdir -p -m 0700 /data/mender
 
 [Install]
-WantedBy=mender.service
+WantedBy=mender-client.service

@@ -9,4 +9,4 @@ Group=root
 ExecStart=/usr/bin/mender-set-systemd-machine-id.sh
 
 [Install]
-WantedBy=mender.service
+WantedBy=mender-client.service

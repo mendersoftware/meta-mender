@@ -54,12 +54,15 @@ class TestBuild:
         This makes sure the warning about this certificate is correct."""
 
         output = subprocess.check_output(
-            ["md5sum", "../../meta-mender-demo/recipes-mender/mender/files/server.crt"]
+            [
+                "md5sum",
+                "../../meta-mender-demo/recipes-mender/mender-client/files/server.crt",
+            ]
         )
 
         # Crude check, just make sure it occurs in the build file.
         subprocess.check_call(
-            "fgrep %s ../../meta-mender-core/recipes-mender/mender/mender.inc >/dev/null 2>&1"
+            "fgrep %s ../../meta-mender-core/recipes-mender/mender-client/mender-client.inc >/dev/null 2>&1"
             % output.decode().split()[0],
             shell=True,
         )
@@ -373,8 +376,8 @@ class TestBuild:
     # e.g. latest.
     @pytest.mark.parametrize(
         "recipe,version",
-        [("mender", version) for version in versions_of_recipe("mender")]
-        + [("mender", None)]
+        [("mender-client", version) for version in versions_of_recipe("mender-client")]
+        + [("mender-client", None)]
         + [
             ("mender-artifact-native", version)
             for version in versions_of_recipe("mender-artifact")
@@ -634,7 +637,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     def test_module_install(
         self, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image
     ):
-        mender_vars = get_bitbake_variables("mender")
+        mender_vars = get_bitbake_variables("mender-client")
         if "modules" in mender_vars["PACKAGECONFIG"].split():
             originally_on = True
         else:
