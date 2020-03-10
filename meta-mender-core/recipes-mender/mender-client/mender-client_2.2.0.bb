@@ -1,4 +1,4 @@
-require mender.inc
+require mender-client.inc
 
 ################################################################################
 #-------------------------------------------------------------------------------
@@ -26,3 +26,6 @@ LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
 
 DEPENDS += "xz"
 RDEPENDS_${PN} += "liblzma"
+
+# MEN-2948: systemd service is still named mender.service in 2.2.x
+MENDER_CLIENT="mender"
