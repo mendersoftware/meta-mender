@@ -269,8 +269,8 @@ class TestUpdates:
                 % install_flag
             ).stdout
 
-            assert output.find("no space left on device") >= 0
-            assert output.find("ret_code=0") < 0
+            assert "no space left on device" in output, output
+            assert "ret_code=0" not in output, output
 
         finally:
             # Cleanup.
