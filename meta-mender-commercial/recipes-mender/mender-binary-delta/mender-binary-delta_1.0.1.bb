@@ -12,7 +12,7 @@ COMPATIBLE_HOSTS = "arm|aarch64|x86_64"
 # "lsb-ld" is needed because Yocto by default does not provide a cross platform
 # dynamic linker. On x86_64 this manifests as a missing
 # `/lib64/ld-linux-x86-64.so.2`
-RDEPENDS_${PN} = "lsb-ld xz"
+RDEPENDS_${PN} = "lsb-ld xz liblzma"
 
 FILES_${PN} = " \
     ${sysconfdir}/mender/mender-binary-delta.conf \
