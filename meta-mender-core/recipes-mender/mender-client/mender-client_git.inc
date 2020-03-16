@@ -36,7 +36,9 @@ MENDER_BRANCH = "${@mender_branch_from_preferred_version(d)}"
 
 def mender_version_from_preferred_version(d, srcpv):
     pref_version = d.getVar("PREFERRED_VERSION")
-    if pref_version is not None and pref_version.find("-git") >= 0:
+    if pref_version == "internal-v2020.02":
+        return pref_version
+    elif pref_version is not None and pref_version.find("-git") >= 0:
         # If "-git" is in the version, remove it along with any suffix it has,
         # and then readd it with commit SHA.
         return "%s-git%s" % (pref_version[0:pref_version.index("-git")], srcpv)
