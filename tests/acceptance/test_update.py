@@ -267,10 +267,10 @@ class TestUpdates:
             output = connection.run(
                 "mender %s /var/tmp/image-too-big.mender ; echo 'ret_code=$?'"
                 % install_flag
-            ).stdout
+            ).stderr
 
-            assert output.find("no space left on device") >= 0
-            assert output.find("ret_code=0") < 0
+            assert "no space left on device" in output, output
+            assert "ret_code=0" not in output, output
 
         finally:
             # Cleanup.
