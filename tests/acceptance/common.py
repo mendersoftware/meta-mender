@@ -37,12 +37,12 @@ configuration = {}
 
 
 def start_qemu(qenv=None, conn=None):
-    """Start qemu and return a subprocess.Popen object corresponding to a running
+    """Start QEMU and return a subprocess.Popen object corresponding to a running
     qemu process. `qenv` is a dict of environment variables that will be added
     to `subprocess.Popen(..,env=)`.
 
-    Once qemu is stated, a connection over ssh will attempted, so the returned
-    process is actually a qemu instance with fully booted guest os.
+    Once qemu is started, a connection over ssh will attempted, so the returned
+    process is actually a QEMU instance with a fully booted guest OS.
 
     The helper uses `meta-mender-qemu/scripts/mender-qemu` to start qemu, thus
     you can use `VEXPRESS_IMG`, `QEMU_DRIVE` and other environment variables to
@@ -255,7 +255,7 @@ def manual_uboot_commit(conn):
 
 def common_board_setup(conn, files=None, remote_path="/tmp", image_file=None):
     """
-    Deploy and activate an image to a board that usese mender-qa tools.
+    Deploy and activate an image to a board that uses mender-qa tools.
 
     :param image_file: IMAGE_FILE as passed to deploy-test-image, can be None
     :param remote_path: where files will be stored in the remote system
