@@ -1,7 +1,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI = " \
-          file://mender-migrate-configuration;subdir=${PN}-${PV} \
+          file://mender-client-migrate-configuration;subdir=${PN}-${PV} \
           file://LICENSE;subdir=${PN}-${PV} \
           "
 
@@ -39,9 +39,9 @@ do_compile() {
     MENDER_JQ_DELETE=".$(echo $PERSISTENT_CONFIGS | awk -F ' ' -v OFS=', .' '$1=$1')"
 
     # Replace the program markers in the script with the jq programs generated above.
-    sed -i "s/%jq-program-marker%/${MENDER_JQ_PROGRAM}/" mender-migrate-configuration
-    sed -i "s/%jq-delete-fields-marker%/${MENDER_JQ_DELETE}/" mender-migrate-configuration
+    sed -i "s/%jq-program-marker%/${MENDER_JQ_PROGRAM}/" mender-client-migrate-configuration
+    sed -i "s/%jq-delete-fields-marker%/${MENDER_JQ_DELETE}/" mender-client-migrate-configuration
 
-    # Deploy script as an State Script
-    cp mender-migrate-configuration ${MENDER_STATE_SCRIPTS_DIR}/ArtifactCommit_Enter_10_migrate-configuration
+    # Deploy script as a State Script
+    cp mender-client-migrate-configuration ${MENDER_STATE_SCRIPTS_DIR}/ArtifactCommit_Enter_10_migrate-configuration
 }

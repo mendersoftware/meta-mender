@@ -202,7 +202,7 @@ MENDER_PERSISTENT_CONFIGURATION_VARS ?= "RootfsPartA RootfsPartB"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
-IMAGE_INSTALL_append = " mender"
+IMAGE_INSTALL_append = " mender-client"
 IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg mender-bootimg mender-datatar"
 
 # Originally defined in bitbake.conf. We define them here so that images with
@@ -231,7 +231,7 @@ python() {
 
         # Install of Mender, with the minimum components. This includes no
         # references to specific partition layouts.
-        'mender-install',
+        'mender-client-install',
 
         # Include components for Mender-partitioned images. This will create
         # files that rely on the Mender partition layout.

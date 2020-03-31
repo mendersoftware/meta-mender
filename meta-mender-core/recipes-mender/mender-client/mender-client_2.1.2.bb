@@ -1,4 +1,4 @@
-require mender.inc
+require mender-client.inc
 
 ################################################################################
 #-------------------------------------------------------------------------------
@@ -8,21 +8,24 @@ require mender.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.2.x"
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.1.x"
 
-# Tag: 2.2.0b1
-SRCREV = "4084710e43cded556a5e7c1d01874f3ce51b0e8b"
+# Tag: 2.1.2
+SRCREV = "e1cf6c8c8dd8f5f6584b39dcb2e7ca51009ce7dc"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
-DEFAULT_PREFERENCE = "-1"
+#DEFAULT_PREFERENCE = "-1"
 
 ################################################################################
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=b73c5755173fade5704dbf3f4f546e6c"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=ffc66184ec5a0831e6f5d99b88784670"
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
 
 DEPENDS += "xz"
 RDEPENDS_${PN} += "liblzma"
+
+# MEN-2948: systemd service is still named mender.service in 2.1.x
+MENDER_CLIENT="mender"

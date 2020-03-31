@@ -1,4 +1,4 @@
-require mender.inc
+require mender-client.inc
 
 DEPENDS = "xz"
 RDEPENDS_${PN} = "liblzma"

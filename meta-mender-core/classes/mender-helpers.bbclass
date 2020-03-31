@@ -30,30 +30,6 @@ get_uboot_device_from_device() {
     fi
 }
 
-get_grub_device_from_device_base() {
-    case "$1" in
-        /dev/[sh]d[a-z])
-            dev_number=${1#/dev/[sh]d}
-            dev_number=$(expr $(printf "%d" "'$dev_number") - $(printf "%d" "'a") || true)
-            echo "hd$dev_number"
-            ;;
-        /dev/mmcblk[0-9]p)
-            dev_number=${1#/dev/mmcblk}
-            dev_number=${dev_number%p}
-            echo "hd$dev_number"
-            ;;
-        /dev/nvme[0-9]n[0-9]p)
-            dev_number=${1#/dev/nvme?n}
-            dev_number=$(expr $(printf "%d" "'$dev_number") - $(printf "%d" "'1") || true)
-            echo "hd$dev_number"
-            ;;
-        *)
-            bberror "Could not determine Grub device from $1"
-            exit 1
-            ;;
-    esac
-}
-
 get_part_number_from_device() {
     dev_base="unknown"
     case "$1" in
@@ -386,12 +362,20 @@ def get_extra_parts_fstab_opts(d, id = None):
     extra_parts_flags = (d.getVar('MENDER_EXTRA_PARTS') or "").split()
     if parts_fstab_flags:
         if id in parts_fstab_flags:
-            if len(parts_fstab_flags[id].split()) < 2:
-                bb.fatal("MENDER_EXTRA_PARTS_FSTAB[%s] is invalid. You need to provide parameters for fs_vfstype and fs_mntops (see 'man fstab')" % id)	
+            split = parts_fstab_flags[id].split()
+            elems = len(split)
+            if elems < 2:
+                bb.fatal("MENDER_EXTRA_PARTS_FSTAB[%s] is invalid. You need to provide parameters for fs_vfstype and fs_mntops (see 'man fstab')" % id)
+            elif elems < 3:
+                # Need to return pass number and fsck number
+                return parts_fstab_flags[id] + " 0 2"
+            elif elems < 4:
+                # Need to return fsck number
+                return parts_fstab_flags[id] + " 2"
             else:
                 return parts_fstab_flags[id]
 
-    return "auto default"
+    return "auto default 0 2"
 
 def get_extra_parts_fstab(d):
     out = []
@@ -399,8 +383,8 @@ def get_extra_parts_fstab(d):
     device = d.getVar('MENDER_STORAGE_DEVICE_BASE')
     for part in get_extra_parts_flags(d):
        label = get_extra_parts_label(d, part)
-       fstype_opts = get_extra_parts_fstab_opts(d, part).split()
-       out.append("{} {} {} {} 0 0".format(device + str(extra_parts_offset), "/mnt/{}".format(label), fstype_opts[0], fstype_opts[1]))
+       fstype_opts = get_extra_parts_fstab_opts(d, part)
+       out.append("{} {} {}".format(device + str(extra_parts_offset), "/mnt/{}".format(label), fstype_opts))
        extra_parts_offset += 1
 
     return '\n'.join(out)

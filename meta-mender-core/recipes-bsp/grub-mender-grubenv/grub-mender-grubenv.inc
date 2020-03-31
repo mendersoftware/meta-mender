@@ -57,20 +57,12 @@ do_configure() {
         mender_rootfsb_part=$(get_part_number_from_device ${MENDER_ROOTFS_PART_B})
     fi
 
-    if [ -n "${MENDER_GRUB_STORAGE_DEVICE}" ]; then
-        mender_grub_storage_device=${MENDER_GRUB_STORAGE_DEVICE}
-    elif ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
-        bbfatal "MENDER_GRUB_STORAGE_DEVICE is required for mender-partuuid"
-    else
-        mender_grub_storage_device=$(get_grub_device_from_device_base ${MENDER_STORAGE_DEVICE_BASE})
-    fi
-
     cat > ${B}/mender_grubenv_defines <<EOF
 mender_rootfsa_part=$mender_rootfsa_part
 mender_rootfsb_part=$mender_rootfsb_part
 mender_kernel_root_base=${MENDER_STORAGE_DEVICE_BASE}
-mender_grub_storage_device=$mender_grub_storage_device
 kernel_imagetype=${KERNEL_IMAGETYPE}
+regexp (.*),(.*) \$root -s mender_grub_storage_device
 EOF
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
