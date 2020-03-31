@@ -79,7 +79,13 @@ def add_kconfig_option(option):
                     raise Exception("Not sure how to handle Kconfig option that doesn't start with 'CONFIG_'")
                 kconfig_key = key[len("CONFIG_"):]
                 inside_option = False
-                for line in fd.readlines():
+                while True:
+                    line = fd.readline()
+                    # Empty lines have at least a '\n' in them.
+                    if line == "":
+                        break
+                    line = line.rstrip()
+
                     if re.match("^config\s*%s(\s|$)" % kconfig_key, line):
                         inside_option = True
                         continue
@@ -90,9 +96,13 @@ def add_kconfig_option(option):
                     if not inside_option:
                         continue
 
+                    while line.endswith("\\"):
+                        line = line[:-1] + fd.readline().rstrip()
+
                     match = re.match("^\s*depends\s*on\s*(.+)", line)
                     if not match:
                         continue
+
                     for dependee in parse_dependencies(match.group(1)):
                         add_kconfig_option("CONFIG_%s=y" % dependee)
 
