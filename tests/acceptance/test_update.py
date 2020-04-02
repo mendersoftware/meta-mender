@@ -1016,4 +1016,9 @@ class TestUpdates:
             output = run("mender -commit")
             assert output.return_code == 2
             # Earlier versions used the first string.
-            assert "No artifact installation in progress" in output or "There is nothing to commit" in output
+            assert any([
+                "No artifact installation in progress" in output,
+                "No artifact installation in progress" in output.stderr,
+                "There is nothing to commit" in output,
+                "There is nothing to commit" in output.stderr,
+            ])
