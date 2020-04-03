@@ -10,7 +10,7 @@ def cert_location_if_server_crt_in(src_uri, d):
     return ""
 
 MENDER_SERVER_URL ?= "https://docker.mender.io"
-MENDER_CERT_LOCATION ?= "${@cert_location_if_server_crt_in('${SRC_URI}', d)}"
+MENDER_CERT_LOCATION ??= "${@cert_location_if_server_crt_in('${SRC_URI}', d)}"
 # Tenant token
 MENDER_TENANT_TOKEN ?= "dummy"
 SYSTEMD_AUTO_ENABLE ?= "enable"
@@ -25,27 +25,42 @@ inherit go
 
 inherit systemd
 
-SYSTEMD_SERVICE_${PN} = "mender.service"
-FILES_${PN} += "${systemd_unitdir}/system/mender.service \
+SYSTEMD_SERVICE_${PN} = "${MENDER_CLIENT}.service"
+FILES_${PN} += "${systemd_unitdir}/system/${MENDER_CLIENT}.service \
                 ${sysconfdir}/mender.conf \
                 /data/mender/device_type \
                 /data/mender/mender.conf \
                 ${sysconfdir}/udev/mount.blacklist.d/mender \
+                /usr/share/mender/identity \
+                /usr/share/mender/inventory \
+                /usr/share/mender/identity/mender-device-identity \
+                /usr/share/mender/inventory/mender-inventory-hostinfo \
+                /usr/share/mender/inventory/mender-inventory-network \
+                /usr/share/mender/inventory/mender-inventory-os \
+                /usr/share/mender/inventory/mender-inventory-bootloader-integration \
+                /usr/share/mender/inventory/mender-inventory-rootfs-type \
+                /usr/share/mender/modules/v3/docker \
+                /usr/share/mender/modules/v3/directory \
+                /usr/share/mender/modules/v3/single-file \
+                /usr/share/mender/modules/v3/deb \
+                /usr/share/mender/modules/v3/rpm \
+                /usr/share/mender/modules/v3/script \
                "
 
 SYSROOT_DIRS += "/data"
 
-SRC_URI_append_mender-image_mender-systemd = " file://mender-data-dir.service"
-SRC_URI_append_mender-persist-systemd-machine-id = " file://mender-systemd-machine-id.service \
-                                                     file://mender-set-systemd-machine-id.sh"
-FILES_${PN}_append_mender-image_mender-systemd = " ${systemd_unitdir}/system/mender-data-dir.service \
-                                                   ${systemd_unitdir}/system/mender.service.wants/mender-data-dir.service"
+SRC_URI_append_mender-image_mender-systemd = " file://mender-client-data-dir.service"
+                                               
+SRC_URI_append_mender-persist-systemd-machine-id = " file://mender-client-systemd-machine-id.service \
+                                                     file://mender-client-set-systemd-machine-id.sh"
+FILES_${PN}_append_mender-image_mender-systemd = " ${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service \
+                                                   ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service"
 FILES_${PN}_append_mender-growfs-data_mender-systemd = " ${systemd_unitdir}/system/mender-grow-data.service \
                                                          ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service"
 
 FILES_${PN}_append_mender-persist-systemd-machine-id = " ${systemd_unitdir}/system/mender-systemd-machine-id.service \
-                                                         ${systemd_unitdir}/system/mender.service.wants/mender-systemd-machine-id.service \
-                                                         ${bindir}/mender-set-systemd-machine-id.sh"
+                                                         ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-systemd-machine-id.service \
+                                                         ${bindir}/${MENDER_CLIENT}-set-systemd-machine-id.sh"
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
 # like. We disable those checks here.
@@ -54,11 +69,11 @@ INSANE_SKIP_${PN}-ptest = "ldflags textrel"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
 
-PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-install', ' mender-install', '', d)}"
+PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
 PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
 PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-grub', ' grub', '', d)}"
 
-PACKAGECONFIG[mender-install] = ",,,mender-artifact-info ca-certificates"
+PACKAGECONFIG[mender-client-install] = ",,,mender-artifact-info ca-certificates"
 PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
 PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
 # The docker module depends on bash, and of course on docker. However, docker is
@@ -213,7 +228,8 @@ do_install() {
 
     #install server certificate
     if [ -f ${WORKDIR}/server.crt ]; then
-        install -m 0444 ${WORKDIR}/server.crt ${D}/${sysconfdir}/mender
+        install -m 0755 -d $(dirname ${D}${MENDER_CERT_LOCATION})
+        install -m 0444 ${WORKDIR}/server.crt ${D}${MENDER_CERT_LOCATION}
     fi
 
     install -d ${D}/${localstatedir}/lib/mender
@@ -244,9 +260,9 @@ do_install() {
 }
 
 do_install_append_mender-image_mender-systemd() {
-    install -m 644 ${WORKDIR}/mender-data-dir.service ${D}${systemd_unitdir}/system/
-    install -d -m 755 ${D}${systemd_unitdir}/system/mender.service.wants
-    ln -sf ../mender-data-dir.service ${D}${systemd_unitdir}/system/mender.service.wants/
+    install -m 644 ${WORKDIR}/mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service
+    install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
+    ln -sf ../mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service
 }
 
 do_install_append_mender-growfs-data_mender-systemd() {
@@ -271,9 +287,9 @@ EOF
 }
 
 do_install_append_mender-persist-systemd-machine-id() {
-    install -m 644 ${WORKDIR}/mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/
-    install -d -m 755 ${D}${systemd_unitdir}/system/mender.service.wants
-    ln -sf ../mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/mender.service.wants/
+    install -m 644 ${WORKDIR}/mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}-systemd-machine-id.service
+    install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
+    ln -sf ../${MENDER_CLIENT}-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
     install -d -m 755 ${D}${bindir}
-    install -m 755 ${WORKDIR}/mender-set-systemd-machine-id.sh ${D}${bindir}
+    install -m 755 ${WORKDIR}/mender-client-set-systemd-machine-id.sh ${D}${bindir}/${MENDER_CLIENT}-set-systemd-machine-id.sh
 }

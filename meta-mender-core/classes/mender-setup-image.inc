@@ -37,28 +37,28 @@ mender_update_fstab_file() {
         if [ "${MENDER_BOOT_PART_SIZE_MB}" != "0" ] && [ -n "${MENDER_BOOT_PART}" ]; then
             echo "# Where the U-Boot environment resides; for devices with SD card support ONLY!" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
             mkdir -p ${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}
-            printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpBootPart} ${MENDER_BOOT_PART_MOUNT_LOCATION} ${MENDER_BOOT_PART_FSTYPE} ${MENDER_BOOT_PART_FSTAB_OPTS} 0 0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+            printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpBootPart} ${MENDER_BOOT_PART_MOUNT_LOCATION} ${MENDER_BOOT_PART_FSTYPE} ${MENDER_BOOT_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
         else
             bbdebug 2 "MENDER_BOOT_PART not applicable. Not adding to fstab..."
         fi
     fi
 
     mkdir -p ${IMAGE_ROOTFS}/data
-    printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpDataPart} /data ${MENDER_DATA_PART_FSTYPE} ${MENDER_DATA_PART_FSTAB_OPTS} 0 0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpDataPart} /data ${MENDER_DATA_PART_FSTYPE} ${MENDER_DATA_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
 
     if [ -n "${MENDER_EXTRA_PARTS}" ]; then
-        if [ ${partuuid} = "true" ]; then
-           bbfatal "MENDER_EXTRA_PARTS and DISTRO_FEATURE 'mender-partuuid' are both defined and incompatible"
-        fi
+        local extra_part_fstab="${@get_extra_parts_fstab(d)}"
         local labels="${@get_extra_parts_labels(d)}"
-        dev_nr="${@mender_get_extra_parts_offset(d)}"
-
         for label in $labels; do
-            mkdir -p ${IMAGE_ROOTFS}/mnt/$label
-            device="${MENDER_STORAGE_DEVICE_BASE}${dev_nr}"
-            printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${device} /mnt/$label auto defaults 0 0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
-            dev_nr=$(expr $dev_nr + 1)
+            mkdir -p ${IMAGE_ROOTFS}/mnt/${label}
         done
+
+        if [ ${partuuid} = "true" ]; then
+            bbfatal "MENDER_EXTRA_PARTS and DISTRO_FEATURE 'mender-partuuid' are both defined and incompatible"
+        fi
+
+        parts="${extra_part_fstab}"
+        printf "%-20s %-20s %-10s %-21s %-2s %s\n" $parts >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
     fi
 }
 

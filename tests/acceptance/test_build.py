@@ -54,12 +54,15 @@ class TestBuild:
         This makes sure the warning about this certificate is correct."""
 
         output = subprocess.check_output(
-            ["md5sum", "../../meta-mender-demo/recipes-mender/mender/files/server.crt"]
+            [
+                "md5sum",
+                "../../meta-mender-demo/recipes-mender/mender-client/files/server.crt",
+            ]
         )
 
         # Crude check, just make sure it occurs in the build file.
         subprocess.check_call(
-            "fgrep %s ../../meta-mender-core/recipes-mender/mender/mender.inc >/dev/null 2>&1"
+            "fgrep %s ../../meta-mender-core/recipes-mender/mender-client/mender-client.inc >/dev/null 2>&1"
             % output.decode().split()[0],
             shell=True,
         )
@@ -373,8 +376,8 @@ class TestBuild:
     # e.g. latest.
     @pytest.mark.parametrize(
         "recipe,version",
-        [("mender", version) for version in versions_of_recipe("mender")]
-        + [("mender", None)]
+        [("mender-client", version) for version in versions_of_recipe("mender-client")]
+        + [("mender-client", None)]
         + [
             ("mender-artifact-native", version)
             for version in versions_of_recipe("mender-artifact")
@@ -634,7 +637,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     def test_module_install(
         self, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image
     ):
-        mender_vars = get_bitbake_variables("mender")
+        mender_vars = get_bitbake_variables("mender-client")
         if "modules" in mender_vars["PACKAGECONFIG"].split():
             originally_on = True
         else:
@@ -946,3 +949,112 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         del other.provides["rootfs_image_checksum"]
 
         assert dependsprovides.__dict__ == other.__dict__
+
+    @pytest.mark.only_with_image("sdimg", "uefiimg", "gptimg", "biosimg")
+    @pytest.mark.min_mender_version("1.0.0")
+    def test_extra_parts(self, latest_part_image, prepared_test_build, bitbake_image):
+        sdimg = latest_part_image.endswith(".sdimg")
+        uefiimg = latest_part_image.endswith(".uefiimg")
+        gptimg = latest_part_image.endswith(".gptimg")
+        biosimg = latest_part_image.endswith(".biosimg")
+
+        with make_tempdir() as tmpdir1, make_tempdir() as tmpdir2, make_tempdir() as tmpdir3, make_tempdir() as tmpdir4:
+            with open(os.path.join(tmpdir1, "tmpfile1"), "w") as fd:
+                fd.write("Test content1\n")
+            with open(os.path.join(tmpdir2, "tmpfile2"), "w") as fd:
+                fd.write("Test content2\n")
+            with open(os.path.join(tmpdir3, "tmpfile3"), "w") as fd:
+                fd.write("Test content3\n")
+            with open(os.path.join(tmpdir4, "tmpfile4"), "w") as fd:
+                fd.write("Test content4\n")
+
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                bitbake_image,
+                [
+                    'MENDER_EXTRA_PARTS = "test1 test2 test3 test4"',
+                    'MENDER_EXTRA_PARTS[test1] = "--fixed-size 100M --label=test1 --fstype=ext4 --source rootfs --rootfs-dir %s"'
+                    % tmpdir1,
+                    'MENDER_EXTRA_PARTS[test2] = "--fixed-size 50M --fstype=ext4 --source rootfs --rootfs-dir %s --label=test2"'
+                    % tmpdir2,
+                    'MENDER_EXTRA_PARTS[test3] = "--fixed-size 50M --fstype=ext4 --source rootfs --rootfs-dir %s --label=test3"'
+                    % tmpdir3,
+                    'MENDER_EXTRA_PARTS[test4] = "--fixed-size 50M --fstype=ext4 --source rootfs --rootfs-dir %s --label=test4"'
+                    % tmpdir4,
+                    'MENDER_EXTRA_PARTS_FSTAB[test1] = "auto nouser"',
+                    'MENDER_EXTRA_PARTS_FSTAB[test2] = "ext4 default,ro"',
+                    'MENDER_EXTRA_PARTS_FSTAB[test3] = "ext4 default,ro 1"',
+                    'MENDER_EXTRA_PARTS_FSTAB[test4] = "ext4 default,ro 1 0"',
+                ],
+            )
+
+        image = latest_build_artifact(prepared_test_build["build_dir"], "*img")
+
+        # Take extended partition into account for MBR partition tables.
+        if uefiimg or gptimg:
+            # Example
+            # 1           16384           49151   16.0 MiB    0700  Microsoft basic data
+            # 2           49152          507903   224.0 MiB   8300  Linux filesystem
+            # 3          507904          966655   224.0 MiB   8300  Linux filesystem
+            # 4          983040         1245183   128.0 MiB   8300  Linux filesystem
+            # 5         1261568         1466367   100.0 MiB   8300  Linux filesystem
+            # 6         1474560         1679359   100.0 MiB   8300  Linux filesystem
+            output = subprocess.check_output(["sgdisk", "-p", image]).decode()
+            test1_re = r"^\s*5\s+([0-9]+)\s+([0-9]+)\s+100.0\s+MiB\s+8300\s+"
+            test2_re = r"^\s*6\s+([0-9]+)\s+([0-9]+)\s+50.0\s+MiB\s+8300\s+"
+            test3_re = r"^\s*7\s+([0-9]+)\s+([0-9]+)\s+50.0\s+MiB\s+8300\s+"
+            test4_re = r"^\s*8\s+([0-9]+)\s+([0-9]+)\s+50.0\s+MiB\s+8300\s+"
+            extra_start = 5
+        else:
+            # Example:
+            # ...sdimg1 *      16384   49151   32768   16M  c W95 FAT32 (LBA)
+            # ...sdimg2        49152  507903  458752  224M 83 Linux
+            # ...sdimg3       507904  966655  458752  224M 83 Linux
+            # ...sdimg4       983039 1576959  593921  290M  f W95 Ext'd (LBA)
+            # ...sdimg5       983040 1245183  262144  128M 83 Linux
+            # ...sdimg6      1261568 1466367  204800  100M 83 Linux
+            # ...sdimg7      1474560 1576959  102400   50M 83 Linux
+            output = subprocess.check_output(["fdisk", "-l", image]).decode()
+            test1_re = r"img6(?:\s|\*)+([0-9]+)\s+([0-9]+)\s+[0-9]+\s+100M\s+83\s+"
+            test2_re = r"img7(?:\s|\*)+([0-9]+)\s+([0-9]+)\s+[0-9]+\s+50M\s+83\s+"
+            test3_re = r"img8(?:\s|\*)+([0-9]+)\s+([0-9]+)\s+[0-9]+\s+50M\s+83\s+"
+            test4_re = r"img9(?:\s|\*)+([0-9]+)\s+([0-9]+)\s+[0-9]+\s+50M\s+83\s+"
+            extra_start = 6
+
+        match1 = re.search(test1_re, output, flags=re.MULTILINE)
+        match2 = re.search(test2_re, output, flags=re.MULTILINE)
+        match3 = re.search(test3_re, output, flags=re.MULTILINE)
+        match4 = re.search(test4_re, output, flags=re.MULTILINE)
+        assert match1 is not None
+        assert match2 is not None
+        assert match3 is not None
+        assert match4 is not None
+
+        ext4 = latest_build_artifact(prepared_test_build["build_dir"], "*.ext4")
+        fstab = subprocess.check_output(
+            ["debugfs", "-R", "cat /etc/fstab", ext4]
+        ).decode()
+
+        # Example:
+        # /dev/mmcblk0p5       /mnt/test1           auto       nouser                0  2
+        # /dev/mmcblk0p6       /mnt/test2           auto       default,ro            0  2
+        # /dev/mmcblk0p7       /mnt/test3           auto       default,ro            1  2
+        # /dev/mmcblk0p8       /mnt/test4           auto       default,ro            1  0
+
+        test1_re = (
+            r"^/dev/[a-z0-9]+%d\s+/mnt/test1\s+auto\s+nouser\s+0\s+2\s*$" % extra_start
+        )
+        test2_re = r"^/dev/[a-z0-9]+%d\s+/mnt/test2\s+ext4\s+default,ro\s+0\s+2\s*$" % (
+            extra_start + 1
+        )
+        test3_re = r"^/dev/[a-z0-9]+%d\s+/mnt/test3\s+ext4\s+default,ro\s+1\s+2\s*$" % (
+            extra_start + 2
+        )
+        test4_re = r"^/dev/[a-z0-9]+%d\s+/mnt/test4\s+ext4\s+default,ro\s+1\s+0\s*$" % (
+            extra_start + 3
+        )
+        assert re.search(test1_re, fstab, flags=re.MULTILINE) is not None
+        assert re.search(test2_re, fstab, flags=re.MULTILINE) is not None
+        assert re.search(test3_re, fstab, flags=re.MULTILINE) is not None
+        assert re.search(test4_re, fstab, flags=re.MULTILINE) is not None

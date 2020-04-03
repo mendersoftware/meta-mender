@@ -3,7 +3,7 @@
 
 MENDER_FEATURES_ENABLE_append = " \
     mender-image \
-    mender-install \
+    mender-client-install \
     mender-systemd \
 "
 

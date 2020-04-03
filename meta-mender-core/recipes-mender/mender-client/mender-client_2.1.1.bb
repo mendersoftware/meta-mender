@@ -1,4 +1,4 @@
-require mender.inc
+require mender-client.inc
 
 ################################################################################
 #-------------------------------------------------------------------------------
@@ -10,8 +10,8 @@ require mender.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.1.x"
 
-# Tag: 2.1.2
-SRCREV = "e1cf6c8c8dd8f5f6584b39dcb2e7ca51009ce7dc"
+# Tag: 2.1.1
+SRCREV = "53400c6cfd67a6ed28acb906ee2dfb896a4bf474"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
@@ -26,3 +26,6 @@ LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
 
 DEPENDS += "xz"
 RDEPENDS_${PN} += "liblzma"
+
+# MEN-2948: systemd service is still named mender.service in 2.1.x
+MENDER_CLIENT="mender"

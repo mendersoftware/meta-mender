@@ -1,12 +1,8 @@
 EXTRA_IMAGEDEPENDS_append_mender-grub = " grub-efi"
 
-# The device number of the interface to load partitions from. This is normally
-# empty, in which case it is deduced from MENDER_STORAGE_DEVICE. Only use this
-# if the indexing of devices is different in Grub and in the Linux kernel.
-MENDER_GRUB_STORAGE_DEVICE ??= "${MENDER_GRUB_STORAGE_DEVICE_DEFAULT}"
-MENDER_GRUB_STORAGE_DEVICE_DEFAULT = ""
-
-IMAGE_BOOT_FILES_append = " ${_MENDER_EFI_BOOT_FILE}"
+# If we are using efi-secure-boot from the meta-secure-core layer, then it
+# handles adding these files.
+IMAGE_BOOT_FILES_append = '${@bb.utils.contains("DISTRO_FEATURES", "efi-secure-boot", "", " ${_MENDER_EFI_BOOT_FILE}", d)}'
 
 _MENDER_EFI_BOOT_FILE = ""
 _MENDER_EFI_BOOT_FILE_mender-grub_arm = "grub-efi-bootarm.efi;EFI/BOOT/bootarm.efi"
@@ -29,3 +25,8 @@ PREFERRED_RPROVIDER_virtual/grub-bootconf ?= "grub-mender-grubenv"
 # Set EFI_PROVIDER.  Not all MACHINE configs use it but notably
 # intel-corei7-64 does and without this we use the default of systemd-boot.
 EFI_PROVIDER_mender-grub="grub-efi"
+
+python() {
+    if d.getVar('MENDER_GRUB_STORAGE_DEVICE'):
+        bb.fatal("MENDER_GRUB_STORAGE_DEVICE is deprecated. This is now dynamically determined at runtime.")
+}

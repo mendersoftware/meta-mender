@@ -30,30 +30,6 @@ get_uboot_device_from_device() {
     fi
 }
 
-get_grub_device_from_device_base() {
-    case "$1" in
-        /dev/[sh]d[a-z])
-            dev_number=${1#/dev/[sh]d}
-            dev_number=$(expr $(printf "%d" "'$dev_number") - $(printf "%d" "'a") || true)
-            echo "hd$dev_number"
-            ;;
-        /dev/mmcblk[0-9]p)
-            dev_number=${1#/dev/mmcblk}
-            dev_number=${dev_number%p}
-            echo "hd$dev_number"
-            ;;
-        /dev/nvme[0-9]n[0-9]p)
-            dev_number=${1#/dev/nvme?n}
-            dev_number=$(expr $(printf "%d" "'$dev_number") - $(printf "%d" "'1") || true)
-            echo "hd$dev_number"
-            ;;
-        *)
-            bberror "Could not determine Grub device from $1"
-            exit 1
-            ;;
-    esac
-}
-
 get_part_number_from_device() {
     dev_base="unknown"
     case "$1" in
@@ -235,7 +211,7 @@ mender_get_clean_kernel_devicetree() {
 
 def mender_is_msdos_ptable_image(d):
     mptimgs = 'mender-image-sd mender-image-bios'
-    return bb.utils.contains_any('MENDER_FEATURES_ENABLE', mptimgs , True, False, d)
+    return bb.utils.contains_any('DISTRO_FEATURES', mptimgs , True, False, d)
 
 
 def mender_get_data_and_total_parts_num(d):
@@ -342,7 +318,14 @@ def get_extra_parts(d):
 
     return final_parts
 
-def get_extra_parts_by_id(d, id):
+def get_extra_parts_flags(d):
+    partsflags = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
+    if partsflags:
+        return partsflags.keys()
+
+    return []
+
+def get_extra_parts_by_id(d, id = None):
     partsflags = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
     if partsflags:
         if id in partsflags.keys():
@@ -351,14 +334,20 @@ def get_extra_parts_by_id(d, id):
 
 def get_extra_parts_labels(d):
     labels = []
-    parts = get_extra_parts(d)
-    if parts:
-        for part in parts:
-            s = part.find("--label")
-            if s > 0:
-                e = part.find("--", s + 2)
-                labels.append(part[s + len("--label="):e])
+    ids = get_extra_parts_flags(d)
+    if ids:
+        for id in ids:
+            labels.append(get_extra_parts_label(d, id))
     return ' '.join(labels)
+
+def get_extra_parts_label(d, id = None):
+    part = get_extra_parts_by_id(d, id)
+    if part:
+        import re
+        match = re.search(r'--label=(\S+)', part)
+        return match.group(1) if match else ""
+
+    return ""
 
 def get_extra_parts_wks(d):
     final_parts = []
@@ -367,3 +356,35 @@ def get_extra_parts_wks(d):
         for part in parts:
             final_parts.append("part --ondisk \"$ondisk_dev\" --align \"$alignment_kb\" {}".format(part))
     return '\n'.join(final_parts)
+
+def get_extra_parts_fstab_opts(d, id = None):
+    parts_fstab_flags = d.getVarFlags("MENDER_EXTRA_PARTS_FSTAB") or {}
+    extra_parts_flags = (d.getVar('MENDER_EXTRA_PARTS') or "").split()
+    if parts_fstab_flags:
+        if id in parts_fstab_flags:
+            split = parts_fstab_flags[id].split()
+            elems = len(split)
+            if elems < 2:
+                bb.fatal("MENDER_EXTRA_PARTS_FSTAB[%s] is invalid. You need to provide parameters for fs_vfstype and fs_mntops (see 'man fstab')" % id)
+            elif elems < 3:
+                # Need to return pass number and fsck number
+                return parts_fstab_flags[id] + " 0 2"
+            elif elems < 4:
+                # Need to return fsck number
+                return parts_fstab_flags[id] + " 2"
+            else:
+                return parts_fstab_flags[id]
+
+    return "auto default 0 2"
+
+def get_extra_parts_fstab(d):
+    out = []
+    extra_parts_offset = mender_get_extra_parts_offset(d)
+    device = d.getVar('MENDER_STORAGE_DEVICE_BASE')
+    for part in get_extra_parts_flags(d):
+       label = get_extra_parts_label(d, part)
+       fstype_opts = get_extra_parts_fstab_opts(d, part)
+       out.append("{} {} {}".format(device + str(extra_parts_offset), "/mnt/{}".format(label), fstype_opts))
+       extra_parts_offset += 1
+
+    return '\n'.join(out)
