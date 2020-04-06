@@ -330,6 +330,9 @@ mender_sanity_handler[eventmask] = "bb.event.ParseCompleted"
 python mender_sanity_handler() {
     if bb.utils.contains('MENDER_FEATURES_ENABLE', 'mender-partuuid', True, False, d) and d.getVar('MENDER_STORAGE_DEVICE', True) != "":
         bb.warn("MENDER_STORAGE_DEVICE is ignored when mender-partuuid is enabled. Clear MENDER_STORAGE_DEVICE to remove this warning.")
+
+    if bb.utils.contains('MENDER_FEATURES_ENABLE', 'mender-partuuid', True, False, d) and bb.utils.contains('MENDER_FEATURES_ENABLE', 'mender-uboot', True, False, d):
+        bb.fatal("mender-partuuid is not supported with mender-uboot.")
 }
 
 
