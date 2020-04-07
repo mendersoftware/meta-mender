@@ -61,7 +61,7 @@ def mender_license(branch):
         }
     elif branch == "3.3.x":
         return {
-                   "md5": "99143e34cf23a99976a299da9fa93bcf",
+                   "md5": "9e55056dd32c74785680c4121ff00428",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
         }
     else:

@@ -20,6 +20,6 @@ SRCREV = "b17a7a34da5be5c1e06fd139d94fca7d56b855cb"
 ################################################################################
 
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=99143e34cf23a99976a299da9fa93bcf"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=9e55056dd32c74785680c4121ff00428"
 
 DEPENDS += "xz"
