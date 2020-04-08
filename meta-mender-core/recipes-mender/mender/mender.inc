@@ -35,6 +35,8 @@ FILES_${PN} += "${systemd_unitdir}/system/mender.service \
 
 SYSROOT_DIRS += "/data"
 
+FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
+
 SRC_URI_append_mender-image_mender-systemd = " file://mender-data-dir.service"
 SRC_URI_append_mender-persist-systemd-machine-id = " file://mender-systemd-machine-id.service \
                                                      file://mender-set-systemd-machine-id.sh"

@@ -233,8 +233,13 @@ class TestUpdates:
             put("image-too-big.mender", remote_path="/var/tmp/image-too-big.mender")
             output = run("mender %s /var/tmp/image-too-big.mender ; echo 'ret_code=$?'" % install_flag)
 
-            assert(output.find("no space left on device") >= 0)
-            assert(output.find("ret_code=0") < 0)
+            assert any(
+                [
+                    "no space left on device" in out
+                    for out in [output.stderr, output.stdout]
+                ]
+            ), output
+            assert "ret_code=0" not in output.stdout, output
 
         finally:
             # Cleanup.
@@ -1011,4 +1016,9 @@ class TestUpdates:
             output = run("mender -commit")
             assert output.return_code == 2
             # Earlier versions used the first string.
-            assert "No artifact installation in progress" in output or "There is nothing to commit" in output
+            assert any([
+                "No artifact installation in progress" in output,
+                "No artifact installation in progress" in output.stderr,
+                "There is nothing to commit" in output,
+                "There is nothing to commit" in output.stderr,
+            ])

@@ -1,0 +1,38 @@
+#!/bin/sh
+
+set -e
+
+function trap_exit() {
+  umount --lazy /mnt/inactive_part
+}
+trap trap_exit EXIT
+
+MENDER_ROOTFS_PART_A="@@MENDER_ROOTFS_PART_A@@"
+MENDER_ROOTFS_PART_B="@@MENDER_ROOTFS_PART_B@@"
+
+if mount | grep ${MENDER_ROOTFS_PART_A}; then
+  inactive_part="${MENDER_ROOTFS_PART_B}"
+else
+  inactive_part="${MENDER_ROOTFS_PART_A}"
+fi
+
+mkdir -p /mnt/inactive_part
+mount -o ro ${inactive_part} /mnt/inactive_part
+
+# These are dangerous operations and if they fail (partial copy) it might
+# render the device unusable.
+
+# Copy 'core' firmware files first
+find /mnt/inactive_part/boot/firmware/ -maxdepth 1 -type f | xargs -I {} cp -v {} /uboot/
+
+# Synchronize before trying to copy the rest of the files
+sync
+
+# Copy overlays
+find /mnt/inactive_part/boot/firmware/overlays/ -maxdepth 1 -type f | xargs -I {} cp -v {} /uboot/overlays/
+
+# Synchronize to ensure all files are written before leaving the ArtifactInstall state
+sync
+
+
+exit 0
