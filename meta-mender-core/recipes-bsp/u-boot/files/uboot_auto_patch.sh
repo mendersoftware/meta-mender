@@ -389,8 +389,15 @@ patch_all_candidates_ubi() {
         'CONFIG_CMD_UBI'
     add_definition \
         'CONFIG_CMD_UBIFS'
-    add_definition \
-        'CONFIG_MTD_DEVICE'
+
+    if is_kconfig_option "CONFIG_MTD"; then
+        add_definition \
+            'CONFIG_MTD'
+    else
+        add_definition \
+            'CONFIG_MTD_DEVICE'
+    fi
+
     add_definition \
         'CONFIG_MTD_PARTITIONS'
 }
