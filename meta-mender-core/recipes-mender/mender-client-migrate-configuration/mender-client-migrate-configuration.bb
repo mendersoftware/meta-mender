@@ -14,7 +14,7 @@ ALLOW_EMPTY_${PN} = "1"
 
 RDEPENDS_${PN} += "jq"
 
-DEPENDS += "mender"
+DEPENDS += "mender-client"
 
 do_check_split_conf() {
     if [ -f ${STAGING_DIR_TARGET}/data/mender/mender.conf ]; then
