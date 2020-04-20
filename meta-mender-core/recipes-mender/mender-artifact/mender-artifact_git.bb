@@ -66,7 +66,7 @@ def mender_license(branch):
         }
     else:
         return {
-                   "md5": "d4f2b4732c153bb42d230ef49e8d30c9",
+                   "md5": "d01ade8f3663b8fd61670167fe4475e2",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
         }
 LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=${@mender_license(d.getVar('MENDER_ARTIFACT_BRANCH'))['md5']}"
