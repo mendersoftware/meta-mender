@@ -2,7 +2,7 @@ include grub-mender-grubenv.inc
 
 SRC_URI = "git://github.com/mendersoftware/grub-mender-grubenv;protocol=https;branch=master"
 
-SRCREV = "9eca26e023ee181b2ab49b6e4d407a6cce232c90"
+SRCREV = "4ae9e3efea6bcc0e88dfdc637981de218eed913e"
 PV = "1.3.0+git${SRCREV}"
 
 LICENSE = "Apache-2.0"
