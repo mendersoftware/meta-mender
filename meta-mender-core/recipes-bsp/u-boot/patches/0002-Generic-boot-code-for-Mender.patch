@@ -1,24 +1,22 @@
-From f1937e9de512f335e13647d51101b65d5ec71086 Mon Sep 17 00:00:00 2001
-From: Drew Moseley <drew.moseley@northern.tech>
-Date: Sun, 28 Jan 2018 17:44:32 -0500
-Subject: [PATCH 2/4] Generic boot code for Mender.
+From dd0913c373bdca0fd61bf6a98c30122ba6883f5c Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@northern.tech>
+Date: Tue, 21 Apr 2020 12:54:15 +0200
+Subject: [PATCH 2/2] Generic boot code for Mender.
 
-Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
-Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
 Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
 ---
- include/config_mender.h |  94 ++++++++++++++++++++++++
+ include/config_mender.h |  98 +++++++++++++++++++++++++
  include/env_mender.h    | 157 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 251 insertions(+)
+ 2 files changed, 255 insertions(+)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000000..69a526805d
+index 0000000000..9a90c013a6
 --- /dev/null
 +++ b/include/config_mender.h
-@@ -0,0 +1,94 @@
+@@ -0,0 +1,98 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -58,6 +56,10 @@ index 0000000000..69a526805d
 +# error CONFIG_BOOTCOUNT_ENV is required for Mender to work. Make sure that: 1) All the instructions at docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#endif
 +
++#ifndef CONFIG_SYS_REDUNDAND_ENVIRONMENT
++# error CONFIG_SYS_REDUNDAND_ENVIRONMENT is required for Mender to work. Make sure that: 1) All the instructions at docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>. Check also https://docs.mender.io/troubleshooting/yocto-project-build for Known Issues when upgrading.
++#endif
++
 +#ifdef MENDER_UBI
 +# ifndef CONFIG_MTDIDS_DEFAULT
 +#  define CONFIG_MTDIDS_DEFAULT MENDER_MTDIDS
@@ -77,14 +79,14 @@ index 0000000000..69a526805d
 +#else
 +# if defined(CONFIG_ENV_OFFSET)
 +#  if CONFIG_ENV_OFFSET != MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
-+#   error CONFIG_ENV_OFFSET is not the same as MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++#   error CONFIG_ENV_OFFSET is not the same as MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>. Check also https://docs.mender.io/troubleshooting/yocto-project-build for Known Issues when upgrading.
 +#  endif
 +# else
 +#  define CONFIG_ENV_OFFSET MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
 +# endif
 +# if defined(CONFIG_ENV_OFFSET_REDUND)
 +#  if CONFIG_ENV_OFFSET_REDUND != MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
-+#   error CONFIG_ENV_OFFSET_REDUND is not the same as MENDER_ENV_OFFSET_REDUND. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++#   error CONFIG_ENV_OFFSET_REDUND is not the same as MENDER_ENV_OFFSET_REDUND. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>. Check also https://docs.mender.io/troubleshooting/yocto-project-build for Known Issues when upgrading.
 +#  endif
 +# else
 +#  define CONFIG_ENV_OFFSET_REDUND MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
