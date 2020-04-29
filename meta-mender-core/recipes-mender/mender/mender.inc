@@ -264,6 +264,7 @@ Before=systemd-growfs@data.service
 Type=oneshot
 User=root
 Group=root
+ExecStartPre=/bin/sh -c '/bin/echo "w" | /sbin/fdisk ${MENDER_STORAGE_DEVICE}'
 ExecStart=/usr/sbin/parted -s ${MENDER_STORAGE_DEVICE} resizepart ${MENDER_DATA_PART_NUMBER} 100%
 
 [Install]
