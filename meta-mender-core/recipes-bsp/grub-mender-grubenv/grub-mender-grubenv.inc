@@ -1,6 +1,7 @@
 inherit mender-helpers
 require conf/image-uefi.conf
 inherit ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', 'user-key-store', '', d)}
+inherit grub-mender-grubenv
 
 RPROVIDES_${PN} += "virtual/grub-bootconf"
 
