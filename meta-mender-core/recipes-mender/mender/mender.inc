@@ -26,28 +26,42 @@ inherit go
 inherit systemd
 
 SYSTEMD_SERVICE_${PN} = "mender.service"
-FILES_${PN} += "${systemd_unitdir}/system/mender.service \
-                ${sysconfdir}/mender.conf \
-                /data/mender/device_type \
-                /data/mender/mender.conf \
-                ${sysconfdir}/udev/mount.blacklist.d/mender \
-               "
+FILES_${PN} += "\
+    ${sysconfdir}/mender.conf \
+    ${sysconfdir}/udev/mount.blacklist.d/mender \
+    ${systemd_unitdir}/system/mender.service \
+    /data/mender/device_type \
+    /data/mender/mender.conf \
+"
 
 SYSROOT_DIRS += "/data"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
 
-SRC_URI_append_mender-image_mender-systemd = " file://mender-data-dir.service"
-SRC_URI_append_mender-persist-systemd-machine-id = " file://mender-systemd-machine-id.service \
-                                                     file://mender-set-systemd-machine-id.sh"
-FILES_${PN}_append_mender-image_mender-systemd = " ${systemd_unitdir}/system/mender-data-dir.service \
-                                                   ${systemd_unitdir}/system/mender.service.wants/mender-data-dir.service"
-FILES_${PN}_append_mender-growfs-data_mender-systemd = " ${systemd_unitdir}/system/mender-grow-data.service \
-                                                         ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service"
+SRC_URI_append_mender-image_mender-systemd = " \
+    file://mender-data-dir.service \
+"
 
-FILES_${PN}_append_mender-persist-systemd-machine-id = " ${systemd_unitdir}/system/mender-systemd-machine-id.service \
-                                                         ${systemd_unitdir}/system/mender.service.wants/mender-systemd-machine-id.service \
-                                                         ${bindir}/mender-set-systemd-machine-id.sh"
+SRC_URI_append_mender-persist-systemd-machine-id = " \
+    file://mender-systemd-machine-id.service \
+    file://mender-set-systemd-machine-id.sh \
+"
+
+FILES_${PN}_append_mender-image_mender-systemd = " \
+    ${systemd_unitdir}/system/mender-data-dir.service \
+    ${systemd_unitdir}/system/mender.service.wants/mender-data-dir.service \
+"
+
+FILES_${PN}_append_mender-growfs-data_mender-systemd = " \
+    ${systemd_unitdir}/system/mender-grow-data.service \
+    ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service \
+"
+
+FILES_${PN}_append_mender-persist-systemd-machine-id = " \
+    ${systemd_unitdir}/system/mender-systemd-machine-id.service \
+    ${systemd_unitdir}/system/mender.service.wants/mender-systemd-machine-id.service \
+    ${bindir}/mender-set-systemd-machine-id.sh \
+"
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
 # like. We disable those checks here.
