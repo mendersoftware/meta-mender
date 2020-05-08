@@ -62,6 +62,7 @@ SRC_URI_append_mender-persist-systemd-machine-id = " \
 SRC_URI_append_mender-growfs-data_mender-systemd = " \
     file://mender-client-resize-data-part.sh.in \
     file://mender-grow-data.service \
+    file://mender-systemd-growfs-data.service \
 "
 
 FILES_${PN}_append_mender-image_mender-systemd = " \
@@ -72,7 +73,9 @@ FILES_${PN}_append_mender-image_mender-systemd = " \
 FILES_${PN}_append_mender-growfs-data_mender-systemd = " \
     ${bindir}/mender-client-resize-data-part \
     ${systemd_unitdir}/system/mender-grow-data.service \
+    ${systemd_unitdir}/system/mender-systemd-growfs-data.service \
     ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service \
+    ${systemd_unitdir}/system/data.mount.wants/mender-systemd-growfs-data.service \
 "
 
 FILES_${PN}_append_mender-persist-systemd-machine-id = " \
@@ -299,9 +302,11 @@ do_install_append_mender-growfs-data_mender-systemd() {
 
     install -d ${D}/${systemd_unitdir}/system
     install -m 644 ${WORKDIR}/mender-grow-data.service ${D}/${systemd_unitdir}/system/
+    install -m 644 ${WORKDIR}/mender-systemd-growfs-data.service ${D}/${systemd_unitdir}/system/
 
     install -d ${D}${systemd_unitdir}/system/data.mount.wants/
     ln -sf ../mender-grow-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
+    ln -sf ../mender-systemd-growfs-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
 }
 
 do_install_append_mender-persist-systemd-machine-id() {
