@@ -26,41 +26,54 @@ inherit go
 inherit systemd
 
 SYSTEMD_SERVICE_${PN} = "${MENDER_CLIENT}.service"
-FILES_${PN} += "${systemd_unitdir}/system/${MENDER_CLIENT}.service \
-                ${sysconfdir}/mender.conf \
-                /data/mender/device_type \
-                /data/mender/mender.conf \
-                ${sysconfdir}/udev/mount.blacklist.d/mender \
-                /usr/share/mender/identity \
-                /usr/share/mender/inventory \
-                /usr/share/mender/identity/mender-device-identity \
-                /usr/share/mender/inventory/mender-inventory-hostinfo \
-                /usr/share/mender/inventory/mender-inventory-network \
-                /usr/share/mender/inventory/mender-inventory-os \
-                /usr/share/mender/inventory/mender-inventory-bootloader-integration \
-                /usr/share/mender/inventory/mender-inventory-rootfs-type \
-                /usr/share/mender/modules/v3/docker \
-                /usr/share/mender/modules/v3/directory \
-                /usr/share/mender/modules/v3/single-file \
-                /usr/share/mender/modules/v3/deb \
-                /usr/share/mender/modules/v3/rpm \
-                /usr/share/mender/modules/v3/script \
-               "
+FILES_${PN} += "\
+    ${datadir}/mender/identity \
+    ${datadir}/mender/identity/mender-device-identity \
+    ${datadir}/mender/inventory \
+    ${datadir}/mender/inventory/mender-inventory-bootloader-integration \
+    ${datadir}/mender/inventory/mender-inventory-hostinfo \
+    ${datadir}/mender/inventory/mender-inventory-network \
+    ${datadir}/mender/inventory/mender-inventory-os \
+    ${datadir}/mender/inventory/mender-inventory-rootfs-type \
+    ${datadir}/mender/modules/v3/deb \
+    ${datadir}/mender/modules/v3/directory \
+    ${datadir}/mender/modules/v3/docker \
+    ${datadir}/mender/modules/v3/rpm \
+    ${datadir}/mender/modules/v3/script \
+    ${datadir}/mender/modules/v3/single-file \
+    ${sysconfdir}/mender.conf \
+    ${sysconfdir}/udev/mount.blacklist.d/mender \
+    ${systemd_unitdir}/system/${MENDER_CLIENT}.service \
+    /data/mender/device_type \
+    /data/mender/mender.conf \
+"
 
 SYSROOT_DIRS += "/data"
 
-SRC_URI_append_mender-image_mender-systemd = " file://mender-client-data-dir.service"
+SRC_URI_append_mender-image_mender-systemd = " \
+    file://mender-client-data-dir.service \
+"
 
-SRC_URI_append_mender-persist-systemd-machine-id = " file://mender-client-systemd-machine-id.service \
-                                                     file://mender-client-set-systemd-machine-id.sh"
-FILES_${PN}_append_mender-image_mender-systemd = " ${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service \
-                                                   ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service"
-FILES_${PN}_append_mender-growfs-data_mender-systemd = " ${systemd_unitdir}/system/mender-grow-data.service \
-                                                         ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service"
+SRC_URI_append_mender-persist-systemd-machine-id = " \
+    file://mender-client-systemd-machine-id.service \
+    file://mender-client-set-systemd-machine-id.sh \
+"
 
-FILES_${PN}_append_mender-persist-systemd-machine-id = " ${systemd_unitdir}/system/mender-systemd-machine-id.service \
-                                                         ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-systemd-machine-id.service \
-                                                         ${bindir}/${MENDER_CLIENT}-set-systemd-machine-id.sh"
+FILES_${PN}_append_mender-image_mender-systemd = " \
+    ${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service \
+    ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service \
+"
+
+FILES_${PN}_append_mender-growfs-data_mender-systemd = " \
+    ${systemd_unitdir}/system/mender-grow-data.service \
+    ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service \
+"
+
+FILES_${PN}_append_mender-persist-systemd-machine-id = " \
+    ${systemd_unitdir}/system/mender-systemd-machine-id.service \
+    ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-systemd-machine-id.service \
+    ${bindir}/${MENDER_CLIENT}-set-systemd-machine-id.sh \
+"
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
 # like. We disable those checks here.
