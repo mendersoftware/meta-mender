@@ -59,12 +59,18 @@ SRC_URI_append_mender-persist-systemd-machine-id = " \
     file://mender-client-set-systemd-machine-id.sh \
 "
 
+SRC_URI_append_mender-growfs-data_mender-systemd = " \
+    file://mender-client-resize-data-part.sh.in \
+    file://mender-grow-data.service \
+"
+
 FILES_${PN}_append_mender-image_mender-systemd = " \
     ${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service \
 "
 
 FILES_${PN}_append_mender-growfs-data_mender-systemd = " \
+    ${bindir}/mender-client-resize-data-part \
     ${systemd_unitdir}/system/mender-grow-data.service \
     ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service \
 "
@@ -279,23 +285,21 @@ do_install_append_mender-image_mender-systemd() {
 }
 
 do_install_append_mender-growfs-data_mender-systemd() {
-    cat <<-EOF > ${D}${systemd_unitdir}/system/mender-grow-data.service
-[Unit]
-Description=Mender service to grow data partition size
-DefaultDependencies=no
-Before=data.mount
-Before=systemd-growfs@data.service
+    sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
+        ${WORKDIR}/mender-client-resize-data-part.sh.in
 
-[Service]
-Type=oneshot
-User=root
-Group=root
-ExecStartPre=/bin/sh -c '/bin/echo "w" | /sbin/fdisk ${MENDER_STORAGE_DEVICE}'
-ExecStart=/usr/sbin/parted -s ${MENDER_STORAGE_DEVICE} resizepart ${MENDER_DATA_PART_NUMBER} 100%
+    sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
+        ${WORKDIR}/mender-client-resize-data-part.sh.in
 
-[Install]
-WantedBy=data.mount
-EOF
+    sed -i "s#@MENDER_DATA_PART_NUMBER@#${MENDER_DATA_PART_NUMBER}#g" \
+        ${WORKDIR}/mender-client-resize-data-part.sh.in
+
+    install -m 0755 ${WORKDIR}/mender-client-resize-data-part.sh.in \
+        ${D}/${bindir}/mender-client-resize-data-part
+
+    install -d ${D}/${systemd_unitdir}/system
+    install -m 644 ${WORKDIR}/mender-grow-data.service ${D}/${systemd_unitdir}/system/
+
     install -d ${D}${systemd_unitdir}/system/data.mount.wants/
     ln -sf ../mender-grow-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
 }

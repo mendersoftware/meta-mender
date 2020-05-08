@@ -1,0 +1,39 @@
+#!/bin/sh
+
+set -e
+
+# All sizes are in blocks of 512 bytes
+
+MENDER_STORAGE_DEVICE=@MENDER_STORAGE_DEVICE@
+MENDER_DATA_PART=@MENDER_DATA_PART@
+
+mender_storage_device_base=$(basename ${MENDER_STORAGE_DEVICE})
+mender_data_part_base=$(basename ${MENDER_DATA_PART})
+
+total_disk_size=$(cat /sys/block/${mender_storage_device_base}/size)
+
+data_part_size=$(cat /sys/block/${mender_storage_device_base}/${mender_data_part_base}/size)
+data_part_start=$(cat /sys/block/${mender_storage_device_base}/${mender_data_part_base}/start)
+
+if [ -z "${total_disk_size}" ] || [ -z "${data_part_size}" ] || [ -z "${data_part_start}" ]; then
+    echo "Failed to read disk sizes. Aborting..."
+    exit 1
+fi
+
+data_part_end=$(expr ${data_part_start} + ${data_part_size})
+
+# expr returns 1 (error) if the result is 0, which terminates the script
+# because of 'set -e'. Silence this error
+free_space=$(expr ${total_disk_size} - ${data_part_end} || true)
+
+if [ ${free_space} -eq 0 ]; then
+    echo "Disk has already been resized."
+    exit 0
+fi
+
+# Parted will refuse to resize the parition because it needs to re-write the
+# partition table and will refuse to do so unless there is a backup. This
+# ensures that GPT backup headers are written to the end of the disk.
+echo "w" | fdisk ${MENDER_STORAGE_DEVICE}
+
+/usr/sbin/parted -s ${MENDER_STORAGE_DEVICE} resizepart @MENDER_DATA_PART_NUMBER@ 100%
