@@ -73,13 +73,6 @@ mender_rootfsa_uuid=$mender_rootfsa_uuid
 mender_rootfsb_uuid=$mender_rootfsb_uuid
 EOF
     fi
-
-    if [ -n "${KERNEL_DEVICETREE}" ]; then
-        MENDER_DTB_NAME=$(mender_get_clean_kernel_devicetree)
-        cat >> ${B}/mender_grubenv_defines <<EOF
-kernel_devicetree=$MENDER_DTB_NAME
-EOF
-    fi
 }
 
 do_compile() {
