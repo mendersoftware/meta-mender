@@ -3,7 +3,7 @@
 set -e
 
 function trap_exit() {
-  umount --lazy /mnt/inactive_part
+  umount -l /mnt/inactive_part
 }
 trap trap_exit EXIT
 

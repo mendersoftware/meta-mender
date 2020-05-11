@@ -50,7 +50,7 @@ FILES_${PN} += "${systemd_unitdir}/system/${MENDER_CLIENT}.service \
 SYSROOT_DIRS += "/data"
 
 SRC_URI_append_mender-image_mender-systemd = " file://mender-client-data-dir.service"
-                                               
+
 SRC_URI_append_mender-persist-systemd-machine-id = " file://mender-client-systemd-machine-id.service \
                                                      file://mender-client-set-systemd-machine-id.sh"
 FILES_${PN}_append_mender-image_mender-systemd = " ${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service \
@@ -277,6 +277,7 @@ Before=systemd-growfs@data.service
 Type=oneshot
 User=root
 Group=root
+ExecStartPre=/bin/sh -c '/bin/echo "w" | /sbin/fdisk ${MENDER_STORAGE_DEVICE}'
 ExecStart=/usr/sbin/parted -s ${MENDER_STORAGE_DEVICE} resizepart ${MENDER_DATA_PART_NUMBER} 100%
 
 [Install]

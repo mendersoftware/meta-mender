@@ -17,6 +17,7 @@ import os
 import shutil
 import time
 import errno
+from pathlib import Path
 
 from paramiko.client import WarningPolicy
 from common import *
@@ -131,6 +132,13 @@ def setup_qemu(request, build_dir, conn):
         def qemu_finalizer_impl(conn):
             try:
                 manual_uboot_commit(conn)
+                # Collect the coverage files from /data/mender/ if present
+                try:
+                    Path("coverage").mkdir(exist_ok=True)
+                    conn.run("ls /data/mender/cover*")
+                    get_no_sftp("/data/mender/cover*", conn, local="coverage")
+                except:
+                    pass
                 conn.run("poweroff")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
