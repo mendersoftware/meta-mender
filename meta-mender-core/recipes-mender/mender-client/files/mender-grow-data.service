@@ -6,8 +6,7 @@ Before=mender-systemd-growfs-data.service
 
 [Service]
 Type=oneshot
-User=root
-Group=root
+RemainAfterExit=yes
 ExecStart=/usr/bin/mender-client-resize-data-part
 
 [Install]
