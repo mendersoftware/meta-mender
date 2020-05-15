@@ -1,0 +1,13 @@
+[Unit]
+Description=Mender service to grow data partition size
+DefaultDependencies=no
+Before=data.mount
+Before=mender-systemd-growfs-data.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/mender-client-resize-data-part
+
+[Install]
+WantedBy=data.mount
