@@ -318,6 +318,7 @@ def bitbake_path(request, conversion):
     old_path = os.environ["PATH"]
 
     if not conversion:
+        run_verbose("bitbake -c prepare_recipe_sysroot mender-test-dependencies")
         bb_testing_variables = get_bitbake_variables("mender-test-dependencies")
         os.environ["PATH"] = bb_testing_variables["PATH"] + ":" + os.environ["PATH"]
 
