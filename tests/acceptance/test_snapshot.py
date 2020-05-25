@@ -149,7 +149,9 @@ class TestSnapshot:
 
     @pytest.mark.min_mender_version("2.2.0")
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
-    def test_snapshot_using_mender_artifact(self, bitbake_variables, connection):
+    def test_snapshot_using_mender_artifact(
+        self, bitbake_path, bitbake_variables, connection
+    ):
         try:
             (active, passive) = determine_active_passive_part(
                 bitbake_variables, connection
