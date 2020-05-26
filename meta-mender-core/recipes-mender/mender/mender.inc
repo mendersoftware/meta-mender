@@ -26,28 +26,51 @@ inherit go
 inherit systemd
 
 SYSTEMD_SERVICE_${PN} = "mender.service"
-FILES_${PN} += "${systemd_unitdir}/system/mender.service \
-                ${sysconfdir}/mender.conf \
-                /data/mender/device_type \
-                /data/mender/mender.conf \
-                ${sysconfdir}/udev/mount.blacklist.d/mender \
-               "
+FILES_${PN} += "\
+    ${sysconfdir}/mender.conf \
+    ${sysconfdir}/udev/mount.blacklist.d/mender \
+    ${systemd_unitdir}/system/mender.service \
+    /data/mender/device_type \
+    /data/mender/mender.conf \
+"
 
 SYSROOT_DIRS += "/data"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
 
-SRC_URI_append_mender-image_mender-systemd = " file://mender-data-dir.service"
-SRC_URI_append_mender-persist-systemd-machine-id = " file://mender-systemd-machine-id.service \
-                                                     file://mender-set-systemd-machine-id.sh"
-FILES_${PN}_append_mender-image_mender-systemd = " ${systemd_unitdir}/system/mender-data-dir.service \
-                                                   ${systemd_unitdir}/system/mender.service.wants/mender-data-dir.service"
-FILES_${PN}_append_mender-growfs-data_mender-systemd = " ${systemd_unitdir}/system/mender-grow-data.service \
-                                                         ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service"
+SRC_URI_append_mender-image_mender-systemd = " \
+    file://mender-data-dir.service \
+"
 
-FILES_${PN}_append_mender-persist-systemd-machine-id = " ${systemd_unitdir}/system/mender-systemd-machine-id.service \
-                                                         ${systemd_unitdir}/system/mender.service.wants/mender-systemd-machine-id.service \
-                                                         ${bindir}/mender-set-systemd-machine-id.sh"
+SRC_URI_append_mender-persist-systemd-machine-id = " \
+    file://mender-systemd-machine-id.service \
+    file://mender-set-systemd-machine-id.sh \
+"
+
+SRC_URI_append_mender-growfs-data_mender-systemd = " \
+    file://mender-client-resize-data-part.sh.in \
+    file://mender-grow-data.service \
+    file://mender-systemd-growfs-data.service \
+"
+
+FILES_${PN}_append_mender-image_mender-systemd = " \
+    ${systemd_unitdir}/system/mender-data-dir.service \
+    ${systemd_unitdir}/system/mender.service.wants/mender-data-dir.service \
+"
+
+FILES_${PN}_append_mender-growfs-data_mender-systemd = " \
+    ${bindir}/mender-client-resize-data-part \
+    ${systemd_unitdir}/system/mender-grow-data.service \
+    ${systemd_unitdir}/system/mender-systemd-growfs-data.service \
+    ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service \
+    ${systemd_unitdir}/system/data.mount.wants/mender-systemd-growfs-data.service \
+"
+
+FILES_${PN}_append_mender-persist-systemd-machine-id = " \
+    ${systemd_unitdir}/system/mender-systemd-machine-id.service \
+    ${systemd_unitdir}/system/mender.service.wants/mender-systemd-machine-id.service \
+    ${bindir}/mender-set-systemd-machine-id.sh \
+"
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
 # like. We disable those checks here.
@@ -253,25 +276,25 @@ do_install_append_mender-image_mender-systemd() {
 }
 
 do_install_append_mender-growfs-data_mender-systemd() {
-    cat <<-EOF > ${D}${systemd_unitdir}/system/mender-grow-data.service
-[Unit]
-Description=Mender service to grow data partition size
-DefaultDependencies=no
-Before=data.mount
-Before=systemd-growfs@data.service
+    sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
+        ${WORKDIR}/mender-client-resize-data-part.sh.in
 
-[Service]
-Type=oneshot
-User=root
-Group=root
-ExecStartPre=/bin/sh -c '/bin/echo "w" | /sbin/fdisk ${MENDER_STORAGE_DEVICE}'
-ExecStart=/usr/sbin/parted -s ${MENDER_STORAGE_DEVICE} resizepart ${MENDER_DATA_PART_NUMBER} 100%
+    sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
+        ${WORKDIR}/mender-client-resize-data-part.sh.in
 
-[Install]
-WantedBy=data.mount
-EOF
+    sed -i "s#@MENDER_DATA_PART_NUMBER@#${MENDER_DATA_PART_NUMBER}#g" \
+        ${WORKDIR}/mender-client-resize-data-part.sh.in
+
+    install -m 0755 ${WORKDIR}/mender-client-resize-data-part.sh.in \
+        ${D}/${bindir}/mender-client-resize-data-part
+
+    install -d ${D}/${systemd_unitdir}/system
+    install -m 644 ${WORKDIR}/mender-grow-data.service ${D}/${systemd_unitdir}/system/
+    install -m 644 ${WORKDIR}/mender-systemd-growfs-data.service ${D}/${systemd_unitdir}/system/
+
     install -d ${D}${systemd_unitdir}/system/data.mount.wants/
     ln -sf ../mender-grow-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
+    ln -sf ../mender-systemd-growfs-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
 }
 
 do_install_append_mender-persist-systemd-machine-id() {
