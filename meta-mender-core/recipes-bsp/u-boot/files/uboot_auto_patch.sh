@@ -389,6 +389,10 @@ patch_all_candidates_ubi() {
         'CONFIG_ENV_UBI_VOLUME' \
         'CONFIG_ENV_UBI_VOLUME' \
         "$CONFIG_ENV_UBI_VOLUME"
+    replace_definition \
+        'CONFIG_ENV_UBI_VOLUME_REDUND' \
+        'CONFIG_ENV_UBI_VOLUME_REDUND' \
+        "$CONFIG_ENV_UBI_VOLUME_REDUND"
 
     add_definition \
         'CONFIG_CMD_MTDPARTS'
