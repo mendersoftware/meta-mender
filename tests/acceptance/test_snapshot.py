@@ -149,7 +149,14 @@ class TestSnapshot:
 
     @pytest.mark.min_mender_version("2.2.0")
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
-    def test_snapshot_using_mender_artifact(self, bitbake_variables, connection):
+    # Make sure we run both with and without terminal. Many signal bugs lurk in
+    # different corners of the console code.
+    @pytest.mark.parametrize(
+        "terminal", ["", "screen -D -m -L -Logfile screen.log.tmp"]
+    )
+    def test_snapshot_using_mender_artifact(
+        self, terminal, bitbake_path, bitbake_variables, connection
+    ):
         try:
             (active, passive) = determine_active_passive_part(
                 bitbake_variables, connection
@@ -159,11 +166,20 @@ class TestSnapshot:
             # mender-artifact prefixes each ssh argument with "-S"
             common_args = common_args.replace(" ", " -S ")
 
-            subprocess.check_call(
-                "mender-artifact write rootfs-image -S %s -n test -t test -o test_snapshot_using_mender_artifact.mender -f ssh://%s@%s:%s"
-                % (common_args, connection.user, connection.host, connection.port),
-                shell=True,
-            )
+            try:
+                subprocess.check_call(
+                    "%s mender-artifact write rootfs-image -S %s -n test -t test -o test_snapshot_using_mender_artifact.mender -f ssh://%s@%s:%s"
+                    % (
+                        terminal,
+                        common_args,
+                        connection.user,
+                        connection.host,
+                        connection.port,
+                    ),
+                    shell=True,
+                )
+            finally:
+                subprocess.call("cat screen.log.tmp ; rm -f screen.log.tmp", shell=True)
 
             output = subprocess.check_output(
                 "mender-artifact read test_snapshot_using_mender_artifact.mender",

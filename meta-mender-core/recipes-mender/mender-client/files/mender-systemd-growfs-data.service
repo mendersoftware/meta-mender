@@ -1,0 +1,13 @@
+[Unit]
+Description=Grow File System on /data
+DefaultDependencies=no
+BindsTo=data.mount
+Conflicts=shutdown.target
+After=data.mount
+Before=shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/lib/systemd/systemd-growfs /data
+TimeoutSec=0
