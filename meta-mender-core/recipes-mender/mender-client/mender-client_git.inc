@@ -1,7 +1,7 @@
 require mender-client.inc
 
-DEPENDS = "xz"
-RDEPENDS_${PN} = "liblzma"
+DEPENDS = "xz openssl"
+RDEPENDS_${PN} = "liblzma openssl"
 
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
@@ -81,7 +81,7 @@ def mender_license(branch):
         }
     else:
         return {
-                   "md5": "3e7426c258f60f9876ae3746f54c49d4",
+                   "md5": "7c2fdcfc8c08d9a2a4479be09237c5e4",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
 LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=${@mender_license(d.getVar('MENDER_BRANCH'))['md5']}"
