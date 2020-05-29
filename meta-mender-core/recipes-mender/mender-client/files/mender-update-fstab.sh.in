@@ -1,0 +1,31 @@
+#!/bin/sh
+
+#
+# Call this script from a hook before systemd is loaded to update /etc/fstab
+# from the install device to the storage device on first run.
+#
+# TODO: Mount /boot and /data programatically on boot instead of via /etc/fstab
+# to remove the need for this script and a pre-systemd hook.
+#
+
+MENDER_STORAGE_DEVICE=@MENDER_STORAGE_DEVICE@
+MENDER_INSTALL_DEVICE=@MENDER_INSTALL_DEVICE@
+
+FSTAB_FILE="/etc/fstab"
+
+if [ -n "${MENDER_INSTALL_DEVICE}" ]; then
+    source mender-utils
+
+    ROOT_DEVICE=$(read_root_device)
+
+    # Check if we booted from the installation disk
+    if [[ "${ROOT_DEVICE}" == *"${MENDER_INSTALL_DEVICE}"* ]]; then
+        # Check if /etc/fstab still points to the storage disk
+        if grep -q "${MENDER_STORAGE_DEVICE}" "${FSTAB_FILE}"; then
+            # Remount the root filesystem for access to /etc
+            mount -o remount,rw /
+            # Change target partitions to the install disk
+            sed -i "s#${MENDER_STORAGE_DEVICE}#${MENDER_INSTALL_DEVICE}#g" "${FSTAB_FILE}"
+        fi
+    fi
+fi

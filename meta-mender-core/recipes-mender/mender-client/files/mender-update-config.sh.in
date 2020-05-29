@@ -1,0 +1,21 @@
+#!/bin/sh
+
+MENDER_STORAGE_DEVICE=@MENDER_STORAGE_DEVICE@
+MENDER_INSTALL_DEVICE=@MENDER_INSTALL_DEVICE@
+
+MENDER_CONFIG_FILE="/data/mender/mender.conf"
+
+if [ -n "${MENDER_INSTALL_DEVICE}" ]; then
+    source mender-utils
+
+    ROOT_DEVICE=$(read_root_device)
+
+    # Check if we booted from the installation disk
+    if [[ "${ROOT_DEVICE}" == *"${MENDER_INSTALL_DEVICE}"* ]]; then
+        # Check if config still points to the storage disk
+        if grep -q "${MENDER_STORAGE_DEVICE}" "${MENDER_CONFIG_FILE}"; then
+            # Change partitions to match the device we booted from
+            sed -i "s#${MENDER_STORAGE_DEVICE}#${MENDER_INSTALL_DEVICE}#g" "${MENDER_CONFIG_FILE}"
+        fi
+    fi
+fi

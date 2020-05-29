@@ -43,6 +43,8 @@ IMAGE_NAME_SUFFIX = ""
 # Block storage
 ################################################################################
 
+include mender-utils.inc
+
 mender_part_image() {
     suffix="$1"
     ptable_type="$2"
@@ -262,6 +264,56 @@ EOF
                 echo r                              # Exit expert mode
                 echo w                              # Write changes
             ) | fdisk ${outimgname}
+        fi
+    fi
+
+    # Create the installer if mender-emmc-install is enabled in features
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-emmc-install', 'true', 'false', d)}; then
+        # Check if an install target was set
+        if [ -n "${MENDER_INSTALL_DEVICE}" ]; then
+            # Path to the executable that generates an install script
+            INSTALL_SCRIPT_GENERATOR="${@get_script_path(d, "create-installer.sh")}"
+
+            # De-facto parameters (documentation in generator script)
+            INSTALL_SCRIPT_NAME=mender-install.sh
+            DATA_PARTITION_LABEL=data
+            DATA_MOUNT=/data
+            INSTALL_BOOT_MOUNT=/media/emmc_boot
+            INSTALL_DATA_MOUNT=/media/emmc_data
+
+            # Inspect the created image
+            PARTITION_LIST=$(wic ls "${outimgname}")
+
+            # TODO: Verify disk geometry parameters are multiples of mebibytes.
+            # For now, this seems to be the case.
+            #
+            # Mebibytes are desireable because on Yocto, dd is provided by
+            # busybox, and unlike coreutils, all writes are done synchronously.
+            # Writing in 512-byte sections is extremely slow; writing in 1MiB
+            # sections is much faster.
+
+            # Call the install script generator, passing parameters and disk
+            # geometry. See generator script for parameter documentation.
+            IMAGE=${outimgname} \
+            WORKDIR=${WORKDIR} \
+            INSTALL_SCRIPT_NAME=${INSTALL_SCRIPT_NAME} \
+            STORAGE_DEVICE=${MENDER_STORAGE_DEVICE} \
+            INSTALL_DEVICE=${MENDER_INSTALL_DEVICE} \
+            PARTITION_TABLE_TYPE=${ptable_type} \
+            DATA_PARTITION_LABEL=${DATA_PARTITION_LABEL} \
+            DATA_MOUNT=${DATA_MOUNT} \
+            INSTALL_BOOT_MOUNT=${INSTALL_BOOT_MOUNT} \
+            INSTALL_DATA_MOUNT=${INSTALL_DATA_MOUNT} \
+            BOOT_PARTITION_START=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_BOOT_PART_NUMBER} " | awk '{ print $2; }') \
+            BOOT_PARTITION_END=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_BOOT_PART_NUMBER} " | awk '{ print $3; }') \
+            PARTITION_A_START=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_ROOTFS_PART_A_NUMBER} " | awk '{ print $2; }') \
+            PARTITION_A_END=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_ROOTFS_PART_A_NUMBER} " | awk '{ print $3; }') \
+            PARTITION_B_START=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_ROOTFS_PART_B_NUMBER} " | awk '{ print $2; }') \
+            PARTITION_B_END=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_ROOTFS_PART_B_NUMBER} " | awk '{ print $3; }') \
+            PARTITION_B_SIZE=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_ROOTFS_PART_B_NUMBER} " | awk '{ print $4; }') \
+            DATA_PARTITION_START=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_DATA_PART_NUMBER} " | awk '{ print $2; }') \
+            DATA_PARTITION_END=$(echo "${PARTITION_LIST}" | grep "^ ${MENDER_DATA_PART_NUMBER} " | awk '{ print $3; }') \
+            ${INSTALL_SCRIPT_GENERATOR}
         fi
     fi
 }

@@ -16,12 +16,23 @@ MENDER_STORAGE_DEVICE_DEFAULT = "/dev/mmcblk0"
 # This is often MENDER_STORAGE_DEVICE + "p".
 MENDER_STORAGE_DEVICE_BASE ??= "${MENDER_STORAGE_DEVICE_BASE_DEFAULT}"
 def mender_linux_partition_base(dev):
+    if not dev:
+        return ""
     import re
     if re.match("^/dev/[sh]d[a-z]", dev):
         return dev
     else:
         return "%sp" % dev
 MENDER_STORAGE_DEVICE_BASE_DEFAULT = "${@mender_linux_partition_base('${MENDER_STORAGE_DEVICE}')}"
+
+# The embedded storage device that the system is installed to.
+MENDER_INSTALL_DEVICE ??= "${MENDER_INSTALL_DEVICE_DEFAULT}"
+MENDER_INSTALL_DEVICE_DEFAULT = ""
+
+# The base name of the devices that hold individual partitions.
+# This is often MENDER_INSTALL_DEVICE + "p".
+MENDER_INSTALL_DEVICE_BASE ??= "${MENDER_INSTALL_DEVICE_BASE_DEFAULT}"
+MENDER_INSTALL_DEVICE_BASE_DEFAULT = "${@mender_linux_partition_base('${MENDER_INSTALL_DEVICE}')}"
 
 # The partition number holding the boot partition.
 MENDER_BOOT_PART_NUMBER ??= "${MENDER_BOOT_PART_NUMBER_DEFAULT}"
@@ -43,12 +54,22 @@ MENDER_ROOTFS_PART_A_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${MENDER_ROOTFS_PAR
 MENDER_ROOTFS_PART_B ??= "${MENDER_ROOTFS_PART_B_DEFAULT}"
 MENDER_ROOTFS_PART_B_DEFAULT = "${MENDER_STORAGE_DEVICE_BASE}${MENDER_ROOTFS_PART_B_NUMBER}"
 
+MENDER_INSTALL_ROOTFS_PART_A ??= "${MENDER_INSTALL_ROOTFS_PART_A_DEFAULT}"
+MENDER_INSTALL_ROOTFS_PART_A_DEFAULT = "${MENDER_INSTALL_DEVICE_BASE}${MENDER_ROOTFS_PART_A_NUMBER}"
+MENDER_INSTALL_ROOTFS_PART_B ??= "${MENDER_INSTALL_ROOTFS_PART_B_DEFAULT}"
+MENDER_INSTALL_ROOTFS_PART_B_DEFAULT = "${MENDER_INSTALL_DEVICE_BASE}${MENDER_ROOTFS_PART_B_NUMBER}"
+
 # The names of the two rootfs partitions in the A/B partition layout. By default
 # it is the same name as MENDER_ROOTFS_PART_A and MENDER_ROOTFS_B
 MENDER_ROOTFS_PART_A_NAME ??= "${MENDER_ROOTFS_PART_A_NAME_DEFAULT}"
 MENDER_ROOTFS_PART_A_NAME_DEFAULT = "${MENDER_ROOTFS_PART_A}"
 MENDER_ROOTFS_PART_B_NAME ??= "${MENDER_ROOTFS_PART_B_NAME_DEFAULT}"
 MENDER_ROOTFS_PART_B_NAME_DEFAULT = "${MENDER_ROOTFS_PART_B}"
+
+MENDER_INSTALL_ROOTFS_PART_A_NAME ??= "${MENDER_INSTALL_ROOTFS_PART_A_NAME_DEFAULT}"
+MENDER_INSTALL_ROOTFS_PART_A_NAME_DEFAULT = "${MENDER_INSTALL_ROOTFS_PART_A}"
+MENDER_INSTALL_ROOTFS_PART_B_NAME ??= "${MENDER_INSTALL_ROOTFS_PART_B_NAME_DEFAULT}"
+MENDER_INSTALL_ROOTFS_PART_B_NAME_DEFAULT = "${MENDER_INSTALL_ROOTFS_PART_B}"
 
 # The partition number holding the data partition.
 MENDER_DATA_PART_NUMBER ??= "${MENDER_DATA_PART_NUMBER_DEFAULT}"
@@ -161,7 +182,7 @@ MENDER_UBOOT_STORAGE_DEVICE_DEFAULT = ""
 
 # The SPL (Secondary Program Loader) is used with the BeagleBone Black as an
 # intermediate stage to load U-Boot. When the system boots, the CPU's boot ROM
-# (known as the PPL, or Promary Program Loader) can load the SPL in two modes:
+# (known as the PPL, or Primary Program Loader) can load the SPL in two modes:
 #
 #   1. "Raw mode", where the SPL is located in one of four consecutive
 #      locations at 0x0 / 128 KiB / 256 KiB / 384 KiB
@@ -250,6 +271,11 @@ python() {
         # Install of Mender, with the minimum components. This includes no
         # references to specific partition layouts.
         'mender-client-install',
+
+        # Include a live installer for platforms that have eMMC memory, such as
+        # the BeagleBone Black. Set the device the system is installed to
+        # using MENDER_INSTALL_DEVICE.
+        'mender-emmc-install',
 
         # Include components for Mender-partitioned images. This will create
         # files that rely on the Mender partition layout.

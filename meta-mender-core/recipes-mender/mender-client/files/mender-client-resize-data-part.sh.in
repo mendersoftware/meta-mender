@@ -5,7 +5,22 @@ set -e
 # All sizes are in blocks of 512 bytes
 
 MENDER_STORAGE_DEVICE=@MENDER_STORAGE_DEVICE@
+MENDER_INSTALL_DEVICE=@MENDER_INSTALL_DEVICE@
 MENDER_DATA_PART=@MENDER_DATA_PART@
+
+# Check if eMMC installation was enabled at build time
+if [ -n "${MENDER_INSTALL_DEVICE}" ]; then
+    source mender-utils
+
+    ROOT_DEVICE=$(read_root_device)
+
+    # Check if we booted from the installation disk
+    if [[ "${ROOT_DEVICE}" == *"${MENDER_INSTALL_DEVICE}"* ]]; then
+        # Update locations from the storage disk to the installation disk
+        MENDER_DATA_PART="$(echo "${MENDER_DATA_PART}" | sed "s#${MENDER_STORAGE_DEVICE}#${MENDER_INSTALL_DEVICE}#")"
+        MENDER_STORAGE_DEVICE="${MENDER_INSTALL_DEVICE}"
+    fi
+fi
 
 mender_storage_device_base=$(basename ${MENDER_STORAGE_DEVICE})
 mender_data_part_base=$(basename ${MENDER_DATA_PART})
