@@ -22,7 +22,7 @@ S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 inherit go
-
+inherit pkgconfig
 inherit systemd
 
 SYSTEMD_SERVICE_${PN} = "mender.service"
