@@ -28,5 +28,5 @@ DEPENDS += "xz"
 RDEPENDS_${PN} += "liblzma"
 
 # MEN-2948: systemd service is still named mender.service in 2.1.x
-MENDER_CLIENT="mender"
+MENDER_CLIENT = "mender"
 
