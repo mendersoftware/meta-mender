@@ -1,1 +1,1 @@
-../mender/README-releasing.md
+../mender-client/README-releasing.md
