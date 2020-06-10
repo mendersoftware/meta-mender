@@ -17,4 +17,4 @@ def mender_client_name(d):
     else:
         return "mender-client"
 
-MENDER_CLIENT="${@mender_client_name(d)}"
+MENDER_CLIENT = "${@mender_client_name(d)}"

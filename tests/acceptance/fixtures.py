@@ -134,8 +134,8 @@ def setup_qemu(request, build_dir, conn):
                 manual_uboot_commit(conn)
                 # Collect the coverage files from /data/mender/ if present
                 try:
-                    Path("coverage").mkdir(exist_ok=True)
                     conn.run("ls /data/mender/cover*")
+                    Path("coverage").mkdir(exist_ok=True)
                     get_no_sftp("/data/mender/cover*", conn, local="coverage")
                 except:
                     pass

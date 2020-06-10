@@ -9,6 +9,7 @@ def cert_location_if_server_crt_in(src_uri, d):
             return "%s/mender/server.crt" % d.getVar('sysconfdir')
     return ""
 
+MENDER_CLIENT ?= "mender-client"
 MENDER_SERVER_URL ?= "https://docker.mender.io"
 MENDER_CERT_LOCATION ??= "${@cert_location_if_server_crt_in('${SRC_URI}', d)}"
 # Tenant token
@@ -22,7 +23,7 @@ S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 inherit go
-
+inherit pkgconfig
 inherit systemd
 
 SYSTEMD_SERVICE_${PN} = "${MENDER_CLIENT}.service"

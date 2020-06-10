@@ -8,18 +8,18 @@ require mender-artifact.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=3.2.x"
+SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=3.4.x"
 
-# Tag: 3.2.1
-SRCREV = "f25a5b0c163ac7092455f9729d0797e77825de8e"
+# Tag: 3.4.0b1
+SRCREV = "b2c230e73b0e7c90d23ce03caedaec42728fa3f3"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
-#DEFAULT_PREFERENCE = "-1"
+DEFAULT_PREFERENCE = "-1"
 
 ################################################################################
 
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=f3d4710343f1b959e4fa6b728ce12264"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=d1fedd6e15ea779ce58fafea700f0c37"
 
 DEPENDS += "xz"
