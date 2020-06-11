@@ -105,8 +105,23 @@ class Helpers:
             return "-rootfs"
 
     @staticmethod
-    # Note: `image` needs to be in current directory.
     def install_update(image, conn, http_server, board_type, use_s3, s3_address):
+        # We want `image` to be in the current directory because we use Python's
+        # `http.server`. If it isn't, make a symlink, and relaunch.
+        if os.path.dirname(os.path.abspath(image)) != os.getcwd():
+            os.symlink(image, "temp-artifact.mender")
+            try:
+                return Helpers.install_update(
+                    "temp-artifact.mender",
+                    conn,
+                    http_server,
+                    board_type,
+                    use_s3,
+                    s3_address,
+                )
+            finally:
+                os.unlink("temp-artifact.mender")
+
         http_server_location = http_server
         install_flag = Helpers.get_install_flag(conn)
 
