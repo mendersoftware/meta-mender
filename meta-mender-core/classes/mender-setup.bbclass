@@ -121,6 +121,21 @@ MENDER_SWAP_PART_SIZE_MB_DEFAULT = "0"
 MENDER_BOOT_PART_SIZE_MB ??= "${MENDER_BOOT_PART_SIZE_MB_DEFAULT}"
 MENDER_BOOT_PART_SIZE_MB_DEFAULT = "16"
 
+# Example MENDER_EXTRA_PARTS usage:
+#   Extra partitions to create after the data parition
+#   MENDER_EXTRA_PARTS = "part1 part2"
+#
+#   Size (in MB) of specified extra partition
+#   MENDER_EXTRA_PARTS_SIZES_MB[part1] = "64"
+#   MENDER_EXTRA_PARTS_SIZES_MB[part2] = "128"
+#
+#   FSTAB options of specified extra partition (optional)
+#   MENDER_EXTRA_PARTS_FSTAB[part1] = "..."
+#   MENDER_EXTRA_PARTS_FSTAB[part2] = "..."
+
+# Extra partitions to create after the data parition
+MENDER_EXTRA_PARTS ??= ""
+
 # For performance reasons, we try to align the partitions to the SD card's erase
 # block (PEB). It is impossible to know this information with certainty, but one
 # way to find out is to run the "flashbench" tool on your SD card and study the
