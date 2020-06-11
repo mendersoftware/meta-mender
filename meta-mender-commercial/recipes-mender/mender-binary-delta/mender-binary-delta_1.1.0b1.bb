@@ -2,4 +2,4 @@ include mender-binary-delta.inc
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
-#DEFAULT_PREFERENCE = "-1"
+DEFAULT_PREFERENCE = "-1"
