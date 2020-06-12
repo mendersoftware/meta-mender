@@ -93,18 +93,9 @@ class TestDeltaUpdateModule:
             prepared_test_build["build_dir"], "core-image*.mender"
         )
 
-        try:
-            os.symlink(image, "temp-artifact.mender")
-            Helpers.install_update(
-                "temp-artifact.mender",
-                connection,
-                http_server,
-                board_type,
-                use_s3,
-                s3_address,
-            )
-        finally:
-            os.unlink("temp-artifact.mender")
+        Helpers.install_update(
+            image, connection, http_server, board_type, use_s3, s3_address,
+        )
 
         reboot(connection)
 
