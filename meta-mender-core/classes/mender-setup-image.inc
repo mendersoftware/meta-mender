@@ -22,6 +22,8 @@ MENDER_BOOT_PART_MOUNT_LOCATION = "/boot/efi"
 MENDER_BOOT_PART_MOUNT_LOCATION_mender-uboot = "/uboot"
 MENDER_BOOT_PART_MOUNT_LOCATION_mender-grub_mender-bios = "/boot/grub"
 
+MENDER_DATA_PART_MOUNT_LOCATION = "/data"
+
 # Update fstab for Mender
 ROOTFS_POSTPROCESS_COMMAND_append = " mender_update_fstab_file;"
 mender_update_fstab_file() {
@@ -43,8 +45,8 @@ mender_update_fstab_file() {
         fi
     fi
 
-    mkdir -p ${IMAGE_ROOTFS}/data
-    printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpDataPart} /data ${MENDER_DATA_PART_FSTYPE} ${MENDER_DATA_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    mkdir -p ${IMAGE_ROOTFS}/${MENDER_DATA_PART_MOUNT_LOCATION}
+    printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpDataPart} ${MENDER_DATA_PART_MOUNT_LOCATION} ${MENDER_DATA_PART_FSTYPE} ${MENDER_DATA_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
 
     if [ -n "${MENDER_EXTRA_PARTS}" ]; then
         local extra_part_fstab="${@get_extra_parts_fstab(d)}"
@@ -78,7 +80,7 @@ mender_create_scripts_version_file() {
     echo -n "${MENDER_STATE_SCRIPTS_VERSION}" > ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/version
 }
 
-IMAGE_ROOTFS_EXCLUDE_PATH_append_mender-image = " data/ ${@d.getVar('MENDER_BOOT_PART_MOUNT_LOCATION')[1:]}/"
+IMAGE_ROOTFS_EXCLUDE_PATH_append_mender-image = " ${@d.getVar('MENDER_DATA_PART_MOUNT_LOCATION')[1:]}/ ${@d.getVar('MENDER_BOOT_PART_MOUNT_LOCATION')[1:]}/"
 
 
 ################################################################################
