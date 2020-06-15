@@ -4,7 +4,7 @@ set -e
 
 BUILD_AR="${BUILD_AR:-ar}"
 BUILD_CC="${BUILD_CC:-gcc}"
-CC=${CC:-${CROSS_COMPILE}gcc}
+CC="${CROSS_COMPILE}gcc"
 MAKE="${MAKE:-make}"
 MAKEFLAGS="${MAKEFLAGS:-}"
 MAYBE_UBI=
