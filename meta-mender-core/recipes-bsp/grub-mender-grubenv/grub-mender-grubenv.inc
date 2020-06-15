@@ -1,11 +1,13 @@
 inherit mender-helpers
+require conf/image-uefi.conf
 inherit ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', 'user-key-store', '', d)}
+inherit grub-mender-grubenv
 
 RPROVIDES_${PN} += "virtual/grub-bootconf"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-GRUB_CONF_LOCATION = "${MENDER_BOOT_PART_MOUNT_LOCATION}/EFI/BOOT"
+GRUB_CONF_LOCATION = "${EFI_FILES_PATH}"
 GRUB_CONF_LOCATION_mender-bios = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
 
 FILES_${PN} += "/data/mender_grubenv.config \
@@ -28,6 +30,10 @@ SRC_URI_append = "${@bb.utils.contains('PACKAGECONFIG', 'debug-pause', ' file://
 PACKAGECONFIG[force-grub-prompt] = ",,,"
 SRC_URI_append = "${@bb.utils.contains('PACKAGECONFIG', 'force-grub-prompt', ' file://06_mender_debug_force_grub_prompt_grub.cfg;subdir=git', '', d)}"
 PACKAGECONFIG[debug-log] = ",,,"
+
+RDEPENDS_${PN} = "grub-efi"
+RDEPENDS_${PN}_mender-bios = "grub"
+RPROVIDES_${PN} = "virtual/grub-bootconf"
 
 # See https://www.gnu.org/software/grub/manual/grub/grub.html#debug
 DEBUG_LOG_CATEGORY ?= "all"
@@ -65,13 +71,6 @@ EOF
         cat >> ${B}/mender_grubenv_defines <<EOF
 mender_rootfsa_uuid=$mender_rootfsa_uuid
 mender_rootfsb_uuid=$mender_rootfsb_uuid
-EOF
-    fi
-
-    if [ -n "${KERNEL_DEVICETREE}" ]; then
-        MENDER_DTB_NAME=$(mender_get_clean_kernel_devicetree)
-        cat >> ${B}/mender_grubenv_defines <<EOF
-kernel_devicetree=$MENDER_DTB_NAME
 EOF
     fi
 }

@@ -198,6 +198,8 @@ CONFIG_MTDPARTS_DEFAULT="mtdparts=${MENDER_MTDPARTS}"
 CONFIG_ENV_UBI_PART="${MENDER_MTD_UBI_DEVICE_NAME}"
 CONFIG_ENV_UBI_VOLUME="u-boot-env-1"
 CONFIG_ENV_UBI_VOLUME_REDUND="u-boot-env-2"
+CONFIG_ENV_OFFSET=0x0
+CONFIG_ENV_OFFSET_REDUND=0x0
 EOF
     else
         cat >> ${S}/mender_Kconfig_fragment <<EOF
@@ -213,7 +215,7 @@ python() {
         bb.build.addtask('do_provide_mender_defines', 'do_configure', 'do_patch', d)
 }
 
-do_check_mender_defines() {
+do_configure_prepend_mender-uboot() {
     # Do a sanity check on some defines. The reason this is necessary, even
     # though they are defined by us, is that there are two ways the defines can
     # make it into the code, Kconfig and source code, and several things can
@@ -236,8 +238,15 @@ do_check_mender_defines() {
     # 3) The option uses Kconfig, and is in .config. In this case we just check
     #    that its value is correct.
 
-    # Calling this here is slightly evil, but we need its results, and at the
-    # time of writing u-boot doesn't call this from do_configure as they should.
+    # Calling this here is slightly evil, but we need its results, and we cannot
+    # wait until after the do_configure stage is done. The reason is a bug in
+    # poky. At the time of writing, the cml1_do_configure() is called from the
+    # uboot build, and contains the following: `yes '' | oe_runmake
+    # oldconfig`. The problem with this statement is that if the configuration
+    # fails to converge, which can happen if a configuration option doesn't have
+    # a default (CONFIG_ENV_OFFSET), then this will loop forever, filling up the
+    # log, and all the memory of the build host. Therefore this check, which
+    # detects such options being missing, needs to run before do_configure.
     if [ ! -e ${B}/.config ]; then
         oe_runmake -C ${S} O=${B} ${UBOOT_MACHINE}
     fi
@@ -260,14 +269,6 @@ do_check_mender_defines() {
         fi
     done
     unset IFS
-}
-# Actually, putting the task between configure and compile doesn't work
-# correctly for u-boot, because they don't call "make <config>_defconfig" inside
-# configure as they should. But we still leave it like this in case it is fixed
-# in the future. See also the comment by oe_runmake above.
-python() {
-    if bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
-        bb.build.addtask('do_check_mender_defines', 'do_compile', 'do_configure', d)
 }
 
 do_compile_append_mender-uboot_mender-ubi() {

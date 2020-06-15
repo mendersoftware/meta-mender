@@ -322,6 +322,9 @@ patch_all_candidates_sdimg() {
         'CONFIG_ENV_OFFSET_REDUND' \
         'CONFIG_ENV_OFFSET_REDUND' \
         "$CONFIG_ENV_OFFSET_REDUND"
+    replace_definition \
+        'CONFIG_SYS_REDUNDAND_ENVIRONMENT' \
+        'CONFIG_SYS_REDUNDAND_ENVIRONMENT'
 
     # Remove all of the below entries.
     replace_definition \
@@ -373,6 +376,10 @@ patch_all_candidates_ubi() {
         'CONFIG_ENV_IS_(NOWHERE|IN_[^ ]*)' \
         'CONFIG_ENV_IS_IN_UBI'
 
+    replace_definition \
+        'CONFIG_SYS_REDUNDAND_ENVIRONMENT' \
+        'CONFIG_SYS_REDUNDAND_ENVIRONMENT'
+
     # And remove volume definitions of environment so Mender can configure them.
     replace_definition \
         'CONFIG_ENV_UBI_PART' \
@@ -382,6 +389,10 @@ patch_all_candidates_ubi() {
         'CONFIG_ENV_UBI_VOLUME' \
         'CONFIG_ENV_UBI_VOLUME' \
         "$CONFIG_ENV_UBI_VOLUME"
+    replace_definition \
+        'CONFIG_ENV_UBI_VOLUME_REDUND' \
+        'CONFIG_ENV_UBI_VOLUME_REDUND' \
+        "$CONFIG_ENV_UBI_VOLUME_REDUND"
 
     add_definition \
         'CONFIG_CMD_MTDPARTS'
@@ -389,8 +400,15 @@ patch_all_candidates_ubi() {
         'CONFIG_CMD_UBI'
     add_definition \
         'CONFIG_CMD_UBIFS'
-    add_definition \
-        'CONFIG_MTD_DEVICE'
+
+    if is_kconfig_option "CONFIG_MTD"; then
+        add_definition \
+            'CONFIG_MTD'
+    else
+        add_definition \
+            'CONFIG_MTD_DEVICE'
+    fi
+
     add_definition \
         'CONFIG_MTD_PARTITIONS'
 }

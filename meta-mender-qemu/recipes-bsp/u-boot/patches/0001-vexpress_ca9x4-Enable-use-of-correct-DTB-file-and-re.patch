@@ -1,0 +1,43 @@
+From 7d1c06b96d82034a04208b18e4ea6c9b0cef2882 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@northern.tech>
+Date: Tue, 25 Feb 2020 18:14:46 +0100
+Subject: [PATCH 1/1] vexpress_ca9x4: Enable use of correct DTB file and
+ restore EFI loader.
+
+EFI was disabled in f95b8a4b5f64f because of the missing DTB file,
+and indeed, the DTB file is required to load recent versions of GRUB
+(2.04) correctly.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+---
+ configs/vexpress_ca9x4_defconfig  | 2 +-
+ include/configs/vexpress_common.h | 3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/configs/vexpress_ca9x4_defconfig b/configs/vexpress_ca9x4_defconfig
+index 2119df6b10..6bd1f253b6 100644
+--- a/configs/vexpress_ca9x4_defconfig
++++ b/configs/vexpress_ca9x4_defconfig
+@@ -34,4 +34,4 @@ CONFIG_SMC911X_32_BIT=y
+ CONFIG_BAUDRATE=38400
+ CONFIG_CONS_INDEX=0
+ CONFIG_OF_LIBFDT=y
+-# CONFIG_EFI_LOADER is not set
++CONFIG_DEFAULT_FDT_FILE="vexpress-v2p-ca9.dtb"
+diff --git a/include/configs/vexpress_common.h b/include/configs/vexpress_common.h
+index 7f215a6707..e73658a9e6 100644
+--- a/include/configs/vexpress_common.h
++++ b/include/configs/vexpress_common.h
+@@ -207,7 +207,8 @@
+ 			"devtmpfs.mount=0  vmalloc=256M\0" \
+ 		"bootflash=run flashargs; " \
+ 			"cp ${ramdisk_addr} ${ramdisk_addr_r} ${maxramdisk}; " \
+-			"bootm ${kernel_addr} ${ramdisk_addr_r}\0"
++			"bootm ${kernel_addr} ${ramdisk_addr_r}\0" \
++		"fdtfile=" CONFIG_DEFAULT_FDT_FILE "\0"
+ 
+ /* FLASH and environment organization */
+ #define PHYS_FLASH_SIZE			0x04000000	/* 64MB */
+-- 
+2.17.1
+
