@@ -1,11 +1,11 @@
---- a/rngd.service	2020-05-26 10:42:14.575073761 +0200
-+++ b/rngd.service	2020-05-26 10:42:34.110746120 +0200
+--- ../rngd.service	2020-06-12 10:48:49.596653581 -0400
++++ ../rngd.service	2020-06-12 10:49:22.281953979 -0400
 @@ -8,6 +8,8 @@
  [Service]
  EnvironmentFile=-@SYSCONFDIR@/default/rng-tools
  ExecStart=@SBINDIR@/rngd -f $EXTRA_ARGS
 +Restart=on-failure
 +RestartSec=5
- 
- [Install]
- WantedBy=multi-user.target
+ CapabilityBoundingSet=CAP_SYS_ADMIN
+ IPAddressDeny=any
+ LockPersonality=yes
