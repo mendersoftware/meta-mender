@@ -112,7 +112,7 @@ class TestUbootAutomation:
                 (
                     "git log -n1 --format=%%H --after=%d.days.ago HEAD -- "
                     + (
-                        "recipes-bsp/u-boot"
+                        "meta-mender-core/recipes-bsp/u-boot"
                         + " tests/acceptance/test_uboot_automation.py"
                         + " tests/acceptance/files/Makefile.test_uboot_automation"
                     )
@@ -165,8 +165,10 @@ class TestUbootAutomation:
         )
         is_upstream = False
         for branch in contained_in:
-            if branch.startswith("%s/" % upstream_remote) and not branch.startswith(
-                "%s/pull/" % upstream_remote
+            if (
+                branch.startswith("%s/" % upstream_remote)
+                and not branch.startswith("%s/pull/" % upstream_remote)
+                and not branch.startswith("%s/pr_" % upstream_remote)
             ):
                 is_upstream = True
                 break
