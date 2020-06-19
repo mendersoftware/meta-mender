@@ -16,6 +16,7 @@ $(BOARD_LOGS): $(LOGS)
 # Do the auto configuration for each board and make a log. Failure is not
 # recorded in the return code, but in the log instead.
 $(LOGS)/%_defconfig:
+	echo "Starting `basename $@` compile test at `date`"
 	if [ -z "$(TESTS_DIR)" -o -z "$(UBOOT_SRC)" ]; then \
 		echo "Not all variables are set"; \
 		exit 1; \
@@ -47,3 +48,5 @@ $(LOGS)/%_defconfig:
 		|| ( echo AutoPatchFailed >> $@ )
 
 	rm -rf "$(TMP)/`basename $@`"
+
+	echo "Finished `basename $@` compile test at `date`"
