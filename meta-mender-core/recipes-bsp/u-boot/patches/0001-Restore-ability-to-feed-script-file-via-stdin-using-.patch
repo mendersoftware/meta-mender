@@ -1,0 +1,32 @@
+From 4def7a26a0ba2f2e262b056670fea2e41bba87b3 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@northern.tech>
+Date: Mon, 22 Jun 2020 14:00:32 +0200
+Subject: [PATCH 1/1] Restore ability to feed script file via stdin, using `-s
+ -`.
+
+This used to work in the fw-utils based on U-Boot itself.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+---
+ src/uboot_env.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/uboot_env.c b/src/uboot_env.c
+index f9ffeda..514e722 100644
+--- a/src/uboot_env.c
++++ b/src/uboot_env.c
+@@ -1054,7 +1054,10 @@ int libuboot_load_file(struct uboot_ctx *ctx, const char *filename)
+ 	if (!filename)
+ 		return -EBADF;
+ 
+-	fp = fopen(filename, "r");
++	if (strcmp(filename, "-") == 0)
++		fp = fdopen(0, "r");
++	else
++		fp = fopen(filename, "r");
+ 	if (!fp)
+ 		return -EACCES;
+ 
+-- 
+2.17.1
+
