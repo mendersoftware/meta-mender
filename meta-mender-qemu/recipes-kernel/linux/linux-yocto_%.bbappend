@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS_prepend_mender-client-install := "${THISDIR}/${PN}:"
 
 # Use custom defconfig in order to enable use of the vexpress model.
 SRC_URI_append_vexpress-qemu = " file://defconfig \
