@@ -1,11 +1,11 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
+FILESEXTRAPATHS_prepend_mender-client-install := "${THISDIR}/patches:"
 
 # virtual/grub-bootconf will be removed by upstream recipes when using
 # efi-secure-boot. However, we explicitly want to include grub-mender-grubenv.
 RDEPENDS_${PN}_class-target_append_mender-client-install = " grub-mender-grubenv"
 
 # Setup EFI_BOOT_PATH for meta-secure-core.
-EFI_BOOT_PATH = "${MENDER_BOOT_PART_MOUNT_LOCATION}/EFI/BOOT"
+EFI_BOOT_PATH_mender-client-install = "${MENDER_BOOT_PART_MOUNT_LOCATION}/EFI/BOOT"
 
 # Mender needs these.
 GRUB_BUILDIN_append_mender-grub = " cat echo gcry_sha256 halt hashsum loadenv sleep reboot test regexp"
