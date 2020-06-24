@@ -20,6 +20,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
@@ -187,83 +188,64 @@ class TestUbootAutomation:
         print(msg)
         pytest.skip(msg)
 
-    def board_not_arm(self, bitbake_variables, config):
+    def board_is_arm(self, srcdir, config):
         if config in ["xilinx_versal_virt_defconfig"]:
             # u-boot-v2019.01: There is some weird infinite loop in the conf
             # script of this particular board. Just mark it as "not ARM", which
             # will cause it to be skipped.
-            return True
+            return False
 
-        with open(os.path.join(bitbake_variables["S"], "configs", config)) as fd:
-            for line in fd.readlines():
-                line = line.strip()
-                if line.startswith("CONFIG_TARGET_") and line.endswith("=y"):
-                    # Extract target name.
-                    target = line.split("=", 2)[0]
-                    # Remove "CONFIG_" prefix.
-                    target = target[len("CONFIG_") :]
-                    break
-            else:
-                # We don't know, so we return that it's not definitely not ARM
-                # (yes, double negatives...)
-                return False
-
-        # Look for that config value inside Kconfig files that are not in arm
-        # directory.
-        for walk in os.walk(os.path.join(bitbake_variables["S"], "arch"), topdown=True):
-            walk[1][:] = [dir for dir in walk[1] if dir != "arm"]
-
-            walk[2][:] = [file for file in walk[2] if file == "Kconfig"]
-
-            for file in walk[2]:
-                with open(os.path.join(walk[0], file)) as fd:
-                    if re.search("^config *%s *$" % target, fd.read(), re.MULTILINE):
-                        # Found the target in a non-arm directory. This is not
-                        # an ARM board.
-                        return True
-
-        return False
+        print("Checking whether %s is an ARM board..." % config)
+        subprocess.check_call("${MAKE:-make} %s" % config, cwd=srcdir, shell=True)
+        with open(os.path.join(srcdir, ".config")) as fd:
+            is_arm = "CONFIG_ARM=y\n" in fd.read()
+            print("%s is %s" % (config, "ARM" if is_arm else "not ARM"))
+            return is_arm
 
     def collect_and_prepare_boards_to_test(self, bitbake_variables, env):
         # Find all the boards we need to test for the configuration in question.
         # For vexpress-qemu, we test all SD-based boards, for vexpress-qemu-flash
         # we test all Flash based boards.
-        machine = bitbake_variables["MACHINE"]
-        available_configs = sorted(
-            os.listdir(os.path.join(bitbake_variables["S"], "configs"))
-        )
-        configs_to_test = []
-        for config in available_configs:
-            if not config.endswith("_defconfig"):
-                continue
 
-            if self.board_not_arm(bitbake_variables, config):
-                continue
+        # Use a temporary directory.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.rmdir(tmpdir)
+            shutil.copytree(bitbake_variables["S"], tmpdir)
 
-            mtdids = None
-            mtdparts = None
-            with open(os.path.join(bitbake_variables["S"], "configs", config)) as fd:
-                for line in fd.readlines():
-                    line = line.strip()
-                    if line.startswith("CONFIG_MTDPARTS_DEFAULT="):
-                        mtdparts = line.split("=", 2)[1]
-                    elif line.startswith("CONFIG_MTDIDS_DEFAULT="):
-                        mtdids = line.split("=", 2)[1]
-
-            if mtdparts:
-                # Assume Flash board.
-
-                if machine != "vexpress-qemu-flash":
+            machine = bitbake_variables["MACHINE"]
+            available_configs = sorted(os.listdir(os.path.join(tmpdir, "configs")))
+            configs_to_test = []
+            for config in available_configs:
+                if not config.endswith("_defconfig"):
                     continue
 
-            else:
-                # Assume block storage board.
-                if machine != "vexpress-qemu":
+                if not self.board_is_arm(tmpdir, config):
                     continue
 
-            configs_to_test.append(os.path.join(env["LOGS"], config))
+                mtdids = None
+                mtdparts = None
+                with open(os.path.join(tmpdir, "configs", config)) as fd:
+                    for line in fd.readlines():
+                        line = line.strip()
+                        if line.startswith("CONFIG_MTDPARTS_DEFAULT="):
+                            mtdparts = line.split("=", 2)[1]
+                        elif line.startswith("CONFIG_MTDIDS_DEFAULT="):
+                            mtdids = line.split("=", 2)[1]
 
-        return configs_to_test
+                if mtdparts:
+                    # Assume Flash board.
+
+                    if machine != "vexpress-qemu-flash":
+                        continue
+
+                else:
+                    # Assume block storage board.
+                    if machine != "vexpress-qemu":
+                        continue
+
+                configs_to_test.append(os.path.join(env["LOGS"], config))
+
+            return configs_to_test
 
     @pytest.mark.min_mender_version("1.0.0")
     def test_uboot_compile(self, bitbake_variables):
