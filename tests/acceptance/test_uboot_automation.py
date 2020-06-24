@@ -79,7 +79,7 @@ class TestUbootAutomation:
         days_to_be_old = 7
 
         # Find the repository directories we need
-        [poky_dir, meta_mender_core_dir, rest] = (
+        [poky_dir, meta_mender_dir, rest] = (
             subprocess.check_output(
                 "bitbake-layers show-layers | awk '$1~/(^meta$|^meta-mender-core$)/ {print $2}' | xargs -n 1 dirname",
                 cwd=os.environ["BUILDDIR"],
@@ -106,19 +106,28 @@ class TestUbootAutomation:
             )
             return
 
+        uboot_related_paths = [
+            "meta-mender-core/recipes-bsp/u-boot",
+            "tests/acceptance/test_uboot_automation.py",
+            "tests/acceptance/files/Makefile.test_uboot_automation",
+        ]
+
+        for uboot_path in uboot_related_paths:
+            path_to_check = os.path.join(meta_mender_dir, uboot_path)
+            assert os.path.exists(path_to_check), (
+                "%s does not exist in the repository. Should the list of paths be updated?"
+                % path_to_check
+            )
+
         # SHA from meta-mender repository, limited by date.
         meta_mender_uboot_rev = (
             subprocess.check_output(
                 (
                     "git log -n1 --format=%%H --after=%d.days.ago HEAD -- "
-                    + (
-                        "recipes-bsp/u-boot"
-                        + " tests/acceptance/test_uboot_automation.py"
-                        + " tests/acceptance/files/Makefile.test_uboot_automation"
-                    )
+                    + " ".join(uboot_related_paths)
                 )
                 % days_to_be_old,
-                cwd=meta_mender_core_dir,
+                cwd=meta_mender_dir,
                 shell=True,
             )
             .decode()
@@ -134,13 +143,8 @@ class TestUbootAutomation:
         # SHA from meta-mender repository, not limited by date.
         meta_mender_uboot_rev = (
             subprocess.check_output(
-                "git log -n1 --format=%H HEAD -- "
-                + (
-                    "recipes-bsp/u-boot"
-                    + " tests/acceptance/test_uboot_automation.py"
-                    + " tests/acceptance/files/Makefile.test_uboot_automation"
-                ),
-                cwd=meta_mender_core_dir,
+                "git log -n1 --format=%H HEAD -- " + " ".join(uboot_related_paths),
+                cwd=meta_mender_dir,
                 shell=True,
             )
             .decode()
@@ -165,8 +169,10 @@ class TestUbootAutomation:
         )
         is_upstream = False
         for branch in contained_in:
-            if branch.startswith("%s/" % upstream_remote) and not branch.startswith(
-                "%s/pull/" % upstream_remote
+            if (
+                branch.startswith("%s/" % upstream_remote)
+                and not branch.startswith("%s/pull/" % upstream_remote)
+                and not branch.startswith("%s/pr_" % upstream_remote)
             ):
                 is_upstream = True
                 break
