@@ -61,6 +61,39 @@ mender_part_image() {
 
     wks="${WORKDIR}/mender-$suffix.wks"
     rm -f "$wks"
+
+    if [ -n "${MENDER_IMAGE_SPL_FILE}" ]; then
+        # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
+        install -m 0644 "${DEPLOY_DIR_IMAGE}/${MENDER_IMAGE_SPL_FILE}" "${WORKDIR}/"
+
+        if [ $(expr ${MENDER_IMAGE_SPL_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
+            # wic doesn't support fractions of kiB, so we need to do some tricks
+            # when we are at an odd sector: Create a new SPL file that
+            # lacks the first 512 bytes, write that at the next even sector,
+            # which coincides with a whole kiB, and then write the missing
+            # sector manually afterwards.
+            spl_sector=$(expr ${MENDER_IMAGE_SPL_BOOTSECTOR_OFFSET} + 1)
+            spl_file=${WORKDIR}/${MENDER_IMAGE_SPL_FILE}-partial
+            dd if=${WORKDIR}/${MENDER_IMAGE_SPL_FILE} of=$spl_file skip=1
+        else
+            spl_sector=${MENDER_IMAGE_SPL_BOOTSECTOR_OFFSET}
+            spl_file=${WORKDIR}/${MENDER_IMAGE_SPL_FILE}
+        fi
+        spl_align_kb=$(expr $(expr $spl_sector \* 512) / 1024)
+        spl_size=$(stat -c '%s' "$spl_file")
+        spl_end=$(expr $spl_align_kb \* 1024 + $spl_size)
+        if [ $spl_end -gt ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} ]; then
+            bberror "Size of SPL specified in MENDER_IMAGE_SPL_FILE" \
+                    "exceeds MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET, which is" \
+                    "reserved for U-Boot environment storage. Please raise it" \
+                    "manually."
+        fi
+        cat >> "$wks" <<EOF
+# embed SPL (Secondary Program Loader)
+part --source rawcopy --sourceparams="file=$spl_file" --ondisk "$ondisk_dev" --align $spl_align_kb --no-table
+EOF
+    fi
+
     if [ -n "${MENDER_IMAGE_BOOTLOADER_FILE}" ]; then
         # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
         install -m 0644 "${DEPLOY_DIR_IMAGE}/${MENDER_IMAGE_BOOTLOADER_FILE}" "${WORKDIR}/"
@@ -158,6 +191,12 @@ EOF
     wicout="${IMGDEPLOYDIR}/${IMAGE_NAME}-$suffix"
     BUILDDIR="${TOPDIR}" wic create "$wks" --vars "${STAGING_DIR}/${MACHINE}/imgdata/" -e "${IMAGE_BASENAME}" -o "$wicout/" ${WIC_CREATE_EXTRA_ARGS}
     mv "$wicout/$(basename "${wks%.wks}")"*.direct "$outimgname"
+
+    if [ -n "${MENDER_IMAGE_SPL_FILE}" ] && [ ${MENDER_IMAGE_SPL_BOOTSECTOR_OFFSET} -ne $spl_sector ]; then
+        # We need to write the first sector of the SPL. See comment above
+        # where spl_sector is set.
+        dd if=${WORKDIR}/${MENDER_IMAGE_SPL_FILE} of="$outimgname" seek=${MENDER_IMAGE_SPL_BOOTSECTOR_OFFSET} count=1 conv=notrunc
+    fi
 
     if [ -n "${MENDER_IMAGE_BOOTLOADER_FILE}" ] && [ ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} -ne $bootloader_sector ]; then
         # We need to write the first sector of the bootloader. See comment above

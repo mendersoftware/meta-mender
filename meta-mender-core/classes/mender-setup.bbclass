@@ -159,6 +159,24 @@ MENDER_UBOOT_STORAGE_INTERFACE_DEFAULT = ""
 MENDER_UBOOT_STORAGE_DEVICE ??= "${MENDER_UBOOT_STORAGE_DEVICE_DEFAULT}"
 MENDER_UBOOT_STORAGE_DEVICE_DEFAULT = ""
 
+# The SPL (Secondary Program Loader) is used with the BeagleBone Black as an
+# intermediate stage to load U-Boot. When the system boots, the CPU's boot ROM
+# (known as the PPL, or Promary Program Loader) can load the SPL in two modes:
+#
+#   1. "Raw mode", where the SPL is located in one of four consecutive
+#      locations at 0x0 / 128 KiB / 256 KiB / 384 KiB
+#   2. "Booting file mode", where the SPL is a file named "MLO" in the root
+#      directory on an active FAT partition.
+#
+# Because neither the PPL nor SPL support EFI partitions, both the SPL and
+# U-Boot must be stored in raw mode in the boot sector when GRUB is used.
+MENDER_IMAGE_SPL_FILE ??= "${MENDER_IMAGE_SPL_FILE_DEFAULT}"
+MENDER_IMAGE_SPL_FILE_DEFAULT = ""
+
+# Offset of SPL (Secondary Program Loader), in sectors (512 bytes).
+MENDER_IMAGE_SPL_BOOTSECTOR_OFFSET ??= "${MENDER_IMAGE_SPL_BOOTSECTOR_OFFSET_DEFAULT}"
+MENDER_IMAGE_SPL_BOOTSECTOR_OFFSET_DEFAULT = "256"
+
 # This will be embedded into the boot sector, or close to the boot sector, where
 # exactly depends on the offset variable. Since it is a machine specific
 # setting, the default value is an empty string.
