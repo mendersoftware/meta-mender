@@ -66,7 +66,7 @@ mender_update_fstab_file() {
 }
 
 def mender_default_state_scripts_version(d):
-    pref_mender = d.getVar('PREFERRED_VERSION_pn-mender')
+    pref_mender = d.getVar('PREFERRED_VERSION_pn-mender-client')
     if pref_mender and pref_mender.startswith("1."):
         return "2"
     else:
