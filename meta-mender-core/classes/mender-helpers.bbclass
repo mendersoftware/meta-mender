@@ -259,7 +259,18 @@ def mender_get_extra_parts_offset(d):
     # we have no boot part and add two or more extra partitions then move index as extended partition is created
     if data_num < 4 and total_part_num >= 5: extra_part_num += 1
 
-    return extra_part_num 
+    return extra_part_num
+
+def mender_get_extra_parts_offset_by_id(d, id = None):
+    parts = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
+    if parts and id in parts:
+        idx = mender_get_extra_parts_offset(d)
+        for part in parts:
+            if id == part:
+                return idx
+            idx += 1
+
+    bb.fatal("Could not determine partition number for extra part: " + id)
 
 # Take the content from the rootfs that is going into the boot partition, coming
 # from MENDER_BOOT_PART_MOUNT_LOCATION, and merge with the files from
@@ -349,12 +360,43 @@ def get_extra_parts_label(d, id = None):
 
     return ""
 
+def get_extra_parts_sizes(d):
+    final_sizes = []
+    sizesflags = d.getVarFlags("MENDER_EXTRA_PARTS_SIZES_MB") or {}
+    if sizesflags:
+        flags = (d.getVar('MENDER_EXTRA_PARTS') or "").split()
+
+        for flag, flagval in sizesflags.items():
+            if flag in flags:
+                final_sizes.append(d.expand(flagval))
+
+    return final_sizes
+
+def get_extra_parts_size_mb_by_id(d, id = None):
+    sizesflags = d.getVarFlags("MENDER_EXTRA_PARTS_SIZES_MB") or {}
+    if sizesflags:
+        if id in sizesflags.keys():
+            return int(d.expand(sizesflags[id]))
+
+    return 0
+
+def get_extra_parts_total_size_mb(d):
+    extra_parts_total_size_mb = 0
+    sizes = get_extra_parts_sizes(d)
+    if sizes:
+        for size in sizes:
+            extra_parts_total_size_mb += int(size)
+
+    return extra_parts_total_size_mb
+
 def get_extra_parts_wks(d):
     final_parts = []
-    parts = get_extra_parts(d) or {}
-    if parts:
-        for part in parts:
-            final_parts.append("part --ondisk \"$ondisk_dev\" --align \"$alignment_kb\" {}".format(part))
+    for part in get_extra_parts_flags(d):
+      size = get_extra_parts_size_mb_by_id(d, part)
+      fixed_size = "--fixed-size {}M".format(size) if size else ""
+
+      final_parts.append("part --ondisk \"$ondisk_dev\" {} --align \"$alignment_kb\" {}".format(fixed_size, get_extra_parts_by_id(d, part)))
+
     return '\n'.join(final_parts)
 
 def get_extra_parts_fstab_opts(d, id = None):
