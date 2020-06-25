@@ -3,11 +3,7 @@ HOMEPAGE = "https://mender.io"
 
 RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted"
 
-# dosfstools is needed for fsck.fat, which is used if installing from an
-# MBR-formatted disk.
-#
-# TODO: fsck.fat does not work with GPT partitions, so we can avoid including
-# dosfstools in the GPT case. Or, you know, fix fsck.fat.
+# dosfstools is needed for fsck.fat
 RDEPENDS_${PN}_append_mender-emmc-install_mender-systemd = " sed dosfstools"
 
 def cert_location_if_server_crt_in(src_uri, d):

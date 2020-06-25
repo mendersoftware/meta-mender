@@ -204,10 +204,22 @@ dd if="\${STORAGE_DEVICE}" \\
   seek=\${BOOT_PART_START_MB} \\
   count=\${BOOT_PART_SIZE_MB}
 
-# Check boot partition (doesn't work for GPT partitions)
-if [ "\${PARTITION_TABLE_TYPE}" == "msdos" ]; then
-    fsck.fat -a "\${INSTALL_DEVICE}p1" || true
-fi
+# Check boot partition
+#
+# Note the mtools 4.0.19 (in Yocto Warrior) corrupts the EFI directory when
+# generating the image. Switch to mtools 4.0.23 (in Yocto Zeus).
+#
+# We don't abort here, because fsck.fat will always return 1 given that this
+# script is run from the boot partition which will have the dirty bit set.
+#
+# Instead, we could abort if the output contains an error string. Some observed
+# ones are:
+#
+#     Bad short file name (.).
+#     File size is 0 bytes, cluster chain length is > 0 bytes.
+#     Contains a free cluster (3). Assuming EOF.
+#
+fsck.fat -a -v -l "${INSTALL_DEVICE}p1" || :
 
 # TODO: Until U-Boot can pass disk context to GRUB, we need to manually update
 # grub.cfg to pass the correct disk to the kernel
