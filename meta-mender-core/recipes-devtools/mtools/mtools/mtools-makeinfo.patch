@@ -1,0 +1,69 @@
+Upstream-Status: Inappropriate [licensing]
+
+Index: mtools-4.0.18/configure.in
+===================================================================
+--- mtools-4.0.18.orig/configure.in
++++ mtools-4.0.18/configure.in
+@@ -35,6 +35,33 @@ AC_CANONICAL_SYSTEM
+ AC_C_CONST
+ AC_C_INLINE
+ 
++AC_CHECK_PROG(MAKEINFO, makeinfo, makeinfo, )
++if test "x$MAKEINFO" = "x"; then
++	MAKEINFO="@echo makeinfo missing; true"
++fi
++AC_CHECK_PROG(TEXI2DVI, texi2dvi, texi2dvi, )
++if test "x$TEXI2DVI" = "x"; then
++	TEXI2DVI="@echo texi2dvi missing; true"
++fi
++AC_CHECK_PROG(TEXI2PDF, texi2pdf, texi2pdf, )
++if test "x$TEXI2PDF" = "x"; then
++	TEXI2PDF="@echo texi2pdf missing; true"
++fi
++AC_CHECK_PROG(TEXI2HTML, texi2html, texi2html, )
++if test "x$TEXI2HTML" = "x"; then
++	TEXI2HTML="@echo texi2html missing; true"
++fi    
++AC_CHECK_PROG(DVI2PS, dvi2ps, dvi2ps, )
++if test "x$DVI2PS" = "x"; then
++	DVI2PS="@echo dvi2ps missing; true"
++fi
++
++AC_SUBST(MAKEINFO)
++AC_SUBST(TEXI2DVI)
++AC_SUBST(TEXI2PDF)
++AC_SUBST(TEXI2HTML)
++AC_SUBST(DVI2PS)
++
+ 
+ dnl Check for configuration options
+ dnl Enable OS/2 extended density format disks
+Index: mtools-4.0.18/Makefile.in
+===================================================================
+--- mtools-4.0.18.orig/Makefile.in
++++ mtools-4.0.18/Makefile.in
+@@ -26,10 +26,11 @@ USERCFLAGS =
+ USERLDFLAGS =
+ USERLDLIBS =
+ 
+-MAKEINFO = makeinfo
+-TEXI2DVI = texi2dvi
+-TEXI2PDF = texi2pdf
+-TEXI2HTML = texi2html
++MAKEINFO = @MAKEINFO@
++TEXI2DVI = @TEXI2DVI@
++TEXI2PDF = @TEXI2PDF@
++TEXI2HTML = @TEXI2HTML@
++DVI2PS = @DVI2PS@
+ 
+ 
+ # do not edit below this line
+@@ -198,7 +199,7 @@ dvi: mtools.dvi
+ 
+ ps: mtools.ps
+ %.ps: %.dvi
+-	dvips -f < $< > $@
++	$(DVI2PS) -f < $< > $@
+ 
+ pdf: mtools.pdf
+ %.pdf: %.texi sysconfdir.texi
