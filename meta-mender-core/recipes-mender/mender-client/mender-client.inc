@@ -243,10 +243,10 @@ do_install() {
     install -d ${D}/${sysconfdir}/mender
     install -d ${D}/data/mender
     if [ -f ${B}/transient_mender.conf ]; then
-        install -m 0644 ${B}/transient_mender.conf ${D}/${sysconfdir}/mender/mender.conf
+        install -m 0600 ${B}/transient_mender.conf ${D}/${sysconfdir}/mender/mender.conf
     fi
     if [ -f ${B}/persistent_mender.conf ]; then
-        install -m 0644 ${B}/persistent_mender.conf ${D}/data/mender/mender.conf
+        install -m 0600 ${B}/persistent_mender.conf ${D}/data/mender/mender.conf
     fi
 
     #install server certificate
