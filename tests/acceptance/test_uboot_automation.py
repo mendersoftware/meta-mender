@@ -198,7 +198,9 @@ class TestUbootAutomation:
         print("Checking whether %s is an ARM board..." % config)
         subprocess.check_call("${MAKE:-make} %s" % config, cwd=srcdir, shell=True)
         with open(os.path.join(srcdir, ".config")) as fd:
-            is_arm = "CONFIG_ARM=y\n" in fd.read()
+            content = fd.read()
+            # No ARM64 support at the moment.
+            is_arm = "CONFIG_ARM=y\n" in content and "CONFIG_ARM64=y\n" not in content
             print("%s is %s" % (config, "ARM" if is_arm else "not ARM"))
             return is_arm
 
