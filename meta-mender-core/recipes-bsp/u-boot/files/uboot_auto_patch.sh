@@ -50,14 +50,23 @@ definition_for_kconfig_files() {
 replace_definition() {
     # Replaces definitions in source files, taking into account that it may span
     # multiple lines using '\'.
-    # If the function is given only one argument, it deletes the definition, if
-    # given two, it replaces it with that definition, if given three, it gives
-    # the new definition that value.
+    # If the function is given only one argument, it deletes/disables the
+    # definition, if given two, it replaces it with that definition, if given
+    # three, it gives the new definition that value.
 
     patch_candidate_list "\\%^[ \t]*#[ \t]*define[ \t]*$1\\b% {:start; /\\\\\$/ {n; b start; }; b; }; p"
 
-    # Also patch config file.
-    sed -i -re "\\%(^$1=.*)|(^# *$1  *is not set *\$)%d" configs/$CONFIG
+    # Also patch defconfig file:
+    # 1. Remove existing occurrences.
+    sed -i -re "\\%^$1=.*%d" configs/$CONFIG
+    # 2. Add disables for all matching keys we can find
+    local keys="$(find -name Kconfig | xargs sed -rne "\\%^config +(${1#CONFIG_}) *$% {s%^config +(${1#CONFIG_}) *$%CONFIG_\\1%; p}")"
+    for key in $keys; do
+        # Disable keys that aren't already disabled.
+        if ! grep -q "^# *$key  *is not set *\$" configs/$CONFIG; then
+            echo "# $key is not set" >> configs/$CONFIG
+        fi
+    done
 
     # Add definition.
     if [ -n "${2:-}" ]; then
@@ -72,6 +81,15 @@ add_definition() {
     kconfig_repl="$(definition_for_kconfig_files "$@")"
 
     if is_kconfig_option "$1"; then
+        # Skip adding if it already exists.
+        if fgrep -q "$kconfig_repl" configs/$CONFIG; then
+            return 0
+        fi
+
+        # Remove disabling lines, if there are any.
+        egrep -v "^# *$1 is not set *$" configs/$CONFIG > configs/$CONFIG.tmp
+        mv -f configs/$CONFIG.tmp configs/$CONFIG
+
         # In the Kconfig case it's easy, just add it to the defconfig file.
         python3 $SCRIPT_DIR/add_kconfig_option_with_depends.py --src-dir=. --defconfig-file=configs/$CONFIG "$kconfig_repl"
     else
@@ -249,10 +267,9 @@ patch_all_candidates() {
     fi
 
     # There are so many variants of CONFIG_BOOTCOUNT, just remove all of them.
-    replace_definition \
-        'CONFIG_BOOTCOUNT_[^ ]*'
     # And then make sure our definitions are added.
-    add_definition \
+    replace_definition \
+        'CONFIG_BOOTCOUNT_[^ ]*' \
         'CONFIG_BOOTCOUNT_LIMIT'
     add_definition \
         'CONFIG_BOOTCOUNT_ENV'

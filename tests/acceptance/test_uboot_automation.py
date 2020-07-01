@@ -20,6 +20,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 
 # Make sure common is imported after fabric, because we override some functions.
 from common import *
@@ -79,7 +80,7 @@ class TestUbootAutomation:
         days_to_be_old = 7
 
         # Find the repository directories we need
-        [poky_dir, meta_mender_core_dir, rest] = (
+        [poky_dir, meta_mender_dir, rest] = (
             subprocess.check_output(
                 "bitbake-layers show-layers | awk '$1~/(^meta$|^meta-mender-core$)/ {print $2}' | xargs -n 1 dirname",
                 cwd=os.environ["BUILDDIR"],
@@ -106,19 +107,28 @@ class TestUbootAutomation:
             )
             return
 
+        uboot_related_paths = [
+            "meta-mender-core/recipes-bsp/u-boot",
+            "tests/acceptance/test_uboot_automation.py",
+            "tests/acceptance/files/Makefile.test_uboot_automation",
+        ]
+
+        for uboot_path in uboot_related_paths:
+            path_to_check = os.path.join(meta_mender_dir, uboot_path)
+            assert os.path.exists(path_to_check), (
+                "%s does not exist in the repository. Should the list of paths be updated?"
+                % path_to_check
+            )
+
         # SHA from meta-mender repository, limited by date.
         meta_mender_uboot_rev = (
             subprocess.check_output(
                 (
                     "git log -n1 --format=%%H --after=%d.days.ago HEAD -- "
-                    + (
-                        "recipes-bsp/u-boot"
-                        + " tests/acceptance/test_uboot_automation.py"
-                        + " tests/acceptance/files/Makefile.test_uboot_automation"
-                    )
+                    + " ".join(uboot_related_paths)
                 )
                 % days_to_be_old,
-                cwd=meta_mender_core_dir,
+                cwd=meta_mender_dir,
                 shell=True,
             )
             .decode()
@@ -134,13 +144,8 @@ class TestUbootAutomation:
         # SHA from meta-mender repository, not limited by date.
         meta_mender_uboot_rev = (
             subprocess.check_output(
-                "git log -n1 --format=%H HEAD -- "
-                + (
-                    "recipes-bsp/u-boot"
-                    + " tests/acceptance/test_uboot_automation.py"
-                    + " tests/acceptance/files/Makefile.test_uboot_automation"
-                ),
-                cwd=meta_mender_core_dir,
+                "git log -n1 --format=%H HEAD -- " + " ".join(uboot_related_paths),
+                cwd=meta_mender_dir,
                 shell=True,
             )
             .decode()
@@ -165,8 +170,10 @@ class TestUbootAutomation:
         )
         is_upstream = False
         for branch in contained_in:
-            if branch.startswith("%s/" % upstream_remote) and not branch.startswith(
-                "%s/pull/" % upstream_remote
+            if (
+                branch.startswith("%s/" % upstream_remote)
+                and not branch.startswith("%s/pull/" % upstream_remote)
+                and not branch.startswith("%s/pr_" % upstream_remote)
             ):
                 is_upstream = True
                 break
@@ -181,83 +188,66 @@ class TestUbootAutomation:
         print(msg)
         pytest.skip(msg)
 
-    def board_not_arm(self, bitbake_variables, config):
+    def board_is_arm(self, srcdir, config):
         if config in ["xilinx_versal_virt_defconfig"]:
             # u-boot-v2019.01: There is some weird infinite loop in the conf
             # script of this particular board. Just mark it as "not ARM", which
             # will cause it to be skipped.
-            return True
+            return False
 
-        with open(os.path.join(bitbake_variables["S"], "configs", config)) as fd:
-            for line in fd.readlines():
-                line = line.strip()
-                if line.startswith("CONFIG_TARGET_") and line.endswith("=y"):
-                    # Extract target name.
-                    target = line.split("=", 2)[0]
-                    # Remove "CONFIG_" prefix.
-                    target = target[len("CONFIG_") :]
-                    break
-            else:
-                # We don't know, so we return that it's not definitely not ARM
-                # (yes, double negatives...)
-                return False
-
-        # Look for that config value inside Kconfig files that are not in arm
-        # directory.
-        for walk in os.walk(os.path.join(bitbake_variables["S"], "arch"), topdown=True):
-            walk[1][:] = [dir for dir in walk[1] if dir != "arm"]
-
-            walk[2][:] = [file for file in walk[2] if file == "Kconfig"]
-
-            for file in walk[2]:
-                with open(os.path.join(walk[0], file)) as fd:
-                    if re.search("^config *%s *$" % target, fd.read(), re.MULTILINE):
-                        # Found the target in a non-arm directory. This is not
-                        # an ARM board.
-                        return True
-
-        return False
+        print("Checking whether %s is an ARM board..." % config)
+        subprocess.check_call("${MAKE:-make} %s" % config, cwd=srcdir, shell=True)
+        with open(os.path.join(srcdir, ".config")) as fd:
+            content = fd.read()
+            # No ARM64 support at the moment.
+            is_arm = "CONFIG_ARM=y\n" in content and "CONFIG_ARM64=y\n" not in content
+            print("%s is %s" % (config, "ARM" if is_arm else "not ARM"))
+            return is_arm
 
     def collect_and_prepare_boards_to_test(self, bitbake_variables, env):
         # Find all the boards we need to test for the configuration in question.
         # For vexpress-qemu, we test all SD-based boards, for vexpress-qemu-flash
         # we test all Flash based boards.
-        machine = bitbake_variables["MACHINE"]
-        available_configs = sorted(
-            os.listdir(os.path.join(bitbake_variables["S"], "configs"))
-        )
-        configs_to_test = []
-        for config in available_configs:
-            if not config.endswith("_defconfig"):
-                continue
 
-            if self.board_not_arm(bitbake_variables, config):
-                continue
+        # Use a temporary directory.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.rmdir(tmpdir)
+            shutil.copytree(bitbake_variables["S"], tmpdir)
 
-            mtdids = None
-            mtdparts = None
-            with open(os.path.join(bitbake_variables["S"], "configs", config)) as fd:
-                for line in fd.readlines():
-                    line = line.strip()
-                    if line.startswith("CONFIG_MTDPARTS_DEFAULT="):
-                        mtdparts = line.split("=", 2)[1]
-                    elif line.startswith("CONFIG_MTDIDS_DEFAULT="):
-                        mtdids = line.split("=", 2)[1]
-
-            if mtdparts:
-                # Assume Flash board.
-
-                if machine != "vexpress-qemu-flash":
+            machine = bitbake_variables["MACHINE"]
+            available_configs = sorted(os.listdir(os.path.join(tmpdir, "configs")))
+            configs_to_test = []
+            for config in available_configs:
+                if not config.endswith("_defconfig"):
                     continue
 
-            else:
-                # Assume block storage board.
-                if machine != "vexpress-qemu":
+                if not self.board_is_arm(tmpdir, config):
                     continue
 
-            configs_to_test.append(os.path.join(env["LOGS"], config))
+                mtdids = None
+                mtdparts = None
+                with open(os.path.join(tmpdir, "configs", config)) as fd:
+                    for line in fd.readlines():
+                        line = line.strip()
+                        if line.startswith("CONFIG_MTDPARTS_DEFAULT="):
+                            mtdparts = line.split("=", 2)[1]
+                        elif line.startswith("CONFIG_MTDIDS_DEFAULT="):
+                            mtdids = line.split("=", 2)[1]
 
-        return configs_to_test
+                if mtdparts:
+                    # Assume Flash board.
+
+                    if machine != "vexpress-qemu-flash":
+                        continue
+
+                else:
+                    # Assume block storage board.
+                    if machine != "vexpress-qemu":
+                        continue
+
+                configs_to_test.append(os.path.join(env["LOGS"], config))
+
+            return configs_to_test
 
     @pytest.mark.min_mender_version("1.0.0")
     def test_uboot_compile(self, bitbake_variables):
@@ -347,12 +337,12 @@ class TestUbootAutomation:
 
             if machine == "vexpress-qemu":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: v2018.05
-                measured_failed_ratio = 198.0 / 664.0
+                # From version: v2020.01
+                measured_failed_ratio = 57.0 / 561.0
             elif machine == "vexpress-qemu-flash":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: v2019.01
-                measured_failed_ratio = 53.0 / 185.0
+                # From version: v2020.01
+                measured_failed_ratio = 13.0 / 143.0
 
             # We tolerate a certain percentage discrepancy in either direction.
             tolerated_discrepancy = 0.1
