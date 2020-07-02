@@ -2,35 +2,6 @@ require u-boot-mender-common.inc
 
 inherit deploy
 
-do_provide_mender_defines_append_mender-uboot() {
-    # Since the auto-provided fw-utils recipe will typically not have access to
-    # the proper BOOTENV_SIZE, let's create the fw_env.config file here, so that
-    # the mender_tar_src stage will provide it in its tar file.
-
-    if [ ! -e "${WORKDIR}/fw_env.config.default" ] && [ "${PREFERRED_PROVIDER_u-boot-fw-utils}" = "u-boot-fw-utils-mender-auto-provided" ]; then
-        mender_create_fw_env_config_file ${WORKDIR}/fw_env.config.default
-    fi
-}
-
-do_mender_tar_src() {
-    cd ${WORKDIR}
-    # Zip up all plain files, plus the source directory, but not the rest,
-    # because there are a lot of bitbake data directories.
-    rm -rf src-tar
-    cp -a ${S} src-tar
-    tar -cz --exclude-vcs -f ${TMPDIR}/mender-u-boot-src.tar.gz `find -maxdepth 1 -type f` src-tar
-}
-python() {
-    if not bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
-        return
-
-    if bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', '1', True, False, d):
-        aftertask = "do_mender_uboot_auto_configure"
-    else:
-        aftertask = "do_provide_mender_defines"
-    bb.build.addtask('do_mender_tar_src', 'do_configure', aftertask, d)
-}
-
 # Just to have a task if mender-uboot is not defined.
 do_deploy_append() {
     :
