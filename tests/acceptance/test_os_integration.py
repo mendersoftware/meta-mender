@@ -27,7 +27,7 @@ class TestOsIntegration:
 
         def is_mender_in_syslog_messages():
             now = time.time()
-            while time.time() < now + 60:
+            while time.time() < now + 120:
                 # Busybox syslog puts messages in /var/log/messages, whereas
                 # syslogd puts them in /var/log/syslog.
                 ret = connection.run(
