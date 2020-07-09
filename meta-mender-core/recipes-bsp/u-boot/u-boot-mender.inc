@@ -326,6 +326,7 @@ do_mender_uboot_auto_configure() {
 
     env \
         BUILDCC="${BUILD_CC}" \
+        CROSS_COMPILE="${TARGET_PREFIX}" \
         ./uboot_auto_configure.sh \
         --config=$MENDER_UBOOT_MACHINE \
         --src-dir=${S} \
