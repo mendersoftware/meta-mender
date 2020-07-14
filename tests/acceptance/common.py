@@ -384,10 +384,17 @@ def signing_key(key_type):
     #   openssl ec -in /tmp/private-and-params.pem -out files/test-private-EC.pem
     #   openssl ec -in files/test-private-EC.pem -pubout -out files/test-public-EC.pem
 
+    # ED25519 pregenerated using:
+    #   openssl genpkey -algorithm ed25519 -outform PEM -out test-private-ED25519.pem
+    #   openssl pkey -outform PEM -pubout -in test-private-ED25519.pem -out test-public-ED25519.pem
+
     class KeyPair:
         if key_type == "EC":
             private = "files/test-private-EC.pem"
             public = "files/test-public-EC.pem"
+        elif key_type == "ED25519":
+            private = "files/test-private-ED25519.pem"
+            public = "files/test-public-ED25519.pem"
         else:
             private = "files/test-private-RSA.pem"
             public = "files/test-public-RSA.pem"
