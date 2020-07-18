@@ -80,7 +80,7 @@ FILES_${PN}_append_mender-growfs-data_mender-systemd = " \
 "
 
 FILES_${PN}_append_mender-persist-systemd-machine-id = " \
-    ${systemd_unitdir}/system/mender-systemd-machine-id.service \
+    ${systemd_unitdir}/system/mender-client-systemd-machine-id.service \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-systemd-machine-id.service \
     ${bindir}/${MENDER_CLIENT}-set-systemd-machine-id.sh \
 "
