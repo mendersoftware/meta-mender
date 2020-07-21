@@ -117,9 +117,8 @@ EOF
     IMAGE_BOOT_FILES_STRIPPED=$(echo "${IMAGE_BOOT_FILES}" | sed -r 's/(^\s*)|(\s*$)//g')
 
     if [ "${MENDER_BOOT_PART_SIZE_MB}" -ne "0" ]; then
-        mender_merge_bootfs_and_image_boot_files
         cat >> "$wks" <<EOF
-part --source rootfs --rootfs-dir ${WORKDIR}/bootfs.${BB_CURRENTTASK} --ondisk "$ondisk_dev" --fstype=vfat --label boot --align $alignment_kb --fixed-size ${MENDER_BOOT_PART_SIZE_MB} --active $boot_part_params
+part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.bootimg" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_BOOT_PART_SIZE_MB} --active $boot_part_params
 EOF
     elif [ -n "$IMAGE_BOOT_FILES_STRIPPED" ]; then
         bbwarn "MENDER_BOOT_PART_SIZE_MB is set to zero, but IMAGE_BOOT_FILES is not empty. The files are being omitted from the image."
@@ -279,10 +278,10 @@ do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
 do_image_gptimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
-IMAGE_TYPEDEP_sdimg_append   = " ${ARTIFACTIMG_FSTYPE} dataimg"
-IMAGE_TYPEDEP_uefiimg_append = " ${ARTIFACTIMG_FSTYPE} dataimg"
-IMAGE_TYPEDEP_biosimg_append = " ${ARTIFACTIMG_FSTYPE} dataimg"
-IMAGE_TYPEDEP_gptimg_append  = " ${ARTIFACTIMG_FSTYPE} dataimg"
+IMAGE_TYPEDEP_sdimg_append   = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
+IMAGE_TYPEDEP_uefiimg_append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
+IMAGE_TYPEDEP_biosimg_append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
+IMAGE_TYPEDEP_gptimg_append  = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
 
 # This isn't actually a dependency, but a way to avoid sdimg and uefiimg
 # building simultaneously, since wic will use the same file names in both, and

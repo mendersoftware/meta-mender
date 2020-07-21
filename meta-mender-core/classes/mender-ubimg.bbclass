@@ -110,7 +110,7 @@ EOF
 
 }
 
-IMAGE_TYPEDEP_ubimg_append = " ubifs dataimg"
+IMAGE_TYPEDEP_ubimg_append = " ubifs dataimg ${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '', 'bootimg', d)}"
 
 # So that we can use the files from excluded paths in the full images.
 do_image_ubimg[respect_exclude_path] = "0"
