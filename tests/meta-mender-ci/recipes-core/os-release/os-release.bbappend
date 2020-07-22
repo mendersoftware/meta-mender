@@ -1,9 +1,9 @@
-FILES_${PN}_append = " /data${nonarch_libdir}/os-release /data${sysconfdir}/os-release"
-FILES_${PN}-staticdev_remove = "${nonarch_libdir}/os-release/*.a"
-FILES_${PN}-dev_remove = "${nonarch_libdir}/os-release/*.la"
-FILES_${PN}_remove = "${nonarch_libdir}/os-release/*"
+FILES_${PN}_append_mender-testing-enabled = " /data${nonarch_libdir}/os-release /data${sysconfdir}/os-release"
+FILES_${PN}-staticdev_remove_mender-testing-enabled = "${nonarch_libdir}/os-release/*.a"
+FILES_${PN}-dev_remove_mender-testing-enabled = "${nonarch_libdir}/os-release/*.la"
+FILES_${PN}_remove_mender-testing-enabled = "${nonarch_libdir}/os-release/*"
 
-do_install_append() {
+do_install_append_mender-testing-enabled() {
     # Enable os-release to be changed from a R/O rootfs.
 
     mkdir -p ${D}/data${sysconfdir}

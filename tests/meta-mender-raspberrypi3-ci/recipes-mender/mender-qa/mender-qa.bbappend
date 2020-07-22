@@ -1,12 +1,14 @@
-PACKAGES += "rssh-tunnel"
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/raspberrypi3:${THISDIR}/files/:"
+PACKAGES_append_mender-testing-enabled = " rssh-tunnel"
+FILESEXTRAPATHS_prepend_mender_testing-enabled := "${THISDIR}/files/raspberrypi3:${THISDIR}/files/:"
 
-SRC_URI_append = " file://rssh.service \
+SRC_URI_append_mender-testing-enabled = " \
+                   file://rssh.service \
                    file://id_rsa \
                    file://id_rsa.pub \
                    file://authorized_keys"
 
-FILES_${PN} += "${systemd_unitdir}/system/rssh.service \
+FILES_${PN}_append_mender-testing-enabled = " \
+                ${systemd_unitdir}/system/rssh.service \
                 ${systemd_unitdir}/system/network.target.wants \
                 ${datadir}/mender-qa/rssh \
                 ${datadir}/mender-qa/rssh/id_rsa \
@@ -16,7 +18,7 @@ FILES_${PN} += "${systemd_unitdir}/system/rssh.service \
                 /home/root/.ssh \
                 /home/root/.ssh/authorized_keys"
 
-do_install_append() {
+do_install_append_mender-testing-enabled() {
     install -d ${D}${systemd_unitdir}/system/network.target.wants
     install -t ${D}${systemd_unitdir}/system ${WORKDIR}/rssh.service
     ln -sf ../rssh.service ${D}${systemd_unitdir}/system/network.target.wants/
