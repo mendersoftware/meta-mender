@@ -26,3 +26,6 @@ General
 
 This is a Mender QA specific layer. The layer contains the necessary bits and
 pieces for use with Mender CI pipeline.
+
+Please make sure to add mender-testing-enabled to MENDER_FEATURES_ENABLE when
+using this layer.
