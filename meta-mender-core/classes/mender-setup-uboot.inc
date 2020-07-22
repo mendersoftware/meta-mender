@@ -34,6 +34,12 @@ PREFERRED_RPROVIDER_u-boot-fw-utils ??= "${@mender_check_distro_features_early_c
                                                                                         'u-boot-fw-utils-mender-auto-provided', \
                                                                                         '')}"
 
+# This can be removed once u-boot-mender-tools is no longer needed.
+PREFERRED_PROVIDER_u-boot-tools ??= "${@mender_check_distro_features_early_contains(d, \
+                                                                                        'mender-uboot', \
+                                                                                        'u-boot-mender-tools', \
+                                                                                        'u-boot-tools')}"
+
 def mender_check_distro_features_early_contains(d, feature, if_true, if_false):
     # Why this complicated function instead of checking DISTRO_FEATURES
     # directly? It's because PREFERRED_PROVIDERs have some special early

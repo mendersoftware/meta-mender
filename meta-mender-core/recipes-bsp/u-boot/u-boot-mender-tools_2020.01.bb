@@ -1,3 +1,12 @@
+#
+# This recipe backports u-boot-tools v2020.01 from oe-core master.
+# We rename it to u-boot-mender-tools to avoid modifying user builds
+# when the meta-mender-core layer is added unles the user explicitly
+# enables Mender.
+#
+
+PROVIDES_append_mender-uboot = " u-boot-tools "
+
 require u-boot-common_2020.01.inc
 
 SUMMARY = "U-Boot bootloader tools"
