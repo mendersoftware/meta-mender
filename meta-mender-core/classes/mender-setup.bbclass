@@ -269,6 +269,9 @@ python() {
 
         # Enable dynamic resizing of the data filesystem through systemd's growfs
         'mender-growfs-data',
+
+        # Enable the testing/* layers and functionality
+        'mender-testing-enabled',
     }
 
     mfe = d.getVar('MENDER_FEATURES_ENABLE')
