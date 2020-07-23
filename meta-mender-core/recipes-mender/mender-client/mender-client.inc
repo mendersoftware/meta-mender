@@ -92,7 +92,9 @@ INSANE_SKIP_${PN}-ptest = "ldflags textrel"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
 
-PACKAGECONFIG ?= "modules"
+PACKAGECONFIG ?= "${_MENDER_PACKAGECONFIG}"
+_MENDER_PACKAGECONFIG = ""
+_MENDER_PACKAGECONFIG_mender-client-install = "modules"
 
 PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
 PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
