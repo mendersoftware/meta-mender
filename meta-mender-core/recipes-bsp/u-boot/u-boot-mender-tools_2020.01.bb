@@ -12,8 +12,8 @@ require u-boot-common_2020.01.inc
 SUMMARY = "U-Boot bootloader tools"
 DEPENDS += "openssl"
 
-PROVIDES = "${MLPREFIX}u-boot-mkimage ${MLPREFIX}u-boot-mkenvimage"
-PROVIDES_class-native = "u-boot-mkimage-native u-boot-mkenvimage-native"
+PROVIDES_mender-uboot = "${MLPREFIX}u-boot-mkimage ${MLPREFIX}u-boot-mkenvimage"
+PROVIDES_class-native_mender-uboot = "u-boot-mkimage-native u-boot-mkenvimage-native"
 
 PACKAGES += "${PN}-mkimage ${PN}-mkenvimage"
 
@@ -73,4 +73,4 @@ RDEPENDS_${PN}-mkimage += "dtc"
 RDEPENDS_${PN} += "${PN}-mkimage ${PN}-mkenvimage"
 RDEPENDS_${PN}_class-native = ""
 
-BBCLASSEXTEND = "native nativesdk"
+BBCLASSEXTEND_mender-uboot = "native nativesdk"
