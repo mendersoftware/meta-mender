@@ -40,3 +40,34 @@ MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1 ?= "${@mender_get_env_offset(${MENDER_U
                                                                       ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE})}"
 MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2 ?= "${@mender_get_env_offset(${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}, 2, \
                                                                       ${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE})}"
+
+mender_create_fw_env_config_file() {
+    # Takes one argument, which is the file to put it in.
+
+    set -x
+
+    # fw-utils seem to only be able to handle hex values.
+    HEX_BOOTENV_SIZE="$(printf 0x%x "${BOOTENV_SIZE}")"
+
+    # create fw_env.config file
+    cat > $1 <<EOF
+${MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1} $HEX_BOOTENV_SIZE
+${MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2} $HEX_BOOTENV_SIZE
+EOF
+}
+
+# UBI specific version of the fw_env.config file.
+mender_create_fw_env_config_file_mender-ubi() {
+    # Takes one argument, which is the file to put it in.
+
+    set -x
+
+    # fw-utils seem to only be able to handle hex values.
+    HEX_BOOTENV_SIZE="$(printf 0x%x "${BOOTENV_SIZE}")"
+
+    # create fw_env.config file
+    cat > $1 <<EOF
+/dev/${MENDER_STORAGE_DEVICE}_${MENDER_UBOOT_ENV_UBIVOL_NUMBER_1} 0 $HEX_BOOTENV_SIZE ${MENDER_UBI_LEB_SIZE}
+/dev/${MENDER_STORAGE_DEVICE}_${MENDER_UBOOT_ENV_UBIVOL_NUMBER_2} 0 $HEX_BOOTENV_SIZE ${MENDER_UBI_LEB_SIZE}
+EOF
+}

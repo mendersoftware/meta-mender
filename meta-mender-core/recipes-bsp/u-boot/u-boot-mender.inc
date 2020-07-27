@@ -35,6 +35,13 @@ do_provide_mender_defines() {
         bbfatal "To compile U-Boot with mender you have to add 'mender-uboot' to MENDER_FEATURES_ENABLE or DISTRO_FEATURES."
     fi
 
+    # Since the libubootenv recipe will typically not have access to the proper
+    # BOOTENV_SIZE, let's create the fw_env.config file here, so that it can
+    # pick it from the deploy directory.
+    if [ ! -e "${WORKDIR}/fw_env.config.default" ]; then
+        mender_create_fw_env_config_file ${WORKDIR}/fw_env.config.default
+    fi
+
     if [ ${MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART} -eq "0" ]; then
         # Only check reserved space for bootloader data when the bootloader data is saved to the user partition of the MMC.
         # In cases where it's saved to the boot partition it's not a part of the rootfs size and MENDER_RESERVED_SPACE_BOOTLOADER_DATA
@@ -380,6 +387,8 @@ do_deploy_append_mender-uboot() {
     # file.
     dd if=/dev/zero of=${WORKDIR}/uboot.env bs=${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} count=1
     install -m 644 ${WORKDIR}/uboot.env ${DEPLOYDIR}/uboot.env
+
+    install -m 644 ${WORKDIR}/fw_env.config.default ${DEPLOYDIR}/fw_env.config.default
 }
 addtask deploy after do_compile before do_package
 
