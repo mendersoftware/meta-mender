@@ -39,3 +39,7 @@ PREFERRED_PROVIDER_u-boot-tools ??= "${@mender_feature_is_enabled('mender-uboot'
                                                                   'u-boot-mender-tools', \
                                                                   'u-boot-tools', \
                                                                   d)}"
+PREFERRED_RPROVIDER_nativesdk-u-boot-mkimage ??= "${@mender_feature_is_enabled('mender-uboot', \
+                                                                               'nativesdk-u-boot-mender-tools', \
+                                                                               'nativesdk-u-boot-tools', \
+                                                                               d)}"
