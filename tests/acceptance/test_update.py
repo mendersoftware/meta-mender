@@ -988,8 +988,6 @@ class TestUpdates:
             )
             put_no_sftp("image.mender", connection, remote="/var/tmp/image.mender")
 
-            # Zero the environment, causing the fw-utils to use their built in
-            # default.
             env_conf = connection.run("cat /etc/fw_env.config").stdout
             env_conf_lines = env_conf.rstrip("\n\r").split("\n")
             assert len(env_conf_lines) == 2
@@ -999,22 +997,41 @@ class TestUpdates:
                     "dd if=%s skip=%d bs=%d count=1 iflag=skip_bytes > /data/old_env%d"
                     % (entry[0], int(entry[1], 0), int(entry[2], 0), i)
                 )
-                connection.run(
-                    "dd if=/dev/zero of=%s seek=%d bs=%d count=1 oflag=seek_bytes"
-                    % (entry[0], int(entry[1], 0), int(entry[2], 0))
-                )
 
             try:
-                output = connection.run(
-                    "mender %s /var/tmp/image.mender" % install_flag
-                ).stdout
-                pytest.fail("Update succeeded when canary was not present!")
-            except:
+                # Try to manually remove the canary first.
+                connection.run("fw_setenv mender_saveenv_canary")
+                result = connection.run(
+                    "mender %s /var/tmp/image.mender" % install_flag, warn=True
+                )
+                assert (
+                    result.return_code != 0
+                ), "Update succeeded when canary was not present!"
                 output = connection.run("fw_printenv upgrade_available").stdout.rstrip(
                     "\n"
                 )
                 # Upgrade should not have been triggered.
                 assert output == "upgrade_available=0"
+
+                # Then zero the environment, causing the libubootenv to fail
+                # completely.
+                for i in [0, 1]:
+                    entry = env_conf_lines[i].split()
+                    connection.run(
+                        "dd if=/dev/zero of=%s seek=%d bs=%d count=1 oflag=seek_bytes"
+                        % (entry[0], int(entry[1], 0), int(entry[2], 0))
+                    )
+                result = connection.run(
+                    "mender %s /var/tmp/image.mender" % install_flag, warn=True
+                )
+                assert (
+                    result.return_code != 0
+                ), "Update succeeded when canary was not present!"
+                # This should just fail, since we don't provide a default
+                # environment in libubootenv (we used to for u-boot-fw-utils).
+                result = connection.run("fw_printenv upgrade_available", warn=True)
+                assert result.return_code != 0
+
             finally:
                 # Restore environment to what it was.
                 for i in [0, 1]:

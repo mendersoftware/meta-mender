@@ -1,4 +1,4 @@
-require u-boot-mender-common.inc
+include u-boot-mender-helpers.inc
 
 FILES_${PN}_append_mender-uboot = " /data/u-boot/fw_env.config"
 
@@ -9,12 +9,13 @@ do_compile_append_mender-uboot() {
                 "MENDER_PARTITION_ALIGNMENT"
     fi
 
-    if [ ! -e ${WORKDIR}/fw_env.config.default ]; then
+    if [ ! -e ${DEPLOY_DIR_IMAGE}/fw_env.config.default ]; then
         mender_create_fw_env_config_file ${WORKDIR}/fw_env.config
     else
-        cp ${WORKDIR}/fw_env.config.default ${WORKDIR}/fw_env.config
+        cp ${DEPLOY_DIR_IMAGE}/fw_env.config.default ${WORKDIR}/fw_env.config
     fi
 }
+do_compile[depends] += "u-boot:do_deploy"
 
 do_install_append_mender-uboot() {
     install -d -m 755 ${D}${sysconfdir}
