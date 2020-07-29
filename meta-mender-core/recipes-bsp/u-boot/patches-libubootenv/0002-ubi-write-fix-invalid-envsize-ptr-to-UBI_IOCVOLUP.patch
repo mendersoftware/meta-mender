@@ -1,0 +1,34 @@
+From c91dccab34294b5ea9c6502d01bfdaa49639fd90 Mon Sep 17 00:00:00 2001
+From: Markus Klotzbuecher <mk@mkio.de>
+Date: Tue, 19 May 2020 21:45:17 +0200
+Subject: [PATCH 2/2] ubi, write: fix invalid envsize ptr to UBI_IOCVOLUP
+
+The UBI_IOCVOLUP ioctl expects a __s64*, however the struct
+uboot_flash_env.envsize is of type size_t, which depending on the
+architecture may be only 4 bytes long and cause the ioctl to read a
+bogus size value. This fixes this by converting the size_t envsize to
+a int64_t and passing a ptr to that to the ioctl.
+
+Signed-off-by: Markus Klotzbuecher <mk@mkio.de>
+Acked-by: Stefano Babic <sbabic@denx.de>
+---
+ src/uboot_env.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/uboot_env.c b/src/uboot_env.c
+index 4de1deb..f9ffeda 100644
+--- a/src/uboot_env.c
++++ b/src/uboot_env.c
+@@ -677,7 +677,8 @@ devwrite_out:
+ 
+ static int ubi_update_volume(struct uboot_flash_env *dev)
+ {
+-	return ioctl(dev->fd, UBI_IOCVOLUP, &dev->envsize);
++	int64_t envsize = dev->envsize;
++	return ioctl(dev->fd, UBI_IOCVOLUP, &envsize);
+ }
+ 
+ static int ubiwrite(struct uboot_flash_env *dev, void *data)
+-- 
+2.17.1
+

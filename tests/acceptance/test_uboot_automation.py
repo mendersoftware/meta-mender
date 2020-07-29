@@ -374,26 +374,8 @@ class TestUbootAutomation:
 
     @pytest.mark.only_with_image("sdimg")
     @pytest.mark.min_mender_version("1.0.0")
-    def test_auto_provided_fw_utils(
-        self, prepared_test_build, latest_rootfs, bitbake_image
-    ):
-        """Test that we can provide our own custom U-Boot provider, and that
-        this will trigger auto provision of the corresponding fw-utils."""
-
-        subprocess.check_call(
-            ["debugfs", "-R", "dump /sbin/fw_setenv fw_setenv.tmp", latest_rootfs]
-        )
-
-        try:
-            # Fix "UnicodeDecodeError: 'utf-8' codec can't decode byte" error by reading
-            # file in the binary format and compare with binary data instead of strings comparision.
-            with open("fw_setenv.tmp", "rb") as fd:
-                # The vanilla version should not have our custom string.
-                assert (
-                    b"TestStringThatMustOccur_Mender!#%&" not in fd.read()
-                ), "fw_setenv.tmp contains unexpected substring"
-        finally:
-            os.unlink("fw_setenv.tmp")
+    def test_older_uboot_build(self, prepared_test_build, bitbake_image):
+        """Test that we can provide our own custom U-Boot provider."""
 
         # Get rid of build outputs in deploy directory that may get in the way.
         build_image(
@@ -414,23 +396,6 @@ class TestUbootAutomation:
                 ],
             )
 
-            new_rootfs = latest_build_artifact(
-                prepared_test_build["build_dir"], "core-image*.ext[234]"
-            )
-            subprocess.check_call(
-                ["debugfs", "-R", "dump /sbin/fw_setenv fw_setenv.tmp", new_rootfs]
-            )
-
-            try:
-                with open("fw_setenv.tmp", "rb") as fd:
-                    # If we selected u-boot-testing as the U-Boot provider, fw-utils
-                    # should have followed and should also contain the special
-                    # substring which that version is patched with.
-                    assert (
-                        b"TestStringThatMustOccur_Mender!#%&" in fd.read()
-                    ), "fw_setenv.tmp does not contain expected substring"
-            finally:
-                os.unlink("fw_setenv.tmp")
         finally:
             # Get rid of build outputs in deploy directory that may get in the
             # way.
