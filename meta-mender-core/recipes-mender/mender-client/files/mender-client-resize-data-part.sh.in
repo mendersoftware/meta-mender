@@ -34,6 +34,8 @@ fi
 # Parted will refuse to resize the parition because it needs to re-write the
 # partition table and will refuse to do so unless there is a backup. This
 # ensures that GPT backup headers are written to the end of the disk.
-echo "w" | fdisk ${MENDER_STORAGE_DEVICE}
+# Note: On some MBR systems using BusyBox's fdisk this call will fail,
+# this is OK (MBR systems don't have a backup header), always return true. 
+echo "w" | fdisk ${MENDER_STORAGE_DEVICE} &> /dev/null || true
 
 /usr/sbin/parted -s ${MENDER_STORAGE_DEVICE} resizepart @MENDER_DATA_PART_NUMBER@ 100%
