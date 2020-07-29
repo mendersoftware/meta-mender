@@ -6,7 +6,7 @@ ConditionPathExists=/etc/machine-id
 Type=oneshot
 User=root
 Group=root
-ExecStart=/usr/bin/mender-set-systemd-machine-id.sh
+ExecStart=/usr/bin/mender-client-set-systemd-machine-id.sh
 
 [Install]
 WantedBy=mender-client.service
