@@ -25,31 +25,17 @@ UBOOT_SUFFIX ??= "bin"
 
 # Prefer to use our auto provided fw-utils variant which duplicates the sources
 # from u-boot, so we don't have to apply the same patches twice.
-PREFERRED_PROVIDER_u-boot-fw-utils ??= "${@mender_check_distro_features_early_contains(d, \
-                                                                                       'mender-uboot', \
-                                                                                       'u-boot-fw-utils-mender-auto-provided', \
-                                                                                       '')}"
-PREFERRED_RPROVIDER_u-boot-fw-utils ??= "${@mender_check_distro_features_early_contains(d, \
-                                                                                        'mender-uboot', \
-                                                                                        'u-boot-fw-utils-mender-auto-provided', \
-                                                                                        '')}"
+PREFERRED_PROVIDER_u-boot-fw-utils ??= "${@mender_feature_is_enabled('mender-uboot', \
+                                                                     'u-boot-fw-utils-mender-auto-provided', \
+                                                                     '', \
+                                                                     d)}"
+PREFERRED_RPROVIDER_u-boot-fw-utils ??= "${@mender_feature_is_enabled('mender-uboot', \
+                                                                      'u-boot-fw-utils-mender-auto-provided', \
+                                                                      '', \
+                                                                      d)}"
 
 # This can be removed once u-boot-mender-tools is no longer needed.
-PREFERRED_PROVIDER_u-boot-tools ??= "${@mender_check_distro_features_early_contains(d, \
-                                                                                        'mender-uboot', \
-                                                                                        'u-boot-mender-tools', \
-                                                                                        'u-boot-tools')}"
-
-def mender_check_distro_features_early_contains(d, feature, if_true, if_false):
-    # Why this complicated function instead of checking DISTRO_FEATURES
-    # directly? It's because PREFERRED_PROVIDERs have some special early
-    # handling which happens before DISTRO_FEATURES is resolved, so we need to
-    # do this special early check.
-
-    in_df_backfill = bb.utils.contains('DISTRO_FEATURES_BACKFILL', feature, True, False, d)
-    in_df_backfill_considered = bb.utils.contains('DISTRO_FEATURES_BACKFILL_CONSIDERED', feature, True, False, d)
-
-    if in_df_backfill and not in_df_backfill_considered:
-        return if_true
-    else:
-        return if_false
+PREFERRED_PROVIDER_u-boot-tools ??= "${@mender_feature_is_enabled('mender-uboot', \
+                                                                  'u-boot-mender-tools', \
+                                                                  'u-boot-tools', \
+                                                                  d)}"
