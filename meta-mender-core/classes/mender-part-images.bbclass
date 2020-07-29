@@ -270,7 +270,7 @@ _MENDER_PART_IMAGE_DEPENDS_append_mender-uboot = " u-boot:do_deploy"
 _MENDER_PART_IMAGE_DEPENDS_append_mender-grub_mender-bios = " grub:do_deploy"
 
 do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
-do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bcm2835-bootfiles:do_populate_sysroot', '', d)}"
+do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bootfiles:do_populate_sysroot', '', d)}"
 
 do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS} \
                               gptfdisk-native:do_populate_sysroot"
