@@ -80,9 +80,9 @@ FILES_${PN}_append_mender-growfs-data_mender-systemd = " \
 "
 
 FILES_${PN}_append_mender-persist-systemd-machine-id = " \
-    ${systemd_unitdir}/system/mender-systemd-machine-id.service \
-    ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-systemd-machine-id.service \
-    ${bindir}/${MENDER_CLIENT}-set-systemd-machine-id.sh \
+    ${systemd_unitdir}/system/mender-client-systemd-machine-id.service \
+    ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/mender-client-systemd-machine-id.service \
+    ${bindir}/mender-client-set-systemd-machine-id.sh \
 "
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
@@ -311,9 +311,9 @@ do_install_append_mender-growfs-data_mender-systemd() {
 }
 
 do_install_append_mender-persist-systemd-machine-id() {
-    install -m 644 ${WORKDIR}/mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}-systemd-machine-id.service
+    install -m 644 ${WORKDIR}/mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
-    ln -sf ../${MENDER_CLIENT}-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
+    ln -sf ../mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
     install -d -m 755 ${D}${bindir}
-    install -m 755 ${WORKDIR}/mender-client-set-systemd-machine-id.sh ${D}${bindir}/${MENDER_CLIENT}-set-systemd-machine-id.sh
+    install -m 755 ${WORKDIR}/mender-client-set-systemd-machine-id.sh ${D}${bindir}/
 }
