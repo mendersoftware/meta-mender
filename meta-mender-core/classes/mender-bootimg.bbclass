@@ -13,10 +13,14 @@ IMAGE_CMD_bootimg() {
             force_flag="-f"
             root_dir_flag="-r"
             label_flag="-L"
-        else #Assume ext3/4
+        elif [ ${MENDER_BOOT_PART_FSTYPE_TO_GEN} = "ext4" ] || \
+             [ ${MENDER_BOOT_PART_FSTYPE_TO_GEN} = "ext3" ] || \
+             [ ${MENDER_BOOT_PART_FSTYPE_TO_GEN} = "ext2" ] ; then
             force_flag="-F"
             root_dir_flag="-d"
             label_flag="-L"
+        else
+            bbfatal "Unknown FSTYPE ${MENDER_BOOT_PART_FSTYPE_TO_GEN} for generating bootimg file."
         fi
 
         mender_merge_bootfs_and_image_boot_files
