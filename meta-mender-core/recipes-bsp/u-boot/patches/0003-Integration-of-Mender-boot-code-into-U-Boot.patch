@@ -1,7 +1,7 @@
-From f8cc3e077230572b4a0b557435833d24b89933f5 Mon Sep 17 00:00:00 2001
+From c52f5bad68afc1689836c5cc0417dab673e70b09 Mon Sep 17 00:00:00 2001
 From: Marcin Pasinski <marcin.pasinski@northern.tech>
 Date: Wed, 31 Jan 2018 18:10:04 +0100
-Subject: [PATCH 3/4] Integration of Mender boot code into U-Boot.
+Subject: [PATCH] Integration of Mender boot code into U-Boot.
 
 Signed-off-by: Kristian Amlie <kristian.amlie@mender.io>
 Signed-off-by: Maciej Borzecki <maciej.borzecki@rndity.com>
@@ -12,19 +12,19 @@ Signed-off-by: Marcin Pasinski <marcin.pasinski@northern.tech>
  2 files changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/include/env_default.h b/include/env_default.h
-index 56a8bae39a..472e2fda9a 100644
+index a657927e06..8b7442c04d 100644
 --- a/include/env_default.h
 +++ b/include/env_default.h
-@@ -9,6 +9,8 @@
- 
+@@ -10,6 +10,8 @@
  #include <env_callback.h>
+ #include <linux/stringify.h>
  
 +#include <env_mender.h>
 +
  #ifdef DEFAULT_ENV_INSTANCE_EMBEDDED
  env_t embedded_environment __UBOOT_ENV_SECTION__(environment) = {
  	ENV_CRC,	/* CRC Sum */
-@@ -21,6 +23,7 @@ static char default_environment[] = {
+@@ -22,6 +24,7 @@ static char default_environment[] = {
  #else
  const uchar default_environment[] = {
  #endif
@@ -47,5 +47,5 @@ index 00b8fb34aa..e312c8037d 100644
  
  include/config.h: scripts/Makefile.autoconf create_symlink FORCE
 -- 
-2.17.1
+2.28.0
 
