@@ -15,10 +15,6 @@ GRUB_BUILDIN ?= "boot linux ext2 fat serial part_msdos part_gpt normal \
 
 GRUB_BUILDIN_append_mender-bios = " biosdisk"
 
-# Needed to use grub-mkimage
-DEPENDS_append = " grub-efi-native"
-
-
 python do_setcorelocation () {
 }
 
