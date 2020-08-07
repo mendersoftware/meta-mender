@@ -1,5 +1,5 @@
 
-do_install_append () {
+do_install_append_mender-client-install () {
 	# see MEN-3730, this is to align with the current default settings on raspbian
 	cat >> "${D}${sysconfdir}/ssl/openssl.cnf" <<EOF
 [system_default_sect]
