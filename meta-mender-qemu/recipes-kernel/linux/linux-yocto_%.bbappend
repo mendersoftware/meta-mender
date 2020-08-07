@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend_mender-client-install := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
 # Use custom defconfig in order to enable use of the vexpress model.
 SRC_URI_append_vexpress-qemu = " file://defconfig \
@@ -20,7 +20,9 @@ COMPATIBLE_MACHINE_vexpress-qemu-flash = "vexpress-qemu-flash"
 # at the time of writing. Rather than dig into this we will just remove this
 # patch for now. This can probably be removed later when upstream has fixed this
 # problem. (July 2018)
-KERNEL_FEATURES_remove_qemuall = "features/kernel-sample/kernel-sample.scc"
+KERNEL_FEATURES_remove_vexpress-qemu = "features/kernel-sample/kernel-sample.scc"
+KERNEL_FEATURES_remove_vexpress-qemu-flash = "features/kernel-sample/kernel-sample.scc"
 
 # This doesn't appear in our config so remove it to avoid spurious warnings
-KERNEL_FEATURES_remove_qemuall = "features/drm-bochs/drm-bochs.scc features/scsi/scsi-debug.scc"
+KERNEL_FEATURES_remove_vexpress-qemu = "features/drm-bochs/drm-bochs.scc features/scsi/scsi-debug.scc"
+KERNEL_FEATURES_remove_vexpress-qemu-flash = "features/drm-bochs/drm-bochs.scc features/scsi/scsi-debug.scc"
