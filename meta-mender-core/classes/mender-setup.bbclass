@@ -87,9 +87,18 @@ MENDER_DATA_PART_FSOPTS_DEFAULT = ""
 MENDER_BOOT_PART_FSTYPE ??= "${MENDER_BOOT_PART_FSTYPE_DEFAULT}"
 MENDER_BOOT_PART_FSTYPE_DEFAULT = "auto"
 
+# Filesystem type of boot partition to generate. Used only for FS generation
+# Typically you'll be best off setting MENDER_BOOT_PART_FSTYPE instead
+MENDER_BOOT_PART_FSTYPE_TO_GEN ??= "${MENDER_BOOT_PART_FSTYPE_TO_GEN_DEFAULT}"
+MENDER_BOOT_PART_FSTYPE_TO_GEN_DEFAULT = "${@bb.utils.contains('MENDER_BOOT_PART_FSTYPE', 'auto', 'vfat', '${MENDER_BOOT_PART_FSTYPE}', d)}"
+
 # Set the fstab options for mounting the boot partition
 MENDER_BOOT_PART_FSTAB_OPTS ??= "${MENDER_BOOT_PART_FSTAB_OPTS_DEFAULT}"
 MENDER_BOOT_PART_FSTAB_OPTS_DEFAULT = "defaults,sync"
+
+# Set any extra options for creating the boot partition
+MENDER_BOOT_PART_FSOPTS ??= "${MENDER_BOOT_PART_FSOPTS_DEFAULT}"
+MENDER_BOOT_PART_FSOPTS_DEFAULT = ""
 
 # Device type of device when making an initial partitioned image.
 MENDER_DEVICE_TYPE ??= "${MENDER_DEVICE_TYPE_DEFAULT}"
