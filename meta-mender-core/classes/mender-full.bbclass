@@ -1,5 +1,7 @@
 # Class for those who want to enable all Mender required features.
 
+inherit mender-setup
+
 MENDER_FEATURES_ENABLE_append = " \
     ${_MENDER_BOOTLOADER_DEFAULT} \
     mender-image \
