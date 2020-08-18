@@ -57,6 +57,7 @@ mender_rootfsa_part=$mender_rootfsa_part
 mender_rootfsb_part=$mender_rootfsb_part
 mender_kernel_root_base=${MENDER_STORAGE_DEVICE_BASE}
 kernel_imagetype=${KERNEL_IMAGETYPE}
+regexp (.*),(.*) \$root -s mender_grub_storage_device
 EOF
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then

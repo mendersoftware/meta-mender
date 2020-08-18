@@ -2,7 +2,7 @@
 Name=eth*
 
 [Network]
-DHCP=v4
+DHCP=ipv4
 
 [DHCPv4]
 UseHostname=false
