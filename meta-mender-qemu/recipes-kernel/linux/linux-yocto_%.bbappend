@@ -21,3 +21,6 @@ COMPATIBLE_MACHINE_vexpress-qemu-flash = "vexpress-qemu-flash"
 # patch for now. This can probably be removed later when upstream has fixed this
 # problem. (July 2018)
 KERNEL_FEATURES_remove_qemuall = "features/kernel-sample/kernel-sample.scc"
+
+# This doesn't appear in our config so remove it to avoid spurious warnings
+KERNEL_FEATURES_remove_qemuall = "features/drm-bochs/drm-bochs.scc"
