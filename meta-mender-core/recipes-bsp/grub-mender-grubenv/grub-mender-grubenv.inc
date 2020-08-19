@@ -3,8 +3,6 @@ require conf/image-uefi.conf
 inherit ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', 'user-key-store', '', d)}
 inherit grub-mender-grubenv
 
-RPROVIDES_${PN} += "virtual/grub-bootconf"
-
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 GRUB_CONF_LOCATION = "${EFI_FILES_PATH}"
@@ -33,7 +31,9 @@ PACKAGECONFIG[debug-log] = ",,,"
 
 RDEPENDS_${PN} = "grub-efi"
 RDEPENDS_${PN}_mender-bios = "grub"
-RPROVIDES_${PN} = "virtual/grub-bootconf"
+
+PROVIDES = "${@mender_feature_is_enabled('mender-grub', "virtual/grub-bootconf", "", d)}"
+RPROVIDES_${PN} = "${@mender_feature_is_enabled('mender-grub', "virtual/grub-bootconf", "", d)}"
 
 # See https://www.gnu.org/software/grub/manual/grub/grub.html#debug
 DEBUG_LOG_CATEGORY ?= "all"
