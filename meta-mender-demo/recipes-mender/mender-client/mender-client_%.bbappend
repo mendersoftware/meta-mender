@@ -6,8 +6,6 @@ MENDER_UPDATE_POLL_INTERVAL_SECONDS = "5"
 MENDER_INVENTORY_POLL_INTERVAL_SECONDS = "5"
 MENDER_RETRY_POLL_INTERVAL_SECONDS = "30"
 
-PACKAGECONFIG_append = " modules"
-
 MENDER_CERT_LOCATION ?= "${docdir}/mender-client/examples/demo.crt"
 # We need this because the certificate will automatically end up in the
 # mender-doc package when placed in ${docdir}.
