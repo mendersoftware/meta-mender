@@ -1,4 +1,6 @@
-require u-boot-mender-common.inc
+include ${@mender_feature_is_enabled("mender-uboot","u-boot-mender-common.inc","",d)}
+# We need u-boot-mender-common.inc for mender-grub since we use u-boot to launch grub.
+include ${@mender_feature_is_enabled("mender-grub","u-boot-mender-common.inc","",d)}
 
 FILES_${PN}_append_mender-uboot = " /data/u-boot/fw_env.config"
 
