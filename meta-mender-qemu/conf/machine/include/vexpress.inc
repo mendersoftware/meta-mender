@@ -1,4 +1,4 @@
-include conf/machine/include/arm/arch-armv5-dsp.inc
+require conf/machine/include/arm/arch-armv5-dsp.inc
 
 PREFERRED_PROVIDER_virtual/kernel ?= "linux-yocto"
 PREFERRED_VERSION_linux-yocto ?= "4.1%"

@@ -398,10 +398,10 @@ python mender_vars_handler() {
 # Including these does not mean that all these features will be enabled, just
 # that their configuration will be considered. Use DISTRO_FEATURES to enable and
 # disable features.
-include mender-setup-bios.inc
-include mender-setup-grub.inc
-include mender-setup-image.inc
-include mender-setup-install.inc
-include mender-setup-systemd.inc
-include mender-setup-ubi.inc
-include mender-setup-uboot.inc
+require mender-setup-bios.inc
+require mender-setup-grub.inc
+require mender-setup-image.inc
+require mender-setup-install.inc
+require mender-setup-systemd.inc
+require mender-setup-ubi.inc
+require mender-setup-uboot.inc

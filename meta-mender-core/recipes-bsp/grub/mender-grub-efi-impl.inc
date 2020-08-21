@@ -2,7 +2,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI_append_cfg_file += " file://cfg"
 
-include version_logic.inc
+require version_logic.inc
 
 do_check_config_efi_stub() {
 }
@@ -19,7 +19,7 @@ do_check_config_efi_stub_mender-grub_mender-bios() {
 addtask do_check_config_efi_stub before do_configure
 do_check_config_efi_stub[depends] = "virtual/kernel:do_deploy"
 
-include grub-mender.inc
+require grub-mender.inc
 
 EFI_BOOT_PATH ?= ""
 
