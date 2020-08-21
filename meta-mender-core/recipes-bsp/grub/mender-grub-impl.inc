@@ -1,6 +1,6 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-include grub-mender.inc
+require grub-mender.inc
 
 inherit deploy
 
