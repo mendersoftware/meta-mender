@@ -28,7 +28,7 @@ SRC_URI = " \
 
 S = "${WORKDIR}/git"
 
-include version_logic.inc
+require version_logic.inc
 
 PROVIDES = "grub-efi grub-editenv"
 RPROVIDES_${PN} = "grub-efi grub-editenv"
