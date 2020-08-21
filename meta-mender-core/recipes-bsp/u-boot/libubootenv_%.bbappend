@@ -1,4 +1,4 @@
-include u-boot-mender-helpers.inc
+include ${@mender_feature_is_enabled("mender-uboot","u-boot-mender-helpers.inc","",d)}
 
 RPROVIDES_${PN} += "u-boot-default-env"
 
