@@ -1,7 +1,7 @@
 inherit deploy
 inherit uboot-config
 
-include u-boot-mender-helpers.inc
+include ${@mender_feature_is_enabled("mender-uboot","u-boot-mender-helpers.inc","",d)}
 
 DEPENDS += "coreutils-native"
 
