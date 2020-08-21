@@ -1,1 +1,1 @@
-include linux-raspberrypi-mender.inc
+require linux-raspberrypi-mender.inc
