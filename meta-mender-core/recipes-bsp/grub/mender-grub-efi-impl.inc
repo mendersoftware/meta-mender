@@ -3,11 +3,6 @@ SRC_URI_append_cfg_file += " file://cfg"
 
 include version_logic.inc
 
-EFI_PROVIDER ?= "${_MENDER_EFI_PROVIDER_DEFAULT}"
-_MENDER_EFI_PROVIDER_DEFAULT = ""
-_MENDER_EFI_PROVIDER_DEFAULT_mender-grub = "grub-efi"
-_MENDER_EFI_PROVIDER_DEFAULT_mender-grub_mender-bios = ""
-
 do_check_config_efi_stub() {
 }
 do_check_config_efi_stub_mender-grub() {
