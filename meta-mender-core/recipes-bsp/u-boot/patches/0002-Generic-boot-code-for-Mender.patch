@@ -50,12 +50,12 @@ index 0000000000..69a526805d
 +#endif
 +
 +#ifndef CONFIG_BOOTCOUNT_LIMIT
-+# error CONFIG_BOOTCOUNT_LIMIT is required for Mender to work. Make sure that: 1) All the instructions at docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++# error CONFIG_BOOTCOUNT_LIMIT is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#endif
 +
 +/* Currently Mender needs bootcount to reside in environment. */
 +#ifndef CONFIG_BOOTCOUNT_ENV
-+# error CONFIG_BOOTCOUNT_ENV is required for Mender to work. Make sure that: 1) All the instructions at docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++# error CONFIG_BOOTCOUNT_ENV is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#endif
 +
 +#ifdef MENDER_UBI
@@ -77,21 +77,21 @@ index 0000000000..69a526805d
 +#else
 +# if defined(CONFIG_ENV_OFFSET)
 +#  if CONFIG_ENV_OFFSET != MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
-+#   error CONFIG_ENV_OFFSET is not the same as MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++#   error CONFIG_ENV_OFFSET is not the same as MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#  endif
 +# else
 +#  define CONFIG_ENV_OFFSET MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1
 +# endif
 +# if defined(CONFIG_ENV_OFFSET_REDUND)
 +#  if CONFIG_ENV_OFFSET_REDUND != MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
-+#   error CONFIG_ENV_OFFSET_REDUND is not the same as MENDER_ENV_OFFSET_REDUND. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++#   error CONFIG_ENV_OFFSET_REDUND is not the same as MENDER_ENV_OFFSET_REDUND. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#  endif
 +# else
 +#  define CONFIG_ENV_OFFSET_REDUND MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2
 +# endif
 +# ifdef CONFIG_SYS_MMC_ENV_DEV
 +#  if CONFIG_SYS_MMC_ENV_DEV != MENDER_UBOOT_STORAGE_DEVICE
-+#   error CONFIG_SYS_MMC_ENV_DEV is not the same as MENDER_UBOOT_STORAGE_DEVICE. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at docs.mender.io/devices/integrating-with-u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
++#   error CONFIG_SYS_MMC_ENV_DEV is not the same as MENDER_UBOOT_STORAGE_DEVICE. Either set it to the same value (check for example in the defconfig file), or make sure it is not defined at all. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#  endif
 +# else
 +#  define CONFIG_SYS_MMC_ENV_DEV   MENDER_UBOOT_STORAGE_DEVICE
