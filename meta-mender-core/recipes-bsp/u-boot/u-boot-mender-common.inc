@@ -43,6 +43,10 @@ do_provide_mender_defines() {
         bbfatal "To compile U-Boot with mender you have to add 'mender-uboot' to MENDER_FEATURES_ENABLE or DISTRO_FEATURES."
     fi
 
+    if fgrep -A8 "skip_chars(char *s)" ${S}/tools/env/fw_env.c | fgrep -q "if (isblank(*s))"; then
+        bbwarn "Detected missing fix for '=' sign in fw_setenv script files. You may need to include this patch from the U-Boot project: https://gitlab.denx.de/u-boot/u-boot/-/commit/cd655514aa044c77fe3b895a51677ba47b26ba89"
+    fi
+
     if [ ${MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART} -eq "0" ]; then
         # Only check reserved space for bootloader data when the bootloader data is saved to the user partition of the MMC.
         # In cases where it's saved to the boot partition it's not a part of the rootfs size and MENDER_RESERVED_SPACE_BOOTLOADER_DATA
