@@ -8,7 +8,7 @@ MENDER_RETRY_POLL_INTERVAL_SECONDS_mender-client-install = "30"
 
 MENDER_CERT_LOCATION_mender-client-install ?= "${docdir}/mender-client/examples/demo.crt"
 
-PACKAGECONFIG_append_mender-client-install = " modules"
+PACKAGECONFIG_append = "${@mender_feature_is_enabled("mender-client-install", " modules", "", d)}"
 
 # We need this because the certificate will automatically end up in the
 # mender-doc package when placed in ${docdir}.
