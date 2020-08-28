@@ -1,5 +1,7 @@
 include u-boot-mender-helpers.inc
 
+RPROVIDES_${PN} += "u-boot-default-env"
+
 FILES_${PN}_append_mender-uboot = " /data/u-boot/fw_env.config"
 
 do_compile_append_mender-uboot() {
