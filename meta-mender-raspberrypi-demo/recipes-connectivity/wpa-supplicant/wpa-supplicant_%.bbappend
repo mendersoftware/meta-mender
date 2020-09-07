@@ -11,6 +11,14 @@ do_install_append() {
 
   install -d ${D}${sysconfdir}/wpa_supplicant
 
+  if [ -z "${MENDER_DEMO_WIFI_SSID}" ]; then
+    bbfatal "No SSID set for the wpa configuration file"
+  fi
+
+  if [ -z "${MENDER_DEMO_WIFI_PASSKEY}" ]; then
+    bbfatal "No PASSKEY set for the wpa configuration file"
+  fi
+
   sed -i -e 's#[@]MENDER_DEMO_WIFI_PASSKEY[@]#${MENDER_DEMO_WIFI_PASSKEY}#' ${WORKDIR}/wpa_supplicant-wlan0.conf
 	sed -i -e 's#[@]MENDER_DEMO_WIFI_SSID[@]#${MENDER_DEMO_WIFI_SSID}#' ${WORKDIR}/wpa_supplicant-wlan0.conf
 
