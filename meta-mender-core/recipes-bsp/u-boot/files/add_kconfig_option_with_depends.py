@@ -118,7 +118,7 @@ def gather_currently_set_kconfig_options():
     set_options = dict()
     with open(args.defconfig_file) as fd:
         for line in fd.readlines():
-            if not (line.startswith("#") or line.strip()):
+            if line.strip() and not line.startswith("#"):
                 key = line.split("=", 2)[0]
                 if not key.startswith("CONFIG_"):
                     raise Exception("Not sure how to handle Kconfig option that doesn't start with 'CONFIG_'")
