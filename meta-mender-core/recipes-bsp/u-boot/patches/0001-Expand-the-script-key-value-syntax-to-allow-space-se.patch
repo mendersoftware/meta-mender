@@ -1,0 +1,53 @@
+From 3278cacf32382b8c62089470608585c44d691c4c Mon Sep 17 00:00:00 2001
+From: Ole Petter <ole.orhagen@northern.tech>
+Date: Thu, 24 Sep 2020 13:31:59 +0200
+Subject: [PATCH] Expand the script key value syntax to allow space separators
+
+This is needed in order to support compatibility with older U-Boot versions,
+which do not support the `key=value` syntax in the script files.
+
+See: https://tracker.mender.io/browse/MEN-3970 for further information.
+
+Changelog: Title
+
+Signed-off-by: Ole Petter <ole.orhagen@northern.tech>
+---
+ src/libuboot.h  | 2 +-
+ src/uboot_env.c | 8 ++++++--
+ 2 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/src/libuboot.h b/src/libuboot.h
+index bfcaeb1..ebe6fd4 100644
+--- a/src/libuboot.h
++++ b/src/libuboot.h
+@@ -55,7 +55,7 @@ int libuboot_configure(struct uboot_ctx *ctx,
+  * Read and parses variable from a file in the same way as
+  * U-Boot does with "env import -t"
+  * The file has the format:
+- * 	<variable name>=<value>
++ * 	<variable name>(=|:space:)<value>
+  * Comments starting with "#" are allowed.
+  *
+  * @param[in] ctx libuboot context
+diff --git a/src/uboot_env.c b/src/uboot_env.c
+index c9a900f..e05e0a1 100644
+--- a/src/uboot_env.c
++++ b/src/uboot_env.c
+@@ -1165,8 +1165,12 @@ int libuboot_load_file(struct uboot_ctx *ctx, const char *filename)
+ 			continue;
+ 
+ 		value = strchr(buf, '=');
+-		if (!value)
+-			continue;
++		if (!value) {
++			/* Handle the 'key value' case (i.e., no = separator) */
++			value = strchr(buf, ' ');
++			if (!value)
++				continue;
++		}
+ 
+ 		*value++ = '\0';
+ 
+-- 
+2.28.0
+

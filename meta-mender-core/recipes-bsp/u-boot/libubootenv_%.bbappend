@@ -4,6 +4,9 @@ RPROVIDES_${PN} += "u-boot-default-env"
 
 FILES_${PN}_append_mender-uboot = " /data/u-boot/fw_env.config"
 
+FILESEXTRAPATHS_prepend := "${THISDIR}/patches"
+SRC_URI_append_mender-uboot = " file://0001-Expand-the-script-key-value-syntax-to-allow-space-se.patch"
+
 do_compile_append_mender-uboot() {
     alignment_bytes=${MENDER_PARTITION_ALIGNMENT}
     if [ $(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} % $alignment_bytes) -ne 0 ]; then
