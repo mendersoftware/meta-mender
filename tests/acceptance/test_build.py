@@ -948,6 +948,11 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         # Then remove it, not to mess up the expected test output
         del other.provides["rootfs_image_checksum"]
 
+        # MEN-3076: Mender-Artifacts writes software version by default
+        # older versions did not, thus we remove the key before asserting the content
+        if "rootfs-image.version" in other.provides.keys():
+            del other.provides["rootfs-image.version"]
+
         assert dependsprovides.__dict__ == other.__dict__
 
     @pytest.mark.only_with_image("sdimg", "uefiimg", "gptimg", "biosimg")
