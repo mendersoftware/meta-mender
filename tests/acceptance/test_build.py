@@ -941,12 +941,16 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         other = TestBuild.BuildDependsProvides.parse(output)
 
         # MEN-2956: Mender-Artifact now writes rootfs-image-checksum by default.
-        # Hence, the checksum should be present in all these test cases.
+        # MEN-3482: The new key for the rootfs image checksum is rootfs-image.checksum
         assert (
-            "rootfs_image_checksum" in other.provides
+            "rootfs-image.checksum" in other.provides
+            or "rootfs_image_checksum" in other.provides
         ), "Empty rootfs_image_checksum in the built rootfs-image artifact, this should be added by default by `mender-artifact write rootfs-image`"
         # Then remove it, not to mess up the expected test output
-        del other.provides["rootfs_image_checksum"]
+        if "rootfs-image.checksum" in other.provides.keys():
+            del other.provides["rootfs-image.checksum"]
+        if "rootfs_image_checksum" in other.provides.keys():
+            del other.provides["rootfs_image_checksum"]
 
         # MEN-3076: Mender-Artifacts writes software version by default
         # older versions did not, thus we remove the key before asserting the content
