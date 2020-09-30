@@ -28,6 +28,7 @@ do_version_check() {
         bbfatal "String '${PN} ${PV}' not found in binary. Is it the correct version? Check with --version. Possible candidates: $(strings ${WORKDIR}/mender-binary-delta | grep '${PN} [a-f0-9]')"
     fi
 }
+do_version_check[noexec] = "${@'1' if d.getVar('MENDER_DEVMODE') else '0'}"
 addtask do_version_check after do_patch before do_install
 
 do_configure() {
