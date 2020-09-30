@@ -2,6 +2,7 @@ DESCRIPTION = "Mender image artifact library"
 GO_IMPORT = "github.com/mendersoftware/mender-artifact"
 
 inherit go
+inherit go-ptest
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
