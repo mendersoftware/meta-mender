@@ -1,4 +1,4 @@
-include mender-binary-delta.inc
+require mender-binary-delta.inc
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
