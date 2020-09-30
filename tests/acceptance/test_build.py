@@ -921,7 +921,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     @pytest.mark.min_mender_version("2.3.0")
     @pytest.mark.parametrize("dependsprovides", test_cases)
     def test_build_artifact_depends_and_provides(
-        self, prepared_test_build, bitbake_image, dependsprovides
+        self, prepared_test_build, bitbake_image, bitbake_path, dependsprovides
     ):
         """Test whether a build with enabled Artifact Provides and Depends does
         indeed add the parameters to the built Artifact"""
