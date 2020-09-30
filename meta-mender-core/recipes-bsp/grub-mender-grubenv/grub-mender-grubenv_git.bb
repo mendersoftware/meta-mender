@@ -1,4 +1,4 @@
-include grub-mender-grubenv.inc
+require grub-mender-grubenv.inc
 
 SRC_URI = "${GRUB_MENDER_GRUBENV_SRC_URI}"
 
