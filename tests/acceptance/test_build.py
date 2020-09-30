@@ -862,7 +862,8 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                         if depends_groups:
                             d.depends_groups = depends_groups
 
-                if "Provides:" in line:
+                # Precede with two spaces to avoid matching "Clears Provides:".
+                if "  Provides:" in line:
                     k = i + 1
                     tmp = {}
                     # Parse all provides on the following lines
@@ -881,7 +882,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                     tmp = {}
                     # Parse all depends on the following lines
                     while True:
-                        if "Metadata:" in lines[k]:
+                        if "Metadata:" in lines[k] or "Clears Provides:" in lines[k]:
                             break
                         l = [s.strip() for s in lines[k].split(": ")]
                         assert len(l) == 2, "Line should only contain a key value pair"
