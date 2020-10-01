@@ -862,7 +862,8 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                         if depends_groups:
                             d.depends_groups = depends_groups
 
-                if "Provides:" in line:
+                # Precede with two spaces to avoid matching "Clears Provides:".
+                if "  Provides:" in line:
                     k = i + 1
                     tmp = {}
                     # Parse all provides on the following lines
@@ -881,7 +882,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                     tmp = {}
                     # Parse all depends on the following lines
                     while True:
-                        if "Metadata:" in lines[k]:
+                        if "Metadata:" in lines[k] or "Clears Provides:" in lines[k]:
                             break
                         l = [s.strip() for s in lines[k].split(": ")]
                         assert len(l) == 2, "Line should only contain a key value pair"
@@ -921,7 +922,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     @pytest.mark.min_mender_version("2.3.0")
     @pytest.mark.parametrize("dependsprovides", test_cases)
     def test_build_artifact_depends_and_provides(
-        self, prepared_test_build, bitbake_image, dependsprovides
+        self, prepared_test_build, bitbake_image, bitbake_path, dependsprovides
     ):
         """Test whether a build with enabled Artifact Provides and Depends does
         indeed add the parameters to the built Artifact"""
