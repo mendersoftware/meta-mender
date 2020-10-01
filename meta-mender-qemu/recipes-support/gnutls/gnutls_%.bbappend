@@ -1,3 +1,3 @@
 
-PACKAGECONFIG_append = " p11-kit"
+PACKAGECONFIG_append_mender-client-install = " p11-kit"
 
