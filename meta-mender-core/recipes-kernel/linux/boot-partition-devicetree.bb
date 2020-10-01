@@ -11,7 +11,7 @@ do_install() {
     install -d -m 755 ${D}/${MENDER_BOOT_PART_MOUNT_LOCATION}/dtb
 
     for dtb_path in ${KERNEL_DEVICETREE}; do
-        install -m 0644 ${DEPLOY_DIR_IMAGE}/$dtb_path ${D}/${MENDER_BOOT_PART_MOUNT_LOCATION}/dtb/$dtb_base_name.$dtb_ext
+        install -m 0644 ${DEPLOY_DIR_IMAGE}/$(basename $dtb_path) ${D}/${MENDER_BOOT_PART_MOUNT_LOCATION}/dtb/
     done
 }
 do_install[depends] = "virtual/kernel:do_deploy"
