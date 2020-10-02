@@ -23,6 +23,7 @@ S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 inherit go
+inherit go-ptest
 inherit pkgconfig
 inherit systemd
 
