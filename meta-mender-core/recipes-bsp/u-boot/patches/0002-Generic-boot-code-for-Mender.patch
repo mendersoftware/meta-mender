@@ -120,7 +120,7 @@ new file mode 100644
 index 0000000000..0605f6a9fa
 --- /dev/null
 +++ b/include/env_mender.h
-@@ -0,0 +1,157 @@
+@@ -0,0 +1,156 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -205,8 +205,7 @@ index 0000000000..0605f6a9fa
 +    "fi; "                                                              \
 +    "if test \"${mender_systemd_machine_id}\" != \"\"; "                \
 +    "then "                                                             \
-+    "setenv bootargs systemd.machine_id=${mender_systemd_machine_id} "  \
-+    "${bootargs}; "                                                     \
++    "setenv bootargs \"systemd.machine_id=${mender_systemd_machine_id} ${bootargs}\"; " \
 +    "fi; "                                                              \
 +    "setenv mender_kernel_root " MENDER_STORAGE_DEVICE_BASE "${mender_boot_part}; "    \
 +    "if test ${mender_boot_part} = " __stringify(MENDER_ROOTFS_PART_A_NUMBER) "; "     \
