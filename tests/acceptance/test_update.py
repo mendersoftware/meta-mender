@@ -912,3 +912,61 @@ class TestUpdates:
             # Cleanup.
             os.remove("image.mender")
             os.remove("image.dat")
+
+    @pytest.mark.min_mender_version("2.0.0")
+    def test_standalone_update_rollback(self, bitbake_variables, connection):
+        """Test that the rollback state on the active partition does roll back to the
+        currently running active partition after a failed update.
+
+        This is done through adding a failing state script
+        'ArtifactInstall_Leave_01' to a rootfs-image update, and have it fail
+        the update. This should trigger a rollback, while still on the active
+        partition.
+
+        """
+
+        image_type = bitbake_variables["MACHINE"]
+
+        tdir = tempfile.mkdtemp()
+        script_name = os.path.join(tdir, "ArtifactInstall_Leave_01")
+
+        try:
+
+            original_partition = connection.run("fw_printenv mender_boot_part").stdout
+            assert original_partition != ""
+
+            with open(script_name, "w") as af:
+                af.write("#!/bin/bash\nexit 1")
+            res = subprocess.call(
+                "dd if=/dev/zero of=image.dat bs=1M count=0 seek=16", shell=True
+            )
+            assert res == 0
+            res = subprocess.call(
+                "mender-artifact write rootfs-image -t %s -n test-update -f image.dat -o image.mender -s %s"
+                % (image_type, script_name),
+                shell=True,
+            )
+            assert res == 0
+
+            put_no_sftp("image.mender", connection, remote="/var/tmp/image.mender")
+
+            res = connection.run("mender install /var/tmp/image.mender", warn=True)
+            assert res.return_code != 0
+
+            #
+            # The rollback should not leave the device pending a partition
+            # switch on boot
+            #
+            output = connection.run("fw_printenv upgrade_available").stdout
+            assert output.rstrip("\n") == "upgrade_available=0"
+
+            #
+            # Make sure the device is still on the original partition
+            #
+            active = connection.run("fw_printenv mender_boot_part").stdout
+            assert original_partition == active
+
+        finally:
+            os.remove("image.mender")
+            os.remove("image.dat")
+            shutil.rmtree(tdir)
