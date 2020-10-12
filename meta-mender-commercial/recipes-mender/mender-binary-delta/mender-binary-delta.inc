@@ -24,11 +24,12 @@ FILES_${PN} = " \
 INSANE_SKIP_${PN} = "already-stripped"
 
 do_version_check() {
-    if ! strings ${WORKDIR}/mender-binary-delta | fgrep -q "${PN} ${PV}"; then
-        bbfatal "String '${PN} ${PV}' not found in binary. Is it the correct version? Check with --version. Possible candidates: $(strings ${WORKDIR}/mender-binary-delta | grep '${PN} [a-f0-9]')"
+    if ! ${@'true' if d.getVar('MENDER_DEVMODE') else 'false'}; then
+        if ! strings ${WORKDIR}/${SUB_FOLDER}/mender-binary-delta | fgrep -q "${PN} ${PV}"; then
+            bbfatal "String '${PN} ${PV}' not found in binary. Is it the correct version? Check with --version. Possible candidates: $(strings ${WORKDIR}/${SUB_FOLDER}/mender-binary-delta | grep '${PN} [a-f0-9]')"
+        fi
     fi
 }
-do_version_check[noexec] = "${@'1' if d.getVar('MENDER_DEVMODE') else '0'}"
 addtask do_version_check after do_patch before do_install
 
 do_configure() {
