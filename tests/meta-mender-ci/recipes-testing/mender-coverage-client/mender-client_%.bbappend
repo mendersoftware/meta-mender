@@ -1,6 +1,6 @@
-SUMMARY = "Build a Mender client which records coverage during its invocation"
+SUMMARY_append_mender-testing-enabled = ": Build a Mender client which records coverage during its invocation"
 
-DEPENDS += "gobinarycoverage-native rsync-native"
+DEPENDS_append_mender-testing-enabled = " gobinarycoverage-native rsync-native"
 
 do_instrument_client[dirs] =+ "${GOTMPDIR}"
 do_instrument_client[doc] = "Modifies the Mender client source to enable coverage analysis"
@@ -10,7 +10,7 @@ do_instrument_client () {
     oe_runmake instrument-binary
 }
 
-do_configure_prepend () {
+do_configure_prepend_mender-testing-enabled () {
     # Remove all the src present in build if it is not a symbolic link to ${S}
     if [ -d ${B}src ]; then
         rm -rf ${B}src
@@ -18,7 +18,7 @@ do_configure_prepend () {
 
 }
 
-do_configure_append () {
+do_configure_append_mender-testing-enabled () {
     # Remove the symbolic link created by go.bbclass in do_configure
     if [ -h ${B}src ]; then
         rm ${B}src
@@ -29,12 +29,12 @@ do_configure_append () {
 
 python () {
     # Only add coverage analysis if the client is newer than 2.2.x
-    if not mender_is_2_2_or_older(d):
-        # Coverage instrument the client before compiling it
-        d.prependVarFlag('do_configure', 'postfuncs', "do_instrument_client ")
-    else:
-        bb.debug(2, "The client will not be built with coverage functionality. It is too old.")
-
+    if bb.utils.contains("DISTRO_FEATURES", "mender-testing-enabled", True, False, d):
+       if not mender_is_2_2_or_older(d):
+           # Coverage instrument the client before compiling it
+           d.prependVarFlag('do_configure', 'postfuncs', "do_instrument_client ")
+       else:
+           bb.debug(2, "The client will not be built with coverage functionality. It is too old.")
 }
 
 

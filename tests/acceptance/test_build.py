@@ -862,7 +862,8 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                         if depends_groups:
                             d.depends_groups = depends_groups
 
-                if "Provides:" in line:
+                # Precede with two spaces to avoid matching "Clears Provides:".
+                if "  Provides:" in line:
                     k = i + 1
                     tmp = {}
                     # Parse all provides on the following lines
@@ -881,7 +882,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                     tmp = {}
                     # Parse all depends on the following lines
                     while True:
-                        if "Metadata:" in lines[k]:
+                        if "Metadata:" in lines[k] or "Clears Provides:" in lines[k]:
                             break
                         l = [s.strip() for s in lines[k].split(": ")]
                         assert len(l) == 2, "Line should only contain a key value pair"
@@ -921,7 +922,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     @pytest.mark.min_mender_version("2.3.0")
     @pytest.mark.parametrize("dependsprovides", test_cases)
     def test_build_artifact_depends_and_provides(
-        self, prepared_test_build, bitbake_image, dependsprovides
+        self, prepared_test_build, bitbake_image, bitbake_path, dependsprovides
     ):
         """Test whether a build with enabled Artifact Provides and Depends does
         indeed add the parameters to the built Artifact"""
@@ -941,12 +942,21 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         other = TestBuild.BuildDependsProvides.parse(output)
 
         # MEN-2956: Mender-Artifact now writes rootfs-image-checksum by default.
-        # Hence, the checksum should be present in all these test cases.
+        # MEN-3482: The new key for the rootfs image checksum is rootfs-image.checksum
         assert (
-            "rootfs_image_checksum" in other.provides
+            "rootfs-image.checksum" in other.provides
+            or "rootfs_image_checksum" in other.provides
         ), "Empty rootfs_image_checksum in the built rootfs-image artifact, this should be added by default by `mender-artifact write rootfs-image`"
         # Then remove it, not to mess up the expected test output
-        del other.provides["rootfs_image_checksum"]
+        if "rootfs-image.checksum" in other.provides.keys():
+            del other.provides["rootfs-image.checksum"]
+        if "rootfs_image_checksum" in other.provides.keys():
+            del other.provides["rootfs_image_checksum"]
+
+        # MEN-3076: Mender-Artifacts writes software version by default
+        # older versions did not, thus we remove the key before asserting the content
+        if "rootfs-image.version" in other.provides.keys():
+            del other.provides["rootfs-image.version"]
 
         assert dependsprovides.__dict__ == other.__dict__
 
