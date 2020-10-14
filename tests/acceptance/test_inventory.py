@@ -14,7 +14,9 @@
 #    limitations under the License.
 
 import os
+
 import pytest
+
 from common import put_no_sftp
 
 

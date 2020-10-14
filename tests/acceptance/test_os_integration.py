@@ -13,11 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import pytest
 import time
 
-from common import *
-from helpers import Helpers
+import pytest
 
 
 class TestOsIntegration:

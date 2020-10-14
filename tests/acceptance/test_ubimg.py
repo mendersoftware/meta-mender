@@ -15,12 +15,13 @@
 
 import hashlib
 import os
-import pytest
 import shutil
 import subprocess
 import tempfile
 
-from common import *
+import pytest
+
+from common import build_image, latest_build_artifact, reset_build_conf, make_tempdir
 
 
 def extract_ubimg_files(path, outdir):

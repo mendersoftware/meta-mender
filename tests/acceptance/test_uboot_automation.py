@@ -22,8 +22,14 @@ import shutil
 import subprocess
 import tempfile
 
-# Make sure common is imported after fabric, because we override some functions.
-from common import *
+import pytest
+
+from common import (
+    build_image,
+    bitbake_env_from,
+    get_bitbake_variables,
+    reset_build_conf,
+)
 
 
 @pytest.mark.only_with_distro_feature("mender-uboot")
