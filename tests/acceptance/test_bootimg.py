@@ -13,12 +13,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import os
-import pytest
 import subprocess
 
-# Make sure common is imported after fabric, because we override some functions.
-from common import *
+import pytest
+
+from common import (
+    build_image,
+    latest_build_artifact,
+)
 
 
 class TestBootImg:

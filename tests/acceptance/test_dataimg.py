@@ -14,10 +14,11 @@
 #    limitations under the License.
 
 import os
-import pytest
 import subprocess
 
-from common import *
+import pytest
+
+from common import build_image, latest_build_artifact, make_tempdir
 
 
 class TestDataImg:

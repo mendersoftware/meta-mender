@@ -14,12 +14,24 @@
 #    limitations under the License.
 
 import os
-import pytest
 import subprocess
 import re
 import json
 
-from common import *
+import pytest
+
+from common import (
+    build_image,
+    latest_build_artifact,
+    get_bitbake_variables,
+    run_verbose,
+    signing_key,
+    versions_of_recipe,
+    get_local_conf_path,
+    get_local_conf_orig_path,
+    make_tempdir,
+    version_is_minimum,
+)
 
 
 def extract_partition(img, number):
