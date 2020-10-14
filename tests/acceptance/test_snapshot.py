@@ -13,9 +13,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import re
+import os
+import subprocess
+
 import pytest
 
-from common import *
+from common import determine_active_passive_part, get_ssh_common_args
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")

@@ -13,10 +13,18 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import pytest
+import re
 import subprocess
 
-from common import *
+import pytest
+
+from common import (
+    build_image,
+    latest_build_artifact,
+    reboot,
+    run_after_connect,
+    determine_active_passive_part,
+)
 from helpers import Helpers
 
 

@@ -13,14 +13,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import pytest
 import subprocess
-import os
 import re
-import json
 import hashlib
 
-from common import *
+import pytest
+
+from common import build_image, latest_build_artifact, version_is_minimum
+
 
 # The format of the artifact file which is tested here is documented at:
 # https://github.com/mendersoftware/mender-artifact/blob/master/Documentation/artifact-format.md
