@@ -41,7 +41,7 @@ def versioned_mender_image(
     version = request.param
 
     if version == 1:
-        pytest.failNow()
+        pytest.fail()
 
     if (
         version >= 2

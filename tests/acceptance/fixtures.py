@@ -85,7 +85,7 @@ def setup_colibri_imx7(request, build_dir, connection):
         pytest.fail("failed to find U-Boot binary")
 
     if not latest_ubimg:
-        pytest.failed("failed to find latest ubimg for the board")
+        pytest.fail("failed to find latest ubimg for the board")
 
     common_board_setup(
         connection,
@@ -197,9 +197,9 @@ def setup_board(request, build_image_fn, connection, board_type):
         image_dir = build_image_fn()
         return setup_qemu(request, image_dir, connection)
     elif board_type == "beagleboneblack":
-        return setup_bbb(request)
+        return setup_bbb(request, connection)
     elif board_type == "raspberrypi3":
-        return setup_rpi3(request)
+        return setup_rpi3(request, connection)
     elif board_type == "colibri-imx7":
         image_dir = build_image_fn()
         return setup_colibri_imx7(request, image_dir, connection)

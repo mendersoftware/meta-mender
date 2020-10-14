@@ -120,7 +120,6 @@ class TestBuild:
         embedded = os.open(built_sdimg, os.O_RDONLY)
         os.lseek(embedded, loader_offset * 512, 0)
 
-        checked = 0
         block_size = 4096
         while True:
             org_read = os.read(original, block_size)
