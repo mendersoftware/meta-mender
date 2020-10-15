@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2017 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,10 +14,11 @@
 #    limitations under the License.
 
 import os
-import pytest
 import subprocess
 
-from common import *
+import pytest
+
+from common import build_image, latest_build_artifact, make_tempdir
 
 
 class TestDataImg:

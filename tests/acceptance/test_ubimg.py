@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2016 Mender Software AS
+# Copyright 2020 Mender Software AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,12 +15,13 @@
 
 import hashlib
 import os
-import pytest
 import shutil
 import subprocess
 import tempfile
 
-from common import *
+import pytest
+
+from common import build_image, latest_build_artifact, reset_build_conf, make_tempdir
 
 
 def extract_ubimg_files(path, outdir):

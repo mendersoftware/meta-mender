@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2017 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -17,10 +17,32 @@ import os
 import shutil
 import time
 import errno
+import tempfile
+import subprocess
 from pathlib import Path
 
+import pytest
+from fabric import Connection
 from paramiko.client import WarningPolicy
-from common import *
+from common import (
+    build_image,
+    common_board_setup,
+    common_board_cleanup,
+    manual_uboot_commit,
+    latest_build_artifact,
+    run_verbose,
+    reset_build_conf,
+    get_local_conf_path,
+    get_local_conf_orig_path,
+    get_bblayers_conf_path,
+    get_bblayers_conf_orig_path,
+    common_boot_from_internal,
+    start_qemu_block_storage,
+    start_qemu_flash,
+    get_no_sftp,
+    get_bitbake_variables,
+    version_is_minimum,
+)
 
 
 def config_host(host):
@@ -63,7 +85,7 @@ def setup_colibri_imx7(request, build_dir, connection):
         pytest.fail("failed to find U-Boot binary")
 
     if not latest_ubimg:
-        pytest.failed("failed to find latest ubimg for the board")
+        pytest.fail("failed to find latest ubimg for the board")
 
     common_board_setup(
         connection,
@@ -175,9 +197,9 @@ def setup_board(request, build_image_fn, connection, board_type):
         image_dir = build_image_fn()
         return setup_qemu(request, image_dir, connection)
     elif board_type == "beagleboneblack":
-        return setup_bbb(request)
+        return setup_bbb(request, connection)
     elif board_type == "raspberrypi3":
-        return setup_rpi3(request)
+        return setup_rpi3(request, connection)
     elif board_type == "colibri-imx7":
         image_dir = build_image_fn()
         return setup_colibri_imx7(request, image_dir, connection)

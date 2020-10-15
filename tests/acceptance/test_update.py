@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2017 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,21 +13,25 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from fabric import Connection
-from invoke import UnexpectedExit
-
 
 import json
 import os
-import pytest
-import re
 import shutil
 import subprocess
 import tempfile
-import time
-import requests
 
-from common import *
+from fabric import Connection
+from invoke import UnexpectedExit
+import pytest
+
+from common import (
+    reboot,
+    run_after_connect,
+    determine_active_passive_part,
+    put_no_sftp,
+    get_no_sftp,
+    signing_key,
+)
 from helpers import Helpers
 
 

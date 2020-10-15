@@ -13,9 +13,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import re
+import os
+import subprocess
+
 import pytest
 
-from common import *
+from common import determine_active_passive_part, get_ssh_common_args
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
@@ -25,9 +29,7 @@ class TestSnapshot:
     @pytest.mark.parametrize("compression", [("", ">"), ("-C gzip", "| gunzip -c >")])
     def test_basic_snapshot(self, compression, bitbake_variables, connection):
         try:
-            (active, passive) = determine_active_passive_part(
-                bitbake_variables, connection
-            )
+            (_, passive) = determine_active_passive_part(bitbake_variables, connection)
 
             # Wipe the inactive partition first.
             connection.run("dd if=/dev/zero of=%s bs=1M count=100" % passive)
@@ -77,9 +79,7 @@ class TestSnapshot:
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     def test_snapshot_inactive(self, bitbake_variables, connection):
         try:
-            (active, passive) = determine_active_passive_part(
-                bitbake_variables, connection
-            )
+            (_, passive) = determine_active_passive_part(bitbake_variables, connection)
 
             test_str = "TeSt StrIng!#"
 
@@ -158,9 +158,7 @@ class TestSnapshot:
         self, terminal, bitbake_path, bitbake_variables, connection
     ):
         try:
-            (active, passive) = determine_active_passive_part(
-                bitbake_variables, connection
-            )
+            (active, _) = determine_active_passive_part(bitbake_variables, connection)
 
             common_args = get_ssh_common_args()
             # mender-artifact prefixes each ssh argument with "-S"
