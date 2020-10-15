@@ -1,4 +1,4 @@
-pytest==5.3.2
+pytest==6.1.1
 fabric==2.5.0
 pytest-html==2.0.1
 paramiko==2.7.1
