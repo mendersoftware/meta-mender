@@ -14,12 +14,6 @@ updates:
       interval: weekly
   - commit-message:
       prefix: "Changelog:All"
-    directory: /meta-mender-qemu/docker/vexpress-qemu
-    package-ecosystem: docker
-    schedule:
-      interval: weekly
-  - commit-message:
-      prefix: "Changelog:All"
     directory: /
     package-ecosystem: gitsubmodule
     schedule:
