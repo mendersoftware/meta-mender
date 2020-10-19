@@ -87,10 +87,6 @@ def pytest_configure(config):
     env.connection_attempts = 10
     env.timeout = 30
 
-    if not config.getoption("--no-pull"):
-        print("Automatically pulling submodules. Use --no-pull to disable")
-        subprocess.check_call("git submodule update --init --remote", shell=True)
-
 
 def current_hosts():
     # Workaround for being inside/outside execute().
