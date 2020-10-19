@@ -100,7 +100,7 @@ PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 
 PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-grub', ' grub', '', d)}"
 
 PACKAGECONFIG[mender-client-install] = ",,,mender-artifact-info ca-certificates"
-PACKAGECONFIG[u-boot] = ",,,libubootenv-bin"
+PACKAGECONFIG[u-boot] = ",,,u-boot-fw-utils"
 PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
 # The docker module depends on bash, and of course on docker. However, docker is
 # a very large requirement, which we will not mandate. Bash however, we require,
