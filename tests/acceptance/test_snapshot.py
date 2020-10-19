@@ -195,3 +195,75 @@ class TestSnapshot:
                 os.remove("test_snapshot_using_mender_artifact.mender")
             except:
                 pass
+
+    @pytest.mark.min_mender_version("2.2.0")
+    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
+    # Make sure we run both with and without terminal. Many signal bugs lurk in
+    # different corners of the console code.
+    @pytest.mark.parametrize(
+        "terminal", ["", "screen -D -m -L -Logfile screen.log.tmp"]
+    )
+    def test_snapshot_using_mender_artifact_no_sudo(  # see MEN-3987
+        self, terminal, bitbake_path, bitbake_variables, connection
+    ):
+        try:
+            (active, passive) = determine_active_passive_part(
+                bitbake_variables, connection
+            )
+
+            common_args = get_ssh_common_args()
+            # mender-artifact prefixes each ssh argument with "-S"
+            common_args = common_args.replace(" ", " -S ")
+
+            # /usr/bin/sudo is a link to /data/usr/bin/sudo see
+            #  meta-mender-qemu/recipes-extended/sudo/sudo_%.bbappend
+            sudo_path = "/data/usr/bin/sudo"
+            # let's move the sudo away
+            result = connection.run(
+                "mv %s %s-off" % (sudo_path, sudo_path), warn=True, echo=True
+            )
+            assert result.return_code == 0
+
+            # lets be sure it does not work
+            result = connection.run("sudo --help", echo=True, warn=True)
+            assert result.return_code != 0
+
+            try:
+                # mender-artifact as of mender-artifact/pull/305 does not use sudo
+                #  when user is root or when uid is 0
+                subprocess.check_call(
+                    "%s mender-artifact write rootfs-image -S %s -n test -t test -o test_snapshot_using_mender_artifact.mender -f ssh://%s@%s:%s"
+                    % (
+                        terminal,
+                        common_args,
+                        connection.user,
+                        connection.host,
+                        connection.port,
+                    ),
+                    shell=True,
+                )
+            finally:
+                subprocess.call("cat screen.log.tmp ; rm -f screen.log.tmp", shell=True)
+                # let's put the sudo back in place and verify that it works
+                result = connection.run(
+                    "mv %s-off %s" % (sudo_path, sudo_path), warn=True, echo=True
+                )
+                result = connection.run("sudo --help", echo=True, warn=True)
+                assert result.return_code == 0
+
+            output = subprocess.check_output(
+                "mender-artifact read test_snapshot_using_mender_artifact.mender",
+                shell=True,
+            ).decode()
+
+            partsize = connection.run("blockdev --getsize64 %s" % active).stdout.strip()
+
+            # Ensure that the payload size of the produced artifact matches the
+            # partition.
+            assert re.search("size: *%s" % partsize, output) is not None
+
+        finally:
+            try:
+                os.remove("test_snapshot_using_mender_artifact.mender")
+            except:
+                pass
