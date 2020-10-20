@@ -18,4 +18,32 @@ updates:
     package-ecosystem: gitsubmodule
     schedule:
       interval: weekly
+  - commit-message:
+      prefix: "Changelog:All"
+    directory: /
+    package-ecosystem: gitsubmodule
+    schedule:
+      interval: weekly
+    target_branch: "zeus"
+  - commit-message:
+      prefix: "Changelog:All"
+    directory: /
+    package-ecosystem: gitsubmodule
+    schedule:
+      interval: weekly
+    target_branch: "dunfell"
+  - commit-message:
+      prefix: "Changelog:All"
+    directory: /
+    package-ecosystem: gitsubmodule
+    schedule:
+      interval: weekly
+    target_branch: "gatesgarth"
+  - commit-message:
+      prefix: "Changelog:All"
+    directory: /
+    package-ecosystem: gitsubmodule
+    schedule:
+      interval: weekly
+    target_branch: "hardknott"
 
