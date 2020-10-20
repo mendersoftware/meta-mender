@@ -59,6 +59,12 @@ def pytest_addoption(parser):
         help="Do not use a temporary build directory. Faster, but may mess with your build directory.",
     )
     parser.addoption(
+        "--no-pull",
+        action="store_true",
+        default=False,
+        help="Do not pull submodules. Handy if debugging something locally.",
+    )
+    parser.addoption(
         "--board-type",
         action="store",
         default="qemu",
@@ -102,6 +108,10 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
+    if not config.getoption("--no-pull"):
+        print("Automatically pulling submodules. Use --no-pull to disable")
+        subprocess.check_call("git submodule update --init --remote", shell=True)
+
     # ugly hack to access cli parameters inside common.py functions
     global configuration
 
