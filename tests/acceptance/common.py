@@ -36,10 +36,15 @@ import traceback
 configuration = {}
 
 
-def _start_qemu(qenv=None, conn=None):
+def _start_qemu(qenv, conn, qemu_wrapper):
     """Start QEMU and return a subprocess.Popen object corresponding to a running
-    qemu process. `qenv` is a dict of environment variables that will be added
-    to `subprocess.Popen(..,env=)`.
+    qemu process.
+
+    Parameters:
+    * qenv is a dict of environment variables that will be added to
+      subprocess.Popen(..,env=).
+    * conn is a Fabric connection object to run SSH commands in the device.
+    * qemu_rwapper is an string with the path to the wrapper to launch QEMU.
 
     Once qemu is started, a connection over ssh will attempted, so the returned
     process is actually a QEMU instance with a fully booted guest OS.
@@ -49,14 +54,9 @@ def _start_qemu(qenv=None, conn=None):
     override the default behavior.
     """
     env = dict(os.environ)
-    if qenv:
-        env.update(qenv)
+    env.update(qenv)
 
-    proc = subprocess.Popen(
-        ["../../meta-mender-qemu/scripts/mender-qemu"],
-        env=env,
-        start_new_session=True,
-    )
+    proc = subprocess.Popen([qemu_wrapper], env=env, start_new_session=True,)
 
     try:
         # make sure we are connected.
@@ -76,7 +76,7 @@ def _start_qemu(qenv=None, conn=None):
     return proc
 
 
-def start_qemu_block_storage(latest_sdimg, suffix, conn):
+def start_qemu_block_storage(latest_sdimg, suffix, conn, qemu_wrapper):
     """Start qemu instance running block storage"""
     fh, img_path = tempfile.mkstemp(suffix=suffix, prefix="test-image")
     # don't need an open fd to temp file
@@ -90,7 +90,7 @@ def start_qemu_block_storage(latest_sdimg, suffix, conn):
     qenv["DISK_IMG"] = img_path
 
     try:
-        qemu = _start_qemu(qenv, conn)
+        qemu = _start_qemu(qenv, conn, qemu_wrapper)
     except:
         # If qemu failed to start, remove the image and exit; else the image
         # shall be cleaned up by the caller
@@ -100,7 +100,7 @@ def start_qemu_block_storage(latest_sdimg, suffix, conn):
     return qemu, img_path
 
 
-def start_qemu_flash(latest_vexpress_nor, conn):
+def start_qemu_flash(latest_vexpress_nor, conn, qemu_wrapper):
     """Start qemu instance running *.vexpress-nor image"""
 
     print("qemu raw flash with image {}".format(latest_vexpress_nor))
@@ -124,7 +124,7 @@ def start_qemu_flash(latest_vexpress_nor, conn):
     qenv["MACHINE"] = "vexpress-qemu-flash"
 
     try:
-        qemu = _start_qemu(qenv, conn)
+        qemu = _start_qemu(qenv, conn, qemu_wrapper)
     except:
         # If qemu failed to start, remove the image and exit; else the image
         # shall be cleaned up by the caller

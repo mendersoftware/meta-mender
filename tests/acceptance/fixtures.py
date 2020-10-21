@@ -118,7 +118,7 @@ def setup_rpi3(request, connection):
     request.addfinalizer(board_cleanup)
 
 
-def setup_qemu(request, build_dir, conn):
+def setup_qemu(request, qemu_wrapper, build_dir, conn):
     latest_sdimg = latest_build_artifact(build_dir, ".sdimg")
     latest_uefiimg = latest_build_artifact(build_dir, ".uefiimg")
     latest_biosimg = latest_build_artifact(build_dir, ".biosimg")
@@ -127,22 +127,24 @@ def setup_qemu(request, build_dir, conn):
 
     if latest_sdimg:
         qemu, img_path = start_qemu_block_storage(
-            latest_sdimg, suffix=".sdimg", conn=conn
+            latest_sdimg, suffix=".sdimg", conn=conn, qemu_wrapper=qemu_wrapper
         )
     elif latest_uefiimg:
         qemu, img_path = start_qemu_block_storage(
-            latest_uefiimg, suffix=".uefiimg", conn=conn
+            latest_uefiimg, suffix=".uefiimg", conn=conn, qemu_wrapper=qemu_wrapper
         )
     elif latest_biosimg:
         qemu, img_path = start_qemu_block_storage(
-            latest_biosimg, suffix=".biosimg", conn=conn
+            latest_biosimg, suffix=".biosimg", conn=conn, qemu_wrapper=qemu_wrapper
         )
     elif latest_gptimg:
         qemu, img_path = start_qemu_block_storage(
-            latest_gptimg, suffix=".gptimg", conn=conn
+            latest_gptimg, suffix=".gptimg", conn=conn, qemu_wrapper=qemu_wrapper
         )
     elif latest_vexpress_nor:
-        qemu, img_path = start_qemu_flash(latest_vexpress_nor, conn=conn)
+        qemu, img_path = start_qemu_flash(
+            latest_vexpress_nor, conn=conn, qemu_wrapper=qemu_wrapper
+        )
     else:
         pytest.fail("cannot find a suitable image type")
 
@@ -189,13 +191,13 @@ def setup_qemu(request, build_dir, conn):
 
 
 @pytest.fixture(scope="session")
-def setup_board(request, build_image_fn, connection, board_type):
+def setup_board(request, qemu_wrapper, build_image_fn, connection, board_type):
 
     print("board type: ", board_type)
 
     if "qemu" in board_type:
         image_dir = build_image_fn()
-        return setup_qemu(request, image_dir, connection)
+        return setup_qemu(request, qemu_wrapper, image_dir, connection)
     elif board_type == "beagleboneblack":
         return setup_bbb(request, connection)
     elif board_type == "raspberrypi3":

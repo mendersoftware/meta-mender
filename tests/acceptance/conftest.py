@@ -49,6 +49,12 @@ def pytest_addoption(parser):
         help="location to the image to test (BUILDDIR for Yocto, deploy for mender-convert)",
     )
     parser.addoption(
+        "--qemu-wrapper",
+        action="store",
+        default="../../meta-mender-qemu/scripts/mender-qemu",
+        help="location of the shell wrapper to launch QEMU with testing image",
+    )
+    parser.addoption(
         "--bitbake-image",
         action="store",
         default="core-image-full-cmdline",
@@ -136,6 +142,11 @@ def board_type(request):
 @pytest.fixture(scope="session")
 def sdimg_location(request):
     return request.config.getoption("--sdimg-location")
+
+
+@pytest.fixture(scope="session")
+def qemu_wrapper(request):
+    return request.config.getoption("--qemu-wrapper")
 
 
 @pytest.fixture(scope="session")
