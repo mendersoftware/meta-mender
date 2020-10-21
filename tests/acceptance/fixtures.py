@@ -157,25 +157,31 @@ def setup_qemu(request, qemu_wrapper, build_dir, conn):
     # cases more predictable.
     def qemu_finalizer():
         def qemu_finalizer_impl(conn):
+            # Try clearing firmware variables
             try:
                 manual_uboot_commit(conn)
-                # Collect the coverage files from /data/mender/ if present
-                try:
-                    conn.run("ls /data/mender/cover*")
-                    Path("coverage").mkdir(exist_ok=True)
-                    get_no_sftp("/data/mender/cover*", conn, local="coverage")
-                except:
-                    pass
+            except:
+                pass
+
+            # Collect the coverage files from /data/mender/ if present
+            try:
+                conn.run("ls /data/mender/cover*")
+                Path("coverage").mkdir(exist_ok=True)
+                get_no_sftp("/data/mender/cover*", conn, local="coverage")
+            except:
+                pass
+
+            # Try clean poweroff
+            try:
                 conn.run("poweroff")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
                 while halt_time + 30 > time.time() and qemu.poll() is None:
                     time.sleep(1)
             except:
-                # Nothing we can do about that.
                 pass
 
-            # kill qemu
+            # Terminate qemu
             try:
                 qemu.terminate()
             except OSError as oserr:
@@ -358,15 +364,19 @@ def bitbake_path(request, conversion):
 
 
 @pytest.fixture(scope="session")
-def build_image_fn(request, prepared_test_build_base, bitbake_image):
-    """
-    Returns a function which returns a clean image. The reason it does not
-    return the clean image directly is that it may need to be reset to a clean
-    state if several independent fixtures invoke it, and there have been unclean
-    builds in between.
+def build_image_fn(request, conversion, prepared_test_build_base, bitbake_image):
+    """Returns a function which returns the build dir of a clean image.
+
+    The reason it does not return the build dir directly is that it may need to
+    be reset to a clean state if several independent fixtures invoke it, and
+    there have been unclean builds in between.
     """
 
     def img_builder():
+        if conversion:
+            assert os.environ.get("BUILDDIR", False), "BUILDDIR must be set"
+            return os.environ["BUILDDIR"]
+
         reset_build_conf(prepared_test_build_base["build_dir"])
         build_image(
             prepared_test_build_base["build_dir"],
@@ -383,7 +393,10 @@ def build_image_fn(request, prepared_test_build_base, bitbake_image):
 
 
 @pytest.fixture(scope="session")
-def prepared_test_build_base(request, bitbake_variables, no_tmp_build_dir):
+def prepared_test_build_base(request, conversion, bitbake_variables, no_tmp_build_dir):
+
+    if conversion:
+        return {"build_dir": None, "bitbake_corebase": None}
 
     if no_tmp_build_dir:
         build_dir = os.environ["BUILDDIR"]
