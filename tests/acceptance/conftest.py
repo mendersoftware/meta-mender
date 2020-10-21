@@ -37,6 +37,12 @@ def pytest_addoption(parser):
         help="user to log into remote hosts with (default is root)",
     )
     parser.addoption(
+        "--ssh-priv-key",
+        action="store",
+        default="",
+        help="Path to an SSH private key if required for login",
+    )
+    parser.addoption(
         "--http-server",
         action="store",
         default="10.0.2.2:8000",
@@ -127,6 +133,11 @@ def host(request):
 @pytest.fixture(scope="session")
 def user(request):
     return request.config.getoption("--user")
+
+
+@pytest.fixture(scope="session")
+def ssh_priv_key(request):
+    return request.config.getoption("--ssh-priv-key")
 
 
 @pytest.fixture(scope="session")

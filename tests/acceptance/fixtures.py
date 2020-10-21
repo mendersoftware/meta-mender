@@ -57,14 +57,17 @@ def config_host(host):
 
 
 @pytest.fixture(scope="session")
-def connection(request, user, host):
+def connection(request, user, host, ssh_priv_key):
     host, port = config_host(host)
+    connect_kwargs = {"password": "", "banner_timeout": 60, "auth_timeout": 60}
+    if ssh_priv_key != "":
+        connect_kwargs["key_filename"] = ssh_priv_key
     conn = Connection(
         host=host,
         user=user,
         port=port,
         connect_timeout=60,
-        connect_kwargs={"password": "", "banner_timeout": 60, "auth_timeout": 60},
+        connect_kwargs=connect_kwargs,
     )
     conn.client.set_missing_host_key_policy(WarningPolicy())
 

@@ -160,7 +160,7 @@ class TestSnapshot:
         try:
             (active, _) = determine_active_passive_part(bitbake_variables, connection)
 
-            common_args = get_ssh_common_args()
+            common_args = get_ssh_common_args(connection)
             # mender-artifact prefixes each ssh argument with "-S"
             common_args = common_args.replace(" ", " -S ")
 
@@ -211,7 +211,7 @@ class TestSnapshot:
                 bitbake_variables, connection
             )
 
-            common_args = get_ssh_common_args()
+            common_args = get_ssh_common_args(connection)
             # mender-artifact prefixes each ssh argument with "-S"
             common_args = common_args.replace(" ", " -S ")
 
