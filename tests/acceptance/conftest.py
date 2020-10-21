@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2017 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,9 +15,11 @@
 
 import os
 import subprocess
-from fixtures import *
+
+import pytest
 
 from common import configuration
+from fixtures import *
 
 
 def pytest_addoption(parser):
@@ -44,7 +46,7 @@ def pytest_addoption(parser):
         "--sdimg-location",
         action="store",
         default=os.getcwd(),
-        help="location to the sdimg you want to install on the bbb",
+        help="location to the image to test (BUILDDIR for Yocto, deploy for mender-convert)",
     )
     parser.addoption(
         "--bitbake-image",

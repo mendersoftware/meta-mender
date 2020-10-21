@@ -36,7 +36,7 @@ import traceback
 configuration = {}
 
 
-def start_qemu(qenv=None, conn=None):
+def _start_qemu(qenv=None, conn=None):
     """Start QEMU and return a subprocess.Popen object corresponding to a running
     qemu process. `qenv` is a dict of environment variables that will be added
     to `subprocess.Popen(..,env=)`.
@@ -53,7 +53,7 @@ def start_qemu(qenv=None, conn=None):
         env.update(qenv)
 
     proc = subprocess.Popen(
-        ["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
+        ["../../meta-mender-qemu/scripts/mender-qemu"],
         env=env,
         start_new_session=True,
     )
@@ -65,7 +65,7 @@ def start_qemu(qenv=None, conn=None):
         # or do the necessary cleanup if we're not
         try:
             # qemu might have exited and this would raise an exception
-            print("cleaning up qemu instance with pid {}".format(proc.pid))
+            print("terminating qemu wrapper with pid {}".format(proc.pid))
             proc.terminate()
         except:
             pass
@@ -90,8 +90,10 @@ def start_qemu_block_storage(latest_sdimg, suffix, conn):
     qenv["DISK_IMG"] = img_path
 
     try:
-        qemu = start_qemu(qenv, conn)
+        qemu = _start_qemu(qenv, conn)
     except:
+        # If qemu failed to start, remove the image and exit; else the image
+        # shall be cleaned up by the caller
         os.remove(img_path)
         raise
 
@@ -122,8 +124,10 @@ def start_qemu_flash(latest_vexpress_nor, conn):
     qenv["MACHINE"] = "vexpress-qemu-flash"
 
     try:
-        qemu = start_qemu(qenv, conn)
+        qemu = _start_qemu(qenv, conn)
     except:
+        # If qemu failed to start, remove the image and exit; else the image
+        # shall be cleaned up by the caller
         os.remove(img_path)
         raise
 
@@ -143,7 +147,7 @@ def reboot(conn, wait=120):
     # Make sure reboot has had time to take effect.
     time.sleep(5)
 
-    for attempt in range(5):
+    for _ in range(5):
         try:
             conn.close()
             break

@@ -119,11 +119,11 @@ def setup_rpi3(request, connection):
 
 
 def setup_qemu(request, build_dir, conn):
-    latest_sdimg = latest_build_artifact(build_dir, "core-image*.sdimg")
-    latest_uefiimg = latest_build_artifact(build_dir, "core-image*.uefiimg")
-    latest_biosimg = latest_build_artifact(build_dir, "core-image*.biosimg")
-    latest_gptimg = latest_build_artifact(build_dir, "core-image*.gptimg")
-    latest_vexpress_nor = latest_build_artifact(build_dir, "core-image*.vexpress-nor")
+    latest_sdimg = latest_build_artifact(build_dir, ".sdimg")
+    latest_uefiimg = latest_build_artifact(build_dir, ".uefiimg")
+    latest_biosimg = latest_build_artifact(build_dir, ".biosimg")
+    latest_gptimg = latest_build_artifact(build_dir, ".gptimg")
+    latest_vexpress_nor = latest_build_artifact(build_dir, ".vexpress-nor")
 
     if latest_sdimg:
         qemu, img_path = start_qemu_block_storage(
@@ -226,7 +226,7 @@ def latest_rootfs(conversion, mender_image):
 def latest_sdimg():
     assert os.environ.get("BUILDDIR", False), "BUILDDIR must be set"
 
-    # Find latest built rootfs.
+    # Find latest built sdimg.
     return latest_build_artifact(os.environ["BUILDDIR"], "core-image*.sdimg")
 
 
@@ -305,11 +305,11 @@ def successful_image_update_mender(request, build_image_fn):
     """Provide a 'successful_image_update.mender' file in the current directory that
     contains the latest built update."""
 
-    latest_mender_image = latest_build_artifact(build_image_fn(), "core-image*.mender")
+    latest_mender_image = latest_build_artifact(build_image_fn(), ".mender")
 
     shutil.copy(latest_mender_image, "successful_image_update.mender")
 
-    print("Copying 'successful_image_update.mender' to '%s'" % latest_mender_image)
+    print("Copying '%s' to 'successful_image_update.mender'" % latest_mender_image)
 
     def cleanup_image_dat():
         os.remove("successful_image_update.mender")
@@ -424,7 +424,7 @@ def prepared_test_build_base(request, bitbake_variables, no_tmp_build_dir):
 def prepared_test_build(prepared_test_build_base):
     """
     Prepares a separate test build directory where a custom build can be
-    made, which reuses the sstate-cache. 
+    made, which reuses the sstate-cache.
     """
 
     reset_build_conf(prepared_test_build_base["build_dir"])
