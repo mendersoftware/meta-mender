@@ -1068,3 +1068,30 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         assert re.search(test2_re, fstab, flags=re.MULTILINE) is not None
         assert re.search(test3_re, fstab, flags=re.MULTILINE) is not None
         assert re.search(test4_re, fstab, flags=re.MULTILINE) is not None
+
+    @pytest.mark.min_mender_version("1.0.0")
+    def test_build_nodbus(self, prepared_test_build, bitbake_path):
+        """Test that we can remove dbus from PACKAGECONFIG, and that this causes the
+        library dependency to be gone. The opposite is not tested, since we
+        assume failure to link to the library will be caught in other tests that
+        test DBus functionality."""
+
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            "mender-client",
+            ['PACKAGECONFIG_remove = "dbus"'],
+        )
+
+        env = get_bitbake_variables("mender-client")
+
+        # Get dynamic section info from binary.
+        output = subprocess.check_output(
+            [env["READELF"], "-d", os.path.join(env["D"], "usr/bin/mender")]
+        ).decode()
+
+        # Verify the output is sane.
+        assert "libc" in output
+
+        # Actual test.
+        assert "libglib" not in output
