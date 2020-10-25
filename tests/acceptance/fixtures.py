@@ -57,14 +57,17 @@ def config_host(host):
 
 
 @pytest.fixture(scope="session")
-def connection(request, user, host):
+def connection(request, user, host, ssh_priv_key):
     host, port = config_host(host)
+    connect_kwargs = {"password": "", "banner_timeout": 60, "auth_timeout": 60}
+    if ssh_priv_key != "":
+        connect_kwargs["key_filename"] = ssh_priv_key
     conn = Connection(
         host=host,
         user=user,
         port=port,
         connect_timeout=60,
-        connect_kwargs={"password": "", "banner_timeout": 60, "auth_timeout": 60},
+        connect_kwargs=connect_kwargs,
     )
     conn.client.set_missing_host_key_policy(WarningPolicy())
 
@@ -118,31 +121,33 @@ def setup_rpi3(request, connection):
     request.addfinalizer(board_cleanup)
 
 
-def setup_qemu(request, build_dir, conn):
-    latest_sdimg = latest_build_artifact(build_dir, "core-image*.sdimg")
-    latest_uefiimg = latest_build_artifact(build_dir, "core-image*.uefiimg")
-    latest_biosimg = latest_build_artifact(build_dir, "core-image*.biosimg")
-    latest_gptimg = latest_build_artifact(build_dir, "core-image*.gptimg")
-    latest_vexpress_nor = latest_build_artifact(build_dir, "core-image*.vexpress-nor")
+def setup_qemu(request, qemu_wrapper, build_dir, conn):
+    latest_sdimg = latest_build_artifact(build_dir, ".sdimg")
+    latest_uefiimg = latest_build_artifact(build_dir, ".uefiimg")
+    latest_biosimg = latest_build_artifact(build_dir, ".biosimg")
+    latest_gptimg = latest_build_artifact(build_dir, ".gptimg")
+    latest_vexpress_nor = latest_build_artifact(build_dir, ".vexpress-nor")
 
     if latest_sdimg:
         qemu, img_path = start_qemu_block_storage(
-            latest_sdimg, suffix=".sdimg", conn=conn
+            latest_sdimg, suffix=".sdimg", conn=conn, qemu_wrapper=qemu_wrapper
         )
     elif latest_uefiimg:
         qemu, img_path = start_qemu_block_storage(
-            latest_uefiimg, suffix=".uefiimg", conn=conn
+            latest_uefiimg, suffix=".uefiimg", conn=conn, qemu_wrapper=qemu_wrapper
         )
     elif latest_biosimg:
         qemu, img_path = start_qemu_block_storage(
-            latest_biosimg, suffix=".biosimg", conn=conn
+            latest_biosimg, suffix=".biosimg", conn=conn, qemu_wrapper=qemu_wrapper
         )
     elif latest_gptimg:
         qemu, img_path = start_qemu_block_storage(
-            latest_gptimg, suffix=".gptimg", conn=conn
+            latest_gptimg, suffix=".gptimg", conn=conn, qemu_wrapper=qemu_wrapper
         )
     elif latest_vexpress_nor:
-        qemu, img_path = start_qemu_flash(latest_vexpress_nor, conn=conn)
+        qemu, img_path = start_qemu_flash(
+            latest_vexpress_nor, conn=conn, qemu_wrapper=qemu_wrapper
+        )
     else:
         pytest.fail("cannot find a suitable image type")
 
@@ -152,25 +157,31 @@ def setup_qemu(request, build_dir, conn):
     # cases more predictable.
     def qemu_finalizer():
         def qemu_finalizer_impl(conn):
+            # Try clearing firmware variables
             try:
                 manual_uboot_commit(conn)
-                # Collect the coverage files from /data/mender/ if present
-                try:
-                    conn.run("ls /data/mender/cover*")
-                    Path("coverage").mkdir(exist_ok=True)
-                    get_no_sftp("/data/mender/cover*", conn, local="coverage")
-                except:
-                    pass
+            except:
+                pass
+
+            # Collect the coverage files from /data/mender/ if present
+            try:
+                conn.run("ls /data/mender/cover*")
+                Path("coverage").mkdir(exist_ok=True)
+                get_no_sftp("/data/mender/cover*", conn, local="coverage")
+            except:
+                pass
+
+            # Try clean poweroff
+            try:
                 conn.run("poweroff")
                 halt_time = time.time()
                 # Wait up to 30 seconds for shutdown.
                 while halt_time + 30 > time.time() and qemu.poll() is None:
                     time.sleep(1)
             except:
-                # Nothing we can do about that.
                 pass
 
-            # kill qemu
+            # Terminate qemu
             try:
                 qemu.terminate()
             except OSError as oserr:
@@ -189,13 +200,13 @@ def setup_qemu(request, build_dir, conn):
 
 
 @pytest.fixture(scope="session")
-def setup_board(request, build_image_fn, connection, board_type):
+def setup_board(request, qemu_wrapper, build_image_fn, connection, board_type):
 
     print("board type: ", board_type)
 
     if "qemu" in board_type:
         image_dir = build_image_fn()
-        return setup_qemu(request, image_dir, connection)
+        return setup_qemu(request, qemu_wrapper, image_dir, connection)
     elif board_type == "beagleboneblack":
         return setup_bbb(request, connection)
     elif board_type == "raspberrypi3":
@@ -226,7 +237,7 @@ def latest_rootfs(conversion, mender_image):
 def latest_sdimg():
     assert os.environ.get("BUILDDIR", False), "BUILDDIR must be set"
 
-    # Find latest built rootfs.
+    # Find latest built sdimg.
     return latest_build_artifact(os.environ["BUILDDIR"], "core-image*.sdimg")
 
 
@@ -305,11 +316,11 @@ def successful_image_update_mender(request, build_image_fn):
     """Provide a 'successful_image_update.mender' file in the current directory that
     contains the latest built update."""
 
-    latest_mender_image = latest_build_artifact(build_image_fn(), "core-image*.mender")
+    latest_mender_image = latest_build_artifact(build_image_fn(), ".mender")
 
     shutil.copy(latest_mender_image, "successful_image_update.mender")
 
-    print("Copying 'successful_image_update.mender' to '%s'" % latest_mender_image)
+    print("Copying '%s' to 'successful_image_update.mender'" % latest_mender_image)
 
     def cleanup_image_dat():
         os.remove("successful_image_update.mender")
@@ -353,15 +364,19 @@ def bitbake_path(request, conversion):
 
 
 @pytest.fixture(scope="session")
-def build_image_fn(request, prepared_test_build_base, bitbake_image):
-    """
-    Returns a function which returns a clean image. The reason it does not
-    return the clean image directly is that it may need to be reset to a clean
-    state if several independent fixtures invoke it, and there have been unclean
-    builds in between.
+def build_image_fn(request, conversion, prepared_test_build_base, bitbake_image):
+    """Returns a function which returns the build dir of a clean image.
+
+    The reason it does not return the build dir directly is that it may need to
+    be reset to a clean state if several independent fixtures invoke it, and
+    there have been unclean builds in between.
     """
 
     def img_builder():
+        if conversion:
+            assert os.environ.get("BUILDDIR", False), "BUILDDIR must be set"
+            return os.environ["BUILDDIR"]
+
         reset_build_conf(prepared_test_build_base["build_dir"])
         build_image(
             prepared_test_build_base["build_dir"],
@@ -378,7 +393,10 @@ def build_image_fn(request, prepared_test_build_base, bitbake_image):
 
 
 @pytest.fixture(scope="session")
-def prepared_test_build_base(request, bitbake_variables, no_tmp_build_dir):
+def prepared_test_build_base(request, conversion, bitbake_variables, no_tmp_build_dir):
+
+    if conversion:
+        return {"build_dir": None, "bitbake_corebase": None}
 
     if no_tmp_build_dir:
         build_dir = os.environ["BUILDDIR"]
@@ -424,7 +442,7 @@ def prepared_test_build_base(request, bitbake_variables, no_tmp_build_dir):
 def prepared_test_build(prepared_test_build_base):
     """
     Prepares a separate test build directory where a custom build can be
-    made, which reuses the sstate-cache. 
+    made, which reuses the sstate-cache.
     """
 
     reset_build_conf(prepared_test_build_base["build_dir"])
