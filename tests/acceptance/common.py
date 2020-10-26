@@ -236,15 +236,9 @@ def get_ssh_common_args(conn):
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
 def put_no_sftp(file, conn, remote="."):
     cmd = "scp %s" % get_ssh_common_args(conn)
-
-    try:
-        conn.local(
-            "%s -P %s %s %s@%s:%s"
-            % (cmd, conn.port, file, conn.user, conn.host, remote)
-        )
-    except Exception as e:
-        print("exception while putting file: ", e)
-        raise e
+    conn.local(
+        "%s -P %s %s %s@%s:%s" % (cmd, conn.port, file, conn.user, conn.host, remote)
+    )
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
