@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2017 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,12 +14,24 @@
 #    limitations under the License.
 
 import os
-import pytest
 import subprocess
 import re
 import json
 
-from common import *
+import pytest
+
+from common import (
+    build_image,
+    latest_build_artifact,
+    get_bitbake_variables,
+    run_verbose,
+    signing_key,
+    versions_of_recipe,
+    get_local_conf_path,
+    get_local_conf_orig_path,
+    make_tempdir,
+    version_is_minimum,
+)
 
 
 def extract_partition(img, number):
@@ -108,7 +120,6 @@ class TestBuild:
         embedded = os.open(built_sdimg, os.O_RDONLY)
         os.lseek(embedded, loader_offset * 512, 0)
 
-        checked = 0
         block_size = 4096
         while True:
             org_read = os.read(original, block_size)
