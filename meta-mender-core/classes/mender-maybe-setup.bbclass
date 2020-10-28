@@ -16,7 +16,7 @@ DISTRO_FEATURES_BACKFILL_CONSIDERED_append = " ${MENDER_FEATURES_DISABLE}"
 python() {
     # Add all possible Mender features here. This list is here to have an
     # authoritative list of all distro features that Mender provides.
-    # Each one will also define the same string in OVERRIDES.
+    # Each one will also define the same string in DISTROOVERRIDES.
     mender_features = {
 
         # For GRUB, use BIOS for booting, instead of the default, UEFI.
@@ -84,7 +84,7 @@ python() {
             if feature not in mender_features:
                 bb.fatal("%s from MENDER_FEATURES_ENABLE or DISTRO_FEATURES is not a valid Mender feature."
                          % feature)
-            d.setVar('OVERRIDES_append', ':%s' % feature)
+            d.setVar('DISTROOVERRIDES_append', ':%s' % feature)
 
             # Verify that all 'mender-' features are added using MENDER_FEATURES
             # variables. This is important because we base some decisions on
