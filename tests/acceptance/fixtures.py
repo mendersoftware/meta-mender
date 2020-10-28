@@ -450,13 +450,13 @@ def prepared_test_build(prepared_test_build_base):
 
 
 @pytest.fixture(autouse=True)
-def min_mender_version(request, bitbake_variables):
-    version_mark = request.node.get_closest_marker("min_mender_version")
+def min_mender_client_version(request, bitbake_variables):
+    version_mark = request.node.get_closest_marker("min_mender_client_version")
     if version_mark is None:
         pytest.fail(
             (
-                '%s must be marked with @pytest.mark.min_mender_version("<VERSION>") to '
-                + "indicate lowest Mender version for which the test will work."
+                '%s must be marked with @pytest.mark.min_mender_client_version("<VERSION>") to '
+                + "indicate lowest Mender client version for which the test will work."
             )
             % str(request.node)
         )

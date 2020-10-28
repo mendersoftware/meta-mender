@@ -255,7 +255,7 @@ class TestUbootAutomation:
 
             return configs_to_test
 
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_uboot_compile(self, bitbake_variables):
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
@@ -379,7 +379,7 @@ class TestUbootAutomation:
             shutil.rmtree("/dev/shm/test_uboot_compile", ignore_errors=True)
 
     @pytest.mark.only_with_image("sdimg")
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_older_uboot_build(self, prepared_test_build, bitbake_image):
         """Test that we can provide our own custom U-Boot provider."""
 
@@ -441,7 +441,7 @@ class TestUbootAutomation:
         except subprocess.CalledProcessError:
             pass
 
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_save_mender_auto_configured_patch(
         self, prepared_test_build, bitbake_image
     ):
@@ -525,7 +525,7 @@ class TestUbootAutomation:
     # can't be tested because of the limitations listed in
     # do_check_mender_defines.
     @pytest.mark.only_with_distro_feature("mender-ubi")
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_incorrect_Kconfig_setting(self, prepared_test_build, bitbake_image):
         """First produce a patch using the auto-patcher, then disable
         auto-patching and apply the patch with a slight modification that makes

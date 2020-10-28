@@ -24,7 +24,7 @@ from common import (
 
 
 class TestBootImg:
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_bootimg_creation(
         self, bitbake_variables, prepared_test_build, bitbake_image
     ):

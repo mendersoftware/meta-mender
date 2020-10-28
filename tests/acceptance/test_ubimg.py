@@ -186,7 +186,7 @@ def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build, bitbake_
 
 
 @pytest.mark.only_with_image("ubimg")
-@pytest.mark.min_mender_version("1.2.0")
+@pytest.mark.min_mender_client_version("1.2.0")
 class TestUbimg:
     def test_total_size(self, bitbake_variables, ubimg_without_uboot_env):
         """Test that the size of the ubimg and its volumes are correct."""
