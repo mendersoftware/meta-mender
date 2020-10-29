@@ -1088,7 +1088,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             ['PACKAGECONFIG_remove = "dbus"'],
         )
 
-        env = get_bitbake_variables("mender-client")
+        env = get_bitbake_variables(
+            "mender-client", prepared_test_build=prepared_test_build
+        )
 
         # Get dynamic section info from binary.
         output = subprocess.check_output(
