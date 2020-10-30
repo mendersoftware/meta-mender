@@ -1068,3 +1068,61 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         assert re.search(test2_re, fstab, flags=re.MULTILINE) is not None
         assert re.search(test3_re, fstab, flags=re.MULTILINE) is not None
         assert re.search(test4_re, fstab, flags=re.MULTILINE) is not None
+
+    @pytest.mark.min_mender_version("2.5.0")
+    @pytest.mark.only_with_image("ext4")
+    def test_mender_inventory_network_scripts(self, prepared_test_build, bitbake_image):
+        """
+        Test the 'inventory-network-scripts' build feature configuration through
+        'PACKAGECONFIG' is working as expected.
+
+        This verifies that the 'inventory-network-scripts' option is a part
+        build, and also that the inventory scripts are not included when
+        removed.
+
+
+        The test only runs for sdimg, as the build image should not really matter here.
+        """
+
+        #
+        # Feature enabled
+        #
+        reset_build_conf(prepared_test_build["build_dir"])
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            ['PACKAGECONFIG_append_pn-mender-client = " inventory-network-scripts"'],
+        )
+        rootfs = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.ext4"
+        )
+        assert len(rootfs) > 0, "rootfs not generated"
+
+        output = subprocess.check_output(
+            ["debugfs", "-R", "ls /usr/share/mender/inventory", rootfs]
+        )
+        assert (
+            b"mender-inventory-geo" in output,
+        ), "mender-inventory-network-scripts seems not to be a part of the image, like they should"
+
+        #
+        # Feature disabled
+        #
+        reset_build_conf(prepared_test_build["build_dir"])
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            ['PACKAGECONFIG_remove_pn-mender-client = " inventory-network-scripts"'],
+        )
+        rootfs = latest_build_artifact(
+            prepared_test_build["build_dir"], "core-image*.ext4"
+        )
+        assert len(rootfs) > 0, "ext4 not generated"
+        output = subprocess.check_output(
+            ["debugfs", "-R", "ls /usr/share/mender/inventory", rootfs]
+        )
+        assert (
+            b"mender-inventory-geo" not in output,
+        ), "mender-inventory-network-scripts unexpectedly a part of the image"
