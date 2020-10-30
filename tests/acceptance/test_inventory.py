@@ -22,7 +22,7 @@ from common import put_no_sftp
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
 class TestInventory:
-    @pytest.mark.min_mender_version("1.6.0")
+    @pytest.mark.min_mender_client_version("1.6.0")
     def test_rootfs_type(self, bitbake_variables, connection):
         """Test that rootfs is returned correctly by the inventory script."""
 
@@ -31,7 +31,7 @@ class TestInventory:
         ).stdout.strip()
         assert output == "rootfs_type=%s" % bitbake_variables["ARTIFACTIMG_FSTYPE"]
 
-    @pytest.mark.min_mender_version("1.6.0")
+    @pytest.mark.min_mender_client_version("1.6.0")
     def test_bootloader_integration(self, bitbake_variables, connection):
         """Test that the bootloader integration type matches what we would
         expect from the build."""
@@ -57,7 +57,7 @@ class TestInventory:
                 "Unknown platform combination. Please add a test case for this combination."
             )
 
-    @pytest.mark.min_mender_version("2.0.0")
+    @pytest.mark.min_mender_client_version("2.0.0")
     def test_inventory_os(self, bitbake_variables, connection):
         """Test that "os" inventory attribute is reported correctly by the
         inventory script."""

@@ -60,7 +60,7 @@ def extract_partition(img, number):
 
 
 class TestBuild:
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_default_server_certificate(self):
         """Test that the md5sum we have on record matches the server certificate.
         This makes sure the warning about this certificate is correct."""
@@ -80,7 +80,7 @@ class TestBuild:
         )
 
     @pytest.mark.only_with_image("sdimg")
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_bootloader_embed(self, prepared_test_build, bitbake_image):
         """Test that MENDER_IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
         correctly in the resulting sdimg."""
@@ -137,7 +137,7 @@ class TestBuild:
         os.close(embedded)
 
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_image_rootfs_extra_space(
         self, prepared_test_build, bitbake_variables, bitbake_image
     ):
@@ -161,7 +161,7 @@ class TestBuild:
         )
 
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_tenant_token(self, prepared_test_build, bitbake_image):
         """Test setting a custom tenant-token"""
 
@@ -197,7 +197,7 @@ class TestBuild:
             os.remove("mender.conf")
 
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
-    @pytest.mark.min_mender_version("1.1.0")
+    @pytest.mark.min_mender_client_version("1.1.0")
     def test_artifact_signing_keys(
         self, prepared_test_build, bitbake_variables, bitbake_path, bitbake_image
     ):
@@ -248,7 +248,7 @@ class TestBuild:
             os.remove("artifact-verify-key.pem")
 
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
-    @pytest.mark.min_mender_version("1.2.0")
+    @pytest.mark.min_mender_client_version("1.2.0")
     def test_state_scripts(
         self,
         prepared_test_build,
@@ -382,7 +382,7 @@ class TestBuild:
                 target="-c clean example-state-scripts",
             )
 
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     # The extra None elements are to check for no preferred version,
     # e.g. latest.
     @pytest.mark.parametrize(
@@ -442,7 +442,7 @@ class TestBuild:
             )
             run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
 
-    @pytest.mark.min_mender_version("1.1.0")
+    @pytest.mark.min_mender_client_version("1.1.0")
     def test_multiple_device_types_compatible(
         self, prepared_test_build, bitbake_path, bitbake_variables, bitbake_image
     ):
@@ -472,7 +472,7 @@ class TestBuild:
             assert data["device_types_compatible"] == ["machine1", "machine2"]
 
     @pytest.mark.only_for_machine("vexpress-qemu-flash")
-    @pytest.mark.min_mender_version("1.3.0")
+    @pytest.mark.min_mender_client_version("1.3.0")
     @pytest.mark.parametrize(
         "test_case_name,test_case",
         [
@@ -571,7 +571,7 @@ class TestBuild:
             assert test_case["expected"][key] == variables[key]
 
     @pytest.mark.only_with_image("sdimg", "uefiimg")
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_boot_partition_population(
         self, prepared_test_build, bitbake_path, bitbake_image
     ):
@@ -644,7 +644,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             os.remove("img1.fs")
 
     @pytest.mark.only_with_image("sdimg", "uefiimg")
-    @pytest.mark.min_mender_version("2.0.0")
+    @pytest.mark.min_mender_client_version("2.0.0")
     def test_module_install(
         self, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image
     ):
@@ -695,7 +695,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             assert "modules" in entries
 
     @pytest.mark.only_with_image("sdimg", "uefiimg", "gptimg", "biosimg")
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_correct_partition_types(self, latest_part_image):
         """Test that all the partitions in the image have the correct type."""
 
@@ -930,7 +930,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         ),
     ]
 
-    @pytest.mark.min_mender_version("2.3.0")
+    @pytest.mark.min_mender_client_version("2.3.0")
     @pytest.mark.parametrize("dependsprovides", test_cases)
     def test_build_artifact_depends_and_provides(
         self, prepared_test_build, bitbake_image, bitbake_path, dependsprovides
@@ -972,7 +972,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         assert dependsprovides.__dict__ == other.__dict__
 
     @pytest.mark.only_with_image("sdimg", "uefiimg", "gptimg", "biosimg")
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_client_version("1.0.0")
     def test_extra_parts(self, latest_part_image, prepared_test_build, bitbake_image):
         sdimg = latest_part_image.endswith(".sdimg")
         uefiimg = latest_part_image.endswith(".uefiimg")
