@@ -29,7 +29,7 @@ from helpers import Helpers
 
 
 @pytest.mark.commercial
-@pytest.mark.min_mender_client_version("2.1.0")
+@pytest.mark.min_mender_version("2.1.0")
 class TestDeltaUpdateModule:
     @pytest.mark.only_with_image("ext4")
     def test_build_and_run_module(
