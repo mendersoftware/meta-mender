@@ -19,7 +19,7 @@ import pytest
 
 
 class TestOsIntegration:
-    @pytest.mark.min_mender_client_version("2.2.1")
+    @pytest.mark.min_mender_version("2.2.1")
     def test_syslogger(self, setup_board, connection):
         """Test that we log to syslog, and that we don't if we specify --no-syslog."""
 
