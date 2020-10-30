@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2017 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -36,10 +36,15 @@ import traceback
 configuration = {}
 
 
-def start_qemu(qenv=None, conn=None):
+def _start_qemu(qenv, conn, qemu_wrapper):
     """Start QEMU and return a subprocess.Popen object corresponding to a running
-    qemu process. `qenv` is a dict of environment variables that will be added
-    to `subprocess.Popen(..,env=)`.
+    qemu process.
+
+    Parameters:
+    * qenv is a dict of environment variables that will be added to
+      subprocess.Popen(..,env=).
+    * conn is a Fabric connection object to run SSH commands in the device.
+    * qemu_rwapper is an string with the path to the wrapper to launch QEMU.
 
     Once qemu is started, a connection over ssh will attempted, so the returned
     process is actually a QEMU instance with a fully booted guest OS.
@@ -49,14 +54,9 @@ def start_qemu(qenv=None, conn=None):
     override the default behavior.
     """
     env = dict(os.environ)
-    if qenv:
-        env.update(qenv)
+    env.update(qenv)
 
-    proc = subprocess.Popen(
-        ["../../meta-mender-qemu/scripts/mender-qemu", "-snapshot"],
-        env=env,
-        start_new_session=True,
-    )
+    proc = subprocess.Popen([qemu_wrapper], env=env, start_new_session=True,)
 
     try:
         # make sure we are connected.
@@ -65,7 +65,7 @@ def start_qemu(qenv=None, conn=None):
         # or do the necessary cleanup if we're not
         try:
             # qemu might have exited and this would raise an exception
-            print("cleaning up qemu instance with pid {}".format(proc.pid))
+            print("terminating qemu wrapper with pid {}".format(proc.pid))
             proc.terminate()
         except:
             pass
@@ -76,7 +76,7 @@ def start_qemu(qenv=None, conn=None):
     return proc
 
 
-def start_qemu_block_storage(latest_sdimg, suffix, conn):
+def start_qemu_block_storage(latest_sdimg, suffix, conn, qemu_wrapper):
     """Start qemu instance running block storage"""
     fh, img_path = tempfile.mkstemp(suffix=suffix, prefix="test-image")
     # don't need an open fd to temp file
@@ -90,15 +90,17 @@ def start_qemu_block_storage(latest_sdimg, suffix, conn):
     qenv["DISK_IMG"] = img_path
 
     try:
-        qemu = start_qemu(qenv, conn)
+        qemu = _start_qemu(qenv, conn, qemu_wrapper)
     except:
+        # If qemu failed to start, remove the image and exit; else the image
+        # shall be cleaned up by the caller
         os.remove(img_path)
         raise
 
     return qemu, img_path
 
 
-def start_qemu_flash(latest_vexpress_nor, conn):
+def start_qemu_flash(latest_vexpress_nor, conn, qemu_wrapper):
     """Start qemu instance running *.vexpress-nor image"""
 
     print("qemu raw flash with image {}".format(latest_vexpress_nor))
@@ -122,8 +124,10 @@ def start_qemu_flash(latest_vexpress_nor, conn):
     qenv["MACHINE"] = "vexpress-qemu-flash"
 
     try:
-        qemu = start_qemu(qenv, conn)
+        qemu = _start_qemu(qenv, conn, qemu_wrapper)
     except:
+        # If qemu failed to start, remove the image and exit; else the image
+        # shall be cleaned up by the caller
         os.remove(img_path)
         raise
 
@@ -143,7 +147,7 @@ def reboot(conn, wait=120):
     # Make sure reboot has had time to take effect.
     time.sleep(5)
 
-    for attempt in range(5):
+    for _ in range(5):
         try:
             conn.close()
             break
@@ -222,27 +226,24 @@ def determine_active_passive_part(bitbake_variables, conn):
         )
 
 
-def get_ssh_common_args():
-    return "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+def get_ssh_common_args(conn):
+    args = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    if "key_filename" in conn.connect_kwargs.keys():
+        args += " -i %s" % conn.connect_kwargs["key_filename"]
+    return args
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
 def put_no_sftp(file, conn, remote="."):
-    cmd = "scp -C %s" % get_ssh_common_args()
-
-    try:
-        conn.local(
-            "%s -P %s %s %s@%s:%s"
-            % (cmd, conn.port, file, conn.user, conn.host, remote)
-        )
-    except Exception as e:
-        print("exception while putting file: ", e)
-        raise e
+    cmd = "scp %s" % get_ssh_common_args(conn)
+    conn.local(
+        "%s -P %s %s %s@%s:%s" % (cmd, conn.port, file, conn.user, conn.host, remote)
+    )
 
 
 # Yocto build SSH is lacking SFTP, let's override and use regular SCP instead.
 def get_no_sftp(file, conn, local="."):
-    cmd = "scp -C %s" % get_ssh_common_args()
+    cmd = "scp %s" % get_ssh_common_args(conn)
     conn.local(
         "%s -P %s %s@%s:%s %s" % (cmd, conn.port, conn.user, conn.host, file, local)
     )
@@ -324,7 +325,7 @@ def latest_build_artifact(builddir, extension, sdimg_location=None):
     return output
 
 
-def get_bitbake_variables(target, env_setup="true", export_only=False):
+def get_bitbake_variables(target, prepared_test_build=None, export_only=False):
     global configuration
     lines = []
 
@@ -335,6 +336,13 @@ def get_bitbake_variables(target, env_setup="true", export_only=False):
     else:
         current_dir = os.open(".", os.O_RDONLY)
         os.chdir(os.environ["BUILDDIR"])
+        if prepared_test_build is not None:
+            env_setup = "cd %s && . oe-init-build-env %s" % (
+                prepared_test_build["bitbake_corebase"],
+                prepared_test_build["build_dir"],
+            )
+        else:
+            env_setup = "true"
         ps = subprocess.Popen(
             "%s && bitbake -e %s" % (env_setup, target),
             stdout=subprocess.PIPE,

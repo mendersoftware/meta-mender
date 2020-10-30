@@ -16,9 +16,10 @@
 import os
 import re
 import subprocess
+import time
 import requests
 
-from common import *
+from common import get_no_sftp, version_is_minimum
 
 
 class Helpers:

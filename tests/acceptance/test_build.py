@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2017 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,12 +14,24 @@
 #    limitations under the License.
 
 import os
-import pytest
 import subprocess
 import re
 import json
 
-from common import *
+import pytest
+
+from common import (
+    build_image,
+    latest_build_artifact,
+    get_bitbake_variables,
+    run_verbose,
+    signing_key,
+    versions_of_recipe,
+    get_local_conf_path,
+    get_local_conf_orig_path,
+    make_tempdir,
+    version_is_minimum,
+)
 
 
 def extract_partition(img, number):
@@ -76,12 +88,8 @@ class TestBuild:
         loader_file = "bootloader.bin"
         loader_offset = 4
 
-        init_env_cmd = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
-        )
         new_bb_vars = get_bitbake_variables(
-            "core-image-minimal", env_setup=init_env_cmd
+            "core-image-minimal", prepared_test_build=prepared_test_build
         )
 
         loader_dir = new_bb_vars["DEPLOY_DIR_IMAGE"]
@@ -108,7 +116,6 @@ class TestBuild:
         embedded = os.open(built_sdimg, os.O_RDONLY)
         os.lseek(embedded, loader_offset * 512, 0)
 
-        checked = 0
         block_size = 4096
         while True:
             org_read = os.read(original, block_size)
@@ -550,11 +557,9 @@ class TestBuild:
         except subprocess.CalledProcessError:
             assert not test_case["success"], "Build failed"
 
-        init_env_cmd = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
+        variables = get_bitbake_variables(
+            bitbake_image, prepared_test_build=prepared_test_build
         )
-        variables = get_bitbake_variables(bitbake_image, env_setup=init_env_cmd)
 
         for key in test_case["expected"]:
             assert test_case["expected"][key] == variables[key]
@@ -1068,3 +1073,32 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         assert re.search(test2_re, fstab, flags=re.MULTILINE) is not None
         assert re.search(test3_re, fstab, flags=re.MULTILINE) is not None
         assert re.search(test4_re, fstab, flags=re.MULTILINE) is not None
+
+    @pytest.mark.min_mender_version("1.0.0")
+    def test_build_nodbus(self, prepared_test_build, bitbake_path):
+        """Test that we can remove dbus from PACKAGECONFIG, and that this causes the
+        library dependency to be gone. The opposite is not tested, since we
+        assume failure to link to the library will be caught in other tests that
+        test DBus functionality."""
+
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            "mender-client",
+            ['PACKAGECONFIG_remove = "dbus"'],
+        )
+
+        env = get_bitbake_variables(
+            "mender-client", prepared_test_build=prepared_test_build
+        )
+
+        # Get dynamic section info from binary.
+        output = subprocess.check_output(
+            [env["READELF"], "-d", os.path.join(env["D"], "usr/bin/mender")]
+        ).decode()
+
+        # Verify the output is sane.
+        assert "libc" in output
+
+        # Actual test.
+        assert "libglib" not in output

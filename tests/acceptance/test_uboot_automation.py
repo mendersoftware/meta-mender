@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2019 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -22,8 +22,14 @@ import shutil
 import subprocess
 import tempfile
 
-# Make sure common is imported after fabric, because we override some functions.
-from common import *
+import pytest
+
+from common import (
+    build_image,
+    bitbake_env_from,
+    get_bitbake_variables,
+    reset_build_conf,
+)
 
 
 @pytest.mark.only_with_distro_feature("mender-uboot")
@@ -80,7 +86,7 @@ class TestUbootAutomation:
         days_to_be_old = 7
 
         # Find the repository directories we need
-        [poky_dir, meta_mender_dir, rest] = (
+        [poky_dir, meta_mender_dir, _] = (
             subprocess.check_output(
                 "bitbake-layers show-layers | awk '$1~/(^meta$|^meta-mender-core$)/ {print $2}' | xargs -n 1 dirname",
                 cwd=os.environ["BUILDDIR"],
@@ -409,11 +415,9 @@ class TestUbootAutomation:
         # Reset local.conf.
         reset_build_conf(prepared_test_build["build_dir"])
 
-        env_setup = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
+        bitbake_vars = get_bitbake_variables(
+            "u-boot", prepared_test_build=prepared_test_build
         )
-        bitbake_vars = get_bitbake_variables("u-boot", env_setup=env_setup)
         if bitbake_vars["MENDER_UBOOT_AUTO_CONFIGURE"] == "0":
             # The rest of the test is irrelevant if MENDER_UBOOT_AUTO_CONFIGURE
             # is already off.
@@ -443,11 +447,9 @@ class TestUbootAutomation:
         that it produces a patch file, and that this patch file can be used
         instead of MENDER_UBOOT_AUTO_CONFIGURE."""
 
-        env_setup = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
+        bitbake_variables = get_bitbake_variables(
+            "u-boot", prepared_test_build=prepared_test_build
         )
-        bitbake_variables = get_bitbake_variables("u-boot", env_setup=env_setup)
 
         # Only run if auto-configuration is on.
         if (
@@ -525,11 +527,9 @@ class TestUbootAutomation:
         auto-patching and apply the patch with a slight modification that makes
         its settings incompatible, and check that this is detected."""
 
-        env_setup = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
+        bitbake_variables = get_bitbake_variables(
+            "u-boot", prepared_test_build=prepared_test_build
         )
-        bitbake_variables = get_bitbake_variables("u-boot", env_setup=env_setup)
 
         # Only run if auto-configuration is on.
         if (

@@ -26,3 +26,6 @@ LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
 
 DEPENDS += "xz"
 RDEPENDS_${PN} += "liblzma"
+
+# Not supported in versions < 2.5.0.
+_MENDER_PACKAGECONFIG_DEFAULT_remove = "dbus"
