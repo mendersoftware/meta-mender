@@ -9,12 +9,7 @@ PREFERRED_RPROVIDER_grub-editenv ?= "grub"
 PREFERRED_PROVIDER_virtual/grub-bootconf ?= "grub-mender-grubenv"
 PREFERRED_RPROVIDER_virtual/grub-bootconf ?= "grub-mender-grubenv"
 
-# Set EFI_PROVIDER.  Not all MACHINE configs use it but notably
-# intel-corei7-64 does and without this we use the default of systemd-boot.
-EFI_PROVIDER ?= "${_MENDER_EFI_PROVIDER_DEFAULT}"
-_MENDER_EFI_PROVIDER_DEFAULT = ""
-_MENDER_EFI_PROVIDER_DEFAULT_mender-grub = "grub-efi"
-_MENDER_EFI_PROVIDER_DEFAULT_mender-grub_mender-bios = ""
+EFI_PROVIDER ?= "${@mender_feature_is_enabled("mender-bios", "", "grub-efi", d)}"
 
 python() {
     if d.getVar('MENDER_GRUB_STORAGE_DEVICE'):
