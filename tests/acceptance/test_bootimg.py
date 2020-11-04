@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2019 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,12 +13,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import os
-import pytest
 import subprocess
 
-# Make sure common is imported after fabric, because we override some functions.
-from common import *
+import pytest
+
+from common import (
+    build_image,
+    latest_build_artifact,
+)
 
 
 class TestBootImg:

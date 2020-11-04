@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2017 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,9 +15,11 @@
 
 import os
 import subprocess
-from fixtures import *
+
+import pytest
 
 from common import configuration
+from fixtures import *
 
 
 def pytest_addoption(parser):
@@ -35,6 +37,12 @@ def pytest_addoption(parser):
         help="user to log into remote hosts with (default is root)",
     )
     parser.addoption(
+        "--ssh-priv-key",
+        action="store",
+        default="",
+        help="Path to an SSH private key if required for login",
+    )
+    parser.addoption(
         "--http-server",
         action="store",
         default="10.0.2.2:8000",
@@ -44,7 +52,13 @@ def pytest_addoption(parser):
         "--sdimg-location",
         action="store",
         default=os.getcwd(),
-        help="location to the sdimg you want to install on the bbb",
+        help="location to the image to test (BUILDDIR for Yocto, deploy for mender-convert)",
+    )
+    parser.addoption(
+        "--qemu-wrapper",
+        action="store",
+        default="../../meta-mender-qemu/scripts/mender-qemu",
+        help="location of the shell wrapper to launch QEMU with testing image",
     )
     parser.addoption(
         "--bitbake-image",
@@ -57,12 +71,6 @@ def pytest_addoption(parser):
         action="store_true",
         default=False,
         help="Do not use a temporary build directory. Faster, but may mess with your build directory.",
-    )
-    parser.addoption(
-        "--no-pull",
-        action="store_true",
-        default=False,
-        help="Do not pull submodules. Handy if debugging something locally.",
     )
     parser.addoption(
         "--board-type",
@@ -108,10 +116,6 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    if not config.getoption("--no-pull"):
-        print("Automatically pulling submodules. Use --no-pull to disable")
-        subprocess.check_call("git submodule update --init --remote", shell=True)
-
     # ugly hack to access cli parameters inside common.py functions
     global configuration
 
@@ -132,6 +136,11 @@ def user(request):
 
 
 @pytest.fixture(scope="session")
+def ssh_priv_key(request):
+    return request.config.getoption("--ssh-priv-key")
+
+
+@pytest.fixture(scope="session")
 def http_server(request):
     return request.config.getoption("--http-server")
 
@@ -144,6 +153,11 @@ def board_type(request):
 @pytest.fixture(scope="session")
 def sdimg_location(request):
     return request.config.getoption("--sdimg-location")
+
+
+@pytest.fixture(scope="session")
+def qemu_wrapper(request):
+    return request.config.getoption("--qemu-wrapper")
 
 
 @pytest.fixture(scope="session")

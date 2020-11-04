@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2019 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -22,8 +22,14 @@ import shutil
 import subprocess
 import tempfile
 
-# Make sure common is imported after fabric, because we override some functions.
-from common import *
+import pytest
+
+from common import (
+    build_image,
+    bitbake_env_from,
+    get_bitbake_variables,
+    reset_build_conf,
+)
 
 
 @pytest.mark.only_with_distro_feature("mender-uboot")
@@ -80,7 +86,7 @@ class TestUbootAutomation:
         days_to_be_old = 7
 
         # Find the repository directories we need
-        [poky_dir, meta_mender_dir, rest] = (
+        [poky_dir, meta_mender_dir, _] = (
             subprocess.check_output(
                 "bitbake-layers show-layers | awk '$1~/(^meta$|^meta-mender-core$)/ {print $2}' | xargs -n 1 dirname",
                 cwd=os.environ["BUILDDIR"],

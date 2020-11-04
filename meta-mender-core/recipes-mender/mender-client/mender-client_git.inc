@@ -84,10 +84,15 @@ def mender_license(branch):
                    "md5": "3e7426c258f60f9876ae3746f54c49d4",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
+    elif branch == "2.4.x":
+        return {
+                   "md5": "5649992d13a6fda40abfac7730a62b07",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL",
+        }
     else:
         return {
                    "md5": "6d0e956c26e4e363476aa0d3281fb85a",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL",
         }
 LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=${@mender_license(d.getVar('MENDER_BRANCH'))['md5']}"
 LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
