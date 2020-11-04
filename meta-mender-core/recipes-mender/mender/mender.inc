@@ -27,6 +27,7 @@ inherit systemd
 
 SYSTEMD_SERVICE_${PN} = "mender.service"
 FILES_${PN} += "\
+    ${datadir}/dbus-1/system.d/io.mender.AuthenticationManager.conf \
     ${sysconfdir}/mender.conf \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
     ${systemd_unitdir}/system/mender.service \
@@ -232,6 +233,7 @@ do_install() {
         install-inventory-local-scripts \
         ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)} \
         install-systemd \
+        ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'install-dbus', '', d)} \
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
 
     #install our prepared configuration
