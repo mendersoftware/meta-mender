@@ -1102,3 +1102,11 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
         # Actual test.
         assert "libglib" not in output
+
+        # Make sure busconfig files are also gone.
+        assert not os.path.exists(
+            os.path.join(env["D"], "usr/share/dbus-1/system.d/io.mender.conf")
+        )
+        assert not os.path.exists(
+            os.path.join(env["D"], "etc/dbus-1/system.d/io.mender.conf")
+        )
