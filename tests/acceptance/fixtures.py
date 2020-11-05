@@ -462,7 +462,7 @@ def min_mender_version(request, bitbake_variables):
         )
 
     test_version = version_mark.args[0]
-    if not version_is_minimum(bitbake_variables, "mender", test_version):
+    if not version_is_minimum(bitbake_variables, "mender-client", test_version):
         pytest.skip("Test requires Mender client %s or newer" % test_version)
 
 
