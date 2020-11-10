@@ -7,6 +7,23 @@ def mender_feature_is_enabled(feature, if_true, if_false, d):
     else:
         return if_false
 
+def mender_features(d, separator=" "):
+    enabled = d.getVar('MENDER_FEATURES_ENABLE')
+    if enabled is None:
+        return ""
+    else:
+        enabled = enabled.split()
+
+    disabled = d.getVar('MENDER_FEATURES_DISABLE')
+    if disabled is None:
+        disabled = []
+    else:
+        disabled = disabled.split()
+
+    return separator.join([feature for feature in enabled if feature not in disabled])
+
+DISTROOVERRIDES_append = ":${@mender_features(d, separator=':')}"
+
 # MENDER_FEATURES_ENABLE and MENDER_FEATURES_DISABLE map to
 # DISTRO_FEATURES_BACKFILL and DISTRO_FEATURES_BACKFILL_CONSIDERED,
 # respectively.
@@ -84,7 +101,6 @@ python() {
             if feature not in mender_features:
                 bb.fatal("%s from MENDER_FEATURES_ENABLE or DISTRO_FEATURES is not a valid Mender feature."
                          % feature)
-            d.setVar('DISTROOVERRIDES_append', ':%s' % feature)
 
             # Verify that all 'mender-' features are added using MENDER_FEATURES
             # variables. This is important because we base some decisions on
