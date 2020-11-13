@@ -1,9 +1,9 @@
-IMAGE_FSTYPES += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender mender.bmap', '', d)}"
-IMAGE_FSTYPES += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-sd', ' sdimg sdimg.bmap', '', d)}"
-IMAGE_FSTYPES += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', ' ubimg mtdimg ubimg.bmap', '', d)}"
-IMAGE_FSTYPES += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-uefi', ' uefiimg uefiimg.bmap', '', d)}"
-IMAGE_FSTYPES += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-bios', ' biosimg biosimg.bmap', '', d)}"
-IMAGE_FSTYPES += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-gpt', ' gptimg gptimg.bmap', '', d)}"
+IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image', ' mender mender.bmap', '', d)}"
+IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-sd', ' sdimg sdimg.bmap', '', d)}"
+IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-ubi', ' ubimg mtdimg ubimg.bmap', '', d)}"
+IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-uefi', ' uefiimg uefiimg.bmap', '', d)}"
+IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-bios', ' biosimg biosimg.bmap', '', d)}"
+IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-gpt', ' gptimg gptimg.bmap', '', d)}"
 
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_x86 =     " kernel-image"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_x86-64 =  " kernel-image"
@@ -11,10 +11,10 @@ MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_arm =     " kernel-image ke
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_aarch64 = " kernel-image kernel-devicetree"
 
 python() {
-    features = d.getVar('DISTRO_FEATURES').split()
+    features = d.getVar('MENDER_FEATURES').split()
     for dep in features:
         if dep.startswith("mender-image-") and 'mender-image' not in features:
-            bb.fatal("If enabling %s in MENDER_FEATURES_ENABLE or DISTRO_FEATURES, mender-image must also be enabled"
+            bb.fatal("If enabling %s in MENDER_FEATURES_ENABLE, mender-image must also be enabled"
                      % dep)
 }
 
@@ -30,13 +30,13 @@ ROOTFS_POSTPROCESS_COMMAND_append = " mender_update_fstab_file;"
 mender_update_fstab_file() {
     local tmpBootPart="${MENDER_BOOT_PART}"
     local tmpDataPart="${MENDER_DATA_PART}"
-    local partuuid="${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}"
+    local partuuid="${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}"
     if [ ${partuuid} = "true" ]; then
         tmpBootPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_BOOT_PART}')}"
         tmpDataPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')}"
     fi
 
-    if ! ${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', 'true', 'false', d)}; then
+    if ! ${@bb.utils.contains('MENDER_FEATURES', 'mender-image-ubi', 'true', 'false', d)}; then
         if [ "${MENDER_BOOT_PART_SIZE_MB}" != "0" ] && [ -n "${MENDER_BOOT_PART}" ]; then
             echo "# Where the U-Boot environment resides; for devices with SD card support ONLY!" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
             mkdir -p ${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}
@@ -74,7 +74,7 @@ def mender_default_state_scripts_version(d):
 
 # Setup state script version file.
 MENDER_STATE_SCRIPTS_VERSION = "${@mender_default_state_scripts_version(d)}"
-ROOTFS_POSTPROCESS_COMMAND_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender_create_scripts_version_file;', '', d)}"
+ROOTFS_POSTPROCESS_COMMAND_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-image', ' mender_create_scripts_version_file;', '', d)}"
 
 mender_create_scripts_version_file() {
     install -d -m 755 ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/

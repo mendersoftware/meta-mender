@@ -41,7 +41,7 @@ class TestBootImg:
             prepared_test_build["build_dir"], "core-image*.bootimg"
         )
 
-        distro_features = bitbake_variables["DISTRO_FEATURES"].split()
+        distro_features = bitbake_variables["MENDER_FEATURES"].split()
         if "mender-grub" in distro_features and "mender-image-uefi" in distro_features:
             output = subprocess.check_output(
                 ["mdir", "-i", built_img, "-b", "/EFI/BOOT"]

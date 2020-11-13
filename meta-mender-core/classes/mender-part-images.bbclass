@@ -52,7 +52,7 @@ mender_part_image() {
 
     mkdir -p "${WORKDIR}"
 
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)}; then
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', 'true', 'false', d)}; then
         # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
         install -m 0644 "${DEPLOY_DIR_IMAGE}/uboot.env" "${WORKDIR}/"
     fi
@@ -93,7 +93,7 @@ part --source rawcopy --sourceparams="file=$bootloader_file" --ondisk "$ondisk_d
 EOF
     fi
 
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)} && [ -n "${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}" ]; then
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', 'true', 'false', d)} && [ -n "${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}" ]; then
         boot_env_align_kb=$(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} / 1024)
         cat >> "$wks" <<EOF
 part --source rawcopy --sourceparams="file=${WORKDIR}/uboot.env" --ondisk "$ondisk_dev" --align $boot_env_align_kb --no-table
@@ -205,7 +205,7 @@ EOF
         ) | fdisk ${outimgname}
     fi
 
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
         if [ "$ptable_type" = "gpt" ]; then
             # Set Fixed PARTUUID for all devices
             sgdisk -u ${MENDER_BOOT_PART_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_BOOT_PART}')} "$outimgname"

@@ -579,21 +579,27 @@ def only_with_image(request, bitbake_variables):
 
 
 @pytest.fixture(autouse=True)
-def only_with_distro_feature(request, bitbake_variables):
-    """Fixture that enables use of `only_with_distro_feature(feature1, feature2)` mark.
+def only_with_mender_feature(request, bitbake_variables):
+    """Fixture that enables use of `only_with_mender_feature(feature1, feature2)` mark.
     Example::
 
-       @pytest.mark.only_with_distro_feature('mender-uboot')
+       @pytest.mark.only_with_mender_feature('mender-uboot')
        def test_foo():
            # executes only if mender-uboot feature is enabled
            pass
 
     """
 
-    mark = request.node.get_closest_marker("only_with_distro_feature")
+    mark = request.node.get_closest_marker("only_with_mender_feature")
+    if mark is None:
+        # For historical reasons we also use the old marker name.
+        mark = request.node.get_closest_marker("only_with_distro_feature")
+
     if mark is not None:
         features = mark.args
-        current = bitbake_variables.get("DISTRO_FEATURES", "").strip().split()
+        current = bitbake_variables.get("MENDER_FEATURES", "").strip().split()
+        # For historical reasons we also check in DISTRO_FEATURES.
+        current += bitbake_variables.get("DISTRO_FEATURES", "").strip().split()
         if not all([feature in current for feature in features]):
             pytest.skip(
                 "no supported distro feature in {} "

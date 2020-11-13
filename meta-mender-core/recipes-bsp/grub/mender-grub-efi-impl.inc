@@ -33,7 +33,7 @@ CONFFILES_${PN}_remove = " \
 
 # Allow the cfg and signature files to be installed by grub-mender-grubenv
 python do_cleanconfigs_class-target() {
-    if bb.utils.contains('DISTRO_FEATURES', 'mender-grub', True, False, d) and \
+    if bb.utils.contains('MENDER_FEATURES', 'mender-grub', True, False, d) and \
         bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', True, False, d):
             ext = d.getVar("SB_FILE_EXT")
             for basename in ("grub.cfg", "grubenv", "boot-menu.inc", "efi-secure-boot.inc"):
