@@ -4,4 +4,4 @@ pytest-html==2.1.1
 paramiko==2.7.2
 python-lzo==1.12
 ubi-reader==0.7.0
-requests==2.24.0
+requests==2.25.0
