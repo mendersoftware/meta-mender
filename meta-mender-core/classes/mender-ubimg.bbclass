@@ -39,7 +39,7 @@ IMAGE_CMD_ubimg () {
         ubimg_fatal "Boot partition is not supported for ubimg. MENDER_BOOT_PART_SIZE_MB should be set to 0."
     fi
 
-    if ${@bb.utils.contains("DISTRO_FEATURES", "mender-uboot", "true", "false", d)}; then
+    if ${@bb.utils.contains("MENDER_FEATURES", "mender-uboot", "true", "false", d)}; then
         # U-Boot doesn't allow putting both of the redundant environments on the
         # same volume, so we must split it and put each half on a separate volume.
         local uboot_env_vol_size=$(expr $(stat -c %s ${DEPLOY_DIR_IMAGE}/uboot.env) / 2)
@@ -80,7 +80,7 @@ vol_name=data
 
 EOF
 
-    if ${@bb.utils.contains("DISTRO_FEATURES", "mender-uboot", "true", "false", d)}; then
+    if ${@bb.utils.contains("MENDER_FEATURES", "mender-uboot", "true", "false", d)}; then
         cat >> ${WORKDIR}/ubimg-${IMAGE_NAME}.cfg <<EOF
 [u-boot-env-1]
 mode=ubi

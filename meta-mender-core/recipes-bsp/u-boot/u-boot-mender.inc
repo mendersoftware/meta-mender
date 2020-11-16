@@ -7,7 +7,7 @@ DEPENDS += "coreutils-native"
 
 DEPLOYDIR = "${WORKDIR}/deploy-${PN}"
 
-MENDER_UBOOT_AUTO_CONFIGURE ??= "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', '1', '0', d)}"
+MENDER_UBOOT_AUTO_CONFIGURE ??= "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', '1', '0', d)}"
 
 ################################################################################
 # Patches.
@@ -31,8 +31,8 @@ SRC_URI_append_mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE
 do_provide_mender_defines() {
     set -x
 
-    if ! ${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', 'true', 'false', d)}; then
-        bbfatal "To compile U-Boot with mender you have to add 'mender-uboot' to MENDER_FEATURES_ENABLE or DISTRO_FEATURES."
+    if ! ${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', 'true', 'false', d)}; then
+        bbfatal "To compile U-Boot with mender you have to add 'mender-uboot' to MENDER_FEATURES_ENABLE."
     fi
 
     # Since the libubootenv recipe will typically not have access to the proper
@@ -56,7 +56,7 @@ do_provide_mender_defines() {
     fi
 
     if [ -n "${MENDER_BOOT_PART}" ]; then
-        if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+        if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
             MENDER_BOOT_PART_NUMBER=${MENDER_BOOT_PART}
             MENDER_BOOT_PART_NUMBER_HEX=`mender_number_to_hex ${MENDER_BOOT_PART_NUMBER}`
         else
@@ -65,7 +65,7 @@ do_provide_mender_defines() {
         fi
      fi
 
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
         MENDER_ROOTFS_PART_A_NUMBER=${MENDER_ROOTFS_PART_A}
         MENDER_ROOTFS_PART_A_NUMBER_HEX=`mender_number_to_hex ${MENDER_ROOTFS_PART_A_NUMBER}`
         MENDER_ROOTFS_PART_B_NUMBER=${MENDER_ROOTFS_PART_B}
@@ -160,7 +160,7 @@ do_provide_mender_defines() {
 #define MENDER_UBOOT_POST_SETUP_COMMANDS "$MENDER_UBOOT_POST_SETUP_COMMANDS"
 EOF
 
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-ubi', "true", "false", d)}; then
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-ubi', "true", "false", d)}; then
         if [ -z "${MENDER_MTDIDS}" ]; then
             bbfatal "MENDER_MTDIDS is empty. Please set it to valid value for your board. An example is 'nor0=40000000.flash'."
         fi
@@ -190,7 +190,7 @@ EOF
 CONFIG_ENV_SIZE=${BOOTENV_SIZE}
 EOF
 
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-ubi', "true", "false", d)}; then
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-ubi', "true", "false", d)}; then
         cat >> ${S}/mender_Kconfig_fragment <<EOF
 CONFIG_MTDIDS_DEFAULT="${MENDER_MTDIDS}"
 CONFIG_MTDPARTS_DEFAULT="mtdparts=${MENDER_MTDPARTS}"
@@ -210,7 +210,7 @@ EOF
     fi
 }
 python() {
-    if bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
+    if bb.utils.contains('MENDER_FEATURES', 'mender-uboot', True, False, d):
         bb.build.addtask('do_provide_mender_defines', 'do_configure', 'do_patch', d)
 }
 
@@ -339,7 +339,7 @@ do_mender_uboot_auto_configure() {
         --src-dir=${S} \
         --tmp-dir=${MENDER_UBOOT_TMP_SRC} \
         --kconfig-fragment=${S}/mender_Kconfig_fragment \
-        ${@bb.utils.contains('DISTRO_FEATURES', 'mender-ubi', '--ubi', '', d)} \
+        ${@bb.utils.contains('MENDER_FEATURES', 'mender-ubi', '--ubi', '', d)} \
         --debug
 }
 do_mender_uboot_auto_configure[depends] = "${PN}:do_prepare_recipe_sysroot"
@@ -359,7 +359,7 @@ do_save_mender_auto_configured_patch() {
 }
 
 python() {
-    if not bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
+    if not bb.utils.contains('MENDER_FEATURES', 'mender-uboot', True, False, d):
         return
 
     if bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', '1', True, False, d):

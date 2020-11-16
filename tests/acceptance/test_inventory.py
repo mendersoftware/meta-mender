@@ -36,7 +36,7 @@ class TestInventory:
         """Test that the bootloader integration type matches what we would
         expect from the build."""
 
-        features = bitbake_variables["DISTRO_FEATURES"].split()
+        features = bitbake_variables["MENDER_FEATURES"].split()
         arch = bitbake_variables["HOST_ARCH"]
 
         output = connection.run(
