@@ -15,7 +15,8 @@
 
 import os
 import pytest
-from common import put_no_sftp
+
+from utils.common import put_no_sftp
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")

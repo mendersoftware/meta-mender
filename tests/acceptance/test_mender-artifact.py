@@ -20,7 +20,10 @@ import re
 import json
 import hashlib
 
-from common import *
+import pytest
+
+from utils.common import build_image, latest_build_artifact, version_is_minimum
+
 
 # The format of the artifact file which is tested here is documented at:
 # https://github.com/mendersoftware/mender-artifact/blob/master/Documentation/artifact-format.md
@@ -80,7 +83,9 @@ def versioned_mender_image(
         LAST_BUILD_VERSION = version
     return (
         version,
-        latest_build_artifact(prepared_test_build["build_dir"], "core-image*.mender"),
+        latest_build_artifact(
+            request, prepared_test_build["build_dir"], "core-image*.mender"
+        ),
     )
 
 
