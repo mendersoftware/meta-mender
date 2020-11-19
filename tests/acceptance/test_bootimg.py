@@ -17,16 +17,13 @@ import subprocess
 
 import pytest
 
-from common import (
-    build_image,
-    latest_build_artifact,
-)
+from utils.common import build_image, latest_build_artifact
 
 
 class TestBootImg:
     @pytest.mark.min_mender_version("1.0.0")
     def test_bootimg_creation(
-        self, bitbake_variables, prepared_test_build, bitbake_image
+        self, request, bitbake_variables, prepared_test_build, bitbake_image
     ):
         """Test that we can build a bootimg successfully."""
 
@@ -38,7 +35,7 @@ class TestBootImg:
         )
 
         built_img = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.bootimg"
+            request, prepared_test_build["build_dir"], "core-image*.bootimg"
         )
 
         distro_features = bitbake_variables["DISTRO_FEATURES"].split()
