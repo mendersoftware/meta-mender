@@ -21,7 +21,12 @@ import tempfile
 
 import pytest
 
-from common import build_image, latest_build_artifact, reset_build_conf, make_tempdir
+from utils.common import (
+    build_image,
+    latest_build_artifact,
+    reset_build_conf,
+    make_tempdir,
+)
 
 
 def extract_ubimg_files(path, outdir):
@@ -172,7 +177,9 @@ def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build, bitbake_
         ['MENDER_FEATURES_DISABLE_append = " mender-uboot"'],
     )
 
-    ubimg = latest_build_artifact(prepared_test_build["build_dir"], "core-image*.ubimg")
+    ubimg = latest_build_artifact(
+        request, prepared_test_build["build_dir"], "core-image*.ubimg"
+    )
     imgdir = tempfile.mkdtemp()
     tmpimg = os.path.join(imgdir, os.path.basename(ubimg))
     shutil.copyfile(ubimg, tmpimg)
@@ -251,7 +258,7 @@ class TestUbimg:
 
     @pytest.mark.min_yocto_version("warrior")
     def test_equal_checksum_ubimg_and_artifact(
-        self, prepared_test_build, bitbake_image
+        self, request, prepared_test_build, bitbake_image
     ):
 
         # See ubimg_without_uboot_env() for why this is needed. We need to do it
@@ -267,7 +274,7 @@ class TestUbimg:
         bufsize = 1048576  # 1MiB
         with tempfile.NamedTemporaryFile() as tmp_artifact:
             latest_mender_image = latest_build_artifact(
-                prepared_test_build["build_dir"], "*.mender"
+                request, prepared_test_build["build_dir"], "*.mender"
             )
             subprocess.check_call(
                 "tar xOf %s data/0000.tar.gz | tar xzO > %s"
@@ -290,7 +297,9 @@ class TestUbimg:
         tmpdir = tempfile.mkdtemp()
         try:
             ubifsdir = extract_ubimg_images(
-                latest_build_artifact(prepared_test_build["build_dir"], "*.ubimg"),
+                latest_build_artifact(
+                    request, prepared_test_build["build_dir"], "*.ubimg"
+                ),
                 tmpdir,
             )
             rootfsa = os.path.join(

@@ -18,13 +18,13 @@ import subprocess
 
 import pytest
 
-from common import build_image, latest_build_artifact, make_tempdir
+from utils.common import build_image, latest_build_artifact, make_tempdir
 
 
 class TestDataImg:
     @pytest.mark.min_mender_version("1.0.0")
     def test_dataimg_creation(
-        self, bitbake_variables, prepared_test_build, bitbake_image
+        self, request, bitbake_variables, prepared_test_build, bitbake_image
     ):
         """Test that we can build a dataimg successfully."""
 
@@ -36,7 +36,7 @@ class TestDataImg:
         )
 
         built_img = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.dataimg"
+            request, prepared_test_build["build_dir"], "core-image*.dataimg"
         )
 
         # Check that it contains the device_type file, as we expect.

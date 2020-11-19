@@ -18,14 +18,14 @@ import subprocess
 
 import pytest
 
-from common import (
+from utils.common import (
     build_image,
     latest_build_artifact,
     reboot,
     run_after_connect,
     determine_active_passive_part,
 )
-from helpers import Helpers
+from utils.helpers import Helpers
 
 
 @pytest.mark.commercial
@@ -33,7 +33,7 @@ from helpers import Helpers
 class TestDeltaUpdateModule:
     @pytest.mark.only_with_image("ext4")
     def test_build_and_run_module(
-        self, bitbake_variables, prepared_test_build, bitbake_image
+        self, request, bitbake_variables, prepared_test_build, bitbake_image
     ):
 
         build_image(
@@ -48,7 +48,7 @@ class TestDeltaUpdateModule:
         )
 
         image = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.ext4"
+            request, prepared_test_build["build_dir"], "core-image*.ext4"
         )
         output = subprocess.check_output(
             ["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", image]
@@ -64,6 +64,7 @@ class TestDeltaUpdateModule:
     @pytest.mark.only_with_image("ext4")
     def test_runtime_checksum(
         self,
+        request,
         setup_board,
         prepared_test_build,
         bitbake_variables,
@@ -98,11 +99,11 @@ class TestDeltaUpdateModule:
         )
 
         image = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.mender"
+            request, prepared_test_build["build_dir"], "core-image*.mender"
         )
 
         Helpers.install_update(
-            image, connection, http_server, board_type, use_s3, s3_address,
+            image, connection, http_server, board_type, use_s3, s3_address
         )
 
         reboot(connection)
