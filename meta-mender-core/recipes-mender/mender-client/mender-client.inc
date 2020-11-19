@@ -1,7 +1,7 @@
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
-RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted"
+RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted util-linux-fdisk"
 
 def cert_location_if_server_crt_in(src_uri, d):
     for src in src_uri.split():
