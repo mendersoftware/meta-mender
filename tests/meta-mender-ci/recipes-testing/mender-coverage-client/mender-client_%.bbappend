@@ -29,7 +29,7 @@ do_configure_append_mender-testing-enabled () {
 
 python () {
     # Only add coverage analysis if the client is newer than 2.2.x
-    if bb.utils.contains("DISTRO_FEATURES", "mender-testing-enabled", True, False, d):
+    if bb.utils.contains("MENDER_FEATURES", "mender-testing-enabled", True, False, d):
        if not mender_is_2_2_or_older(d):
            # Coverage instrument the client before compiling it
            d.prependVarFlag('do_configure', 'postfuncs', "do_instrument_client ")

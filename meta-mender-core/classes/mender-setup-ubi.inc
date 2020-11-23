@@ -155,7 +155,7 @@ MENDER_UBOOT_ENV_UBIVOL_NUMBER_2 ??= "4"
 ################################################################################
 
 def mender_warn_only_if_ubi(d, msg, fatal=False):
-    if bb.utils.contains('DISTRO_FEATURES', 'mender-ubi', True, False, d):
+    if bb.utils.contains('MENDER_FEATURES', 'mender-ubi', True, False, d):
         if fatal:
             bb.fatal(msg)
         else:
@@ -188,7 +188,7 @@ def mender_make_mtdparts(d):
         u_boot_part_size = 1048576
 
     bootloader = ""
-    if bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', True, False, d):
+    if bb.utils.contains('MENDER_FEATURES', 'mender-uboot', True, False, d):
         bootloader = "%s(u-boot)ro," % mender_get_bytes_with_unit(u_boot_part_size)
 
     return "%s:%s-(%s)" % (active_mtdid, bootloader, d.getVar('MENDER_MTD_UBI_DEVICE_NAME'))

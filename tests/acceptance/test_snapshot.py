@@ -196,7 +196,7 @@ class TestSnapshot:
             except:
                 pass
 
-    @pytest.mark.min_mender_version("2.2.0")
+    @pytest.mark.min_mender_version("2.5.0")
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     # Make sure we run both with and without terminal. Many signal bugs lurk in
     # different corners of the console code.

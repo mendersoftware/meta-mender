@@ -333,8 +333,8 @@ python mender_vars_handler() {
 }
 
 # Including these does not mean that all these features will be enabled, just
-# that their configuration will be considered. Use DISTRO_FEATURES to enable and
-# disable features.
+# that their configuration will be considered. Use MENDER_FEATURES_ENABLE and
+# MENDER_FEATURES_DISABLE to enable and disable features.
 require mender-setup-bios.inc
 require mender-setup-grub.inc
 require mender-setup-image.inc
