@@ -80,6 +80,40 @@ class TestDBus:
         assert "io.mender.AuthenticationManager" in output
 
     @pytest.mark.min_mender_version("2.5.0")
+    def test_dbus_non_root_access(self, bitbake_variables, connection):
+        """Test that only root user can access Mender DBus API."""
+
+        # This is the command that is expected to fail for non-root user
+        dbus_send_command = "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.GetJwtToken"
+
+        try:
+            connection.run("mender bootstrap", warn=True)
+            connection.run("systemctl start mender-client")
+
+            # Wait one state machine cycle for the D-Bus API to be available
+            for _ in range(12):
+                result = connection.run("journalctl -u mender-client")
+                if "Authorize failed:" in result.stdout:
+                    break
+                time.sleep(5)
+            else:
+                pytest.fail("failed to detect a full state machine cycle")
+
+            result = connection.run(dbus_send_command)
+            assert "string" in result.stdout, result.stdout
+
+            result = connection.run(
+                "sudo -u mender-ci-tester %s" % dbus_send_command, warn=True
+            )
+            assert result.exited == 1
+            assert (
+                "Error org.freedesktop.DBus.Error.AccessDenied" in result.stderr
+            ), result.stderr
+
+        finally:
+            connection.run("systemctl stop mender-client")
+
+    @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_get_jwt_token(
         self, bitbake_variables, connection, setup_mender_client_dbus
     ):
