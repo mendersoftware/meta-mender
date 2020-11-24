@@ -56,8 +56,7 @@ def config_host(host):
         return "localhost", 8822
 
 
-@pytest.fixture(scope="session")
-def connection(request, user, host, ssh_priv_key):
+def connection_factory(request, user, host, ssh_priv_key):
     host, port = config_host(host)
     connect_kwargs = {"password": "", "banner_timeout": 60, "auth_timeout": 60}
     if ssh_priv_key != "":
@@ -77,6 +76,16 @@ def connection(request, user, host, ssh_priv_key):
     request.addfinalizer(fin)
 
     return conn
+
+
+@pytest.fixture(scope="session")
+def connection(request, user, host, ssh_priv_key):
+    return connection_factory(request, user, host, ssh_priv_key)
+
+
+@pytest.fixture(scope="session")
+def second_connection(request, user, host, ssh_priv_key):
+    return connection_factory(request, user, host, ssh_priv_key)
 
 
 @pytest.fixture(scope="session")
