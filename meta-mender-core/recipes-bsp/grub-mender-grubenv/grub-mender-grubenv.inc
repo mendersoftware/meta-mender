@@ -50,7 +50,7 @@ python() {
 do_configure() {
     set -x
 
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
         mender_rootfsa_part=${MENDER_ROOTFS_PART_A_NUMBER}
         mender_rootfsb_part=${MENDER_ROOTFS_PART_B_NUMBER}
     else
@@ -65,7 +65,7 @@ mender_kernel_root_base=${MENDER_STORAGE_DEVICE_BASE}
 kernel_imagetype=${KERNEL_IMAGETYPE}
 EOF
 
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
         mender_rootfsa_uuid=${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_A}')}
         mender_rootfsb_uuid=${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_B}')}
         cat >> ${B}/mender_grubenv_defines <<EOF

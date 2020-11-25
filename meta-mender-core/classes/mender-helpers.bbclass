@@ -75,7 +75,7 @@ mender_number_to_hex() {
 
 def mender_get_partuuid_from_device(d, deviceName):
     import re
-    if bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', True, False, d) and deviceName:
+    if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', True, False, d) and deviceName:
         uuid=deviceName.replace('/dev/disk/by-partuuid/', '')
         gptMatch = re.search('^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$', uuid)
         if gptMatch:
@@ -211,7 +211,7 @@ mender_get_clean_kernel_devicetree() {
 
 def mender_is_msdos_ptable_image(d):
     mptimgs = 'mender-image-sd mender-image-bios'
-    return bb.utils.contains_any('DISTRO_FEATURES', mptimgs , True, False, d)
+    return bb.utils.contains_any('MENDER_FEATURES', mptimgs , True, False, d)
 
 
 def mender_get_data_and_total_parts_num(d):

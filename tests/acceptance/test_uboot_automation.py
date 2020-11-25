@@ -32,7 +32,7 @@ from common import (
 )
 
 
-@pytest.mark.only_with_distro_feature("mender-uboot")
+@pytest.mark.only_with_mender_feature("mender-uboot")
 class TestUbootAutomation:
     @staticmethod
     def parallel_job_count():
@@ -520,7 +520,7 @@ class TestUbootAutomation:
     # non-boolean values inside Kconfig that we can test for. Boolean settings
     # can't be tested because of the limitations listed in
     # do_check_mender_defines.
-    @pytest.mark.only_with_distro_feature("mender-ubi")
+    @pytest.mark.only_with_mender_feature("mender-ubi")
     @pytest.mark.min_mender_version("1.0.0")
     def test_incorrect_Kconfig_setting(self, prepared_test_build, bitbake_image):
         """First produce a patch using the auto-patcher, then disable
