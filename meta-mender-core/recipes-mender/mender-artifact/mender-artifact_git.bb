@@ -52,29 +52,16 @@ PV = "${@mender_version_from_preferred_version(d, '${SRCPV}')}"
 SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=${MENDER_ARTIFACT_BRANCH}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below.
+# dependencies) are included in the LICENSE variable below. Note that for
+# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
+# file.
 def mender_license(branch):
-    if branch == "3.1.x" or branch == "3.2.x":
-        return {
-                   "md5": "f3d4710343f1b959e4fa6b728ce12264",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
-        }
-    elif branch == "3.3.x":
-        return {
-                   "md5": "99143e34cf23a99976a299da9fa93bcf",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
-        }
-    elif branch == "3.4.x":
-        return {
-                   "md5": "d1fedd6e15ea779ce58fafea700f0c37",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
-        }
-    else:
-        return {
-                   "md5": "0813d261553528b7275c19312036befb",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
-        }
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=${@mender_license(d.getVar('MENDER_ARTIFACT_BRANCH'))['md5']}"
+    # Only one currently. If the sub licenses change we may introduce more.
+    return {
+               "md5": "0813d261553528b7275c19312036befb",
+               "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
+    }
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LICENSE;md5=7fd64609fe1bce47db0e8f6e3cc6a11d"
 LICENSE = "${@mender_license(d.getVar('MENDER_ARTIFACT_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.
