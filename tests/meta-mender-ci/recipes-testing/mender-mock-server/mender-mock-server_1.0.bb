@@ -3,13 +3,13 @@ SRC_URI = " \
     file://mender-mock-server.service \
     file://mender-mock-server.py \
 "
-LICENSE = "PD"
+LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = " \
-    file://private.key;md5=8a1986b43cf91bb9f47b0af99ad764fd \
-    file://mender-mock-server.service;md5=38751b3b7fe2ab6dbcacaad792128b9a \
-    file://mender-mock-server.py;md5=958275eda2dd2fe87d6ce649fc5599c3 \
+    file://mender-mock-server.py;beginline=2;endline=14;md5=96cdd6947ab31ed6536dcfd6a67688ef \
 "
 S = "${WORKDIR}"
+
+RDEPENDS_${PN} = "python3"
 
 inherit systemd
 

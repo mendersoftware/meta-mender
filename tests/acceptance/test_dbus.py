@@ -18,9 +18,7 @@ import pytest
 import tempfile
 import time
 
-from fabric import Connection
 from multiprocessing import Process
-from paramiko.client import WarningPolicy
 
 from common import put_no_sftp
 
@@ -42,13 +40,14 @@ MENDER_CONF = """{
 
 
 @pytest.fixture
-def setup_mender_client_dbus(bitbake_variables, connection):
+def setup_mender_client_dbus(request, bitbake_variables, connection):
     conffile = "/data/etc/mender/mender.conf"
     backup = f"{conffile}.backup"
     bdir = os.path.dirname(backup)
-    connection.run(
+    result = connection.run(
         f"mkdir -p {bdir} && if [ -e {conffile} ]; then cp {conffile} {backup}; fi"
     )
+    assert result.exited == 0
 
     tf = tempfile.NamedTemporaryFile()
     with open(tf.name, "w") as fd:
@@ -56,12 +55,12 @@ def setup_mender_client_dbus(bitbake_variables, connection):
 
     put_no_sftp(tf.name, connection, remote=conffile)
 
-    try:
-        yield True
-    finally:
+    def fin():
         connection.run(
             f"if [ -e {backup} ]; then dd if={backup} of=$(realpath {conffile}); fi"
         )
+
+    request.addfinalizer(fin)
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
@@ -85,14 +84,16 @@ class TestDBus:
     ):
         """Test the JWT token can be retrieved using D-Bus."""
 
-        # bootstrap the client
-        connection.run("mender bootstrap --forcebootstrap")
-
-        # start the mender-client service
-        connection.run("systemctl start mender-client")
-
-        # get the JWT token via D-Bus
         try:
+            # bootstrap the client
+            result = connection.run("mender bootstrap --forcebootstrap")
+            assert result.exited == 0
+
+            # start the mender-client service
+            result = connection.run("systemctl start mender-client")
+            assert result.exited == 0
+
+            # get the JWT token via D-Bus
             output = ""
             for i in range(12):
                 result = connection.run(
@@ -113,12 +114,6 @@ class TestDBus:
     ):
         """Test the JWT token can be fetched using D-Bus."""
 
-        # bootstrap the client
-        connection.run("mender bootstrap --forcebootstrap")
-
-        # start the mender-client service
-        connection.run("systemctl start mender-client")
-
         # start monitoring the D-Bus
         def dbus_monitor():
             second_connection.run(
@@ -130,6 +125,14 @@ class TestDBus:
 
         # get the JWT token via D-Bus
         try:
+            # bootstrap the client
+            result = connection.run("mender bootstrap --forcebootstrap")
+            assert result.exited == 0
+
+            # start the mender-client service
+            result = connection.run("systemctl start mender-client")
+            assert result.exited == 0
+
             # fetch the JWT token
             fetched = False
             for i in range(30):
@@ -161,6 +164,8 @@ class TestDBus:
             result = connection.run(
                 "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.GetJwtToken"
             )
+            assert result.exited == 0
+
             output = result.stdout.strip()
             assert f'string "{self.JWT_TOKEN}' in output
         finally:
