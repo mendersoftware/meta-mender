@@ -20,7 +20,9 @@ SRCREV = "ffef645f932dd2fd7545705288f6e6df14417966"
 ################################################################################
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below.
+# dependencies) are included in the LICENSE variable below. Note that for
+# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
+# file.
 LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=5649992d13a6fda40abfac7730a62b07"
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
 
