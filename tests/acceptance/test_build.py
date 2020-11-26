@@ -1115,7 +1115,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             ["debugfs", "-R", "ls /usr/share/mender/inventory", rootfs]
         )
         assert (
-            b"mender-inventory-geo" in output,
+            b"mender-inventory-geo" in output
         ), "mender-inventory-network-scripts seems not to be a part of the image, like they should"
 
         #
@@ -1136,5 +1136,5 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             ["debugfs", "-R", "ls /usr/share/mender/inventory", rootfs]
         )
         assert (
-            b"mender-inventory-geo" not in output,
+            b"mender-inventory-geo" not in output
         ), "mender-inventory-network-scripts unexpectedly a part of the image"
