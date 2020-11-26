@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = " \
 "
 S = "${WORKDIR}"
 
-RDEPENDS_${PN} = "python3"
+RDEPENDS_${PN} = "python3-core python3-netserver"
 
 inherit systemd
 
