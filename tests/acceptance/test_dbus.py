@@ -135,13 +135,14 @@ class TestDBus:
 
             # fetch the JWT token
             fetched = False
-            for i in range(30):
+            for i in range(12):
                 result = connection.run(
                     "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.FetchJwtToken || true"
                 )
                 if "true" in result.stdout:
                     fetched = True
                     break
+                time.sleep(5)
 
             # fetch was successful
             assert fetched
