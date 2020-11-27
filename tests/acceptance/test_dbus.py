@@ -64,6 +64,7 @@ def setup_mender_client_dbus(request, bitbake_variables, connection):
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
+@pytest.mark.not_for_machine("vexpress-qemu-flash")
 class TestDBus:
     # this is a portion of the JWT token served by the Mender mock server:
     # see: meta-mender-ci/recipes-testing/mender-mock-server/mender-mock-server.py
