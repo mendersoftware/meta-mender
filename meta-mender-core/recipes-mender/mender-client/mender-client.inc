@@ -246,11 +246,28 @@ do_install() {
         systemd_unitdir=${systemd_unitdir} \
         install-bin \
         install-identity-scripts \
-        install-inventory-local-scripts \
-        ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)} \
         install-systemd \
         ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'install-dbus', '', d)} \
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
+
+    # install inventory scripts
+    if grep -q install-inventory-local-scripts ${B}/src/${GO_IMPORT}/Makefile; then
+        oe_runmake \
+            -C ${B}/src/${GO_IMPORT} \
+            V=1 \
+            prefix=${D} \
+            datadir=${datadir} \
+            install-inventory-local-scripts \
+            ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)}
+    else
+        oe_runmake \
+            -C ${B}/src/${GO_IMPORT} \
+            V=1 \
+            prefix=${D} \
+            datadir=${datadir} \
+            install-inventory-scripts
+    fi
+
 
     #install our prepared configuration
     install -d ${D}/${sysconfdir}/mender
