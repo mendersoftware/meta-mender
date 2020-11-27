@@ -565,6 +565,27 @@ def only_for_machine(request, bitbake_variables):
 
 
 @pytest.fixture(autouse=True)
+def not_for_machine(request, bitbake_variables):
+    """Fixture that enables use of `not_for_machine(machine-name)` mark.
+    Example::
+
+       @pytest.mark.not_for_machine('vexpress-qemu')
+       def test_foo():
+           # executes only if not building for vexpress-qemu
+           pass
+
+    """
+    mach_mark = request.node.get_closest_marker("not_for_machine")
+    if mach_mark is not None:
+        machines = mach_mark.args
+        current = bitbake_variables.get("MACHINE", None)
+        if current in machines:
+            pytest.skip(
+                "incompatible machine {} ".format(current if not None else "(none)")
+            )
+
+
+@pytest.fixture(autouse=True)
 def only_with_image(request, bitbake_variables):
     """Fixture that enables use of `only_with_image(img1, img2)` mark.
     Example::
