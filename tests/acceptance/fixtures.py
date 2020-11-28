@@ -56,8 +56,7 @@ def config_host(host):
         return "localhost", 8822
 
 
-@pytest.fixture(scope="session")
-def connection(request, user, host, ssh_priv_key):
+def connection_factory(request, user, host, ssh_priv_key):
     host, port = config_host(host)
     connect_kwargs = {"password": "", "banner_timeout": 60, "auth_timeout": 60}
     if ssh_priv_key != "":
@@ -77,6 +76,16 @@ def connection(request, user, host, ssh_priv_key):
     request.addfinalizer(fin)
 
     return conn
+
+
+@pytest.fixture(scope="session")
+def connection(request, user, host, ssh_priv_key):
+    return connection_factory(request, user, host, ssh_priv_key)
+
+
+@pytest.fixture(scope="session")
+def second_connection(request, user, host, ssh_priv_key):
+    return connection_factory(request, user, host, ssh_priv_key)
 
 
 @pytest.fixture(scope="session")
@@ -552,6 +561,27 @@ def only_for_machine(request, bitbake_variables):
                 "(required {})".format(
                     current if not None else "(none)", ", ".join(machines)
                 )
+            )
+
+
+@pytest.fixture(autouse=True)
+def not_for_machine(request, bitbake_variables):
+    """Fixture that enables use of `not_for_machine(machine-name)` mark.
+    Example::
+
+       @pytest.mark.not_for_machine('vexpress-qemu')
+       def test_foo():
+           # executes only if not building for vexpress-qemu
+           pass
+
+    """
+    mach_mark = request.node.get_closest_marker("not_for_machine")
+    if mach_mark is not None:
+        machines = mach_mark.args
+        current = bitbake_variables.get("MACHINE", None)
+        if current in machines:
+            pytest.skip(
+                "incompatible machine {} ".format(current if not None else "(none)")
             )
 
 
