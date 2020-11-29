@@ -20,7 +20,7 @@ import json
 
 import pytest
 
-from common import (
+from utils.common import (
     build_image,
     latest_build_artifact,
     get_bitbake_variables,
@@ -82,7 +82,7 @@ class TestBuild:
 
     @pytest.mark.only_with_image("sdimg")
     @pytest.mark.min_mender_version("1.0.0")
-    def test_bootloader_embed(self, prepared_test_build, bitbake_image):
+    def test_bootloader_embed(self, request, prepared_test_build, bitbake_image):
         """Test that MENDER_IMAGE_BOOTLOADER_FILE causes the bootloader to be embedded
         correctly in the resulting sdimg."""
 
@@ -94,7 +94,7 @@ class TestBuild:
             prepared_test_build["build_dir"],
         )
         new_bb_vars = get_bitbake_variables(
-            "core-image-minimal", env_setup=init_env_cmd
+            request, "core-image-minimal", env_setup=init_env_cmd
         )
 
         loader_dir = new_bb_vars["DEPLOY_DIR_IMAGE"]
@@ -114,7 +114,7 @@ class TestBuild:
         )
 
         built_sdimg = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.sdimg"
+            request, prepared_test_build["build_dir"], "core-image*.sdimg"
         )
 
         original = os.open(loader_path, os.O_RDONLY)
@@ -140,7 +140,7 @@ class TestBuild:
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.0.0")
     def test_image_rootfs_extra_space(
-        self, prepared_test_build, bitbake_variables, bitbake_image
+        self, request, prepared_test_build, bitbake_variables, bitbake_image
     ):
         """Test that setting IMAGE_ROOTFS_EXTRA_SPACE to arbitrary values does
         not break the build."""
@@ -153,7 +153,7 @@ class TestBuild:
         )
 
         built_rootfs = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.ext4"
+            request, prepared_test_build["build_dir"], "core-image*.ext4"
         )
 
         assert (
@@ -163,7 +163,7 @@ class TestBuild:
 
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.0.0")
-    def test_tenant_token(self, prepared_test_build, bitbake_image):
+    def test_tenant_token(self, request, prepared_test_build, bitbake_image):
         """Test setting a custom tenant-token"""
 
         build_image(
@@ -177,7 +177,7 @@ class TestBuild:
         )
 
         built_rootfs = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.dataimg"
+            request, prepared_test_build["build_dir"], "core-image*.dataimg"
         )
 
         subprocess.check_call(
@@ -200,7 +200,12 @@ class TestBuild:
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.1.0")
     def test_artifact_signing_keys(
-        self, prepared_test_build, bitbake_variables, bitbake_path, bitbake_image
+        self,
+        request,
+        prepared_test_build,
+        bitbake_variables,
+        bitbake_path,
+        bitbake_image,
     ):
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
         works correctly."""
@@ -218,7 +223,7 @@ class TestBuild:
         )
 
         built_rootfs = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.ext[234]"
+            request, prepared_test_build["build_dir"], "core-image*.ext[234]"
         )
         # Copy out the key we just added from the image and use that to
         # verify instead of the original, just to be sure.
@@ -232,7 +237,7 @@ class TestBuild:
         )
         try:
             built_artifact = latest_build_artifact(
-                prepared_test_build["build_dir"], "core-image*.mender"
+                request, prepared_test_build["build_dir"], "core-image*.mender"
             )
             output = subprocess.check_output(
                 [
@@ -252,6 +257,7 @@ class TestBuild:
     @pytest.mark.min_mender_version("1.2.0")
     def test_state_scripts(
         self,
+        request,
         prepared_test_build,
         bitbake_variables,
         bitbake_path,
@@ -327,7 +333,7 @@ class TestBuild:
 
             # Check new rootfs.
             built_rootfs = latest_build_artifact(
-                prepared_test_build["build_dir"], "core-image*.ext[234]"
+                request, prepared_test_build["build_dir"], "core-image*.ext[234]"
             )
             output = subprocess.check_output(
                 ["debugfs", "-R", "ls -p /etc/mender/scripts", built_rootfs]
@@ -353,7 +359,7 @@ class TestBuild:
 
             # Check new artifact.
             built_mender_image = latest_build_artifact(
-                prepared_test_build["build_dir"], "core-image*.mender"
+                request, prepared_test_build["build_dir"], "core-image*.mender"
             )
             output = subprocess.check_output(
                 "tar xOf %s header.tar.gz| tar tz scripts" % built_mender_image,
@@ -445,7 +451,12 @@ class TestBuild:
 
     @pytest.mark.min_mender_version("1.1.0")
     def test_multiple_device_types_compatible(
-        self, prepared_test_build, bitbake_path, bitbake_variables, bitbake_image
+        self,
+        request,
+        prepared_test_build,
+        bitbake_path,
+        bitbake_variables,
+        bitbake_image,
     ):
         """Tests that we can include multiple device_types in the artifact."""
 
@@ -457,7 +468,7 @@ class TestBuild:
         )
 
         image = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.mender"
+            request, prepared_test_build["build_dir"], "core-image*.mender"
         )
 
         output = run_verbose("mender-artifact read %s" % image, capture=True)
@@ -546,7 +557,7 @@ class TestBuild:
         ],
     )
     def test_various_mtd_combinations(
-        self, test_case_name, test_case, prepared_test_build, bitbake_image
+        self, request, test_case_name, test_case, prepared_test_build, bitbake_image
     ):
         """Tests that we can build with various combinations of MTD variables,
         and that they receive the correct values."""
@@ -566,7 +577,9 @@ class TestBuild:
             prepared_test_build["bitbake_corebase"],
             prepared_test_build["build_dir"],
         )
-        variables = get_bitbake_variables(bitbake_image, env_setup=init_env_cmd)
+        variables = get_bitbake_variables(
+            request, bitbake_image, env_setup=init_env_cmd
+        )
 
         for key in test_case["expected"]:
             assert test_case["expected"][key] == variables[key]
@@ -574,7 +587,7 @@ class TestBuild:
     @pytest.mark.only_with_image("sdimg", "uefiimg")
     @pytest.mark.min_mender_version("1.0.0")
     def test_boot_partition_population(
-        self, prepared_test_build, bitbake_path, bitbake_image
+        self, request, prepared_test_build, bitbake_path, bitbake_image
     ):
         # Notice in particular a mix of tabs, newlines and spaces. All there to
         # check that whitespace it treated correctly.
@@ -600,7 +613,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         )
 
         image = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.*img"
+            request, prepared_test_build["build_dir"], "core-image*.*img"
         )
         extract_partition(image, 1)
         try:
@@ -647,9 +660,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     @pytest.mark.only_with_image("sdimg", "uefiimg")
     @pytest.mark.min_mender_version("2.0.0")
     def test_module_install(
-        self, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image
+        self, request, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image
     ):
-        mender_vars = get_bitbake_variables("mender-client")
+        mender_vars = get_bitbake_variables(request, "mender-client")
         if "modules" in mender_vars["PACKAGECONFIG"].split():
             originally_on = True
         else:
@@ -680,7 +693,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             )
 
         new_rootfs = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.ext4"
+            request, prepared_test_build["build_dir"], "core-image*.ext4"
         )
 
         output = subprocess.check_output(
@@ -934,7 +947,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     @pytest.mark.min_mender_version("2.3.0")
     @pytest.mark.parametrize("dependsprovides", test_cases)
     def test_build_artifact_depends_and_provides(
-        self, prepared_test_build, bitbake_image, bitbake_path, dependsprovides
+        self, request, prepared_test_build, bitbake_image, bitbake_path, dependsprovides
     ):
         """Test whether a build with enabled Artifact Provides and Depends does
         indeed add the parameters to the built Artifact"""
@@ -947,7 +960,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         )
 
         image = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.mender"
+            request, prepared_test_build["build_dir"], "core-image*.mender"
         )
 
         output = run_verbose("mender-artifact read %s" % image, capture=True).decode()
@@ -974,7 +987,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
     @pytest.mark.only_with_image("sdimg", "uefiimg", "gptimg", "biosimg")
     @pytest.mark.min_mender_version("1.0.0")
-    def test_extra_parts(self, latest_part_image, prepared_test_build, bitbake_image):
+    def test_extra_parts(
+        self, request, latest_part_image, prepared_test_build, bitbake_image
+    ):
         sdimg = latest_part_image.endswith(".sdimg")
         uefiimg = latest_part_image.endswith(".uefiimg")
         gptimg = latest_part_image.endswith(".gptimg")
@@ -1011,7 +1026,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 ],
             )
 
-        image = latest_build_artifact(prepared_test_build["build_dir"], "*img")
+        image = latest_build_artifact(request, prepared_test_build["build_dir"], "*img")
 
         # Take extended partition into account for MBR partition tables.
         if uefiimg or gptimg:
@@ -1053,7 +1068,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         assert match3 is not None
         assert match4 is not None
 
-        ext4 = latest_build_artifact(prepared_test_build["build_dir"], "*.ext4")
+        ext4 = latest_build_artifact(
+            request, prepared_test_build["build_dir"], "*.ext4"
+        )
         fstab = subprocess.check_output(
             ["debugfs", "-R", "cat /etc/fstab", ext4]
         ).decode()
@@ -1083,7 +1100,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
     @pytest.mark.min_mender_version("2.5.0")
     @pytest.mark.only_with_image("ext4")
-    def test_mender_inventory_network_scripts(self, prepared_test_build, bitbake_image):
+    def test_mender_inventory_network_scripts(
+        self, request, prepared_test_build, bitbake_image
+    ):
         """
         Test the 'inventory-network-scripts' build feature configuration through
         'PACKAGECONFIG' is working as expected.
@@ -1107,7 +1126,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             ['PACKAGECONFIG_append_pn-mender-client = " inventory-network-scripts"'],
         )
         rootfs = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.ext4"
+            request, prepared_test_build["build_dir"], "core-image*.ext4"
         )
         assert len(rootfs) > 0, "rootfs not generated"
 
@@ -1129,7 +1148,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             ['PACKAGECONFIG_remove_pn-mender-client = " inventory-network-scripts"'],
         )
         rootfs = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.ext4"
+            request, prepared_test_build["build_dir"], "core-image*.ext4"
         )
         assert len(rootfs) > 0, "ext4 not generated"
         output = subprocess.check_output(
