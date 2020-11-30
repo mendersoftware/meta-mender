@@ -145,7 +145,12 @@ class TestDBus:
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_fetch_jwt_token(
-        self, bitbake_variables, connection, second_connection, setup_mender_client_dbus
+        self,
+        bitbake_variables,
+        connection,
+        second_connection,
+        setup_mender_client_dbus,
+        test_hook=None,
     ):
         """Test the JWT token can be fetched using D-Bus."""
 
@@ -206,5 +211,36 @@ class TestDBus:
             assert f'string "{self.JWT_TOKEN}' in output
         finally:
             p.terminate()
+            if test_hook:
+                test_hook()
             connection.run("systemctl stop mender-client")
             connection.run("rm -f /tmp/dbus-monitor.log")
+
+    @pytest.mark.min_mender_version("2.5.0")
+    def test_no_sensitive_data(
+        self, bitbake_variables, connection, second_connection, setup_mender_client_dbus
+    ):
+        """Test that no sensitive data can be obtained either through:
+
+        * A monitor on the D-Bus channel
+        * Logs
+
+        """
+
+        def sensitive_data_sniffer():
+            output = second_connection.run(
+                f"grep {self.JWT_TOKEN} /tmp/dbus-monitor.log"
+            )
+            assert self.JWT_TOKEN not in output.stdout
+            output = second_connection.check_output(
+                f"journalctl --no-pager --all --reverse --system | grep {self.JWT_TOKEN} || true"
+            )
+            assert self.JWT_TOKEN not in output.stdout
+
+        self.test_dbus_fetch_jwt_token(
+            bitbake_variables,
+            connection,
+            second_connection,
+            setup_mender_client_dbus,
+            test_hook=sensitive_data_sniffer,
+        )
