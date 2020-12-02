@@ -89,12 +89,8 @@ class TestBuild:
         loader_file = "bootloader.bin"
         loader_offset = 4
 
-        init_env_cmd = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
-        )
         new_bb_vars = get_bitbake_variables(
-            request, "core-image-minimal", env_setup=init_env_cmd
+            request, "core-image-minimal", prepared_test_build=prepared_test_build
         )
 
         loader_dir = new_bb_vars["DEPLOY_DIR_IMAGE"]
@@ -573,12 +569,8 @@ class TestBuild:
         except subprocess.CalledProcessError:
             assert not test_case["success"], "Build failed"
 
-        init_env_cmd = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
-        )
         variables = get_bitbake_variables(
-            request, bitbake_image, env_setup=init_env_cmd
+            request, bitbake_image, prepared_test_build=prepared_test_build
         )
 
         for key in test_case["expected"]:
