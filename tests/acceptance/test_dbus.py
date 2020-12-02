@@ -20,7 +20,7 @@ import time
 
 from multiprocessing import Process
 
-from common import put_no_sftp
+from utils.common import put_no_sftp
 
 MENDER_CONF = """{
     "ClientProtocol": "https",
