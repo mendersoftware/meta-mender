@@ -1091,7 +1091,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         assert re.search(test4_re, fstab, flags=re.MULTILINE) is not None
 
     @pytest.mark.min_mender_version("1.0.0")
-    def test_build_nodbus(self, prepared_test_build, bitbake_path):
+    def test_build_nodbus(self, request, prepared_test_build, bitbake_path):
         """Test that we can remove dbus from PACKAGECONFIG, and that this causes the
         library dependency to be gone. The opposite is not tested, since we
         assume failure to link to the library will be caught in other tests that
@@ -1105,7 +1105,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         )
 
         env = get_bitbake_variables(
-            "mender-client", prepared_test_build=prepared_test_build
+            request, "mender-client", prepared_test_build=prepared_test_build
         )
 
         # Get dynamic section info from binary.
