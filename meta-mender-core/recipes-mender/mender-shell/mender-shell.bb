@@ -17,6 +17,9 @@ LIC_FILES_CHKSUM = "file://src/${GO_IMPORT}/LICENSE;md5=7fd64609fe1bce47db0e8f6e
 inherit go-mod
 inherit go-ptest
 
+DEPENDS_append = " pkgconfig-native glib-2.0"
+RDEPENDS_${PN} = "glib-2.0"
+
 GO_IMPORT = "github.com/mendersoftware/mender-shell"
 
 do_compile() {
@@ -40,6 +43,6 @@ inherit systemd
 
 SYSTEMD_AUTO_ENABLE ?= "enable"
 
-FILES_${PN}_append-mender-shell-systemd += "\
+FILES_${PN}_append += "\
     ${systemd_unitdir}/system/mender-shell.service \
 "
