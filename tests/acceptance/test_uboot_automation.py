@@ -450,11 +450,9 @@ class TestUbootAutomation:
         # Reset local.conf.
         reset_build_conf(prepared_test_build["build_dir"])
 
-        env_setup = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
+        bitbake_vars = get_bitbake_variables(
+            request, "u-boot", prepared_test_build=prepared_test_build
         )
-        bitbake_vars = get_bitbake_variables(request, "u-boot", env_setup=env_setup)
         if bitbake_vars["MENDER_UBOOT_AUTO_CONFIGURE"] == "0":
             # The rest of the test is irrelevant if MENDER_UBOOT_AUTO_CONFIGURE
             # is already off.
@@ -484,12 +482,8 @@ class TestUbootAutomation:
         that it produces a patch file, and that this patch file can be used
         instead of MENDER_UBOOT_AUTO_CONFIGURE."""
 
-        env_setup = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
-        )
         bitbake_variables = get_bitbake_variables(
-            request, "u-boot", env_setup=env_setup
+            request, "u-boot", prepared_test_build=prepared_test_build
         )
 
         # Only run if auto-configuration is on.
@@ -570,12 +564,8 @@ class TestUbootAutomation:
         auto-patching and apply the patch with a slight modification that makes
         its settings incompatible, and check that this is detected."""
 
-        env_setup = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
-        )
         bitbake_variables = get_bitbake_variables(
-            request, "u-boot", env_setup=env_setup
+            request, "u-boot", prepared_test_build=prepared_test_build
         )
 
         # Only run if auto-configuration is on.
