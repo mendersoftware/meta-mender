@@ -52,7 +52,9 @@ def mender_version_from_preferred_version(d, srcpv):
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=${MENDER_BRANCH}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below.
+# dependencies) are included in the LICENSE variable below. Note that for
+# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
+# file.
 def mender_license(branch):
     import re
     if branch.startswith("1."):

@@ -19,7 +19,7 @@ import subprocess
 
 import pytest
 
-from common import determine_active_passive_part, get_ssh_common_args
+from utils.common import determine_active_passive_part, get_ssh_common_args
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
