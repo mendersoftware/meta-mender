@@ -31,6 +31,7 @@ from utils.common import (
     get_local_conf_orig_path,
     make_tempdir,
     version_is_minimum,
+    reset_build_conf,
 )
 
 

@@ -29,6 +29,7 @@ from utils.common import (
     bitbake_env_from,
     get_bitbake_variables,
     reset_build_conf,
+    latest_build_artifact,
 )
 
 
@@ -421,7 +422,7 @@ class TestUbootAutomation:
             )
 
             new_rootfs = latest_build_artifact(
-                prepared_test_build["build_dir"], "core-image*.ext[234]"
+                request, prepared_test_build["build_dir"], "core-image*.ext[234]"
             )
             subprocess.check_call(
                 ["debugfs", "-R", "dump /sbin/fw_setenv fw_setenv.tmp", new_rootfs]
