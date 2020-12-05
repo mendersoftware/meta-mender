@@ -182,13 +182,13 @@ class TestDBus:
             # fetch was successful
             assert fetched
 
-            # verify we received the D-Bus signal ValidJwtTokenAvailable
+            # verify we received the D-Bus signal JwtTokenStateChange
             found = False
             output = ""
             for i in range(12):
                 output = connection.run("cat /tmp/dbus-monitor.log").stdout.strip()
                 if (
-                    "path=/io/mender/AuthenticationManager; interface=io.mender.Authentication1; member=ValidJwtTokenAvailable"
+                    "path=/io/mender/AuthenticationManager; interface=io.mender.Authentication1; member=JwtTokenStateChange"
                     in output
                 ):
                     found = True
