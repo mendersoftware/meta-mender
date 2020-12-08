@@ -29,6 +29,7 @@ inherit systemd
 
 SYSTEMD_SERVICE_${PN} = "${MENDER_CLIENT}.service"
 FILES_${PN} += "\
+    ${datadir}/dbus-1/system.d/io.mender.AuthenticationManager.conf \
     ${datadir}/mender/identity \
     ${datadir}/mender/identity/mender-device-identity \
     ${datadir}/mender/inventory \
@@ -93,7 +94,8 @@ INSANE_SKIP_${PN}-ptest = "ldflags textrel"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
 
-PACKAGECONFIG ?= "${@mender_feature_is_enabled("mender-client-install", "modules inventory-network-scripts", "", d)}"
+_MENDER_PACKAGECONFIG_DEFAULT = "${@mender_feature_is_enabled("mender-client-install", "dbus modules inventory-network-scripts", "", d)}"
+PACKAGECONFIG ?= "${_MENDER_PACKAGECONFIG_DEFAULT}"
 
 PACKAGECONFIG_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
 PACKAGECONFIG_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
@@ -106,11 +108,15 @@ PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
 # a very large requirement, which we will not mandate. Bash however, we require,
 # because otherwise the Yocto QA checks will complain.
 PACKAGECONFIG[modules] = ",,,bash"
+PACKAGECONFIG[dbus] = ",,glib-2.0,glib-2.0"
 
 # NOTE: Splits the mender.conf file by default into a transient and a persistent config. Needs to be
 # explicitly disabled if this is not to apply.
 PACKAGECONFIG[split-mender-config] = ",,,"
 PACKAGECONFIG_append = " split-mender-config"
+
+_MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
+EXTRA_OEMAKE_append = " TAGS='${_MENDER_TAGS}'"
 
 do_compile() {
     GOPATH="${B}:${S}"
@@ -239,6 +245,7 @@ do_install() {
         install-bin \
         install-identity-scripts \
         install-systemd \
+        ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'install-dbus', '', d)} \
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
 
     # install inventory scripts
