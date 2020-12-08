@@ -13,9 +13,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import re
+import os
+import subprocess
+
 import pytest
 
-from common import *
+from utils.common import determine_active_passive_part, get_ssh_common_args
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
@@ -162,7 +166,7 @@ class TestSnapshot:
                 bitbake_variables, connection
             )
 
-            common_args = get_ssh_common_args()
+            common_args = get_ssh_common_args(connection)
             # mender-artifact prefixes each ssh argument with "-S"
             common_args = common_args.replace(" ", " -S ")
 
