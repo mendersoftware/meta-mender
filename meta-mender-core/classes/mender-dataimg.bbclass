@@ -22,6 +22,7 @@ IMAGE_CMD_dataimg() {
 IMAGE_CMD_dataimg_mender-image-ubi() {
     mkfs.ubifs -o "${WORKDIR}/data.ubifs" -r "${IMAGE_ROOTFS}/data" ${MKUBIFS_ARGS}
     install -m 0644 "${WORKDIR}/data.ubifs" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
+    ln -sfn "${IMAGE_NAME}.dataimg" "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.dataimg"
 }
 
 # We need the data contents intact.
