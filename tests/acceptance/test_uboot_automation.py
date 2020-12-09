@@ -22,8 +22,15 @@ import shutil
 import subprocess
 import tempfile
 
-# Make sure common is imported after fabric, because we override some functions.
-from common import *
+import pytest
+
+from utils.common import (
+    build_image,
+    bitbake_env_from,
+    get_bitbake_variables,
+    reset_build_conf,
+    latest_build_artifact,
+)
 
 
 @pytest.mark.only_with_distro_feature("mender-uboot")
@@ -250,14 +257,14 @@ class TestUbootAutomation:
             return configs_to_test
 
     @pytest.mark.min_mender_version("1.0.0")
-    def test_uboot_compile(self, bitbake_variables):
+    def test_uboot_compile(self, request, bitbake_variables):
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
 
-        with bitbake_env_from("u-boot"):
-            self.run_test_uboot_compile(bitbake_variables)
+        with bitbake_env_from(request, "u-boot"):
+            self.run_test_uboot_compile(request, bitbake_variables)
 
-    def run_test_uboot_compile(self, bitbake_variables):
+    def run_test_uboot_compile(self, request, bitbake_variables):
         # No need to test this on non-vexpress-qemu. It is a very resource
         # consuming test, and it is identical on all boards, since it internally
         # tests all boards.
@@ -273,7 +280,7 @@ class TestUbootAutomation:
                 "cd %s && bitbake -c %s u-boot" % (os.environ["BUILDDIR"], task),
                 shell=True,
             )
-        bitbake_variables = get_bitbake_variables("u-boot")
+        bitbake_variables = get_bitbake_variables(request, "u-boot")
 
         shutil.rmtree("/dev/shm/test_uboot_compile", ignore_errors=True)
 
@@ -375,7 +382,7 @@ class TestUbootAutomation:
     @pytest.mark.only_with_image("sdimg")
     @pytest.mark.min_mender_version("1.0.0")
     def test_auto_provided_fw_utils(
-        self, prepared_test_build, latest_rootfs, bitbake_image
+        self, request, prepared_test_build, latest_rootfs, bitbake_image
     ):
         """Test that we can provide our own custom U-Boot provider, and that
         this will trigger auto provision of the corresponding fw-utils."""
@@ -415,7 +422,7 @@ class TestUbootAutomation:
             )
 
             new_rootfs = latest_build_artifact(
-                prepared_test_build["build_dir"], "core-image*.ext[234]"
+                request, prepared_test_build["build_dir"], "core-image*.ext[234]"
             )
             subprocess.check_call(
                 ["debugfs", "-R", "dump /sbin/fw_setenv fw_setenv.tmp", new_rootfs]
@@ -444,11 +451,9 @@ class TestUbootAutomation:
         # Reset local.conf.
         reset_build_conf(prepared_test_build["build_dir"])
 
-        env_setup = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
+        bitbake_vars = get_bitbake_variables(
+            request, "u-boot", prepared_test_build=prepared_test_build
         )
-        bitbake_vars = get_bitbake_variables("u-boot", env_setup=env_setup)
         if bitbake_vars["MENDER_UBOOT_AUTO_CONFIGURE"] == "0":
             # The rest of the test is irrelevant if MENDER_UBOOT_AUTO_CONFIGURE
             # is already off.
@@ -472,17 +477,15 @@ class TestUbootAutomation:
 
     @pytest.mark.min_mender_version("1.0.0")
     def test_save_mender_auto_configured_patch(
-        self, prepared_test_build, bitbake_image
+        self, request, prepared_test_build, bitbake_image
     ):
         """Test that we can invoke the save_mender_auto_configured_patch task,
         that it produces a patch file, and that this patch file can be used
         instead of MENDER_UBOOT_AUTO_CONFIGURE."""
 
-        env_setup = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
+        bitbake_variables = get_bitbake_variables(
+            request, "u-boot", prepared_test_build=prepared_test_build
         )
-        bitbake_variables = get_bitbake_variables("u-boot", env_setup=env_setup)
 
         # Only run if auto-configuration is on.
         if (
@@ -555,16 +558,16 @@ class TestUbootAutomation:
     # do_check_mender_defines.
     @pytest.mark.only_with_distro_feature("mender-ubi")
     @pytest.mark.min_mender_version("1.0.0")
-    def test_incorrect_Kconfig_setting(self, prepared_test_build, bitbake_image):
+    def test_incorrect_Kconfig_setting(
+        self, request, prepared_test_build, bitbake_image
+    ):
         """First produce a patch using the auto-patcher, then disable
         auto-patching and apply the patch with a slight modification that makes
         its settings incompatible, and check that this is detected."""
 
-        env_setup = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
+        bitbake_variables = get_bitbake_variables(
+            request, "u-boot", prepared_test_build=prepared_test_build
         )
-        bitbake_variables = get_bitbake_variables("u-boot", env_setup=env_setup)
 
         # Only run if auto-configuration is on.
         if (

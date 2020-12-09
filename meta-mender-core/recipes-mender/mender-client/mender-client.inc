@@ -1,7 +1,7 @@
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
-RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted"
+RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted util-linux-fdisk"
 
 def cert_location_if_server_crt_in(src_uri, d):
     for src in src_uri.split():
@@ -92,6 +92,8 @@ INSANE_SKIP_${PN} = "ldflags textrel"
 INSANE_SKIP_${PN}-ptest = "ldflags textrel"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
+
+PACKAGECONFIG ?= "${@mender_feature_is_enabled("mender-client-install", "inventory-network-scripts", "", d)}"
 
 PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
 PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
@@ -236,7 +238,8 @@ do_install() {
         systemd_unitdir=${systemd_unitdir} \
         install-bin \
         install-identity-scripts \
-        install-inventory-scripts \
+        install-inventory-local-scripts \
+        ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)} \
         install-systemd \
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
 
