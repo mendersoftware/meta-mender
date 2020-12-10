@@ -396,7 +396,9 @@ class TestBuild:
             ("mender-artifact-native", version)
             for version in versions_of_recipe("mender-artifact")
         ]
-        + [("mender-artifact-native", None)],
+        + [("mender-artifact-native", None)]
+        + [("mender-shell", version) for version in versions_of_recipe("mender-shell")]
+        + [("mender-shell", None)],
     )
     def test_preferred_versions(self, prepared_test_build, recipe, version):
         """Most Jenkins builds build with PREFERRED_VERSION set, because we want to
