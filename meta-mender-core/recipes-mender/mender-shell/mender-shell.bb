@@ -17,7 +17,10 @@ LIC_FILES_CHKSUM = "file://src/${GO_IMPORT}/LICENSE;md5=7fd64609fe1bce47db0e8f6e
 DEPENDS_append = " glib-2.0"
 RDEPENDS_${PN} = "glib-2.0"
 
+MENDER_SERVER_URL ?= "https://docker.mender.io"
 SYSTEMD_AUTO_ENABLE ?= "enable"
+
+B = "${WORKDIR}/build"
 
 inherit go
 inherit go-ptest
@@ -32,6 +35,29 @@ do_compile() {
         V=1
 }
 
+python do_prepare_mender_shell_conf() {
+    import json
+
+    mender_shell_conf = {}
+    # If a mender-shell.conf has been provided in SRC_URI, merge contents
+    src_conf = os.path.join(d.getVar("WORKDIR"), "mender-shell.conf")
+    if os.path.exists(src_conf):
+        with open(src_conf) as fd:
+            mender_shell_conf = json.load(fd)
+
+    if not "ServerURL" in mender_shell_conf:
+        mender_shell_conf["ServerURL"] = d.getVar("MENDER_SERVER_URL")
+
+    dst_conf = os.path.join(d.getVar("B"), "mender-shell.conf")
+    with open(dst_conf, "w") as fd:
+        json.dump(mender_shell_conf, fd, indent=4, sort_keys=True)
+
+}
+addtask do_prepare_mender_shell_conf after do_compile before do_install
+do_prepare_mender_shell_conf[vardeps] = " \
+    MENDER_SERVER_URL \
+"
+
 do_install() {
     oe_runmake \
         -C ${B}/src/${GO_IMPORT} \
@@ -43,6 +69,10 @@ do_install() {
         systemd_unitdir=${systemd_unitdir} \
         install-bin \
         install-systemd
+
+    # install configuration
+    mkdir -p  ${D}/${sysconfdir}/mender
+    install -m 0600 ${B}/mender-shell.conf ${D}/${sysconfdir}/mender/mender-shell.conf
 }
 
 FILES_${PN}_append += "\
