@@ -112,6 +112,7 @@ PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
 # because otherwise the Yocto QA checks will complain.
 PACKAGECONFIG[modules] = ",,,bash"
 PACKAGECONFIG[dbus] = ",,glib-2.0,glib-2.0"
+PACKAGECONFIG[inventory-network-scripts] = ",,,"
 
 # NOTE: Splits the mender.conf file by default into a transient and a persistent config. Needs to be
 # explicitly disabled if this is not to apply.
