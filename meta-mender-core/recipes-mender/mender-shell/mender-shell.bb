@@ -18,6 +18,7 @@ DEPENDS_append = " glib-2.0"
 RDEPENDS_${PN} = "glib-2.0"
 
 MENDER_SERVER_URL ?= "https://docker.mender.io"
+MENDER_SHELL_USER ??= "nobody"
 SYSTEMD_AUTO_ENABLE ?= "enable"
 
 B = "${WORKDIR}/build"
@@ -45,8 +46,11 @@ python do_prepare_mender_shell_conf() {
         with open(src_conf) as fd:
             mender_shell_conf = json.load(fd)
 
-    if not "ServerURL" in mender_shell_conf:
+    if "ServerURL" not in mender_shell_conf:
         mender_shell_conf["ServerURL"] = d.getVar("MENDER_SERVER_URL")
+
+    if "User" not in mender_shell_conf:
+        mender_shell_conf["User"] = d.getVar("MENDER_SHELL_USER")
 
     dst_conf = os.path.join(d.getVar("B"), "mender-shell.conf")
     with open(dst_conf, "w") as fd:
@@ -56,6 +60,7 @@ python do_prepare_mender_shell_conf() {
 addtask do_prepare_mender_shell_conf after do_compile before do_install
 do_prepare_mender_shell_conf[vardeps] = " \
     MENDER_SERVER_URL \
+    MENDER_SHELL_USER \
 "
 
 do_install() {
