@@ -24,7 +24,6 @@ SYSTEMD_AUTO_ENABLE ?= "enable"
 B = "${WORKDIR}/build"
 
 inherit go
-inherit go-ptest
 inherit pkgconfig
 inherit systemd
 
