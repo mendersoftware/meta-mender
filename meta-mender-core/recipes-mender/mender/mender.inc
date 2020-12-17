@@ -234,7 +234,6 @@ do_install() {
         install-bin \
         install-identity-scripts \
         install-systemd \
-        ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'install-dbus', '', d)} \
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
 
     # install inventory scripts
@@ -255,6 +254,17 @@ do_install() {
             install-inventory-scripts
     fi
 
+    # install dbus files
+    if grep -q install-dbus ${B}/src/${GO_IMPORT}/Makefile; then
+        if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', '', d)}; then
+            oe_runmake \
+                -C ${B}/src/${GO_IMPORT} \
+                V=1 \
+                prefix=${D} \
+                datadir=${datadir} \
+                install-dbus
+        fi
+    fi
 
     #install our prepared configuration
     install -d ${D}/${sysconfdir}/mender
