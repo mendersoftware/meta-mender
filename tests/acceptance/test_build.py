@@ -69,13 +69,13 @@ class TestBuild:
         output = subprocess.check_output(
             [
                 "md5sum",
-                "../../meta-mender-demo/recipes-mender/mender-client/files/server.crt",
+                "../../meta-mender-demo/recipes-mender/mender-server-certificate/files/server.crt",
             ]
         )
 
         # Crude check, just make sure it occurs in the build file.
         subprocess.check_call(
-            "fgrep %s ../../meta-mender-core/recipes-mender/mender-client/mender-client.inc >/dev/null 2>&1"
+            "fgrep %s ../../meta-mender-demo/recipes-mender/mender-server-certificate/mender-server-certificate.bbappend >/dev/null 2>&1"
             % output.decode().split()[0],
             shell=True,
         )
