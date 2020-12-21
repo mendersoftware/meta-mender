@@ -173,6 +173,9 @@ class TestDeltaUpdateModule:
         """Perform a delta update.
 
         """
+        # TODO: MEN-4296: Enable after next mender-binary-delta release
+        pytest.skip("Needs mender-binary-delta release 1.1.1 or 1.2.0. See MEN-4296")
+
         if (
             "read-only-rootfs"
             not in bitbake_variables["IMAGE_FEATURES"].strip().split()
