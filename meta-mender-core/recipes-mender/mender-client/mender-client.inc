@@ -22,6 +22,8 @@ MENDER_RETRY_POLL_INTERVAL_SECONDS ?= "300"
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
+localdatadir = "${prefix}/local/share"
+
 inherit go
 inherit go-ptest
 inherit pkgconfig
@@ -47,6 +49,7 @@ FILES_${PN} += "\
     ${sysconfdir}/mender.conf \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service \
+    ${localdatadir}/ca-certificates/mender/server.crt \
     /data/mender/device_type \
     /data/mender/mender.conf \
 "
@@ -185,7 +188,6 @@ python do_prepare_mender_conf() {
     conf_maybe_add("RetryPollIntervalSeconds", "MENDER_RETRY_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
     conf_maybe_add("RootfsPartA", "MENDER_ROOTFS_PART_A", getvar=True, integer=False)
     conf_maybe_add("RootfsPartB", "MENDER_ROOTFS_PART_B", getvar=True, integer=False)
-    conf_maybe_add("ServerCertificate", "MENDER_CERT_LOCATION", getvar=True, integer=False)
     conf_maybe_add("ServerURL", "MENDER_SERVER_URL", getvar=True, integer=False)
     conf_maybe_add("UpdatePollIntervalSeconds", "MENDER_UPDATE_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
 
@@ -264,6 +266,8 @@ do_install() {
     if [ -f ${WORKDIR}/server.crt ]; then
         install -m 0755 -d $(dirname ${D}${MENDER_CERT_LOCATION})
         install -m 0444 ${WORKDIR}/server.crt ${D}${MENDER_CERT_LOCATION}
+        install -m 0755 -d ${D}${localdatadir}/ca-certificates/mender
+        install -m 0444 ${WORKDIR}/server.crt ${D}${localdatadir}/ca-certificates/mender/server.crt
     fi
 
     install -d ${D}/${localstatedir}/lib/mender
@@ -327,4 +331,9 @@ do_install_append_mender-persist-systemd-machine-id() {
     ln -sf ../mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
     install -d -m 755 ${D}${bindir}
     install -m 755 ${WORKDIR}/mender-client-set-systemd-machine-id.sh ${D}${bindir}/
+}
+
+# Required if a self-signed certificate was added, but harmless in any case, so run unconditionally
+pkg_postinst_${PN} () {
+    SYSROOT="$D" $D${sbindir}/update-ca-certificates
 }
