@@ -1092,7 +1092,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         assert re.search(test3_re, fstab, flags=re.MULTILINE) is not None
         assert re.search(test4_re, fstab, flags=re.MULTILINE) is not None
 
-    @pytest.mark.min_mender_version("2.5.0")
+    @pytest.mark.min_mender_version("1.0.0")
     def test_build_nodbus(self, request, prepared_test_build, bitbake_path):
         """Test that we can remove dbus from PACKAGECONFIG, and that this causes the
         library dependency to be gone. The opposite is not tested, since we
