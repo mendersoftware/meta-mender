@@ -270,7 +270,7 @@ do_install() {
 
     # install dbus files
     if grep -q install-dbus ${B}/src/${GO_IMPORT}/Makefile; then
-        if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', '', d)}; then
+        if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
             oe_runmake \
                 -C ${B}/src/${GO_IMPORT} \
                 V=1 \
