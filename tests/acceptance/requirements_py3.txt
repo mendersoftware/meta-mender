@@ -1,7 +1,7 @@
 pytest==6.2.0
 fabric==2.5.0
 pytest-html==3.1.1
-pytest-xdist==2.1.0
+pytest-xdist==2.2.0
 paramiko==2.7.2
 python-lzo==1.12
 ubi-reader==0.7.0
