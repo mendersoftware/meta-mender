@@ -1,6 +1,10 @@
+FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
+
 include ${@mender_feature_is_enabled("mender-uboot","u-boot-mender-helpers.inc","",d)}
 
 RPROVIDES_${PN} += "u-boot-default-env"
+
+SRC_URI_append = " file://debug.diff"
 
 FILES_${PN}_append_mender-uboot = " /data/u-boot/fw_env.config"
 

@@ -1,0 +1,105 @@
+diff --git a/src/fw_printenv.c b/src/fw_printenv.c
+index 8b830d5..c5e1071 100644
+--- a/src/fw_printenv.c
++++ b/src/fw_printenv.c
+@@ -108,8 +108,10 @@ int main (int argc, char **argv) {
+ 	argc -= optind;
+ 	argv += optind;
+ 
++        fprintf(stderr, "In %s at %i, ret = %d\n", __func__, __LINE__, ret);
+ 	if (libuboot_initialize(&ctx, NULL) < 0) {
+ 		fprintf(stderr, "Cannot initialize environment\n");
++		fprintf(stderr, "In %s at %i, ret = %d\n", __func__, __LINE__, ret);
+ 		exit(1);
+ 	}
+ 
+@@ -118,6 +120,7 @@ int main (int argc, char **argv) {
+ 
+ 	if ((ret = libuboot_read_config(ctx, cfgfname)) < 0) {
+ 		fprintf(stderr, "Configuration file wrong or corrupted\n");
++		fprintf(stderr, "In %s at %i, ret = %d\n", __func__, __LINE__, ret);
+ 		exit (ret);
+ 	}
+ 
+@@ -128,6 +131,7 @@ int main (int argc, char **argv) {
+ 		fprintf(stderr, "Cannot read environment, using default\n");
+ 		if ((ret = libuboot_load_file(ctx, defenvfile)) < 0) {
+ 			fprintf(stderr, "Cannot read default environment from file\n");
++			fprintf(stderr, "In %s at %i, ret = %d\n", __func__, __LINE__, ret);
+ 			exit (ret);
+ 		}
+ 	}
+@@ -173,7 +177,9 @@ int main (int argc, char **argv) {
+ 		}
+ 
+ 		if (need_store) {
++			fprintf(stderr, "In %s at %i\n", __func__, __LINE__);
+ 			ret = libuboot_env_store(ctx);
++			fprintf(stderr, "In %s at %i, ret = %d\n", __func__, __LINE__, ret);
+ 			if (ret)
+ 				fprintf(stderr, "Error storing the env\n");
+ 		}
+@@ -182,5 +188,6 @@ int main (int argc, char **argv) {
+ 	libuboot_close(ctx);
+ 	libuboot_exit(ctx);
+ 
++        fprintf(stderr, "In %s at %i, ret = %d\n", __func__, __LINE__, ret);
+ 	return ret;
+ }
+diff --git a/src/uboot_env.c b/src/uboot_env.c
+index c9a900f..8fb5ee2 100644
+--- a/src/uboot_env.c
++++ b/src/uboot_env.c
+@@ -856,8 +856,10 @@ int libuboot_env_store(struct uboot_ctx *ctx)
+ 	 * Allocate the bigger of the case
+ 	 */
+ 	image = malloc(sizeof(struct uboot_env_redund) + ctx->size);
++	fprintf(stderr, "In %s at %i\n", __func__, __LINE__);
+ 	if (!image)
+ 		return -ENOMEM;
++	fprintf(stderr, "In %s at %i\n", __func__, __LINE__);
+ 
+ 	if (ctx->redundant)
+ 		offsetdata = offsetof(struct uboot_env_redund, data);
+@@ -869,8 +871,12 @@ int libuboot_env_store(struct uboot_ctx *ctx)
+ 	buf = data;
+ 	LIST_FOREACH(entry, &ctx->varlist, next) {
+ 		size = (ctx->size - offsetdata)  - (buf - data); 
+-		if ((strlen(entry->name) + strlen(entry->value) + 2) > size) 
++		fprintf(stderr, "In %s at %i\n", __func__, __LINE__);
++		if ((strlen(entry->name) + strlen(entry->value) + 2) > size) {
++			fprintf(stderr, "In %s at %i\n", __func__, __LINE__);
+ 			return -ENOMEM;
++                }
++		fprintf(stderr, "In %s at %i\n", __func__, __LINE__);
+ 
+ 		if (entry->type || entry->access)
+ 			saveflags = true;
+@@ -917,20 +923,26 @@ int libuboot_env_store(struct uboot_ctx *ctx)
+ 	*(uint32_t *)image = crc32(0, (uint8_t *)data, ctx->size - offsetdata);
+ 
+ 	copy = ctx->redundant ? (ctx->current ? 0 : 1) : 0;
++        fprintf(stderr, "In %s at %i\n", __func__, __LINE__);
+ 	ret = devwrite(ctx, copy, image);
++        fprintf(stderr, "In %s at %i, ret = %d\n", __func__, __LINE__, ret);
+ 	free(image);
+ 
+ 	if (ret == ctx->size)
+ 		ret = 0;
+ 
+ 	if (ctx->redundant && !ret) {
+-		if (ctx->envdevs[ctx->current].flagstype == FLAGS_BOOLEAN)
++		if (ctx->envdevs[ctx->current].flagstype == FLAGS_BOOLEAN) {
++			fprintf(stderr, "In %s at %i\n", __func__, __LINE__);
+ 			ret = set_obsolete_flag(&ctx->envdevs[ctx->current]);
++			fprintf(stderr, "In %s at %i, ret = %d\n", __func__, __LINE__, ret);
++		}
+ 	}
+ 
+ 	if (!ret)
+ 		ctx->current = ctx->current ? 0 : 1;
+ 
++        fprintf(stderr, "In %s at %i\n", __func__, __LINE__);
+ 	return ret;
+ }
+ 
