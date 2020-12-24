@@ -1,0 +1,1 @@
+MENDER_CONNECT_USER ?= "root"
