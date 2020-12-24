@@ -1,7 +1,7 @@
 DESCRIPTION = "Mender add-on for remote terminal access."
 HOMEPAGE = "https://mender.io"
 
-SRC_URI = "git://github.com/mendersoftware/mender-shell.git;protocol=https;branch=master"
+SRC_URI = "git://github.com/mendersoftware/mender-connect.git;protocol=https;branch=master"
 
 # See: https://www.yoctoproject.org/docs/2.5.1/dev-manual/dev-manual.html#automatically-incrementing-a-binary-package-revision-number
 SRCREV = "${AUTOREV}"
@@ -18,7 +18,7 @@ DEPENDS_append = " glib-2.0"
 RDEPENDS_${PN} = "glib-2.0"
 
 MENDER_SERVER_URL ?= "https://docker.mender.io"
-MENDER_SHELL_USER ??= "nobody"
+MENDER_CONNECT_USER ??= "nobody"
 SYSTEMD_AUTO_ENABLE ?= "enable"
 
 B = "${WORKDIR}/build"
@@ -28,7 +28,7 @@ inherit go-ptest
 inherit pkgconfig
 inherit systemd
 
-GO_IMPORT = "github.com/mendersoftware/mender-shell"
+GO_IMPORT = "github.com/mendersoftware/mender-connect"
 
 do_compile() {
     oe_runmake \
@@ -36,31 +36,31 @@ do_compile() {
         V=1
 }
 
-python do_prepare_mender_shell_conf() {
+python do_prepare_mender_connect_conf() {
     import json
 
-    mender_shell_conf = {}
-    # If a mender-shell.conf has been provided in SRC_URI, merge contents
-    src_conf = os.path.join(d.getVar("WORKDIR"), "mender-shell.conf")
+    mender_connect_conf = {}
+    # If a mender-connect.conf has been provided in SRC_URI, merge contents
+    src_conf = os.path.join(d.getVar("WORKDIR"), "mender-connect.conf")
     if os.path.exists(src_conf):
         with open(src_conf) as fd:
-            mender_shell_conf = json.load(fd)
+            mender_connect_conf = json.load(fd)
 
-    if "ServerURL" not in mender_shell_conf:
-        mender_shell_conf["ServerURL"] = d.getVar("MENDER_SERVER_URL")
+    if "ServerURL" not in mender_connect_conf:
+        mender_connect_conf["ServerURL"] = d.getVar("MENDER_SERVER_URL")
 
-    if "User" not in mender_shell_conf:
-        mender_shell_conf["User"] = d.getVar("MENDER_SHELL_USER")
+    if "User" not in mender_connect_conf:
+        mender_connect_conf["User"] = d.getVar("MENDER_CONNECT_USER")
 
-    dst_conf = os.path.join(d.getVar("B"), "mender-shell.conf")
+    dst_conf = os.path.join(d.getVar("B"), "mender-connect.conf")
     with open(dst_conf, "w") as fd:
-        json.dump(mender_shell_conf, fd, indent=4, sort_keys=True)
+        json.dump(mender_connect_conf, fd, indent=4, sort_keys=True)
 
 }
-addtask do_prepare_mender_shell_conf after do_compile before do_install
-do_prepare_mender_shell_conf[vardeps] = " \
+addtask do_prepare_mender_connect_conf after do_compile before do_install
+do_prepare_mender_connect_conf[vardeps] = " \
     MENDER_SERVER_URL \
-    MENDER_SHELL_USER \
+    MENDER_CONNECT_USER \
 "
 
 do_install() {
@@ -77,9 +77,9 @@ do_install() {
 
     # install configuration
     mkdir -p  ${D}/${sysconfdir}/mender
-    install -m 0600 ${B}/mender-shell.conf ${D}/${sysconfdir}/mender/mender-shell.conf
+    install -m 0600 ${B}/mender-connect.conf ${D}/${sysconfdir}/mender/mender-connect.conf
 }
 
 FILES_${PN}_append += "\
-    ${systemd_unitdir}/system/mender-shell.service \
+    ${systemd_unitdir}/system/mender-connect.service \
 "
