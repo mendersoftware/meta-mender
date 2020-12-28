@@ -46,7 +46,6 @@ FILES_${PN} += "\
     ${datadir}/mender/modules/v3/rpm \
     ${datadir}/mender/modules/v3/script \
     ${datadir}/mender/modules/v3/single-file \
-    ${sysconfdir}/mender.conf \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service \
     ${localdatadir}/ca-certificates/mender/server.crt \
