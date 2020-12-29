@@ -3,15 +3,8 @@ HOMEPAGE = "https://mender.io"
 
 RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted util-linux-fdisk"
 
-def cert_location_if_server_crt_in(src_uri, d):
-    for src in src_uri.split():
-        if src.endswith("/server.crt"):
-            return "%s/mender/server.crt" % d.getVar('sysconfdir')
-    return ""
-
 MENDER_CLIENT ?= "mender-client"
 MENDER_SERVER_URL ?= "https://docker.mender.io"
-MENDER_CERT_LOCATION ??= "${@cert_location_if_server_crt_in('${SRC_URI}', d)}"
 # Tenant token
 MENDER_TENANT_TOKEN ?= "dummy"
 SYSTEMD_AUTO_ENABLE ?= "enable"
@@ -124,12 +117,6 @@ do_compile() {
     PATH="${B}/bin:$PATH"
     export PATH
 
-    DEFAULT_CERT_MD5="1fba17436027eb1f5ceff4af9a63c9c2"
-
-    if [ "$(md5sum ${WORKDIR}/server.crt | awk '{ print $1 }')" = $DEFAULT_CERT_MD5 ]; then
-        bbwarn "You are building with the default server certificate, which is not intended for production use"
-    fi
-
     # mender is using vendored dependencies, any 3rd party libraries go to into
     # /vendor directory inside mender source tree. In order for `go build` to pick
     # up vendored deps from our source tree, the mender source tree itself must be
@@ -185,7 +172,6 @@ python do_prepare_mender_conf() {
     conf_maybe_add("RetryPollIntervalSeconds", "MENDER_RETRY_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
     conf_maybe_add("RootfsPartA", "MENDER_ROOTFS_PART_A", getvar=True, integer=False)
     conf_maybe_add("RootfsPartB", "MENDER_ROOTFS_PART_B", getvar=True, integer=False)
-    conf_maybe_add("ServerCertificate", "MENDER_CERT_LOCATION", getvar=True, integer=False)
     conf_maybe_add("ServerURL", "MENDER_SERVER_URL", getvar=True, integer=False)
     conf_maybe_add("UpdatePollIntervalSeconds", "MENDER_UPDATE_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
 
@@ -222,7 +208,6 @@ python do_prepare_mender_conf() {
 addtask do_prepare_mender_conf after do_compile before do_install
 do_prepare_mender_conf[vardeps] = " \
     MENDER_ARTIFACT_VERIFY_KEY \
-    MENDER_CERT_LOCATION \
     MENDER_INVENTORY_POLL_INTERVAL_SECONDS \
     MENDER_RETRY_POLL_INTERVAL_SECONDS \
     MENDER_ROOTFS_PART_A \
@@ -285,12 +270,6 @@ do_install() {
     fi
     if [ -f ${B}/persistent_mender.conf ]; then
         install -m 0600 ${B}/persistent_mender.conf ${D}/data/mender/mender.conf
-    fi
-
-    #install server certificate
-    if [ -f ${WORKDIR}/server.crt ]; then
-        install -m 0755 -d $(dirname ${D}${MENDER_CERT_LOCATION})
-        install -m 0444 ${WORKDIR}/server.crt ${D}${MENDER_CERT_LOCATION}
     fi
 
     install -d ${D}/${localstatedir}/lib/mender
