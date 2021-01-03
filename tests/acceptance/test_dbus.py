@@ -39,6 +39,13 @@ MENDER_CONF = """{
 """
 
 
+MENDER_STATE_FILES = (
+    "/var/lib/mender/mender-agent.pem",
+    "/var/lib/mender/mender-store",
+    "/var/lib/mender/mender-store-lock",
+)
+
+
 @pytest.fixture
 def setup_mender_client_dbus(request, bitbake_variables, connection):
     conffile = "/data/etc/mender/mender.conf"
@@ -112,6 +119,7 @@ class TestDBus:
 
         finally:
             connection.run("systemctl stop mender-client")
+            connection.run("rm -f %s" % " ".join(MENDER_STATE_FILES))
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_get_jwt_token(
@@ -142,6 +150,7 @@ class TestDBus:
             assert f'string "{self.JWT_TOKEN}' in output
         finally:
             connection.run("systemctl stop mender-client")
+            connection.run("rm -f %s" % " ".join(MENDER_STATE_FILES))
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_fetch_jwt_token(
@@ -209,4 +218,5 @@ class TestDBus:
         finally:
             p.terminate()
             connection.run("systemctl stop mender-client")
+            connection.run("rm -f %s" % " ".join(MENDER_STATE_FILES))
             connection.run("rm -f /tmp/dbus-monitor.log")
