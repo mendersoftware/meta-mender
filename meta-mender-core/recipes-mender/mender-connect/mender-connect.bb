@@ -12,7 +12,7 @@ PV = "0.1+git${SRCPV}"
 # releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
 # file.
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
-LIC_FILES_CHKSUM = "file://src/${GO_IMPORT}/LICENSE;md5=7fd64609fe1bce47db0e8f6e3cc6a11d"
+LIC_FILES_CHKSUM = "file://src/${GO_IMPORT}/LICENSE;md5=fbe9cd162201401ffbb442445efecfdc"
 
 DEPENDS_append = " glib-2.0"
 RDEPENDS_${PN} = "glib-2.0"
