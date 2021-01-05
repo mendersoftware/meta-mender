@@ -210,14 +210,13 @@ class TestDBus:
             assert f'string "{self.JWT_TOKEN}' in output
 
             # token is now available also via GetJwtToken
-            # Disabled due to MEN-4294
-            # result = connection.run(
-            #     "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.GetJwtToken"
-            # )
-            # assert result.exited == 0
+            result = connection.run(
+                "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.GetJwtToken"
+            )
+            assert result.exited == 0
 
-            # output = result.stdout.strip()
-            # assert f'string "{self.JWT_TOKEN}' in output
+            output = result.stdout.strip()
+            assert f'string "{self.JWT_TOKEN}' in output
         finally:
             p.terminate()
             connection.run("systemctl stop mender-client")
