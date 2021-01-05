@@ -173,8 +173,9 @@ class TestDeltaUpdateModule:
         """Perform a delta update.
 
         """
-        # TODO: MEN-4296: Enable after next mender-binary-delta release
-        pytest.skip("Needs mender-binary-delta release 1.1.1 or 1.2.0. See MEN-4296")
+        pytest.skip(
+            "Incompatible with vexpress-qemu, needs ARM with FPU support. See MEN-4297"
+        )
 
         if (
             "read-only-rootfs"
