@@ -69,7 +69,7 @@ def mender_license(branch):
         return {
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL",
         }
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LICENSE;md5=7fd64609fe1bce47db0e8f6e3cc6a11d"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LICENSE;md5=fbe9cd162201401ffbb442445efecfdc"
 LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.
