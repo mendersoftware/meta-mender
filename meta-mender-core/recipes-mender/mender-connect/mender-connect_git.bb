@@ -20,6 +20,7 @@ RDEPENDS_${PN} = "glib-2.0"
 MENDER_SERVER_URL ?= "https://docker.mender.io"
 MENDER_CONNECT_USER ??= "nobody"
 SYSTEMD_AUTO_ENABLE ?= "enable"
+SYSTEMD_SERVICE_${PN} = "mender-connect.service"
 
 B = "${WORKDIR}/build"
 
