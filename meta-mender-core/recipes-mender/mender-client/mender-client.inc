@@ -46,7 +46,6 @@ FILES_${PN} += "\
     ${datadir}/mender/modules/v3/rpm \
     ${datadir}/mender/modules/v3/script \
     ${datadir}/mender/modules/v3/single-file \
-    ${sysconfdir}/mender.conf \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service \
     ${localdatadir}/ca-certificates/mender/server.crt \
@@ -112,6 +111,7 @@ PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
 # because otherwise the Yocto QA checks will complain.
 PACKAGECONFIG[modules] = ",,,bash"
 PACKAGECONFIG[dbus] = ",,glib-2.0,glib-2.0"
+PACKAGECONFIG[inventory-network-scripts] = ",,,"
 
 # NOTE: Splits the mender.conf file by default into a transient and a persistent config. Needs to be
 # explicitly disabled if this is not to apply.
@@ -120,6 +120,7 @@ PACKAGECONFIG_append = " split-mender-config"
 
 _MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
 EXTRA_OEMAKE_append = " TAGS='${_MENDER_TAGS}'"
+GOPTESTBUILDFLAGS_append = " -tags '${_MENDER_TAGS}'"
 
 do_compile() {
     GOPATH="${B}:${S}"
@@ -246,11 +247,38 @@ do_install() {
         systemd_unitdir=${systemd_unitdir} \
         install-bin \
         install-identity-scripts \
-        install-inventory-local-scripts \
-        ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)} \
         install-systemd \
-        ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'install-dbus', '', d)} \
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
+
+    # install inventory scripts
+    if grep -q install-inventory-local-scripts ${B}/src/${GO_IMPORT}/Makefile; then
+        oe_runmake \
+            -C ${B}/src/${GO_IMPORT} \
+            V=1 \
+            prefix=${D} \
+            datadir=${datadir} \
+            install-inventory-local-scripts \
+            ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)}
+    else
+        oe_runmake \
+            -C ${B}/src/${GO_IMPORT} \
+            V=1 \
+            prefix=${D} \
+            datadir=${datadir} \
+            install-inventory-scripts
+    fi
+
+    # install dbus files
+    if grep -q install-dbus ${B}/src/${GO_IMPORT}/Makefile; then
+        if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
+            oe_runmake \
+                -C ${B}/src/${GO_IMPORT} \
+                V=1 \
+                prefix=${D} \
+                datadir=${datadir} \
+                install-dbus
+        fi
+    fi
 
     #install our prepared configuration
     install -d ${D}/${sysconfdir}/mender
