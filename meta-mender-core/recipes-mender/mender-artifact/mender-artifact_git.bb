@@ -58,10 +58,9 @@ SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;br
 def mender_license(branch):
     # Only one currently. If the sub licenses change we may introduce more.
     return {
-               "md5": "0813d261553528b7275c19312036befb",
                "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
     }
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LICENSE;md5=7fd64609fe1bce47db0e8f6e3cc6a11d"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LICENSE;md5=fbe9cd162201401ffbb442445efecfdc"
 LICENSE = "${@mender_license(d.getVar('MENDER_ARTIFACT_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.
