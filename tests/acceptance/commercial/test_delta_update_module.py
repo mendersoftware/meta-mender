@@ -156,6 +156,8 @@ class TestDeltaUpdateModule:
         artifact_sum = match.group(1)
         assert rootfs_sum == artifact_sum
 
+    # Not testable on QEMU/ARM combination currently. See MEN-4297.
+    @pytest.mark.not_for_machine("vexpress-qemu")
     @pytest.mark.only_with_image("ext4")
     def test_perform_update(
         self,
@@ -173,8 +175,6 @@ class TestDeltaUpdateModule:
         """Perform a delta update.
 
         """
-        # TODO: MEN-4296: Enable after next mender-binary-delta release
-        pytest.skip("Needs mender-binary-delta release 1.1.1 or 1.2.0. See MEN-4296")
 
         if (
             "read-only-rootfs"
