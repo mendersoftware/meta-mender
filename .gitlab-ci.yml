@@ -1,5 +1,6 @@
 stages:
   - test
+  - trigger
 
 include:
   - project: 'Northern.tech/Mender/mendertesting'
@@ -8,3 +9,17 @@ include:
     file: '.gitlab-ci-check-python3-format.yml'
   - project: 'Northern.tech/Mender/mendertesting'
     file: '.gitlab-ci-github-status-updates.yml'
+
+trigger:mender-qa:
+  image: alpine
+  stage: trigger
+  before_script:
+    - apk add --no-cache git curl bash python3 py3-pip
+    - pip3 install pyyaml
+    - git clone https://github.com/mendersoftware/integration.git integration
+    - git clone https://github.com/mendersoftware/mender-qa.git mender-qa
+  script:
+    - export WORKSPACE=$(pwd)
+    - mender-qa/scripts/gitlab_trigger_client_publish ${CI_COMMIT_REF_NAME} ${CI_PROJECT_NAME}
+  only:
+    - master
