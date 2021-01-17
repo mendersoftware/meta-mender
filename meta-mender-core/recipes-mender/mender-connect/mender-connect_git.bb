@@ -18,6 +18,7 @@ DEPENDS_append = " glib-2.0"
 RDEPENDS_${PN} = "glib-2.0"
 
 MENDER_SERVER_URL ?= "https://docker.mender.io"
+MENDER_CONNECT_SHELL ??= "/bin/sh"
 MENDER_CONNECT_USER ??= "nobody"
 SYSTEMD_AUTO_ENABLE ?= "enable"
 SYSTEMD_SERVICE_${PN} = "mender-connect.service"
@@ -50,6 +51,9 @@ python do_prepare_mender_connect_conf() {
     if "ServerURL" not in mender_connect_conf:
         mender_connect_conf["ServerURL"] = d.getVar("MENDER_SERVER_URL")
 
+    if "Shell" not in mender_connect_conf:
+        mender_connect_conf["Shell"] = d.getVar("MENDER_CONNECT_SHELL")
+
     if "User" not in mender_connect_conf:
         mender_connect_conf["User"] = d.getVar("MENDER_CONNECT_USER")
 
@@ -61,6 +65,7 @@ python do_prepare_mender_connect_conf() {
 addtask do_prepare_mender_connect_conf after do_compile before do_install
 do_prepare_mender_connect_conf[vardeps] = " \
     MENDER_SERVER_URL \
+    MENDER_CONNECT_SHELL \
     MENDER_CONNECT_USER \
 "
 
