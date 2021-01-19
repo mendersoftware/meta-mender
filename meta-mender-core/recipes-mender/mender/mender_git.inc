@@ -17,6 +17,9 @@ def mender_autorev_if_git_version(d):
         return "f6ffa190892202263fdb75975059fbb201adab6a"
 SRCREV ?= '${@mender_autorev_if_git_version(d)}'
 
+# Force the version of master packages to compare very highly to other versions.
+PKGV = "${@'999+master+git${SRCPV}' if '${PV}'.startswith('master') else '${PV}'}"
+
 def mender_branch_from_preferred_version(d):
     import re
     version = d.getVar("PREFERRED_VERSION")

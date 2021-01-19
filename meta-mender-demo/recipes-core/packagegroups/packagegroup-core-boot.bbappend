@@ -11,3 +11,16 @@ RDEPENDS_${PN}_append_qemux86 = " mender-reboot-detector"
 # way. Therefore we need LSB support so that the dynamic linker is found.
 # Specifically, this creates the symlink /lib64 -> /lib.
 RDEPENDS_${PN}_append = " lsb"
+
+def maybe_mender_connect(d):
+    pref = d.getVar('PREFERRED_VERSION_pn-mender')
+    if pref is None:
+        return " mender-connect"
+
+    if pref[0:3] in ["1.7", "2.0", "2.1", "2.2", "2.3", "2.4"]:
+        return ""
+    else:
+        return " mender-connect"
+
+# Install Mender add-ons, but only if the client is recent enough.
+RDEPENDS_${PN}_append = "${@maybe_mender_connect(d)}"
