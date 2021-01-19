@@ -15,7 +15,7 @@ LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
 LIC_FILES_CHKSUM = "file://src/${GO_IMPORT}/LICENSE;md5=fbe9cd162201401ffbb442445efecfdc"
 
 DEPENDS_append = " glib-2.0"
-RDEPENDS_${PN} = "glib-2.0"
+RDEPENDS_${PN} = "glib-2.0 mender-client (>= 2.5)"
 
 MENDER_SERVER_URL ?= "https://docker.mender.io"
 MENDER_CONNECT_SHELL ??= "/bin/sh"
