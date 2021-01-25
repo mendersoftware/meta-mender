@@ -1,5 +1,5 @@
 pytest==6.2.1
-fabric==2.5.0
+fabric==2.6.0
 pytest-html==3.1.1
 paramiko==2.7.2
 python-lzo==1.12
