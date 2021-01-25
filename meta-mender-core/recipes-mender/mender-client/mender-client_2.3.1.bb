@@ -61,6 +61,8 @@ do_install() {
     if [ -f ${WORKDIR}/server.crt ]; then
         install -m 0755 -d $(dirname ${D}${MENDER_CERT_LOCATION})
         install -m 0444 ${WORKDIR}/server.crt ${D}${MENDER_CERT_LOCATION}
+        install -m 0755 -d ${D}${localdatadir}/ca-certificates/mender
+        install -m 0444 ${WORKDIR}/server.crt ${D}${localdatadir}/ca-certificates/mender/server.crt
     fi
 
     install -d ${D}/${localstatedir}/lib/mender

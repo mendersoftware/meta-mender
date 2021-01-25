@@ -8,10 +8,10 @@ require mender-client.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.4.x"
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.3.x"
 
-# Tag: 2.4.1
-SRCREV = "ffef645f932dd2fd7545705288f6e6df14417966"
+# Tag: 2.3.2
+SRCREV = "4683d8708e2187b5f6b1e0b4e6da84161a15db79"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
@@ -23,11 +23,11 @@ SRCREV = "ffef645f932dd2fd7545705288f6e6df14417966"
 # dependencies) are included in the LICENSE variable below. Note that for
 # releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
 # file.
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=5649992d13a6fda40abfac7730a62b07"
-LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=defbf977224ad6ceaf88087f40552a72"
+LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
 
-DEPENDS += "xz openssl"
-RDEPENDS_${PN} += "liblzma openssl"
+DEPENDS += "xz"
+RDEPENDS_${PN} += "liblzma"
 
 # Not supported in versions < 2.5.0.
 _MENDER_PACKAGECONFIG_DEFAULT_remove = "dbus"
