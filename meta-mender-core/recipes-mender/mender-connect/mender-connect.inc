@@ -39,8 +39,8 @@ python do_prepare_mender_connect_conf() {
     if "ServerURL" not in mender_connect_conf:
         mender_connect_conf["ServerURL"] = d.getVar("MENDER_SERVER_URL")
 
-    if "Shell" not in mender_connect_conf:
-        mender_connect_conf["Shell"] = d.getVar("MENDER_CONNECT_SHELL")
+    if "ShellCommand" not in mender_connect_conf:
+        mender_connect_conf["ShellCommand"] = d.getVar("MENDER_CONNECT_SHELL")
 
     if "User" not in mender_connect_conf:
         mender_connect_conf["User"] = d.getVar("MENDER_CONNECT_USER")
