@@ -401,10 +401,15 @@ class TestBuild:
             ("mender-connect", version)
             for version in versions_of_recipe("mender-connect")
         ]
-        + [("mender-connect", None)],
+        + [("mender-connect", None)]
+        + [
+            ("mender-configure", version)
+            for version in versions_of_recipe("mender-configure")
+        ]
+        + [("mender-configure", None)],
     )
     def test_preferred_versions(self, prepared_test_build, recipe, version):
-        """Most Jenkins builds build with PREFERRED_VERSION set, because we want to
+        """Most CI builds build with PREFERRED_VERSION set, because we want to
         build from a specific SHA. This test tests that we can change that or
         turn it off and the build still works."""
 
