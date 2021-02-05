@@ -22,5 +22,15 @@ def maybe_mender_connect(d):
     else:
         return " mender-connect"
 
+def maybe_mender_configure(d):
+    pref = d.getVar('PREFERRED_VERSION_pn-mender')
+    if pref is None:
+        return " mender-configure"
+
+    if pref[0:3] in ["1.7", "2.0", "2.1", "2.2", "2.3", "2.4", "2.5"]:
+        return ""
+    else:
+        return " mender-configure"
+
 # Install Mender add-ons, but only if the client is recent enough.
-RDEPENDS_${PN}_append = "${@maybe_mender_connect(d)}"
+RDEPENDS_${PN}_append = "${@maybe_mender_connect(d)}${@maybe_mender_configure(d)}"
