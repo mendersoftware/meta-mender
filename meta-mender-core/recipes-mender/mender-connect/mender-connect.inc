@@ -1,8 +1,6 @@
 DESCRIPTION = "Mender add-on for remote terminal access."
 HOMEPAGE = "https://mender.io"
 
-SRC_URI = "git://github.com/mendersoftware/mender-connect.git;protocol=https;branch=master"
-
 DEPENDS_append = " glib-2.0"
 RDEPENDS_${PN} = "glib-2.0 mender (>= 2.5)"
 
