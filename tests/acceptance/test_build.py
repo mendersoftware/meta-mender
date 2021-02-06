@@ -664,6 +664,17 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     def test_module_install(
         self, request, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image
     ):
+        # List of expected update modules
+        default_update_modules = [
+            "deb",
+            "directory",
+            "docker",
+            "rootfs-image-v2",
+            "rpm",
+            "script",
+            "single-file",
+        ]
+
         mender_vars = get_bitbake_variables(request, "mender-client")
         if "modules" in mender_vars["PACKAGECONFIG"].split():
             originally_on = True
@@ -671,14 +682,14 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             originally_on = False
 
         output = subprocess.check_output(
-            ["debugfs", "-R", "ls -p /usr/share/mender", latest_rootfs]
+            ["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", latest_rootfs]
         ).decode()
         entries = [
             elem.split("/")[5] for elem in output.split("\n") if elem.startswith("/")
         ]
 
         if originally_on:
-            assert "modules" in entries
+            assert all([e in entries for e in default_update_modules])
             build_image(
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
@@ -686,7 +697,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 ['PACKAGECONFIG_remove = "modules"'],
             )
         else:
-            assert "modules" not in entries
+            assert not any([e in entries for e in default_update_modules])
             build_image(
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
@@ -699,16 +710,16 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         )
 
         output = subprocess.check_output(
-            ["debugfs", "-R", "ls -p /usr/share/mender", new_rootfs]
+            ["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", new_rootfs]
         ).decode()
         entries = [
             elem.split("/")[5] for elem in output.split("\n") if elem.startswith("/")
         ]
 
         if originally_on:
-            assert "modules" not in entries
+            assert not any([e in entries for e in default_update_modules])
         else:
-            assert "modules" in entries
+            assert all([e in entries for e in default_update_modules])
 
     @pytest.mark.only_with_image("sdimg", "uefiimg", "gptimg", "biosimg")
     @pytest.mark.min_mender_version("1.0.0")
