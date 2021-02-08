@@ -1,18 +1,22 @@
 require mender-configure.inc
 
+# Use AUTOREV for now (git is the only recipe), remove and uncomment code below
+# when mender-configure 1.0.0 recipe is added
+SRCREV = "${AUTOREV}"
+
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the
 # SHA.
-def mender_configure_autorev_if_git_version(d):
-    version = d.getVar("PREFERRED_VERSION")
-    if version is None or version == "":
-        version = d.getVar("PREFERRED_VERSION_%s" % d.getVar('PN'))
-    if not d.getVar("EXTERNALSRC") and version is not None and "git" in version:
-        return d.getVar("AUTOREV")
-    else:
-        return "d43ed065b7858c895c19781bd1c96646f312f81f"
-SRCREV ?= '${@mender_configure_autorev_if_git_version(d)}'
+# def mender_configure_autorev_if_git_version(d):
+#     version = d.getVar("PREFERRED_VERSION")
+#     if version is None or version == "":
+#         version = d.getVar("PREFERRED_VERSION_%s" % d.getVar('PN'))
+#     if not d.getVar("EXTERNALSRC") and version is not None and "git" in version:
+#         return d.getVar("AUTOREV")
+#     else:
+#         return "d43ed065b7858c895c19781bd1c96646f312f81f"
+# SRCREV ?= '${@mender_configure_autorev_if_git_version(d)}'
 
 def mender_configure_branch_from_preferred_version(d):
     import re
