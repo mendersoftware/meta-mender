@@ -11,9 +11,11 @@ FILES_${PN} = " \
 "
 
 S = "${WORKDIR}/git"
+B = "${WORKDIR}/build"
 
 do_install() {
     oe_runmake \
+        -C ${S} \
         DESTDIR=${D} \
         install
 
