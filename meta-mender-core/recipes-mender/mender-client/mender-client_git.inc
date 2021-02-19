@@ -17,6 +17,9 @@ def mender_autorev_if_git_version(d):
         return "f6ffa190892202263fdb75975059fbb201adab6a"
 SRCREV ?= '${@mender_autorev_if_git_version(d)}'
 
+# Force the version of master packages to compare very highly to other versions.
+PKGV = "${@'999+master+git${SRCPV}' if '${PV}'.startswith('master') else '${PV}'}"
+
 def mender_branch_from_preferred_version(d):
     import re
     version = d.getVar("PREFERRED_VERSION")
@@ -69,7 +72,7 @@ def mender_license(branch):
         return {
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL",
         }
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LICENSE;md5=7fd64609fe1bce47db0e8f6e3cc6a11d"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LICENSE;md5=fbe9cd162201401ffbb442445efecfdc"
 LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.

@@ -8,10 +8,10 @@ require mender-client.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.2.x"
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.4.x"
 
-# Tag: 2.2.1
-SRCREV = "fc12e8f72a58c10734ce41ad2c39e6dcd927af97"
+# Tag: 2.4.2
+SRCREV = "041f0b4a5df7cef49af8a80005ce57082e19be13"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
@@ -20,18 +20,17 @@ SRCREV = "fc12e8f72a58c10734ce41ad2c39e6dcd927af97"
 ################################################################################
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below.
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=80ba3790b689991e47685da401fd3375"
-LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
+# dependencies) are included in the LICENSE variable below. Note that for
+# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
+# file.
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=d7b669e626d83679fcf25b2d82403926"
+LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL"
 
-DEPENDS += "xz"
-RDEPENDS_${PN} += "liblzma"
+DEPENDS += "xz openssl"
+RDEPENDS_${PN} += "liblzma openssl"
 
 # Not supported in versions < 2.5.0.
 _MENDER_PACKAGECONFIG_DEFAULT_remove = "dbus"
-
-# MEN-2948: systemd service is still named mender.service in 2.2.x
-MENDER_CLIENT = "mender"
 
 do_install() {
     oe_runmake \

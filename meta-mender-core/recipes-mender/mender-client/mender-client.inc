@@ -22,6 +22,8 @@ MENDER_RETRY_POLL_INTERVAL_SECONDS ?= "300"
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
+localdatadir = "${prefix}/local/share"
+
 inherit go
 inherit go-ptest
 inherit pkgconfig
@@ -29,6 +31,7 @@ inherit systemd
 
 SYSTEMD_SERVICE_${PN} = "${MENDER_CLIENT}.service"
 FILES_${PN} += "\
+    ${datadir}/dbus-1/system.d/io.mender.AuthenticationManager.conf \
     ${datadir}/mender/identity \
     ${datadir}/mender/identity/mender-device-identity \
     ${datadir}/mender/inventory \
@@ -43,9 +46,9 @@ FILES_${PN} += "\
     ${datadir}/mender/modules/v3/rpm \
     ${datadir}/mender/modules/v3/script \
     ${datadir}/mender/modules/v3/single-file \
-    ${sysconfdir}/mender.conf \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service \
+    ${localdatadir}/ca-certificates/mender/server.crt \
     /data/mender/device_type \
     /data/mender/mender.conf \
 "
@@ -93,7 +96,8 @@ INSANE_SKIP_${PN}-ptest = "ldflags textrel"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
 
-PACKAGECONFIG ?= "${@mender_feature_is_enabled("mender-client-install", "inventory-network-scripts", "", d)}"
+_MENDER_PACKAGECONFIG_DEFAULT = "${@mender_feature_is_enabled("mender-client-install", "dbus inventory-network-scripts", "", d)}"
+PACKAGECONFIG ?= "${_MENDER_PACKAGECONFIG_DEFAULT}"
 
 PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
 PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
@@ -106,11 +110,17 @@ PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
 # a very large requirement, which we will not mandate. Bash however, we require,
 # because otherwise the Yocto QA checks will complain.
 PACKAGECONFIG[modules] = ",,,bash"
+PACKAGECONFIG[dbus] = ",,glib-2.0,glib-2.0"
+PACKAGECONFIG[inventory-network-scripts] = ",,,"
 
 # NOTE: Splits the mender.conf file by default into a transient and a persistent config. Needs to be
 # explicitly disabled if this is not to apply.
 PACKAGECONFIG[split-mender-config] = ",,,"
 PACKAGECONFIG_append = " split-mender-config"
+
+_MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
+EXTRA_OEMAKE_append = " TAGS='${_MENDER_TAGS}'"
+GOPTESTBUILDFLAGS_append = " -tags '${_MENDER_TAGS}'"
 
 do_compile() {
     GOPATH="${B}:${S}"
@@ -179,7 +189,6 @@ python do_prepare_mender_conf() {
     conf_maybe_add("RetryPollIntervalSeconds", "MENDER_RETRY_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
     conf_maybe_add("RootfsPartA", "MENDER_ROOTFS_PART_A", getvar=True, integer=False)
     conf_maybe_add("RootfsPartB", "MENDER_ROOTFS_PART_B", getvar=True, integer=False)
-    conf_maybe_add("ServerCertificate", "MENDER_CERT_LOCATION", getvar=True, integer=False)
     conf_maybe_add("ServerURL", "MENDER_SERVER_URL", getvar=True, integer=False)
     conf_maybe_add("UpdatePollIntervalSeconds", "MENDER_UPDATE_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
 
@@ -238,10 +247,38 @@ do_install() {
         systemd_unitdir=${systemd_unitdir} \
         install-bin \
         install-identity-scripts \
-        install-inventory-local-scripts \
-        ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)} \
         install-systemd \
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
+
+    # install inventory scripts
+    if grep -q install-inventory-local-scripts ${B}/src/${GO_IMPORT}/Makefile; then
+        oe_runmake \
+            -C ${B}/src/${GO_IMPORT} \
+            V=1 \
+            prefix=${D} \
+            datadir=${datadir} \
+            install-inventory-local-scripts \
+            ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)}
+    else
+        oe_runmake \
+            -C ${B}/src/${GO_IMPORT} \
+            V=1 \
+            prefix=${D} \
+            datadir=${datadir} \
+            install-inventory-scripts
+    fi
+
+    # install dbus files
+    if grep -q install-dbus ${B}/src/${GO_IMPORT}/Makefile; then
+        if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
+            oe_runmake \
+                -C ${B}/src/${GO_IMPORT} \
+                V=1 \
+                prefix=${D} \
+                datadir=${datadir} \
+                install-dbus
+        fi
+    fi
 
     #install our prepared configuration
     install -d ${D}/${sysconfdir}/mender
@@ -257,6 +294,8 @@ do_install() {
     if [ -f ${WORKDIR}/server.crt ]; then
         install -m 0755 -d $(dirname ${D}${MENDER_CERT_LOCATION})
         install -m 0444 ${WORKDIR}/server.crt ${D}${MENDER_CERT_LOCATION}
+        install -m 0755 -d ${D}${localdatadir}/ca-certificates/mender
+        install -m 0444 ${WORKDIR}/server.crt ${D}${localdatadir}/ca-certificates/mender/server.crt
     fi
 
     install -d ${D}/${localstatedir}/lib/mender
@@ -320,4 +359,9 @@ do_install_append_mender-persist-systemd-machine-id() {
     ln -sf ../mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
     install -d -m 755 ${D}${bindir}
     install -m 755 ${WORKDIR}/mender-client-set-systemd-machine-id.sh ${D}${bindir}/
+}
+
+# Required if a self-signed certificate was added, but harmless in any case, so run unconditionally
+pkg_postinst_${PN} () {
+    SYSROOT="$D" $D${sbindir}/update-ca-certificates
 }

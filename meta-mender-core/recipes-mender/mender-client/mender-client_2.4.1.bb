@@ -29,6 +29,9 @@ LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
 DEPENDS += "xz openssl"
 RDEPENDS_${PN} += "liblzma openssl"
 
+# Not supported in versions < 2.5.0.
+_MENDER_PACKAGECONFIG_DEFAULT_remove = "dbus"
+
 do_install() {
     oe_runmake \
         -C ${B}/src/${GO_IMPORT} \
@@ -58,6 +61,8 @@ do_install() {
     if [ -f ${WORKDIR}/server.crt ]; then
         install -m 0755 -d $(dirname ${D}${MENDER_CERT_LOCATION})
         install -m 0444 ${WORKDIR}/server.crt ${D}${MENDER_CERT_LOCATION}
+        install -m 0755 -d ${D}${localdatadir}/ca-certificates/mender
+        install -m 0444 ${WORKDIR}/server.crt ${D}${localdatadir}/ca-certificates/mender/server.crt
     fi
 
     install -d ${D}/${localstatedir}/lib/mender
