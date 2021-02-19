@@ -35,9 +35,6 @@ python do_prepare_mender_connect_conf() {
         with open(src_conf) as fd:
             mender_connect_conf = json.load(fd)
 
-    if "ServerURL" not in mender_connect_conf:
-        mender_connect_conf["ServerURL"] = d.getVar("MENDER_SERVER_URL")
-
     if "ShellCommand" not in mender_connect_conf:
         mender_connect_conf["ShellCommand"] = d.getVar("MENDER_CONNECT_SHELL")
 
