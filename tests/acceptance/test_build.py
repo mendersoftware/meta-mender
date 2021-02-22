@@ -274,10 +274,21 @@ class TestBuild:
     @pytest.mark.min_mender_version('1.0.0')
     # The extra None elements are to check for no preferred version,
     # e.g. latest.
-    @pytest.mark.parametrize('recipe,version', [('mender', version) for version in versions_of_recipe('mender')]
-                             + [('mender', None)]
-                             + [('mender-artifact-native', version) for version in versions_of_recipe('mender-artifact')]
-                             + [('mender-artifact-native', None)])
+    @pytest.mark.parametrize(
+        "recipe,version",
+        [("mender", version) for version in versions_of_recipe("mender")]
+        + [("mender", None)]
+        + [
+            ("mender-artifact-native", version)
+            for version in versions_of_recipe("mender-artifact")
+        ]
+        + [("mender-artifact-native", None)]
+        + [
+            ("mender-connect", version)
+            for version in versions_of_recipe("mender-connect")
+        ]
+        + [("mender-connect", None)],
+    )
     def test_preferred_versions(self, prepared_test_build, recipe, version):
         """Most Jenkins builds build with PREFERRED_VERSION set, because we want to
         build from a specific SHA. This test tests that we can change that or

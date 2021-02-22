@@ -10,8 +10,8 @@ require mender.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.4.x"
 
-# Tag: 2.4.1
-SRCREV = "ffef645f932dd2fd7545705288f6e6df14417966"
+# Tag: 2.4.2
+SRCREV = "041f0b4a5df7cef49af8a80005ce57082e19be13"
 
 # Enable this in Betas, not in finals.
 # Downprioritize this recipe in version selections.
@@ -23,8 +23,8 @@ SRCREV = "ffef645f932dd2fd7545705288f6e6df14417966"
 # dependencies) are included in the LICENSE variable below. Note that for
 # releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
 # file.
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=5649992d13a6fda40abfac7730a62b07"
-LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=d7b669e626d83679fcf25b2d82403926"
+LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL"
 
 DEPENDS += "xz openssl"
 RDEPENDS_${PN} += "liblzma openssl"

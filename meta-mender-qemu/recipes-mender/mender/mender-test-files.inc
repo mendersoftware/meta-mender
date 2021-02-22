@@ -1,3 +1,10 @@
+# Needed for the TestFaultTolerance tests in the integration repository.
+RDEPENDS_${PN}_append_mender-image_qemuall = " \
+    kernel-module-ipt-reject \
+    kernel-module-ts-bm \
+    kernel-module-xt-string \
+"
+
 # Used as a rootfs-image replacement when testing update modules.
 FILES_${PN}_append_mender-image_qemuall = " ${sysconfdir}/mender/rootfs-image-v2.conf \
                                             ${datadir}/mender/modules/v3/rootfs-image-v2"
