@@ -9,4 +9,4 @@ psutil==5.8.0
 pycrypto==2.6.1
 requests==2.25.1
 PyYAML==5.4.1
-cryptography==3.3.2
+cryptography==3.4.6
