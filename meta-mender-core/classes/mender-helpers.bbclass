@@ -33,20 +33,11 @@ get_uboot_device_from_device() {
 get_part_number_from_device() {
     dev_base="unknown"
     case "$1" in
-        /dev/mmcblk*p* )
-            dev_base=$(echo $1 | cut -dk -f2 | cut -dp -f2)
-            ;;
-        /dev/[sh]d[a-z][1-9])
-            dev_base=${1##*d[a-z]}
-            ;;
-        /dev/nvme[0-9]n[0-9]p[0-9])
-            dev_base=$(echo $1 | cut -dp -f2)
-            ;;
-        ubi*_* )
-            dev_base=$(echo $1 | cut -d_ -f2)
-            ;;
         /dev/disk/by-partuuid/* )
             bberror "Please enable mender-partuuid Distro feature to use PARTUUID"
+            ;;
+        *)
+            dev_base=$(echo $1 | grep -o '[0-9]*$')
             ;;
     esac
     part=$(printf "%d" $dev_base 2>/dev/null)
