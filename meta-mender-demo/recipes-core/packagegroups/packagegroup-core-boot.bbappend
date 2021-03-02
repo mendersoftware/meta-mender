@@ -22,12 +22,12 @@ def maybe_mender_connect(d):
 def maybe_mender_configure(d):
     pref = d.getVar('PREFERRED_VERSION_pn-mender-client')
     if pref is None:
-        return " mender-configure"
+        return " mender-configure mender-configure-demo mender-configure-scripts"
 
     if pref[0:3] in ["1.7", "2.0", "2.1", "2.2", "2.3", "2.4", "2.5"]:
         return ""
     else:
-        return " mender-configure"
+        return " mender-configure mender-configure-demo mender-configure-scripts"
 
 # Install Mender add-ons, but only if the client is recent enough.
 RDEPENDS_${PN}_append_mender-image = "${@maybe_mender_connect(d)}${@maybe_mender_configure(d)}"
