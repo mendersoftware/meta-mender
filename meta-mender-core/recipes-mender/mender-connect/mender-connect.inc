@@ -1,8 +1,6 @@
 DESCRIPTION = "Mender add-on for remote terminal access."
 HOMEPAGE = "https://mender.io"
 
-SRC_URI = "git://github.com/mendersoftware/mender-connect.git;protocol=https;branch=master"
-
 DEPENDS_append = " glib-2.0"
 RDEPENDS_${PN} = "glib-2.0 mender-client (>= 2.5)"
 
@@ -37,11 +35,8 @@ python do_prepare_mender_connect_conf() {
         with open(src_conf) as fd:
             mender_connect_conf = json.load(fd)
 
-    if "ServerURL" not in mender_connect_conf:
-        mender_connect_conf["ServerURL"] = d.getVar("MENDER_SERVER_URL")
-
-    if "Shell" not in mender_connect_conf:
-        mender_connect_conf["Shell"] = d.getVar("MENDER_CONNECT_SHELL")
+    if "ShellCommand" not in mender_connect_conf:
+        mender_connect_conf["ShellCommand"] = d.getVar("MENDER_CONNECT_SHELL")
 
     if "User" not in mender_connect_conf:
         mender_connect_conf["User"] = d.getVar("MENDER_CONNECT_USER")
