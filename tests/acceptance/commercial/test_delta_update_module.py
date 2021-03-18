@@ -158,6 +158,8 @@ class TestDeltaUpdateModule:
 
     # Not testable on QEMU/ARM combination currently. See MEN-4297.
     @pytest.mark.not_for_machine("vexpress-qemu")
+    # mender-binary-delta 1.2.0 requires mender-artifact 3.5.0
+    @pytest.mark.min_mender_version("2.5.0")
     @pytest.mark.only_with_image("ext4")
     def test_perform_update(
         self,
