@@ -90,7 +90,7 @@ do_install() {
 python() {
     if bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', True, False, d):
         bb.build.addtask('do_sign', 'do_deploy do_package', 'do_install', d)
-        bb.build.addtask('do_chownboot', 'do_package', 'do_sign', d)
+        bb.build.addtask('do_chownboot', 'do_deploy do_package', 'do_sign', d)
 }
 
 python do_sign() {
