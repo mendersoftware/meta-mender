@@ -24,6 +24,7 @@ SYSTEMD_SERVICE_${PN} = "mender-configure-apply-device-config.service"
 
 FILES_${PN}-demo = " \
     ${libdir}/mender-configure/apply-device-config.d/mender-demo-raspberrypi-led \
+    /data/mender-configure/device-config.json \
 "
 
 FILES_${PN}-scripts = " \
@@ -44,6 +45,15 @@ do_install() {
     install -d -m 755 ${D}/data/mender-configure
     install -d -m 755 ${D}/var/lib/
     ln -s /data/mender-configure ${D}/var/lib/mender-configure
+
+    # For demo
+    cat > ${D}/data/mender-configure/device-config.json <<EOF
+{
+  "timezone": "UTC"
+EOF
+    # Because of Bitbake parsing we have to jump through this hoop to get the
+    # final '}' in.
+    echo '}' >> ${D}/data/mender-configure/device-config.json
 }
 
 do_install_append_mender-systemd() {
