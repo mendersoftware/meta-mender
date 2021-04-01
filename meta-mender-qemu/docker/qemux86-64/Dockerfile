@@ -18,7 +18,7 @@
 # -e TENANT_TOKEN=<token>
 #       Use token as tenant token for client.
 
-FROM alpine:3.13.2
+FROM alpine:3.13.3
 
 # Install packages
 RUN apk update && apk upgrade && \
