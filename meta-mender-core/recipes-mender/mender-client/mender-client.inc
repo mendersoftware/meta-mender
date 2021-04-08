@@ -48,7 +48,7 @@ FILES_${PN} += "\
     ${datadir}/mender/modules/v3/single-file \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service \
-    ${localdatadir}/ca-certificates/mender/server.crt \
+    ${localdatadir}/ca-certificates/mender/ \
     /data/mender/device_type \
     /data/mender/mender.conf \
 "
@@ -294,8 +294,27 @@ do_install() {
     if [ -f ${WORKDIR}/server.crt ]; then
         install -m 0755 -d $(dirname ${D}${MENDER_CERT_LOCATION})
         install -m 0444 ${WORKDIR}/server.crt ${D}${MENDER_CERT_LOCATION}
+
         install -m 0755 -d ${D}${localdatadir}/ca-certificates/mender
-        install -m 0444 ${WORKDIR}/server.crt ${D}${localdatadir}/ca-certificates/mender/server.crt
+
+        # MEN-4580: Multiple certificates in one file are necessary to split in
+        # order for `update-ca-certificates` to produce a hashed symlink to them,
+        # which is required by some programs, such as curl.
+        if [ $(fgrep 'BEGIN CERTIFICATE' ${WORKDIR}/server.crt | wc -l) -gt 1 ]; then
+            certnum=1
+            while read LINE; do
+                if [ -z "$cert" ] || echo "$LINE" | fgrep -q 'BEGIN CERTIFICATE'; then
+                    cert=${D}${localdatadir}/ca-certificates/mender/server-$certnum.crt
+                    rm -f $cert
+                    touch $cert
+                    chmod 0444 $cert
+                    certnum=$(expr $certnum + 1)
+                fi
+                echo "$LINE" >> $cert
+            done < ${WORKDIR}/server.crt
+        else
+            install -m 0444 ${WORKDIR}/server.crt ${D}${localdatadir}/ca-certificates/mender/server.crt
+        fi
     fi
 
     install -d ${D}/${localstatedir}/lib/mender

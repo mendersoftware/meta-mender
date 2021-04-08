@@ -80,6 +80,29 @@ class TestBuild:
             shell=True,
         )
 
+    @pytest.mark.min_mender_version("1.0.0")
+    def test_certificate_split(self, request, bitbake_image):
+        """Test that the certificate added in the mender-server-certificate
+        recipe is split correctly."""
+
+        # Currently this is hardcoded to the md5 sums of the split demo
+        # certificate as of 2021-04-07. Please update if it is replaced.
+        md5sums = """02d20627f63664f9495cea2e54b28e1b  ./usr/local/share/ca-certificates/mender/server-1.crt
+b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/server-2.crt"""
+
+        rootfs = get_bitbake_variables(request, bitbake_image)["IMAGE_ROOTFS"]
+        output = (
+            subprocess.check_output(
+                "md5sum ./usr/local/share/ca-certificates/mender/*",
+                shell=True,
+                cwd=rootfs,
+            )
+            .decode()
+            .strip()
+        )
+
+        assert md5sums == output
+
     @pytest.mark.only_with_image("sdimg")
     @pytest.mark.min_mender_version("1.0.0")
     def test_bootloader_embed(self, request, prepared_test_build, bitbake_image):
