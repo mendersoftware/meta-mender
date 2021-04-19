@@ -80,7 +80,7 @@ class TestBuild:
             shell=True,
         )
 
-    @pytest.mark.min_mender_version("1.0.0")
+    @pytest.mark.min_mender_version("2.6.0")
     def test_certificate_split(self, request, bitbake_image):
         """Test that the certificate added in the mender-server-certificate
         recipe is split correctly."""
