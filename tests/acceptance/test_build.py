@@ -65,7 +65,7 @@ class TestBuild:
         subprocess.check_call("fgrep %s ../../meta-mender-core/recipes-mender/mender/mender.inc >/dev/null 2>&1"
                               % output.split()[0], shell=True)
 
-    @pytest.mark.min_mender_version("2.6.0")
+    @pytest.mark.min_mender_version("2.5.0")
     def test_certificate_split(self, request, bitbake_image):
         """Test that the certificate added in the mender-server-certificate
         recipe is split correctly."""
