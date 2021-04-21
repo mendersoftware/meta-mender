@@ -66,7 +66,7 @@ class TestBuild:
                               % output.split()[0], shell=True)
 
     @pytest.mark.min_mender_version("2.5.0")
-    def test_certificate_split(self, request, bitbake_image):
+    def test_certificate_split(self):
         """Test that the certificate added in the mender-server-certificate
         recipe is split correctly."""
 
@@ -75,7 +75,8 @@ class TestBuild:
         md5sums = """02d20627f63664f9495cea2e54b28e1b  ./usr/local/share/ca-certificates/mender/server-1.crt
 b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/server-2.crt"""
 
-        rootfs = get_bitbake_variables(request, bitbake_image)["IMAGE_ROOTFS"]
+        image_name = pytest.config.getoption("--bitbake-image")
+        rootfs = get_bitbake_variables(image_name)["IMAGE_ROOTFS"]
         output = (
             subprocess.check_output(
                 "md5sum ./usr/local/share/ca-certificates/mender/*",
