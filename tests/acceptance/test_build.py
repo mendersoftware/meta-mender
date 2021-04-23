@@ -65,6 +65,29 @@ class TestBuild:
         subprocess.check_call("fgrep %s ../../meta-mender-core/recipes-mender/mender/mender.inc >/dev/null 2>&1"
                               % output.split()[0], shell=True)
 
+    @pytest.mark.min_mender_version("2.5.0")
+    def test_certificate_split(self):
+        """Test that the certificate added in the mender-server-certificate
+        recipe is split correctly."""
+
+        # Currently this is hardcoded to the md5 sums of the split demo
+        # certificate as of 2021-04-07. Please update if it is replaced.
+        md5sums = """02d20627f63664f9495cea2e54b28e1b  ./usr/local/share/ca-certificates/mender/server-1.crt
+b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/server-2.crt"""
+
+        image_name = pytest.config.getoption("--bitbake-image")
+        rootfs = get_bitbake_variables(image_name)["IMAGE_ROOTFS"]
+        output = (
+            subprocess.check_output(
+                "md5sum ./usr/local/share/ca-certificates/mender/*",
+                shell=True,
+                cwd=rootfs,
+            )
+            .decode()
+            .strip()
+        )
+
+        assert md5sums == output
 
     @pytest.mark.only_with_image('sdimg')
     @pytest.mark.min_mender_version("1.0.0")
@@ -287,10 +310,15 @@ class TestBuild:
             ("mender-connect", version)
             for version in versions_of_recipe("mender-connect")
         ]
-        + [("mender-connect", None)],
+        + [("mender-connect", None)]
+        + [
+            ("mender-configure", version)
+            for version in versions_of_recipe("mender-configure")
+        ]
+        + [("mender-configure", None)],
     )
     def test_preferred_versions(self, prepared_test_build, recipe, version):
-        """Most Jenkins builds build with PREFERRED_VERSION set, because we want to
+        """Most CI builds build with PREFERRED_VERSION set, because we want to
         build from a specific SHA. This test tests that we can change that or
         turn it off and the build still works."""
 
@@ -463,32 +491,43 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     @pytest.mark.only_with_image('sdimg', 'uefiimg')
     @pytest.mark.min_mender_version('2.0.0')
     def test_module_install(self, prepared_test_build, bitbake_path, latest_rootfs):
+        # List of expected update modules
+        default_update_modules = [
+            "deb",
+            "directory",
+            "docker",
+            "rootfs-image-v2",
+            "rpm",
+            "script",
+            "single-file",
+        ]
+
         mender_vars = get_bitbake_variables("mender")
         if "modules" in mender_vars['PACKAGECONFIG'].split():
             originally_on = True
         else:
             originally_on = False
 
-        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender", latest_rootfs])
+        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", latest_rootfs])
         entries = [elem.split('/')[5] for elem in output.split('\n') if elem.startswith('/')]
 
         if originally_on:
-            assert "modules" in entries
+            assert all([e in entries for e in default_update_modules])
             add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_remove = "modules"')
         else:
-            assert "modules" not in entries
+            assert not any([e in entries for e in default_update_modules])
             add_to_local_conf(prepared_test_build, 'PACKAGECONFIG_append = " modules"')
         run_bitbake(prepared_test_build)
 
         new_rootfs = latest_build_artifact(prepared_test_build['build_dir'], "core-image*.ext4")
 
-        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender", new_rootfs])
+        output = subprocess.check_output(["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", new_rootfs])
         entries = [elem.split('/')[5] for elem in output.split('\n') if elem.startswith('/')]
 
         if originally_on:
-            assert "modules" not in entries
+            assert not any([e in entries for e in default_update_modules])
         else:
-            assert "modules" in entries
+            assert all([e in entries for e in default_update_modules])
 
     @pytest.mark.only_with_image('sdimg', 'uefiimg', 'gptimg', 'biosimg')
     @pytest.mark.min_mender_version('1.0.0')

@@ -33,7 +33,7 @@ FILES_${PN} += "\
     ${sysconfdir}/mender.conf \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
     ${systemd_unitdir}/system/mender.service \
-    ${localdatadir}/ca-certificates/mender/server.crt \
+    ${localdatadir}/ca-certificates/mender/ \
     /data/mender/device_type \
     /data/mender/mender.conf \
 "
@@ -271,18 +271,37 @@ do_install() {
     install -d ${D}/${sysconfdir}/mender
     install -d ${D}/data/mender
     if [ -f ${B}/transient_mender.conf ]; then
-        install -m 0644 ${B}/transient_mender.conf ${D}/${sysconfdir}/mender/mender.conf
+        install -m 0600 ${B}/transient_mender.conf ${D}/${sysconfdir}/mender/mender.conf
     fi
     if [ -f ${B}/persistent_mender.conf ]; then
-        install -m 0644 ${B}/persistent_mender.conf ${D}/data/mender/mender.conf
+        install -m 0600 ${B}/persistent_mender.conf ${D}/data/mender/mender.conf
     fi
 
     #install server certificate
     if [ -f ${WORKDIR}/server.crt ]; then
         install -m 0755 -d $(dirname ${D}${MENDER_CERT_LOCATION})
         install -m 0444 ${WORKDIR}/server.crt ${D}${MENDER_CERT_LOCATION}
+
         install -m 0755 -d ${D}${localdatadir}/ca-certificates/mender
-        install -m 0444 ${WORKDIR}/server.crt ${D}${localdatadir}/ca-certificates/mender/server.crt
+
+        # MEN-4580: Multiple certificates in one file are necessary to split in
+        # order for `update-ca-certificates` to produce a hashed symlink to them,
+        # which is required by some programs, such as curl.
+        if [ $(fgrep 'BEGIN CERTIFICATE' ${WORKDIR}/server.crt | wc -l) -gt 1 ]; then
+            certnum=1
+            while read LINE; do
+                if [ -z "$cert" ] || echo "$LINE" | fgrep -q 'BEGIN CERTIFICATE'; then
+                    cert=${D}${localdatadir}/ca-certificates/mender/server-$certnum.crt
+                    rm -f $cert
+                    touch $cert
+                    chmod 0444 $cert
+                    certnum=$(expr $certnum + 1)
+                fi
+                echo "$LINE" >> $cert
+            done < ${WORKDIR}/server.crt
+        else
+            install -m 0444 ${WORKDIR}/server.crt ${D}${localdatadir}/ca-certificates/mender/server.crt
+        fi
     fi
 
     install -d ${D}/${localstatedir}/lib/mender
