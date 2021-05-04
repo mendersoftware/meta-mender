@@ -10,6 +10,10 @@ do_instrument_client () {
     oe_runmake instrument-binary
 }
 
+do_instrument_client_class-native() {
+    true
+}
+
 do_configure_prepend_mender-testing-enabled () {
     # Remove all the src present in build if it is not a symbolic link to ${S}
     if [ -d ${B}src ]; then
