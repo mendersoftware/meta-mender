@@ -1,7 +1,14 @@
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
+BBCLASSEXTEND = "native"
+RDEPENDS_${PN}_class-native = ""
+DEPENDS_class-native = ""
+
+PACKAGES_append = " mender-modules-gen"
+
 RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted util-linux-fdisk"
+RDEPENDS_mender-modules-gen = "bash"
 
 MENDER_CLIENT ?= "mender-client"
 MENDER_SERVER_URL ?= "https://docker.mender.io"
@@ -41,6 +48,11 @@ FILES_${PN} += "\
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service \
     /data/mender/device_type \
     /data/mender/mender.conf \
+"
+FILES_mender-modules-gen = " \
+    ${bindir}/directory-artifact-gen \
+    ${bindir}/single-file-artifact-gen \
+    ${bindir}/docker-artifact-gen \
 "
 
 SYSROOT_DIRS += "/data"
@@ -300,13 +312,13 @@ do_install() {
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
 }
 
-do_install_append_mender-image_mender-systemd() {
+do_install_append_class-target_mender-image_mender-systemd() {
     install -m 644 ${WORKDIR}/mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service
 }
 
-do_install_append_mender-growfs-data_mender-systemd() {
+do_install_append_class-target_mender-growfs-data_mender-systemd() {
     sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
         ${WORKDIR}/mender-client-resize-data-part.sh.in
 
@@ -328,10 +340,24 @@ do_install_append_mender-growfs-data_mender-systemd() {
     ln -sf ../mender-systemd-growfs-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
 }
 
-do_install_append_mender-persist-systemd-machine-id() {
+do_install_append_class-target_mender-persist-systemd-machine-id() {
     install -m 644 ${WORKDIR}/mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
     install -d -m 755 ${D}${bindir}
     install -m 755 ${WORKDIR}/mender-client-set-systemd-machine-id.sh ${D}${bindir}/
+}
+
+# Native overrides, installing scripts for package mender-modules-gen
+do_compile_class-native() {
+    true
+}
+
+do_install_class-native() {
+    oe_runmake \
+        -C ${B}/src/${GO_IMPORT} \
+        V=1 \
+        prefix=${D} \
+        bindir=${bindir} \
+        install-modules-gen
 }
