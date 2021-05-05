@@ -416,6 +416,11 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         [("mender-client", version) for version in versions_of_recipe("mender-client")]
         + [("mender-client", None)]
         + [
+            ("mender-client-native", version)
+            for version in versions_of_recipe("mender-client")
+        ]
+        + [("mender-client-native", None)]
+        + [
             ("mender-artifact-native", version)
             for version in versions_of_recipe("mender-artifact")
         ]
