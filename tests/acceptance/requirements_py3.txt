@@ -24,7 +24,7 @@ pytest-metadata==1.11.0
 python-lzo==1.12
 PyYAML==5.4.1
 requests==2.25.1
-six==1.15.0
+six==1.16.0
 toml==0.10.2
 ubi-reader==0.7.0
 urllib3==1.26.4
