@@ -18,7 +18,7 @@ py==1.10.0
 pycparser==2.20
 PyNaCl==1.4.0
 pyparsing==2.4.7
-pytest==6.2.3
+pytest==6.2.4
 pytest-html==3.1.1
 pytest-metadata==1.11.0
 python-lzo==1.12
