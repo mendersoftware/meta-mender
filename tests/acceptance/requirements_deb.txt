@@ -47,6 +47,7 @@ qemu-kvm
 qemu-system-arm
 qemu-system-x86
 qemu-utils
+rpm
 s3cmd
 screen
 sudo
