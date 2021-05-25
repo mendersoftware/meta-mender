@@ -1235,3 +1235,41 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         assert (
             b"mender-inventory-geo" not in output
         ), "mender-inventory-network-scripts unexpectedly a part of the image"
+
+    @pytest.mark.min_mender_version("2.7.0")
+    def test_mender_dbus_interface_file(
+        self, request, prepared_test_build, bitbake_image
+    ):
+        """
+        Test the D-Bus interface file is provided by the mender-client-dev package,
+        but not installed by default.
+        """
+
+        EXPECTED_FILES = [
+            "io.mender.Authentication1.xml",
+        ]
+
+        # clean up the mender-client
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            target="-c clean mender-client",
+        )
+
+        # build mender-client
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            "mender-client",
+        )
+
+        # verify the files
+        deploy_dir_rpm = get_bitbake_variables(request, bitbake_image)["DEPLOY_DIR_RPM"]
+        output = subprocess.check_output(
+            ["rpm", "-qlp", f"{deploy_dir_rpm}/*/mender-client-dev-*.rpm"],
+        )
+        for file in EXPECTED_FILES:
+            assert (
+                bytes(file, "utf-8") in output
+            ), f"{file} seems not to be a part of the mender-client-dev package, like it should"

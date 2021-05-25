@@ -7,6 +7,7 @@ DEPENDS = "\
     e2fsprogs-native \
     util-linux-native \
     mtools-native \
+    rpm-native \
     swig-native \
 "
 
