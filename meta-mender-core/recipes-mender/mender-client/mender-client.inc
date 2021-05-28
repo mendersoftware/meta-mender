@@ -52,6 +52,9 @@ FILES_${PN} += "\
     /data/mender/device_type \
     /data/mender/mender.conf \
 "
+FILES_${PN}-dev += " \
+    ${datadir}/dbus-1/interface \
+"
 
 SYSROOT_DIRS += "/data"
 
@@ -342,6 +345,12 @@ do_install() {
     install -d ${D}${sysconfdir}/udev/mount.blacklist.d
     echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
+
+    # install the D-Bus interface file
+    if [ -f ${B}/src/${GO_IMPORT}/Documentation/io.mender.Authentication1.xml ]; then
+        install -d ${D}${datadir}/dbus-1/interface
+        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+    fi
 }
 
 do_install_append_mender-image_mender-systemd() {
