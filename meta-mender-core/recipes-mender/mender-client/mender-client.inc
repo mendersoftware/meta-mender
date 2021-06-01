@@ -132,7 +132,7 @@ do_compile() {
     PATH="${B}/bin:$PATH"
     export PATH
 
-    DEFAULT_CERT_MD5="1fba17436027eb1f5ceff4af9a63c9c2"
+    DEFAULT_CERT_MD5="3112d737da65df1b7314bfe0a98accbc"
 
     if [ "$(md5sum ${WORKDIR}/server.crt | awk '{ print $1 }')" = $DEFAULT_CERT_MD5 ]; then
         bbwarn "You are building with the default server certificate, which is not intended for production use"
