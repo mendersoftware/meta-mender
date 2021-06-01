@@ -6,9 +6,14 @@ include:
   - project: 'Northern.tech/Mender/mendertesting'
     file: '.gitlab-ci-check-commits.yml'
   - project: 'Northern.tech/Mender/mendertesting'
+    file: '.gitlab-ci-check-license.yml'
+  - project: 'Northern.tech/Mender/mendertesting'
     file: '.gitlab-ci-check-python3-format.yml'
   - project: 'Northern.tech/Mender/mendertesting'
     file: '.gitlab-ci-github-status-updates.yml'
+
+variables:
+  LICENSE_HEADERS_IGNORE_FILES_REGEXP: '\./meta-mender-core/recipes-bsp/u-boot/files/.*\.py'
 
 trigger:mender-qa:
   image: alpine
