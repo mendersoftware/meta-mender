@@ -88,7 +88,8 @@ class TestBuild:
         # Currently this is hardcoded to the md5 sums of the split demo
         # certificate as of 2021-04-07. Please update if it is replaced.
         md5sums = """02d20627f63664f9495cea2e54b28e1b  ./usr/local/share/ca-certificates/mender/server-1.crt
-b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/server-2.crt"""
+b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/server-2.crt
+801a667c7a146b3252647b3440483d47  ./usr/local/share/ca-certificates/mender/server-3.crt"""
 
         rootfs = get_bitbake_variables(request, bitbake_image)["IMAGE_ROOTFS"]
         output = (
