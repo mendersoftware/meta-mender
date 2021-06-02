@@ -20,7 +20,7 @@ FILES_${PN}_append_mender-systemd = " \
     ${systemd_system_unitdir}/mender-configure-apply-device-config.service \
 "
 
-SYSTEMD_SERVICE_${PN} = "mender-configure-apply-device-config.service"
+SYSTEMD_SERVICE_${PN}_mender-systemd = "mender-configure-apply-device-config.service"
 
 FILES_${PN}-demo = " \
     ${libdir}/mender-configure/apply-device-config.d/mender-demo-raspberrypi-led \
