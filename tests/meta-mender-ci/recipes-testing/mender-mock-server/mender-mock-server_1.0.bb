@@ -5,7 +5,7 @@ SRC_URI = " \
 "
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = " \
-    file://mender-mock-server.py;beginline=2;endline=14;md5=96cdd6947ab31ed6536dcfd6a67688ef \
+    file://mender-mock-server.py;beginline=2;endline=14;md5=457f0d2d149c4d7f13339726a05c8b83 \
 "
 S = "${WORKDIR}"
 
