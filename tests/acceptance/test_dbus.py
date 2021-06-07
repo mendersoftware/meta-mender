@@ -20,54 +20,13 @@ import time
 
 from multiprocessing import Process
 
-from utils.common import put_no_sftp
-
-MENDER_CONF = """{
-    "ClientProtocol": "https",
-    "HttpsClient": {
-        "SkipVerify": true
-    },
-    "InventoryPollIntervalSeconds": 5,
-    "RetryPollIntervalSeconds": 5,
-    "ServerCertificate": "/usr/share/doc/mender-client/examples/demo.crt",
-    "SkipVerify": true,
-    "ServerURL": "https://localhost:8443",
-    "DBus": {
-        "Enabled": true
-    }
-}
-"""
-
+from mock_server import setup_mock_server
 
 MENDER_STATE_FILES = (
     "/var/lib/mender/mender-agent.pem",
     "/var/lib/mender/mender-store",
     "/var/lib/mender/mender-store-lock",
 )
-
-
-@pytest.fixture
-def setup_mender_client_dbus(request, bitbake_variables, connection):
-    conffile = "/data/etc/mender/mender.conf"
-    backup = f"{conffile}.backup"
-    bdir = os.path.dirname(backup)
-    result = connection.run(
-        f"mkdir -p {bdir} && if [ -e {conffile} ]; then cp {conffile} {backup}; fi"
-    )
-    assert result.exited == 0
-
-    tf = tempfile.NamedTemporaryFile()
-    with open(tf.name, "w") as fd:
-        fd.write(MENDER_CONF)
-
-    put_no_sftp(tf.name, connection, remote=conffile)
-
-    def fin():
-        connection.run(
-            f"if [ -e {backup} ]; then dd if={backup} of=$(realpath {conffile}); fi"
-        )
-
-    request.addfinalizer(fin)
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
@@ -122,9 +81,7 @@ class TestDBus:
             connection.run("rm -f %s" % " ".join(MENDER_STATE_FILES))
 
     @pytest.mark.min_mender_version("2.5.0")
-    def test_dbus_get_jwt_token(
-        self, bitbake_variables, connection, setup_mender_client_dbus
-    ):
+    def test_dbus_get_jwt_token(self, bitbake_variables, connection, setup_mock_server):
         """Test the JWT token can be retrieved using D-Bus."""
 
         try:
@@ -154,7 +111,7 @@ class TestDBus:
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_fetch_jwt_token(
-        self, bitbake_variables, connection, second_connection, setup_mender_client_dbus
+        self, bitbake_variables, connection, second_connection, setup_mock_server
     ):
         """Test the JWT token can be fetched using D-Bus."""
 
