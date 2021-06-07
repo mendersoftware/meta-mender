@@ -17,6 +17,7 @@ SYSTEMD_SERVICE_${PN} = "mender-mock-server.service"
 
 FILES_${PN} += "\
     ${prefix}/local/bin/mender-mock-server.py \
+    /data/mender-mock-server.py \
     ${prefix}/local/bin/private.key \
     ${systemd_unitdir}/system/mender-mock-server.service \
 "
@@ -28,4 +29,8 @@ do_install() {
 
     install -d ${D}/${systemd_unitdir}/system
     install -m 644 ${WORKDIR}/mender-mock-server.service ${D}${systemd_unitdir}/system/mender-mock-server.service
+
+    install -m 755 -d ${D}/data
+    mv ${D}${prefix}/local/bin/mender-mock-server.py ${D}/data/mender-mock-server.py
+    ln -s /data/mender-mock-server.py ${D}${prefix}/local/bin/mender-mock-server.py
 }
