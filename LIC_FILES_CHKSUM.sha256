@@ -1,0 +1,7 @@
+b4acfcfa2a0ba1a8c82ec3965fbcee886cff8394ca4214e0ddac0a36beb1e05a  LICENSE
+b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1  meta-mender-core/recipes-mender/mender-client-migrate-configuration/files/LICENSE
+b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1  meta-mender-core/recipes-mender/mender-wait-for-timesync/files/LICENSE
+beb140be4cd64599bedc691a55b2729c9cc611a4b9d6ec44e01270105daf18a2  meta-mender-core/recipes-core/lsb-ld/files/LICENSE
+ceb1b36ff073bd13d9806d4615b931707768ca9023805620acc32dd1cfc2f680  meta-mender-demo/recipes-mender/boot-script/files/LICENSE
+ceb1b36ff073bd13d9806d4615b931707768ca9023805620acc32dd1cfc2f680  meta-mender-demo/recipes-mender/mender-reboot-detector/files/LICENSE
+b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1  meta-mender-demo/recipes-mender/example-state-scripts/files/LICENSE

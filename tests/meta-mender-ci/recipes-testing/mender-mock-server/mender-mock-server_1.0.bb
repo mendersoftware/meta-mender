@@ -5,7 +5,7 @@ SRC_URI = " \
 "
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = " \
-    file://mender-mock-server.py;beginline=2;endline=14;md5=96cdd6947ab31ed6536dcfd6a67688ef \
+    file://mender-mock-server.py;beginline=2;endline=14;md5=457f0d2d149c4d7f13339726a05c8b83 \
 "
 S = "${WORKDIR}"
 
@@ -17,6 +17,7 @@ SYSTEMD_SERVICE_${PN} = "mender-mock-server.service"
 
 FILES_${PN} += "\
     ${prefix}/local/bin/mender-mock-server.py \
+    /data/mender-mock-server.py \
     ${prefix}/local/bin/private.key \
     ${systemd_unitdir}/system/mender-mock-server.service \
 "
@@ -28,4 +29,8 @@ do_install() {
 
     install -d ${D}/${systemd_unitdir}/system
     install -m 644 ${WORKDIR}/mender-mock-server.service ${D}${systemd_unitdir}/system/mender-mock-server.service
+
+    install -m 755 -d ${D}/data
+    mv ${D}${prefix}/local/bin/mender-mock-server.py ${D}/data/mender-mock-server.py
+    ln -s /data/mender-mock-server.py ${D}${prefix}/local/bin/mender-mock-server.py
 }
