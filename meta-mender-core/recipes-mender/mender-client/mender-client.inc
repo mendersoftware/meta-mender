@@ -30,6 +30,7 @@ inherit systemd
 SYSTEMD_SERVICE_${PN} = "${MENDER_CLIENT}.service"
 FILES_${PN} += "\
     ${datadir}/dbus-1/system.d/io.mender.AuthenticationManager.conf \
+    ${datadir}/dbus-1/system.d/io.mender.UpdateManager.conf \
     ${datadir}/mender/identity \
     ${datadir}/mender/identity/mender-device-identity \
     ${datadir}/mender/inventory \
