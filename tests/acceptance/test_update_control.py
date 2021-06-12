@@ -462,13 +462,16 @@ class TestUpdateControl:
     def test_invalid_update_control_map(
         self, setup_board, connection, second_connection, setup_mock_server
     ):
-        start_and_ready_mender_client(connection, second_connection)
+        try:
+            start_and_ready_mender_client(connection, second_connection)
 
-        status = connection.run(
-            """dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'{"not-a":"valid-map"}'""",
-            warn=True,
-        )
-        assert status.return_code != 0
+            status = connection.run(
+                """dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'{"not-a":"valid-map"}'""",
+                warn=True,
+            )
+            assert status.return_code != 0
+        finally:
+            connection.run("systemctl stop mender-client")
 
     test_update_control_maps_cleanup_cases = [
         {
