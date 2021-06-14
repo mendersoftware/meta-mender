@@ -18,6 +18,7 @@ import pytest
 import tempfile
 
 from utils.common import put_no_sftp
+import json
 
 # May appear excessive, but emulated QEMU is *really* slow to execute this.
 EXPIRATION_TIME = 60
@@ -83,27 +84,27 @@ def prepare_deployment_response(
     device_type,
     deployment_id="test-deployment",
     artifact_name="test-artifact",
+    update_control_map=None,
 ):
     with tempfile.NamedTemporaryFile() as fd:
-        fd.write(
-            b"""{
-  "id": "%s",
-  "artifact": {
-    "source": {
-      "uri": "https://docker.mender.io:8443/data/%s",
-      "expire": "2099-01-01T00:00:00.000+0000"
-    },
-        "device_types_compatible": ["%s"],
-    "artifact_name": "%s"
-  }
-}"""
-            % (
-                deployment_id.encode(),
-                os.path.basename(artifact_file).encode(),
-                device_type.encode(),
-                artifact_name.encode(),
-            )
-        )
+        update = {
+            "id": deployment_id,
+            "artifact": {
+                "source": {
+                    "uri": "https://docker.mender.io:8443/data/"
+                    + os.path.basename(artifact_file),
+                    "expire": "2099-01-01T00:00:00.000+0000",
+                },
+                "device_types_compatible": [device_type],
+                "artifact_name": artifact_name,
+            },
+        }
+        if update_control_map:
+            update_control_map["id"] = deployment_id
+            update["update_control_map"] = update_control_map
+
+        update_str = json.dumps(update)
+        fd.write(update_str.encode())
         fd.flush()
 
         put_no_sftp(
