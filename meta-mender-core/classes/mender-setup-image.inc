@@ -20,6 +20,7 @@ python() {
 
 MENDER_BOOT_PART_MOUNT_LOCATION = "/boot/efi"
 MENDER_BOOT_PART_MOUNT_LOCATION_mender-uboot = "/uboot"
+MENDER_BOOT_PART_MOUNT_LOCATION_mender-systemd-boot = "/boot"
 MENDER_BOOT_PART_MOUNT_LOCATION_mender-grub_mender-bios = "/boot/grub"
 
 # Set Yocto variable.

@@ -340,5 +340,6 @@ require mender-setup-grub.inc
 require mender-setup-image.inc
 require mender-setup-install.inc
 require mender-setup-systemd.inc
+require mender-setup-systemd-boot.inc
 require mender-setup-ubi.inc
 require mender-setup-uboot.inc

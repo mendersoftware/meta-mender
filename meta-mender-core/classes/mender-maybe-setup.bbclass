@@ -66,6 +66,9 @@ python() {
         # Include Mender as a systemd service.
         'mender-systemd',
 
+        # Use Mender together with systemd-boot.
+        'mender-systemd-boot',
+
         # Enable Mender configuration specific to UBI.
         'mender-ubi',
 
