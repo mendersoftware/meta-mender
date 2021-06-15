@@ -229,6 +229,9 @@ python() {
         # Integration with GRUB.
         'mender-grub',
 
+        # Integration with systemd-boot.
+        'mender-systemd-boot',
+
         # Install of Mender, with the minimum components. This includes no
         # references to specific partition layouts.
         'mender-client-install',
@@ -415,5 +418,6 @@ include mender-setup-grub.inc
 include mender-setup-image.inc
 include mender-setup-install.inc
 include mender-setup-systemd.inc
+include mender-setup-systemd-boot.inc
 include mender-setup-ubi.inc
 include mender-setup-uboot.inc
