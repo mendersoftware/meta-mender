@@ -97,9 +97,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
                 shutil.copyfileobj(body, self.wfile)
 
-            # Only serve the request once.
-            os.remove("/data/mender-mock-server-deployment-header.json")
-
         else:
             self.send_empty_response(204)
 
