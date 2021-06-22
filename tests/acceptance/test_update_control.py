@@ -450,6 +450,10 @@ class TestUpdateControl:
                     pause_state_observed >= PAUSE_STATE_OBSERVE_COUNT
                 ), "Looks like the client did not pause!"
 
+        except:
+            connection.run("journalctl -u mender-client | cat")
+            raise
+
         finally:
             cleanup_deployment_response(connection)
             # Reset update control maps.
@@ -579,7 +583,13 @@ class TestUpdateControl:
             log = wait_for_state("Cleanup")
             assert "ArtifactFailure" not in log
 
+        except:
+            connection.run("journalctl -u mender-client | cat")
+            raise
+
         finally:
             cleanup_deployment_response(connection)
+            # Reset update control maps.
+            set_update_control_map(connection, {"id": MUID}, warn=True)
             connection.run("systemctl stop mender-client")
             connection.run("rm -f /data/logger-update-module.log")
