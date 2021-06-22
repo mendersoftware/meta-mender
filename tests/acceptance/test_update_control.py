@@ -482,14 +482,16 @@ class TestUpdateControl:
             "name": "Cleanup after success",
             "case": {
                 "pause_map": {
+                    "priority": 0,
                     "states": {"ArtifactCommit_Enter": {"action": "pause",},},
                 },
                 "pause_state": "ArtifactVerifyReboot",
                 "continue_map": {
                     "id": MUID,
+                    "priority": 10,
                     "states": {
                         "ArtifactInstall_Enter": {"action": "fail",},
-                        "ArtifactCommit_Enter": {"action": "continue",},
+                        "ArtifactCommit_Enter": {"action": "force_continue",},
                     },
                 },
                 "expect_failure": False,
@@ -499,11 +501,13 @@ class TestUpdateControl:
             "name": "Cleanup after failure",
             "case": {
                 "pause_map": {
+                    "priority": 0,
                     "states": {"ArtifactCommit_Enter": {"action": "pause",},},
                 },
                 "pause_state": "ArtifactVerifyReboot",
                 "continue_map": {
                     "id": MUID,
+                    "priority": 10,
                     "states": {
                         "ArtifactInstall_Enter": {"action": "fail",},
                         "ArtifactCommit_Enter": {"action": "fail",},
