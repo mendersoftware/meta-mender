@@ -574,6 +574,7 @@ class TestUpdateControl:
 
             # Second deployment shall succeed
             connection.run("rm -f /data/logger-update-module.log")
+            cleanup_deployment_response(connection)
             make_and_deploy_artifact(
                 connection,
                 bitbake_variables["MENDER_DEVICE_TYPE"],
