@@ -260,6 +260,8 @@ class TestUbootAutomation:
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
 
+        pytest.skip("Testing")
+
         with bitbake_env_from(request, "u-boot"):
             self.run_test_uboot_compile(request, bitbake_variables)
 
