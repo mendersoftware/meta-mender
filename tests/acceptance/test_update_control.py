@@ -77,6 +77,20 @@ def set_update_control_map(connection, m, warn=False):
     assert "int32 %d" % (EXPIRATION_TIME / 2) in output.stdout
 
 
+def clear_update_control_maps(connection):
+    connection.run(
+        (
+            "for uid in %s %s; do "
+            + "    for priority in `seq -10 10`; do "
+            + """        dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'{"id":"'$uid'","priority":'$priority'}';"""
+            + "    done;"
+            + "done"
+        )
+        % (MUID, MUID2),
+        warn=True,
+    )
+
+
 # Deliberately not using a constant for deployment_id. If you want something
 # known, you have to pass it in yourself.
 def make_and_deploy_artifact(
@@ -462,8 +476,7 @@ class TestUpdateControl:
         finally:
             cleanup_deployment_response(connection)
             # Reset update control maps.
-            set_update_control_map(connection, {"id": MUID}, warn=True)
-            set_update_control_map(connection, {"id": MUID2}, warn=True)
+            clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
             connection.run("rm -f /data/logger-update-module.log")
 
@@ -599,7 +612,6 @@ class TestUpdateControl:
 
         finally:
             cleanup_deployment_response(connection)
-            # Reset update control maps.
-            set_update_control_map(connection, {"id": MUID}, warn=True)
+            clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
             connection.run("rm -f /data/logger-update-module.log")
