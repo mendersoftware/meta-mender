@@ -77,8 +77,13 @@ def set_update_control_map(connection, m, warn=False):
     assert "int32 %d" % (EXPIRATION_TIME / 2) in output.stdout
 
 
+# Deliberately not using a constant for deployment_id. If you want something
+# known, you have to pass it in yourself.
 def make_and_deploy_artifact(
-    connection, device_type, deployment_id="test-deployment", update_control_map=None
+    connection,
+    device_type,
+    deployment_id="7e49d892-d5a0-11eb-a6ff-23a7bacac256",
+    update_control_map=None,
 ):
     with tempfile.NamedTemporaryFile(suffix=".mender") as artifact_file:
         artifact_name = os.path.basename(artifact_file.name)[:-7]
