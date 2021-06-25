@@ -526,7 +526,7 @@ class TestUpdateControl:
             for case in test_update_control_maps_cleanup_cases
         ],
     )
-    def test_update_control_maps_cleanup(
+    def test_update_control_map_cleanup(
         self,
         case_name,
         case,
