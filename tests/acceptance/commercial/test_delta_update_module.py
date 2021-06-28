@@ -99,7 +99,7 @@ class TestDeltaUpdateModule:
         reboot(connection)
 
         run_after_connect("true", connection)
-        connection.run("mender -commit")
+        connection.run("mender commit")
 
         return image
 
@@ -250,4 +250,4 @@ class TestDeltaUpdateModule:
             )
             assert new_active == passive
             assert new_passive == active
-            connection.run("mender -commit")
+            connection.run("mender commit")
