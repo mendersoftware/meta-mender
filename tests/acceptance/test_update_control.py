@@ -30,7 +30,7 @@ from mock_server import (
     EXPIRATION_TIME,
     BOOT_EXPIRATION_TIME,
 )
-from utils.common import get_no_sftp
+from utils.common import get_no_sftp, put_no_sftp
 
 # Map UIDs. Randomly chosen, but used throughout for consistency.
 MUID = "3702f9f0-b318-11eb-a7b6-c7aece07181e"
@@ -125,6 +125,26 @@ def make_and_deploy_artifact(
             deployment_id=deployment_id,
             update_control_map=update_control_map,
         )
+
+
+def wait_for_state(connection, state_to_wait_for):
+    log = []
+    attempts = 10
+    while attempts > 0:
+        output = connection.run(
+            "cat /data/logger-update-module.log 2>/dev/null || true"
+        ).stdout.strip()
+        log = [line.split()[1] for line in output.split("\n") if len(line) > 0]
+
+        if state_to_wait_for in log:
+            break
+
+        time.sleep(2)
+
+        attempts -= 1
+    else:
+        pytest.fail(f"Could not find {state_to_wait_for} in log")
+    return log
 
 
 class TestUpdateControl:
@@ -555,25 +575,6 @@ class TestUpdateControl:
         bitbake_variables,
         bitbake_path,
     ):
-        def wait_for_state(state_to_wait_for):
-            log = []
-            attempts = 10
-            while attempts > 0:
-                output = connection.run(
-                    "cat /data/logger-update-module.log 2>/dev/null || true"
-                ).stdout.strip()
-                log = [line.split()[1] for line in output.split("\n") if len(line) > 0]
-
-                if state_to_wait_for in log:
-                    break
-
-                time.sleep(2)
-
-                attempts -= 1
-            else:
-                pytest.fail(f"Could not find {state_to_wait_for} in log")
-            return log
-
         try:
             start_and_ready_mender_client(connection, second_connection)
 
@@ -586,9 +587,9 @@ class TestUpdateControl:
                 deployment_id=MUID,
                 update_control_map=case["pause_map"],
             )
-            wait_for_state(case["pause_state"])
+            wait_for_state(connection, case["pause_state"])
             set_update_control_map(connection, case["continue_map"])
-            log = wait_for_state("Cleanup")
+            log = wait_for_state(connection, "Cleanup")
             if case["expect_failure"]:
                 assert "ArtifactFailure" in log
             else:
@@ -603,7 +604,7 @@ class TestUpdateControl:
                 deployment_id=MUID2,
                 update_control_map=None,
             )
-            log = wait_for_state("Cleanup")
+            log = wait_for_state(connection, "Cleanup")
             assert "ArtifactFailure" not in log
 
         except:
@@ -612,6 +613,103 @@ class TestUpdateControl:
 
         finally:
             cleanup_deployment_response(connection)
+            clear_update_control_maps(connection)
+            connection.run("systemctl stop mender-client")
+            connection.run("rm -f /data/logger-update-module.log")
+
+    @pytest.mark.min_mender_version("2.7.0")
+    def test_many_state_transitions_with_update_control(
+        self,
+        setup_board,
+        connection,
+        second_connection,
+        setup_mock_server,
+        bitbake_variables,
+        bitbake_path,
+    ):
+        """Test whether we can make many state transitions with update control without
+        triggering the "too many state transitions" error."""
+
+        try:
+            start_and_ready_mender_client(connection, second_connection)
+
+            ucm = (
+                """{
+    "ID": "%s",
+    "states": {
+        "ArtifactInstall_Enter": {
+            "action": "pause"
+        }
+    }
+}"""
+                % MUID
+            )
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                script = os.path.join(tmpdir, "map-insert.sh")
+                with open(script, "w") as fd:
+                    fd.write(
+                        """#!/bin/sh
+while sleep 0.2; do
+    dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'%s'
+done
+"""
+                        % ucm
+                    )
+                put_no_sftp(script, connection, remote="/data/map-insert.sh")
+
+            # Constantly reinsert map over and over in the background, to force
+            # state transitions.
+            connection.run("systemd-run sh /data/map-insert.sh")
+
+            now = time.time()
+
+            make_and_deploy_artifact(
+                connection, bitbake_variables["MENDER_DEVICE_TYPE"]
+            )
+
+            timeout = now + 300
+            # Wait until we have received 100 state transitions, which is way
+            # more than would cause a failure.
+            while time.time() < timeout:
+                output = connection.run(
+                    "journalctl -u mender-client -S '%s' | grep 'State transition: mender-update-control '"
+                    % time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(now)),
+                    warn=True,
+                ).stdout
+                if len(output.split("\n")) >= 100:
+                    break
+            else:
+                pytest.fail(
+                    "Timed out without reaching the required number of state transitions."
+                )
+
+            # Just double check that we are indeed paused, as we expect.
+            log = wait_for_state(connection, "Download")
+            assert "Cleanup" not in log
+
+            # Force it to continue.
+            set_update_control_map(
+                connection,
+                {
+                    "ID": MUID2,
+                    "priority": 10,
+                    "states": {"ArtifactInstall_Enter": {"action": "force_continue"}},
+                },
+            )
+
+            # Rest of deployment should finish successfully.
+            log = wait_for_state(connection, "Cleanup")
+            assert "ArtifactFailure" not in log
+
+        except:
+            connection.run("journalctl -u mender-client | cat")
+            raise
+
+        finally:
+            connection.run("pkill -f map-insert.sh", warn=True)
+            cleanup_deployment_response(connection)
+            # Reset update control maps.
             clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
             connection.run("rm -f /data/logger-update-module.log")
