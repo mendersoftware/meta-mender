@@ -77,8 +77,27 @@ def set_update_control_map(connection, m, warn=False):
     assert "int32 %d" % (EXPIRATION_TIME / 2) in output.stdout
 
 
+def clear_update_control_maps(connection):
+    connection.run(
+        (
+            "for uid in %s %s; do "
+            + "    for priority in `seq -10 10`; do "
+            + """        dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'{"id":"'$uid'","priority":'$priority'}';"""
+            + "    done;"
+            + "done"
+        )
+        % (MUID, MUID2),
+        warn=True,
+    )
+
+
+# Deliberately not using a constant for deployment_id. If you want something
+# known, you have to pass it in yourself.
 def make_and_deploy_artifact(
-    connection, device_type, deployment_id="test-deployment", update_control_map=None
+    connection,
+    device_type,
+    deployment_id="7e49d892-d5a0-11eb-a6ff-23a7bacac256",
+    update_control_map=None,
 ):
     with tempfile.NamedTemporaryFile(suffix=".mender") as artifact_file:
         artifact_name = os.path.basename(artifact_file.name)[:-7]
@@ -450,11 +469,14 @@ class TestUpdateControl:
                     pause_state_observed >= PAUSE_STATE_OBSERVE_COUNT
                 ), "Looks like the client did not pause!"
 
+        except:
+            connection.run("journalctl -u mender-client | cat")
+            raise
+
         finally:
             cleanup_deployment_response(connection)
             # Reset update control maps.
-            set_update_control_map(connection, {"id": MUID}, warn=True)
-            set_update_control_map(connection, {"id": MUID2}, warn=True)
+            clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
             connection.run("rm -f /data/logger-update-module.log")
 
@@ -478,14 +500,16 @@ class TestUpdateControl:
             "name": "Cleanup after success",
             "case": {
                 "pause_map": {
+                    "priority": 0,
                     "states": {"ArtifactCommit_Enter": {"action": "pause",},},
                 },
                 "pause_state": "ArtifactVerifyReboot",
                 "continue_map": {
                     "id": MUID,
+                    "priority": 10,
                     "states": {
                         "ArtifactInstall_Enter": {"action": "fail",},
-                        "ArtifactCommit_Enter": {"action": "continue",},
+                        "ArtifactCommit_Enter": {"action": "force_continue",},
                     },
                 },
                 "expect_failure": False,
@@ -495,11 +519,13 @@ class TestUpdateControl:
             "name": "Cleanup after failure",
             "case": {
                 "pause_map": {
+                    "priority": 0,
                     "states": {"ArtifactCommit_Enter": {"action": "pause",},},
                 },
                 "pause_state": "ArtifactVerifyReboot",
                 "continue_map": {
                     "id": MUID,
+                    "priority": 10,
                     "states": {
                         "ArtifactInstall_Enter": {"action": "fail",},
                         "ArtifactCommit_Enter": {"action": "fail",},
@@ -518,7 +544,7 @@ class TestUpdateControl:
             for case in test_update_control_maps_cleanup_cases
         ],
     )
-    def test_update_control_maps_cleanup(
+    def test_update_control_map_cleanup(
         self,
         case_name,
         case,
@@ -570,6 +596,7 @@ class TestUpdateControl:
 
             # Second deployment shall succeed
             connection.run("rm -f /data/logger-update-module.log")
+            cleanup_deployment_response(connection)
             make_and_deploy_artifact(
                 connection,
                 bitbake_variables["MENDER_DEVICE_TYPE"],
@@ -579,7 +606,12 @@ class TestUpdateControl:
             log = wait_for_state("Cleanup")
             assert "ArtifactFailure" not in log
 
+        except:
+            connection.run("journalctl -u mender-client | cat")
+            raise
+
         finally:
             cleanup_deployment_response(connection)
+            clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
             connection.run("rm -f /data/logger-update-module.log")
