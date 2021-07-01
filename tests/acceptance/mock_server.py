@@ -21,8 +21,8 @@ from utils.common import put_no_sftp
 import json
 
 # May appear excessive, but emulated QEMU is *really* slow to execute this.
-EXPIRATION_TIME = 90
-BOOT_EXPIRATION_TIME = 45
+EXPIRATION_TIME = 120
+BOOT_EXPIRATION_TIME = 60
 
 MENDER_CONF = """{
     "UpdatePollIntervalSeconds": 1,
