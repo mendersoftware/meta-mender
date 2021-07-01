@@ -6,6 +6,9 @@ MENDER_UPDATE_POLL_INTERVAL_SECONDS_mender-client-install = "5"
 MENDER_INVENTORY_POLL_INTERVAL_SECONDS_mender-client-install = "5"
 MENDER_RETRY_POLL_INTERVAL_SECONDS_mender-client-install = "30"
 
+MENDER_UPDATE_CONTROL_MAP_EXPIRATION_TIME_SECONDS_mender-client-install = "90"
+MENDER_UPDATE_CONTROL_MAP_BOOT_EXPIRATION_TIME_SECONDS_mender-client-install = "45"
+
 MENDER_CERT_LOCATION_mender-client-install ?= "${docdir}/mender-client/examples/demo.crt"
 
 PACKAGECONFIG_append = "${@mender_feature_is_enabled("mender-client-install", " modules", "", d)}"
