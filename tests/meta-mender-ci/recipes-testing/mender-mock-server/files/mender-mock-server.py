@@ -140,13 +140,17 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         if self.headers.get(
             "Transfer-Encoding"
         ) is not None and "chunked" in self.headers.get("Transfer-Encoding"):
-            # We only support one chunk.
-            lineend = self.rfile.readline().strip()
-            assert lineend == b""
-            size = self.rfile.readline().strip()
-            assert size == b"0"
-            lineend = self.rfile.readline().strip()
-            assert lineend == b""
+            # Read remaining chunks
+            while size > 0:
+                lineend = self.rfile.readline().strip()
+                assert lineend == b""
+                size = self.rfile.readline().strip()
+                size = int(size, 16)
+                if size > 0:
+                    data += self.rfile.read(size)
+                else:
+                    lineend = self.rfile.readline().strip()
+                    assert lineend == b""
 
         return data.decode()
 
