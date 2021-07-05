@@ -491,6 +491,7 @@ class TestUpdateControl:
 
         except:
             connection.run("journalctl -u mender-client | cat")
+            connection.run("journalctl -u mender-mock-server | cat")
             raise
 
         finally:
@@ -611,6 +612,7 @@ class TestUpdateControl:
 
         except:
             connection.run("journalctl -u mender-client | cat")
+            connection.run("journalctl -u mender-mock-server | cat")
             raise
 
         finally:
@@ -707,6 +709,7 @@ done
 
         except:
             connection.run("journalctl -u mender-client | cat")
+            connection.run("journalctl -u mender-mock-server | cat")
             raise
 
         finally:
