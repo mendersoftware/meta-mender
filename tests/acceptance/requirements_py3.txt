@@ -11,7 +11,7 @@ iniconfig==1.1.1
 invoke==1.5.0
 packaging==20.9
 paramiko==2.7.2
-pathlib2==2.3.5
+pathlib2==2.3.6
 pluggy==0.13.1
 psutil==5.8.0
 py==1.10.0
