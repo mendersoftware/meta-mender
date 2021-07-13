@@ -13,7 +13,8 @@ SRC_URI = "git://github.com/mendersoftware/mender-configure-module;protocol=http
 # Tag: 1.0.1
 SRCREV = "495a962699fb295291a79de5c75d280e823cc9e3"
 
-# Enable this in Betas, not in finals.
+# Enable this in Betas, and in branches that cannot carry this major version as
+# default.
 # Downprioritize this recipe in version selections.
 #DEFAULT_PREFERENCE = "-1"
 
