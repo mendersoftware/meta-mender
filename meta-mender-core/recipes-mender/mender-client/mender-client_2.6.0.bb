@@ -13,7 +13,8 @@ SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.6.x"
 # Tag: 2.6.0
 SRCREV = "fb4697b00f4ae0f765c2a2ef70ce2c58bcebc958"
 
-# Enable this in Betas, not in finals.
+# Enable this in Betas, and in branches that cannot carry this major version as
+# default.
 # Downprioritize this recipe in version selections.
 #DEFAULT_PREFERENCE = "-1"
 
