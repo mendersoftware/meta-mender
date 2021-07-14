@@ -10,8 +10,8 @@ require mender-configure.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender-configure-module;protocol=https;branch=1.0.x"
 
-# Tag: 1.0.0
-SRCREV = "bfa3275ced268b5aedfe74c8c537c4e32a9b2851"
+# Tag: 1.0.1
+SRCREV = "495a962699fb295291a79de5c75d280e823cc9e3"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.

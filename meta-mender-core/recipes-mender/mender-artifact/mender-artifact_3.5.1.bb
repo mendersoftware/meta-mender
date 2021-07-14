@@ -13,7 +13,8 @@ SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;br
 # Tag: 3.5.1
 SRCREV = "3ddd842c8d6e2c3c19cf671978260f9681cfd66a"
 
-# Enable this in Betas, not in finals.
+# Enable this in Betas, and in branches that cannot carry this major version as
+# default.
 # Downprioritize this recipe in version selections.
 #DEFAULT_PREFERENCE = "-1"
 
