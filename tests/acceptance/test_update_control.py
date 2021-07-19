@@ -30,7 +30,7 @@ from mock_server import (
     EXPIRATION_TIME,
     BOOT_EXPIRATION_TIME,
 )
-from utils.common import get_no_sftp, put_no_sftp
+from utils.common import put_no_sftp, cleanup_mender_state
 
 # Map UIDs. Randomly chosen, but used throughout for consistency.
 MUID = "3702f9f0-b318-11eb-a7b6-c7aece07181e"
@@ -491,6 +491,7 @@ class TestUpdateControl:
 
         except:
             connection.run("journalctl -u mender-client | cat")
+            connection.run("journalctl -u mender-mock-server | cat")
             raise
 
         finally:
@@ -498,6 +499,7 @@ class TestUpdateControl:
             # Reset update control maps.
             clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
+            cleanup_mender_state(connection)
             connection.run("rm -f /data/logger-update-module.log")
 
     @pytest.mark.min_mender_version("2.7.0")
@@ -514,6 +516,7 @@ class TestUpdateControl:
             assert status.return_code != 0
         finally:
             connection.run("systemctl stop mender-client")
+            cleanup_mender_state(connection)
 
     test_update_control_maps_cleanup_cases = [
         {
@@ -609,12 +612,14 @@ class TestUpdateControl:
 
         except:
             connection.run("journalctl -u mender-client | cat")
+            connection.run("journalctl -u mender-mock-server | cat")
             raise
 
         finally:
             cleanup_deployment_response(connection)
             clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
+            cleanup_mender_state(connection)
             connection.run("rm -f /data/logger-update-module.log")
 
     @pytest.mark.min_mender_version("2.7.0")
@@ -704,6 +709,7 @@ done
 
         except:
             connection.run("journalctl -u mender-client | cat")
+            connection.run("journalctl -u mender-mock-server | cat")
             raise
 
         finally:
@@ -712,4 +718,5 @@ done
             # Reset update control maps.
             clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
+            cleanup_mender_state(connection)
             connection.run("rm -f /data/logger-update-module.log")

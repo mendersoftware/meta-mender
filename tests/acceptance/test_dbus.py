@@ -22,11 +22,7 @@ from multiprocessing import Process
 
 from mock_server import setup_mock_server
 
-MENDER_STATE_FILES = (
-    "/var/lib/mender/mender-agent.pem",
-    "/var/lib/mender/mender-store",
-    "/var/lib/mender/mender-store-lock",
-)
+from utils.common import cleanup_mender_state
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
@@ -78,7 +74,7 @@ class TestDBus:
 
         finally:
             connection.run("systemctl stop mender-client")
-            connection.run("rm -f %s" % " ".join(MENDER_STATE_FILES))
+            cleanup_mender_state(connection)
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_get_jwt_token(self, bitbake_variables, connection, setup_mock_server):
@@ -107,7 +103,7 @@ class TestDBus:
             assert f'string "{self.JWT_TOKEN}' in output
         finally:
             connection.run("systemctl stop mender-client")
-            connection.run("rm -f %s" % " ".join(MENDER_STATE_FILES))
+            cleanup_mender_state(connection)
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_fetch_jwt_token(
@@ -115,65 +111,67 @@ class TestDBus:
     ):
         """Test the JWT token can be fetched using D-Bus."""
 
-        # start monitoring the D-Bus
-        def dbus_monitor():
-            second_connection.run(
-                "dbus-monitor --system \"type='signal',interface='io.mender.Authentication1'\" > /tmp/dbus-monitor.log"
-            )
+        # bootstrap the client
+        result = connection.run("mender bootstrap --forcebootstrap")
+        assert result.exited == 0
 
-        p = Process(target=dbus_monitor, daemon=True)
-        p.start()
-
-        # get the JWT token via D-Bus
         try:
-            # bootstrap the client
-            result = connection.run("mender bootstrap --forcebootstrap")
-            assert result.exited == 0
-
-            # start the mender-client service
-            result = connection.run("systemctl start mender-client")
-            assert result.exited == 0
-
-            # fetch the JWT token
-            fetched = False
-            for i in range(12):
-                result = connection.run(
-                    "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.FetchJwtToken || true"
+            # start monitoring the D-Bus
+            def dbus_monitor():
+                second_connection.run(
+                    "dbus-monitor --system \"type='signal',interface='io.mender.Authentication1'\" > /tmp/dbus-monitor.log"
                 )
-                if "true" in result.stdout:
-                    fetched = True
-                    break
-                time.sleep(5)
 
-            # fetch was successful
-            assert fetched
+            p = Process(target=dbus_monitor, daemon=True)
+            p.start()
 
-            # verify we received the D-Bus signal JwtTokenStateChange and that it contains the JWT token
-            found = False
-            output = ""
-            for i in range(12):
-                output = connection.run("cat /tmp/dbus-monitor.log").stdout.strip()
-                if (
-                    "path=/io/mender/AuthenticationManager; interface=io.mender.Authentication1; member=JwtTokenStateChange"
-                    in output
-                ):
-                    found = True
-                    break
-                time.sleep(5)
-            assert found, output
-            assert f'string "{self.JWT_TOKEN}' in output
+            # get the JWT token via D-Bus
+            try:
+                # start the mender-client service
+                result = connection.run("systemctl start mender-client")
+                assert result.exited == 0
 
-            # token is now available also via GetJwtToken
-            # Disabled due to MEN-4294
-            # result = connection.run(
-            #     "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.GetJwtToken"
-            # )
-            # assert result.exited == 0
+                # fetch the JWT token
+                fetched = False
+                for i in range(12):
+                    result = connection.run(
+                        "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.FetchJwtToken || true"
+                    )
+                    if "true" in result.stdout:
+                        fetched = True
+                        break
+                    time.sleep(5)
 
-            # output = result.stdout.strip()
-            # assert f'string "{self.JWT_TOKEN}' in output
+                # fetch was successful
+                assert fetched
+
+                # verify we received the D-Bus signal JwtTokenStateChange and that it contains the JWT token
+                found = False
+                output = ""
+                for i in range(12):
+                    output = connection.run("cat /tmp/dbus-monitor.log").stdout.strip()
+                    if (
+                        "path=/io/mender/AuthenticationManager; interface=io.mender.Authentication1; member=JwtTokenStateChange"
+                        in output
+                    ):
+                        found = True
+                        break
+                    time.sleep(5)
+                assert found, output
+
+                # token is now available
+                result = connection.run(
+                    "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.GetJwtToken"
+                )
+                assert result.exited == 0
+
+                output = result.stdout.strip()
+                assert f'string "{self.JWT_TOKEN}' in output
+
+            finally:
+                p.terminate()
+                connection.run("systemctl stop mender-client")
+                connection.run("rm -f /tmp/dbus-monitor.log")
+
         finally:
-            p.terminate()
-            connection.run("systemctl stop mender-client")
-            connection.run("rm -f %s" % " ".join(MENDER_STATE_FILES))
-            connection.run("rm -f /tmp/dbus-monitor.log")
+            cleanup_mender_state(connection)
