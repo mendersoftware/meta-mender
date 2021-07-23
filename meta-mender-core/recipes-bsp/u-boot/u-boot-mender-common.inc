@@ -262,7 +262,7 @@ do_configure_prepend_mender-uboot() {
         key="$(echo "$line" | sed -e 's/=.*//')"
         if egrep "^($key=|# $key is not set\$)" ${B}/.config; then
             # We found the option. Check that it's correct.
-            if ! fgrep "$line" ${B}/.config; then
+            if ! fgrep -i "$line" ${B}/.config; then
                 wrong_entry="$(fgrep "$key" ${B}/.config)"
                 msg="$(printf "U-Boot configuration %s has setting:\n%s\nbut Mender expects:\n%s\nPlease fix U-Boot's configuration file." \
                     "${UBOOT_MACHINE}" \

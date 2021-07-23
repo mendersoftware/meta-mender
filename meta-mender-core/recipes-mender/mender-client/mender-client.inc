@@ -32,6 +32,7 @@ inherit systemd
 SYSTEMD_SERVICE_${PN} = "${MENDER_CLIENT}.service"
 FILES_${PN} += "\
     ${datadir}/dbus-1/system.d/io.mender.AuthenticationManager.conf \
+    ${datadir}/dbus-1/system.d/io.mender.UpdateManager.conf \
     ${datadir}/mender/identity \
     ${datadir}/mender/identity/mender-device-identity \
     ${datadir}/mender/inventory \
@@ -51,6 +52,9 @@ FILES_${PN} += "\
     ${localdatadir}/ca-certificates/mender/ \
     /data/mender/device_type \
     /data/mender/mender.conf \
+"
+FILES_${PN}-dev += " \
+    ${datadir}/dbus-1/interface \
 "
 
 SYSROOT_DIRS += "/data"
@@ -194,6 +198,10 @@ python do_prepare_mender_conf() {
 
     # Tenant-token is optional, but falls back to a default-value set in config.go
     conf_maybe_add("TenantToken", "MENDER_TENANT_TOKEN", getvar=True, integer=False)
+
+    # Add the update control configurations if set
+    conf_maybe_add("UpdateControlMapExpirationTimeSeconds", "MENDER_UPDATE_CONTROL_MAP_EXPIRATION_TIME_SECONDS", getvar=True, integer=True)
+    conf_maybe_add("UpdateControlMapBootExpirationTimeSeconds", "MENDER_UPDATE_CONTROL_MAP_BOOT_EXPIRATION_TIME_SECONDS", getvar=True, integer=True)
 
     # Filter returns the variables that are present in both instances.
     # Thus no misspelled variables will ever enter the persistent configuration during migration.
@@ -342,6 +350,12 @@ do_install() {
     install -d ${D}${sysconfdir}/udev/mount.blacklist.d
     echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
+
+    # install the D-Bus interface file
+    if [ -f ${B}/src/${GO_IMPORT}/Documentation/io.mender.Authentication1.xml ]; then
+        install -d ${D}${datadir}/dbus-1/interface
+        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+    fi
 }
 
 do_install_append_mender-image_mender-systemd() {

@@ -13,7 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import os.path
+import os
+import re
+import shutil
 import ssl
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -26,45 +28,131 @@ JWT_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkNjA2ZjYxNC03NWFkLT
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
+        self.read_body()
+
         if self.path == "/api/devices/v1/deployments/device/deployments/next":
             return self.do_GET_or_POST_deployments_next()
-        self.send_response(404)
-        self.end_headers()
+        elif self.path.startswith("/data/"):
+            with open(self.path, "rb") as body:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Length", str(os.fstat(body.fileno()).st_size))
+                self.end_headers()
+
+                shutil.copyfileobj(body, self.wfile)
+        else:
+            self.send_empty_response(404)
 
     def do_POST(self):
+        self.read_body()
+
         if self.path == "/api/devices/v1/authentication/auth_requests":
             return self.do_POST_auth_requests()
         elif self.path == "/api/devices/v1/deployments/device/deployments/next":
             return self.do_GET_or_POST_deployments_next()
-        self.send_response(404)
-        self.end_headers()
+        self.send_empty_response(404)
 
     def do_PATCH(self):
+        self.read_body()
+
         if self.path == "/api/devices/v1/inventory/device/attributes":
             return self.do_PATCH_or_PUT_device_attributes()
-        self.send_response(404)
-        self.end_headers()
+        self.send_empty_response(404)
 
     def do_PUT(self):
+        body = self.read_body()
+
+        status = re.match(
+            "/api/devices/v1/deployments/device/deployments/([a-f0-9-]*)/status$",
+            self.path,
+            flags=re.IGNORECASE,
+        )
+        log = re.match(
+            "/api/devices/v1/deployments/device/deployments/([a-f0-9-]*)/log$",
+            self.path,
+            flags=re.IGNORECASE,
+        )
+
         if self.path == "/api/devices/v1/inventory/device/attributes":
             return self.do_PATCH_or_PUT_device_attributes()
-        self.send_response(404)
-        self.end_headers()
+        elif status is not None:
+            try:
+                with open("/data/mender-mock-server-deployment-header.json") as fd:
+                    content = fd.read()
+                if status.group(1) in content:
+                    if "success" in body or "failure" in body:
+                        os.remove("/data/mender-mock-server-deployment-header.json")
+                    self.send_empty_response(204)
+                    return
+            except FileNotFoundError:
+                # Fall through to 404.
+                pass
+        elif log is not None:
+            self.send_empty_response(204)
+            return
+
+        self.send_empty_response(404)
 
     def do_POST_auth_requests(self):
         self.send_response(200)
-        self.send_header("Content-type", "application/jwt")
+        self.send_header("Content-Type", "application/jwt")
+        self.send_header("Content-Length", len(JWT_TOKEN.encode("utf-8")))
         self.end_headers()
         self.wfile.write(JWT_TOKEN.encode("utf-8"))
 
     def do_PATCH_or_PUT_device_attributes(self):
         self.send_response(200)
-        self.send_header("Content-type", "application/json")
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", 0)
         self.end_headers()
 
     def do_GET_or_POST_deployments_next(self):
-        self.send_response(204)
+        if os.path.exists("/data/mender-mock-server-deployment-header.json"):
+            with open("/data/mender-mock-server-deployment-header.json", "rb") as body:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", os.fstat(body.fileno()).st_size)
+                self.end_headers()
+
+                shutil.copyfileobj(body, self.wfile)
+
+        else:
+            self.send_empty_response(204)
+
+    def send_empty_response(self, status_code):
+        self.send_response(status_code)
+        self.send_header("Content-Length", "0")
         self.end_headers()
+
+    def read_body(self):
+        if self.headers.get(
+            "Transfer-Encoding"
+        ) is not None and "chunked" in self.headers.get("Transfer-Encoding"):
+            size = self.rfile.readline().strip()
+            size = int(size, 16)
+        elif self.headers.get("Content-Length") is not None:
+            size = int(self.headers.get("Content-Length"))
+        else:
+            return ""
+
+        data = self.rfile.read(size)
+
+        if self.headers.get(
+            "Transfer-Encoding"
+        ) is not None and "chunked" in self.headers.get("Transfer-Encoding"):
+            # Read remaining chunks
+            while size > 0:
+                lineend = self.rfile.readline().strip()
+                assert lineend == b""
+                size = self.rfile.readline().strip()
+                size = int(size, 16)
+                if size > 0:
+                    data += self.rfile.read(size)
+                else:
+                    lineend = self.rfile.readline().strip()
+                    assert lineend == b""
+
+        return data.decode()
 
 
 def main():
