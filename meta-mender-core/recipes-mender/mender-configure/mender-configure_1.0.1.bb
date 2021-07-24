@@ -1,4 +1,4 @@
-require mender-artifact.inc
+require mender-configure.inc
 
 ################################################################################
 #-------------------------------------------------------------------------------
@@ -8,12 +8,13 @@ require mender-artifact.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=3.4.x"
+SRC_URI = "git://github.com/mendersoftware/mender-configure-module;protocol=https;branch=1.0.x"
 
-# Tag: 3.4.2
-SRCREV = "b654fc9bf3e7c3114db291da51dee89eddc56d61"
+# Tag: 1.0.1
+SRCREV = "495a962699fb295291a79de5c75d280e823cc9e3"
 
-# Enable this in Betas, not in finals.
+# Enable this in Betas, and in branches that cannot carry this major version as
+# default.
 # Downprioritize this recipe in version selections.
 #DEFAULT_PREFERENCE = "-1"
 
@@ -23,7 +24,5 @@ SRCREV = "b654fc9bf3e7c3114db291da51dee89eddc56d61"
 # dependencies) are included in the LICENSE variable below. Note that for
 # releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
 # file.
-LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=7ec199eb2815c1cb147efc754c38d4b1"
-
-DEPENDS += "xz"
+LIC_FILES_CHKSUM = "file://${S}/LIC_FILES_CHKSUM.sha256;md5=dbe7fef3ae7b158261d81f13228969e6"
+LICENSE = "Apache-2.0"

@@ -195,6 +195,10 @@ python do_prepare_mender_conf() {
     # Tenant-token is optional, but falls back to a default-value set in config.go
     conf_maybe_add("TenantToken", "MENDER_TENANT_TOKEN", getvar=True, integer=False)
 
+    # Add the update control configurations if set
+    conf_maybe_add("UpdateControlMapExpirationTimeSeconds", "MENDER_UPDATE_CONTROL_MAP_EXPIRATION_TIME_SECONDS", getvar=True, integer=True)
+    conf_maybe_add("UpdateControlMapBootExpirationTimeSeconds", "MENDER_UPDATE_CONTROL_MAP_BOOT_EXPIRATION_TIME_SECONDS", getvar=True, integer=True)
+
     # Filter returns the variables that are present in both instances.
     # Thus no misspelled variables will ever enter the persistent configuration during migration.
     persistent_configs = bb.utils.filter("MENDER_PERSISTENT_CONFIGURATION_VARS", d.getVar("MENDER_CONFIGURATION_VARS"), d)
@@ -270,12 +274,19 @@ do_install() {
     # install dbus files
     if grep -q install-dbus ${B}/src/${GO_IMPORT}/Makefile; then
         if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
+            # install the D-Bus policy file
             oe_runmake \
                 -C ${B}/src/${GO_IMPORT} \
                 V=1 \
                 prefix=${D} \
                 datadir=${datadir} \
                 install-dbus
+
+            # install the D-Bus interface file(s)
+            if [ -f ${B}/src/${GO_IMPORT}/Documentation/io.mender.Authentication1.xml ]; then
+                install -d ${D}${datadir}/dbus-1/interface
+                install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+            fi
         fi
     fi
 
@@ -314,12 +325,6 @@ do_install() {
     install -d ${D}${sysconfdir}/udev/mount.blacklist.d
     echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
-
-    # install the D-Bus interface file
-    if [ -f ${B}/src/${GO_IMPORT}/Documentation/io.mender.Authentication1.xml ]; then
-        install -d ${D}${datadir}/dbus-1/interface
-        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
-    fi
 }
 
 do_install_append_class-target_mender-image_mender-systemd() {

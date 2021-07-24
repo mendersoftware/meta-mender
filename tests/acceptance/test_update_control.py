@@ -30,7 +30,7 @@ from mock_server import (
     EXPIRATION_TIME,
     BOOT_EXPIRATION_TIME,
 )
-from utils.common import get_no_sftp
+from utils.common import put_no_sftp, cleanup_mender_state
 
 # Map UIDs. Randomly chosen, but used throughout for consistency.
 MUID = "3702f9f0-b318-11eb-a7b6-c7aece07181e"
@@ -66,6 +66,85 @@ def start_and_ready_mender_client(connection, second_connection):
     finally:
         p.terminate()
         connection.run("rm -f cat /tmp/dbus-monitor.log")
+
+
+def set_update_control_map(connection, m, warn=False):
+    output = connection.run(
+        "dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'%s'"
+        % json.dumps(m),
+        warn=warn,
+    )
+    assert "int32 %d" % (EXPIRATION_TIME / 2) in output.stdout
+
+
+def clear_update_control_maps(connection):
+    connection.run(
+        (
+            "for uid in %s %s; do "
+            + "    for priority in `seq -10 10`; do "
+            + """        dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'{"id":"'$uid'","priority":'$priority'}';"""
+            + "    done;"
+            + "done"
+        )
+        % (MUID, MUID2),
+        warn=True,
+    )
+
+
+# Deliberately not using a constant for deployment_id. If you want something
+# known, you have to pass it in yourself.
+def make_and_deploy_artifact(
+    connection,
+    device_type,
+    deployment_id="7e49d892-d5a0-11eb-a6ff-23a7bacac256",
+    update_control_map=None,
+):
+    with tempfile.NamedTemporaryFile(suffix=".mender") as artifact_file:
+        artifact_name = os.path.basename(artifact_file.name)[:-7]
+
+        subprocess.check_call(
+            [
+                "mender-artifact",
+                "write",
+                "module-image",
+                "-t",
+                device_type,
+                "-T",
+                "logger-update-module",
+                "-n",
+                artifact_name,
+                "-o",
+                artifact_file.name,
+            ]
+        )
+        prepare_deployment_response(
+            connection,
+            artifact_file.name,
+            device_type,
+            artifact_name=artifact_name,
+            deployment_id=deployment_id,
+            update_control_map=update_control_map,
+        )
+
+
+def wait_for_state(connection, state_to_wait_for):
+    log = []
+    attempts = 10
+    while attempts > 0:
+        output = connection.run(
+            "cat /data/logger-update-module.log 2>/dev/null || true"
+        ).stdout.strip()
+        log = [line.split()[1] for line in output.split("\n") if len(line) > 0]
+
+        if state_to_wait_for in log:
+            break
+
+        time.sleep(2)
+
+        attempts -= 1
+    else:
+        pytest.fail(f"Could not find {state_to_wait_for} in log")
+    return log
 
 
 class TestUpdateControl:
@@ -328,54 +407,22 @@ class TestUpdateControl:
         bitbake_variables,
         bitbake_path,
     ):
-        def set_update_control_map(m, warn=False):
-            output = connection.run(
-                "dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'%s'"
-                % json.dumps(m),
-                warn=warn,
-            )
-            assert "int32 %d" % (EXPIRATION_TIME / 2) in output.stdout
-
         try:
             start_and_ready_mender_client(connection, second_connection)
 
             for m in case["maps"]:
-                set_update_control_map(m)
+                set_update_control_map(connection, m)
 
             if case.get("restart_client"):
                 # Restart client after map insertion in order to trigger the
                 # boot expiration mechanism.
                 connection.run("systemctl restart mender-client")
 
-            def make_and_deploy_artifact():
-                with tempfile.NamedTemporaryFile(suffix=".mender") as artifact_file:
-                    artifact_name = os.path.basename(artifact_file.name)[:-7]
-
-                    subprocess.check_call(
-                        [
-                            "mender-artifact",
-                            "write",
-                            "module-image",
-                            "-t",
-                            bitbake_variables["MENDER_DEVICE_TYPE"],
-                            "-T",
-                            "logger-update-module",
-                            "-n",
-                            artifact_name,
-                            "-o",
-                            artifact_file.name,
-                        ]
-                    )
-                    prepare_deployment_response(
-                        connection,
-                        artifact_file.name,
-                        bitbake_variables["MENDER_DEVICE_TYPE"],
-                        artifact_name=artifact_name,
-                    )
-
             now = time.time()
 
-            make_and_deploy_artifact()
+            make_and_deploy_artifact(
+                connection, bitbake_variables["MENDER_DEVICE_TYPE"]
+            )
 
             log = []
             pause_state_observed = 0
@@ -401,7 +448,7 @@ class TestUpdateControl:
                     # Verify that it stays in paused mode.
                     if pause_state_observed >= PAUSE_STATE_OBSERVE_COUNT:
                         # Now insert the map to unblock the pause.
-                        set_update_control_map(case["continue_map"])
+                        set_update_control_map(connection, case["continue_map"])
                         continue_map_inserted = True
 
                 # Cleanup is the last state of a deployment
@@ -412,7 +459,9 @@ class TestUpdateControl:
                         assert "ArtifactFailure" not in log
 
                         connection.run("rm -f /data/logger-update-module.log")
-                        make_and_deploy_artifact()
+                        make_and_deploy_artifact(
+                            connection, bitbake_variables["MENDER_DEVICE_TYPE"]
+                        )
                         second_deployment_done = True
                     else:
                         break
@@ -440,22 +489,234 @@ class TestUpdateControl:
                     pause_state_observed >= PAUSE_STATE_OBSERVE_COUNT
                 ), "Looks like the client did not pause!"
 
+        except:
+            connection.run("journalctl -u mender-client | cat")
+            connection.run("journalctl -u mender-mock-server | cat")
+            raise
+
         finally:
             cleanup_deployment_response(connection)
             # Reset update control maps.
-            set_update_control_map({"id": MUID}, warn=True)
-            set_update_control_map({"id": MUID2}, warn=True)
+            clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
+            cleanup_mender_state(connection)
             connection.run("rm -f /data/logger-update-module.log")
 
     @pytest.mark.min_mender_version("2.7.0")
     def test_invalid_update_control_map(
         self, setup_board, connection, second_connection, setup_mock_server
     ):
-        start_and_ready_mender_client(connection, second_connection)
+        try:
+            start_and_ready_mender_client(connection, second_connection)
 
-        status = connection.run(
-            """dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'{"not-a":"valid-map"}'""",
-            warn=True,
-        )
-        assert status.return_code != 0
+            status = connection.run(
+                """dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'{"not-a":"valid-map"}'""",
+                warn=True,
+            )
+            assert status.return_code != 0
+        finally:
+            connection.run("systemctl stop mender-client")
+            cleanup_mender_state(connection)
+
+    test_update_control_maps_cleanup_cases = [
+        {
+            "name": "Cleanup after success",
+            "case": {
+                "pause_map": {
+                    "priority": 0,
+                    "states": {"ArtifactCommit_Enter": {"action": "pause",},},
+                },
+                "pause_state": "ArtifactVerifyReboot",
+                "continue_map": {
+                    "id": MUID,
+                    "priority": 10,
+                    "states": {
+                        "ArtifactInstall_Enter": {"action": "fail",},
+                        "ArtifactCommit_Enter": {"action": "force_continue",},
+                    },
+                },
+                "expect_failure": False,
+            },
+        },
+        {
+            "name": "Cleanup after failure",
+            "case": {
+                "pause_map": {
+                    "priority": 0,
+                    "states": {"ArtifactCommit_Enter": {"action": "pause",},},
+                },
+                "pause_state": "ArtifactVerifyReboot",
+                "continue_map": {
+                    "id": MUID,
+                    "priority": 10,
+                    "states": {
+                        "ArtifactInstall_Enter": {"action": "fail",},
+                        "ArtifactCommit_Enter": {"action": "fail",},
+                    },
+                },
+                "expect_failure": True,
+            },
+        },
+    ]
+
+    @pytest.mark.min_mender_version("2.7.0")
+    @pytest.mark.parametrize(
+        "case_name,case",
+        [
+            (case["name"], case["case"])
+            for case in test_update_control_maps_cleanup_cases
+        ],
+    )
+    def test_update_control_map_cleanup(
+        self,
+        case_name,
+        case,
+        setup_board,
+        connection,
+        second_connection,
+        setup_mock_server,
+        bitbake_variables,
+        bitbake_path,
+    ):
+        try:
+            start_and_ready_mender_client(connection, second_connection)
+
+            # First deployment sends the "pause" control map via Server API with the
+            # update; then once the client is paused, the map is overridden via DBus API.
+            # The deployment shall succeed or fail dependending of the test case
+            make_and_deploy_artifact(
+                connection,
+                bitbake_variables["MENDER_DEVICE_TYPE"],
+                deployment_id=MUID,
+                update_control_map=case["pause_map"],
+            )
+            wait_for_state(connection, case["pause_state"])
+            set_update_control_map(connection, case["continue_map"])
+            log = wait_for_state(connection, "Cleanup")
+            if case["expect_failure"]:
+                assert "ArtifactFailure" in log
+            else:
+                assert "ArtifactFailure" not in log
+
+            # Second deployment shall succeed
+            connection.run("rm -f /data/logger-update-module.log")
+            cleanup_deployment_response(connection)
+            make_and_deploy_artifact(
+                connection,
+                bitbake_variables["MENDER_DEVICE_TYPE"],
+                deployment_id=MUID2,
+                update_control_map=None,
+            )
+            log = wait_for_state(connection, "Cleanup")
+            assert "ArtifactFailure" not in log
+
+        except:
+            connection.run("journalctl -u mender-client | cat")
+            connection.run("journalctl -u mender-mock-server | cat")
+            raise
+
+        finally:
+            cleanup_deployment_response(connection)
+            clear_update_control_maps(connection)
+            connection.run("systemctl stop mender-client")
+            cleanup_mender_state(connection)
+            connection.run("rm -f /data/logger-update-module.log")
+
+    @pytest.mark.min_mender_version("2.7.0")
+    def test_many_state_transitions_with_update_control(
+        self,
+        setup_board,
+        connection,
+        second_connection,
+        setup_mock_server,
+        bitbake_variables,
+        bitbake_path,
+    ):
+        """Test whether we can make many state transitions with update control without
+        triggering the "too many state transitions" error."""
+
+        try:
+            start_and_ready_mender_client(connection, second_connection)
+
+            ucm = (
+                """{
+    "ID": "%s",
+    "states": {
+        "ArtifactInstall_Enter": {
+            "action": "pause"
+        }
+    }
+}"""
+                % MUID
+            )
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                script = os.path.join(tmpdir, "map-insert.sh")
+                with open(script, "w") as fd:
+                    fd.write(
+                        """#!/bin/sh
+while sleep 0.2; do
+    dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'%s'
+done
+"""
+                        % ucm
+                    )
+                put_no_sftp(script, connection, remote="/data/map-insert.sh")
+
+            # Constantly reinsert map over and over in the background, to force
+            # state transitions.
+            connection.run("systemd-run sh /data/map-insert.sh")
+
+            now = time.time()
+
+            make_and_deploy_artifact(
+                connection, bitbake_variables["MENDER_DEVICE_TYPE"]
+            )
+
+            timeout = now + 300
+            # Wait until we have received 100 state transitions, which is way
+            # more than would cause a failure.
+            while time.time() < timeout:
+                output = connection.run(
+                    "journalctl -u mender-client -S '%s' | grep 'State transition: mender-update-control '"
+                    % time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(now)),
+                    warn=True,
+                ).stdout
+                if len(output.split("\n")) >= 100:
+                    break
+            else:
+                pytest.fail(
+                    "Timed out without reaching the required number of state transitions."
+                )
+
+            # Just double check that we are indeed paused, as we expect.
+            log = wait_for_state(connection, "Download")
+            assert "Cleanup" not in log
+
+            # Force it to continue.
+            set_update_control_map(
+                connection,
+                {
+                    "ID": MUID2,
+                    "priority": 10,
+                    "states": {"ArtifactInstall_Enter": {"action": "force_continue"}},
+                },
+            )
+
+            # Rest of deployment should finish successfully.
+            log = wait_for_state(connection, "Cleanup")
+            assert "ArtifactFailure" not in log
+
+        except:
+            connection.run("journalctl -u mender-client | cat")
+            connection.run("journalctl -u mender-mock-server | cat")
+            raise
+
+        finally:
+            connection.run("pkill -f map-insert.sh", warn=True)
+            cleanup_deployment_response(connection)
+            # Reset update control maps.
+            clear_update_control_maps(connection)
+            connection.run("systemctl stop mender-client")
+            cleanup_mender_state(connection)
+            connection.run("rm -f /data/logger-update-module.log")

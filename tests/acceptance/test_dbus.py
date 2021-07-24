@@ -22,11 +22,7 @@ from multiprocessing import Process
 
 from mock_server import setup_mock_server
 
-MENDER_STATE_FILES = (
-    "/var/lib/mender/mender-agent.pem",
-    "/var/lib/mender/mender-store",
-    "/var/lib/mender/mender-store-lock",
-)
+from utils.common import cleanup_mender_state
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
@@ -78,7 +74,7 @@ class TestDBus:
 
         finally:
             connection.run("systemctl stop mender-client")
-            connection.run("rm -f %s" % " ".join(MENDER_STATE_FILES))
+            cleanup_mender_state(connection)
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_get_jwt_token(self, bitbake_variables, connection, setup_mock_server):
@@ -107,7 +103,7 @@ class TestDBus:
             assert f'string "{self.JWT_TOKEN}' in output
         finally:
             connection.run("systemctl stop mender-client")
-            connection.run("rm -f %s" % " ".join(MENDER_STATE_FILES))
+            cleanup_mender_state(connection)
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_fetch_jwt_token(
@@ -178,4 +174,4 @@ class TestDBus:
                 connection.run("rm -f /tmp/dbus-monitor.log")
 
         finally:
-            connection.run("rm -f %s" % " ".join(MENDER_STATE_FILES))
+            cleanup_mender_state(connection)

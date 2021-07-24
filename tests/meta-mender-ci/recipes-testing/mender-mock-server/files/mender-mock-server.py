@@ -60,19 +60,38 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_empty_response(404)
 
     def do_PUT(self):
-        self.read_body()
+        body = self.read_body()
+
+        status = re.match(
+            "/api/devices/v1/deployments/device/deployments/([a-f0-9-]*)/status$",
+            self.path,
+            flags=re.IGNORECASE,
+        )
+        log = re.match(
+            "/api/devices/v1/deployments/device/deployments/([a-f0-9-]*)/log$",
+            self.path,
+            flags=re.IGNORECASE,
+        )
 
         if self.path == "/api/devices/v1/inventory/device/attributes":
             return self.do_PATCH_or_PUT_device_attributes()
-        elif (
-            re.match(
-                "/api/devices/v1/deployments/device/deployments/[^/]*/status", self.path
-            )
-            is not None
-        ):
+        elif status is not None:
+            try:
+                with open("/data/mender-mock-server-deployment-header.json") as fd:
+                    content = fd.read()
+                if status.group(1) in content:
+                    if "success" in body or "failure" in body:
+                        os.remove("/data/mender-mock-server-deployment-header.json")
+                    self.send_empty_response(204)
+                    return
+            except FileNotFoundError:
+                # Fall through to 404.
+                pass
+        elif log is not None:
             self.send_empty_response(204)
-        else:
-            self.send_empty_response(404)
+            return
+
+        self.send_empty_response(404)
 
     def do_POST_auth_requests(self):
         self.send_response(200)
@@ -96,9 +115,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
 
                 shutil.copyfileobj(body, self.wfile)
-
-            # Only serve the request once.
-            os.remove("/data/mender-mock-server-deployment-header.json")
 
         else:
             self.send_empty_response(204)
@@ -124,15 +140,19 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         if self.headers.get(
             "Transfer-Encoding"
         ) is not None and "chunked" in self.headers.get("Transfer-Encoding"):
-            # We only support one chunk.
-            lineend = self.rfile.readline().strip()
-            assert lineend == b""
-            size = self.rfile.readline().strip()
-            assert size == b"0"
-            lineend = self.rfile.readline().strip()
-            assert lineend == b""
+            # Read remaining chunks
+            while size > 0:
+                lineend = self.rfile.readline().strip()
+                assert lineend == b""
+                size = self.rfile.readline().strip()
+                size = int(size, 16)
+                if size > 0:
+                    data += self.rfile.read(size)
+                else:
+                    lineend = self.rfile.readline().strip()
+                    assert lineend == b""
 
-        return data
+        return data.decode()
 
 
 def main():

@@ -13,7 +13,8 @@ SRC_URI = "git://github.com/mendersoftware/mender-connect.git;protocol=https;bra
 # Tag: 1.0.1
 SRCREV = "f8a6b12dd4479123b1fc3a19fd6bf1e914b7f484"
 
-# Enable this in Betas, not in finals.
+# Enable this in Betas, and in branches that cannot carry this major version as
+# default.
 # Downprioritize this recipe in version selections.
 #DEFAULT_PREFERENCE = "-1"
 
