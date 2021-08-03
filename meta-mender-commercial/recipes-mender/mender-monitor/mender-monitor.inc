@@ -9,6 +9,8 @@ FILES_${PN} = " \
     ${bindir}/mender-monitord \
     ${sysconfdir}/mender-monitor \
     ${datadir}/mender-monitor \
+    ${localstatedir}/lib/mender-monitor \
+    /data/mender-monitor \
 "
 
 FILES_${PN}_append_mender-systemd = " \
@@ -31,6 +33,7 @@ do_install() {
         -C ${S} \
         DESTDIR=${D} \
         install
+    install -d ${D}/${localstatedir}/lib/mender-monitor
 }
 
 do_install_append_mender-systemd() {
@@ -38,5 +41,13 @@ do_install_append_mender-systemd() {
         -C ${S} \
         DESTDIR=${D} \
         install-systemd
+}
+
+do_install_append_mender-image() {
+        # symlink /var/lib/mender-monitor to /data/mender-monitor
+        rm -rf ${D}/${localstatedir}/lib/mender-monitor
+        ln -s /data/mender-monitor ${D}/${localstatedir}/lib/mender-monitor
+
+        install -m 755 -d ${D}/data/mender-monitor
 }
 
