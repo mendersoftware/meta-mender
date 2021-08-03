@@ -12,7 +12,7 @@ RDEPENDS_${PN}-scripts = "${PN} jq"
 FILES_${PN} = " \
     ${datadir}/mender/modules/v3/mender-configure \
     ${datadir}/mender/inventory/mender-inventory-mender-configure \
-    /var/lib/mender-configure \
+    ${localstatedir}/lib/mender-configure \
     /data/mender-configure \
 "
 
@@ -43,8 +43,8 @@ do_install() {
         install-scripts
 
     install -d -m 755 ${D}/data/mender-configure
-    install -d -m 755 ${D}/var/lib/
-    ln -s /data/mender-configure ${D}/var/lib/mender-configure
+    install -d -m 755 ${D}/${localstatedir}/lib/
+    ln -s /data/mender-configure ${D}/${localstatedir}/lib/mender-configure
 
     # For demo
     cat > ${D}/data/mender-configure/device-config.json <<EOF
