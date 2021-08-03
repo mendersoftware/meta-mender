@@ -300,7 +300,7 @@ do_install() {
         install -m 0600 ${B}/persistent_mender.conf ${D}/data/mender/mender.conf
     fi
 
-    install -d ${D}/${localstatedir}/lib/mender
+    install -d ${D}/${localstatedir}/lib
 
     # install artifact verification key, if any.
     if [ -e ${WORKDIR}/artifact-verify-key.pem ]; then
@@ -314,7 +314,6 @@ do_install() {
 
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-image', 'true', 'false', d)}; then
         # symlink /var/lib/mender to /data/mender
-        rm -rf ${D}/${localstatedir}/lib/mender
         ln -s /data/mender ${D}/${localstatedir}/lib/mender
 
         install -m 755 -d ${D}/data/mender
