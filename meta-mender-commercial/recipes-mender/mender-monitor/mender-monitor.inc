@@ -9,6 +9,7 @@ FILES_${PN} = " \
     ${bindir}/mender-monitord \
     ${sysconfdir}/mender-monitor \
     ${datadir}/mender-monitor \
+    ${localstatedir}/something \
 "
 
 FILES_${PN}_append_mender-systemd = " \
@@ -31,6 +32,7 @@ do_install() {
         -C ${S} \
         DESTDIR=${D} \
         install
+    mkdir -p ${localstatedir}/something
 }
 
 do_install_append_mender-systemd() {
