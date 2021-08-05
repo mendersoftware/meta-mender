@@ -7,6 +7,7 @@ RDEPENDS_${PN} = "bash mender-client (>= 2.5)"
 
 FILES_${PN} = " \
     ${bindir}/mender-monitord \
+    ${bindir}/mender-monitorctl \
     ${sysconfdir}/mender-monitor \
     ${datadir}/mender-monitor \
     ${localstatedir}/lib/mender-monitor \
