@@ -3,7 +3,7 @@ LICENSE_FLAGS = "commercial"
 
 inherit systemd
 
-RDEPENDS_${PN} = "bash mender-client (>= 2.5)"
+RDEPENDS_${PN} = "bash mender-client (>= 2.5) lmdb"
 
 FILES_${PN} = " \
     ${bindir}/mender-monitord \
