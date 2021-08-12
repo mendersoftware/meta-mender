@@ -18,11 +18,14 @@ FILES_${PN}_append_mender-systemd = " \
     ${systemd_system_unitdir}/mender-monitor.service \
 "
 
-S ?= "${WORKDIR}/${PN}"
+S = "${WORKDIR}/mender-monitor"
 
 do_version_check() {
     if ! ${@'true' if d.getVar('MENDER_DEVMODE') else 'false'}; then
-        bbfatal "Not yet released. This recipe can only be used with MENDER_DEVMODE"
+        tarball_version=$(cat ${S}/.version)
+        if [ "${tarball_version}" != "${PV}" ]; then
+            bbfatal "Version '${PV}' not found in .version file from the tarball. Is it the correct version? Found '${tarball_version}'"
+        fi
     fi
 }
 addtask do_version_check after do_unpack before do_install
