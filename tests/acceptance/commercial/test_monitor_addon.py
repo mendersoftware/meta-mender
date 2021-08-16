@@ -25,7 +25,7 @@ from utils.common import (
 
 @pytest.mark.commercial
 @pytest.mark.min_mender_version("3.1.0")
-class TestDeltaUpdateModule:
+class TestMonitorAddon:
     @pytest.mark.only_with_image("ext4")
     def test_build_addon(
         self, request, bitbake_variables, prepared_test_build, bitbake_image
