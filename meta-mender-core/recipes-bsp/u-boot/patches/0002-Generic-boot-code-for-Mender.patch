@@ -1,19 +1,19 @@
-From dd0913c373bdca0fd61bf6a98c30122ba6883f5c Mon Sep 17 00:00:00 2001
+From 1776a242f977c9137e555f32396b6a4bdb7411fd Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@northern.tech>
 Date: Tue, 21 Apr 2020 12:54:15 +0200
-Subject: [PATCH 2/2] Generic boot code for Mender.
+Subject: [PATCH 2/4] Generic boot code for Mender.
 
 Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
 ---
  include/config_mender.h |  98 +++++++++++++++++++++++++
- include/env_mender.h    | 157 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 255 insertions(+)
+ include/env_mender.h    | 156 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 254 insertions(+)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000000..9a90c013a6
+index 0000000000..3377ab0a1b
 --- /dev/null
 +++ b/include/config_mender.h
 @@ -0,0 +1,98 @@
@@ -117,7 +117,7 @@ index 0000000000..9a90c013a6
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000000..0605f6a9fa
+index 0000000000..261775afd5
 --- /dev/null
 +++ b/include/env_mender.h
 @@ -0,0 +1,156 @@
