@@ -7,8 +7,15 @@
 #           for the OpenSSL to load the lib and access the key from the HSM
 # * opensc: pkcs11-tool for initialization of token
 # * gnutls-bin: provides p11tool for getting the contents of the token
-DEPENDS_append = " softhsm opensc gnutls p11-kit libp11"
-RDEPENDS_${PN}_append = " softhsm opensc gnutls p11-kit libp11 gnutls-bin"
+DEPENDS_append_mender-image_qemuall = " softhsm opensc gnutls p11-kit libp11"
+RDEPENDS_${PN}_append_mender-image_qemuall = " softhsm opensc gnutls p11-kit libp11 gnutls-bin"
+
+# Needed for the TestFaultTolerance tests in the integration repository.
+RDEPENDS_${PN}_append_mender-image_qemuall = " \
+    kernel-module-ipt-reject \
+    kernel-module-ts-bm \
+    kernel-module-xt-string \
+"
 
 # Used as a rootfs-image replacement when testing update modules.
 FILES_${PN}_append_mender-image_qemuall = " ${sysconfdir}/mender/rootfs-image-v2.conf \

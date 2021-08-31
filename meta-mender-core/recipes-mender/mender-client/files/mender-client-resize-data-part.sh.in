@@ -26,7 +26,10 @@ data_part_end=$(expr ${data_part_start} + ${data_part_size})
 # because of 'set -e'. Silence this error
 free_space=$(expr ${total_disk_size} - ${data_part_end} || true)
 
-if [ ${free_space} -eq 0 ]; then
+# If there is less than 8196 blocks = 4 MiB free unused space, we consider
+# the disk as already resized. After resizing, some disk space may still
+# have been left unused.
+if [ ${free_space} -lt 8196 ]; then
     echo "Disk has already been resized."
     exit 0
 fi

@@ -1,4 +1,4 @@
-EXTRA_IMAGEDEPENDS_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
+EXTRA_IMAGEDEPENDS_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
 
 
 def mender_get_env_total_aligned_size(bootenv_size, alignment_bytes):

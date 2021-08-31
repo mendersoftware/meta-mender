@@ -33,20 +33,11 @@ get_uboot_device_from_device() {
 get_part_number_from_device() {
     dev_base="unknown"
     case "$1" in
-        /dev/mmcblk*p* )
-            dev_base=$(echo $1 | cut -dk -f2 | cut -dp -f2)
-            ;;
-        /dev/[sh]d[a-z][1-9])
-            dev_base=${1##*d[a-z]}
-            ;;
-        /dev/nvme[0-9]n[0-9]p[0-9])
-            dev_base=$(echo $1 | cut -dp -f2)
-            ;;
-        ubi*_* )
-            dev_base=$(echo $1 | cut -d_ -f2)
-            ;;
         /dev/disk/by-partuuid/* )
             bberror "Please enable mender-partuuid Distro feature to use PARTUUID"
+            ;;
+        *)
+            dev_base=$(echo $1 | grep -o '[0-9]*$')
             ;;
     esac
     part=$(printf "%d" $dev_base 2>/dev/null)
@@ -75,7 +66,7 @@ mender_number_to_hex() {
 
 def mender_get_partuuid_from_device(d, deviceName):
     import re
-    if bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', True, False, d) and deviceName:
+    if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', True, False, d) and deviceName:
         uuid=deviceName.replace('/dev/disk/by-partuuid/', '')
         gptMatch = re.search('^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$', uuid)
         if gptMatch:
@@ -211,7 +202,7 @@ mender_get_clean_kernel_devicetree() {
 
 def mender_is_msdos_ptable_image(d):
     mptimgs = 'mender-image-sd mender-image-bios'
-    return bb.utils.contains_any('DISTRO_FEATURES', mptimgs , True, False, d)
+    return bb.utils.contains_any('MENDER_FEATURES', mptimgs , True, False, d)
 
 
 def mender_get_data_and_total_parts_num(d):

@@ -1,17 +1,17 @@
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
-RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted"
+BBCLASSEXTEND = "native"
+RDEPENDS_${PN}_class-native = ""
+DEPENDS_class-native = ""
 
-def cert_location_if_server_crt_in(src_uri, d):
-    for src in src_uri.split():
-        if src.endswith("/server.crt"):
-            return "%s/mender/server.crt" % d.getVar('sysconfdir')
-    return ""
+PACKAGES_append = " mender-modules-gen"
+
+RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted util-linux-fdisk"
+RDEPENDS_mender-modules-gen = "bash"
 
 MENDER_CLIENT ?= "mender-client"
 MENDER_SERVER_URL ?= "https://docker.mender.io"
-MENDER_CERT_LOCATION ??= "${@cert_location_if_server_crt_in('${SRC_URI}', d)}"
 # Tenant token
 MENDER_TENANT_TOKEN ?= "dummy"
 SYSTEMD_AUTO_ENABLE ?= "enable"
@@ -23,11 +23,14 @@ S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 inherit go
+inherit go-ptest
 inherit pkgconfig
 inherit systemd
 
 SYSTEMD_SERVICE_${PN} = "${MENDER_CLIENT}.service"
 FILES_${PN} += "\
+    ${datadir}/dbus-1/system.d/io.mender.AuthenticationManager.conf \
+    ${datadir}/dbus-1/system.d/io.mender.UpdateManager.conf \
     ${datadir}/mender/identity \
     ${datadir}/mender/identity/mender-device-identity \
     ${datadir}/mender/inventory \
@@ -42,11 +45,18 @@ FILES_${PN} += "\
     ${datadir}/mender/modules/v3/rpm \
     ${datadir}/mender/modules/v3/script \
     ${datadir}/mender/modules/v3/single-file \
-    ${sysconfdir}/mender.conf \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service \
     /data/mender/device_type \
     /data/mender/mender.conf \
+"
+FILES_${PN}-dev += " \
+    ${datadir}/dbus-1/interface \
+"
+FILES_mender-modules-gen = " \
+    ${bindir}/directory-artifact-gen \
+    ${bindir}/single-file-artifact-gen \
+    ${bindir}/docker-artifact-gen \
 "
 
 SYSROOT_DIRS += "/data"
@@ -92,11 +102,12 @@ INSANE_SKIP_${PN}-ptest = "ldflags textrel"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
 
-PACKAGECONFIG ?= "${@mender_feature_is_enabled("mender-client-install", "modules", "", d)}"
+_MENDER_PACKAGECONFIG_DEFAULT = "${@mender_feature_is_enabled("mender-client-install", "dbus modules inventory-network-scripts", "", d)}"
+PACKAGECONFIG ?= "${_MENDER_PACKAGECONFIG_DEFAULT}"
 
-PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
-PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
-PACKAGECONFIG_append = "${@bb.utils.contains('DISTRO_FEATURES', 'mender-grub', ' grub', '', d)}"
+PACKAGECONFIG_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
+PACKAGECONFIG_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
+PACKAGECONFIG_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-grub', ' grub', '', d)}"
 
 PACKAGECONFIG[mender-client-install] = ",,,mender-artifact-info ca-certificates"
 PACKAGECONFIG[u-boot] = ",,,libubootenv-bin"
@@ -105,23 +116,23 @@ PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
 # a very large requirement, which we will not mandate. Bash however, we require,
 # because otherwise the Yocto QA checks will complain.
 PACKAGECONFIG[modules] = ",,,bash"
+PACKAGECONFIG[dbus] = ",,glib-2.0,glib-2.0"
+PACKAGECONFIG[inventory-network-scripts] = ",,,"
 
 # NOTE: Splits the mender.conf file by default into a transient and a persistent config. Needs to be
 # explicitly disabled if this is not to apply.
 PACKAGECONFIG[split-mender-config] = ",,,"
 PACKAGECONFIG_append = " split-mender-config"
 
+_MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
+EXTRA_OEMAKE_append = " TAGS='${_MENDER_TAGS}'"
+GOPTESTBUILDFLAGS_append = " -tags '${_MENDER_TAGS}'"
+
 do_compile() {
     GOPATH="${B}:${S}"
     export GOPATH
     PATH="${B}/bin:$PATH"
     export PATH
-
-    DEFAULT_CERT_MD5="1fba17436027eb1f5ceff4af9a63c9c2"
-
-    if [ "$(md5sum ${WORKDIR}/server.crt | awk '{ print $1 }')" = $DEFAULT_CERT_MD5 ]; then
-        bbwarn "You are building with the default server certificate, which is not intended for production use"
-    fi
 
     # mender is using vendored dependencies, any 3rd party libraries go to into
     # /vendor directory inside mender source tree. In order for `go build` to pick
@@ -178,12 +189,15 @@ python do_prepare_mender_conf() {
     conf_maybe_add("RetryPollIntervalSeconds", "MENDER_RETRY_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
     conf_maybe_add("RootfsPartA", "MENDER_ROOTFS_PART_A", getvar=True, integer=False)
     conf_maybe_add("RootfsPartB", "MENDER_ROOTFS_PART_B", getvar=True, integer=False)
-    conf_maybe_add("ServerCertificate", "MENDER_CERT_LOCATION", getvar=True, integer=False)
     conf_maybe_add("ServerURL", "MENDER_SERVER_URL", getvar=True, integer=False)
     conf_maybe_add("UpdatePollIntervalSeconds", "MENDER_UPDATE_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
 
     # Tenant-token is optional, but falls back to a default-value set in config.go
     conf_maybe_add("TenantToken", "MENDER_TENANT_TOKEN", getvar=True, integer=False)
+
+    # Add the update control configurations if set
+    conf_maybe_add("UpdateControlMapExpirationTimeSeconds", "MENDER_UPDATE_CONTROL_MAP_EXPIRATION_TIME_SECONDS", getvar=True, integer=True)
+    conf_maybe_add("UpdateControlMapBootExpirationTimeSeconds", "MENDER_UPDATE_CONTROL_MAP_BOOT_EXPIRATION_TIME_SECONDS", getvar=True, integer=True)
 
     # Filter returns the variables that are present in both instances.
     # Thus no misspelled variables will ever enter the persistent configuration during migration.
@@ -215,7 +229,6 @@ python do_prepare_mender_conf() {
 addtask do_prepare_mender_conf after do_compile before do_install
 do_prepare_mender_conf[vardeps] = " \
     MENDER_ARTIFACT_VERIFY_KEY \
-    MENDER_CERT_LOCATION \
     MENDER_INVENTORY_POLL_INTERVAL_SECONDS \
     MENDER_RETRY_POLL_INTERVAL_SECONDS \
     MENDER_ROOTFS_PART_A \
@@ -237,9 +250,45 @@ do_install() {
         systemd_unitdir=${systemd_unitdir} \
         install-bin \
         install-identity-scripts \
-        install-inventory-scripts \
         install-systemd \
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
+
+    # install inventory scripts
+    if grep -q install-inventory-local-scripts ${B}/src/${GO_IMPORT}/Makefile; then
+        oe_runmake \
+            -C ${B}/src/${GO_IMPORT} \
+            V=1 \
+            prefix=${D} \
+            datadir=${datadir} \
+            install-inventory-local-scripts \
+            ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)}
+    else
+        oe_runmake \
+            -C ${B}/src/${GO_IMPORT} \
+            V=1 \
+            prefix=${D} \
+            datadir=${datadir} \
+            install-inventory-scripts
+    fi
+
+    # install dbus files
+    if grep -q install-dbus ${B}/src/${GO_IMPORT}/Makefile; then
+        if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
+            # install the D-Bus policy file
+            oe_runmake \
+                -C ${B}/src/${GO_IMPORT} \
+                V=1 \
+                prefix=${D} \
+                datadir=${datadir} \
+                install-dbus
+
+            # install the D-Bus interface file(s)
+            if [ -f ${B}/src/${GO_IMPORT}/Documentation/io.mender.Authentication1.xml ]; then
+                install -d ${D}${datadir}/dbus-1/interface
+                install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+            fi
+        fi
+    fi
 
     #install our prepared configuration
     install -d ${D}/${sysconfdir}/mender
@@ -249,12 +298,6 @@ do_install() {
     fi
     if [ -f ${B}/persistent_mender.conf ]; then
         install -m 0600 ${B}/persistent_mender.conf ${D}/data/mender/mender.conf
-    fi
-
-    #install server certificate
-    if [ -f ${WORKDIR}/server.crt ]; then
-        install -m 0755 -d $(dirname ${D}${MENDER_CERT_LOCATION})
-        install -m 0444 ${WORKDIR}/server.crt ${D}${MENDER_CERT_LOCATION}
     fi
 
     install -d ${D}/${localstatedir}/lib/mender
@@ -269,7 +312,7 @@ do_install() {
         install -m 0444 "${MENDER_ARTIFACT_VERIFY_KEY}" ${D}${sysconfdir}/mender/artifact-verify-key.pem
     fi
 
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', 'true', 'false', d)}; then
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-image', 'true', 'false', d)}; then
         # symlink /var/lib/mender to /data/mender
         rm -rf ${D}/${localstatedir}/lib/mender
         ln -s /data/mender ${D}/${localstatedir}/lib/mender
@@ -284,13 +327,13 @@ do_install() {
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
 }
 
-do_install_append_mender-image_mender-systemd() {
+do_install_append_class-target_mender-image_mender-systemd() {
     install -m 644 ${WORKDIR}/mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service
 }
 
-do_install_append_mender-growfs-data_mender-systemd() {
+do_install_append_class-target_mender-growfs-data_mender-systemd() {
     sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
         ${WORKDIR}/mender-client-resize-data-part.sh.in
 
@@ -312,10 +355,24 @@ do_install_append_mender-growfs-data_mender-systemd() {
     ln -sf ../mender-systemd-growfs-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
 }
 
-do_install_append_mender-persist-systemd-machine-id() {
+do_install_append_class-target_mender-persist-systemd-machine-id() {
     install -m 644 ${WORKDIR}/mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
     install -d -m 755 ${D}${bindir}
     install -m 755 ${WORKDIR}/mender-client-set-systemd-machine-id.sh ${D}${bindir}/
+}
+
+# Native overrides, installing scripts for package mender-modules-gen
+do_compile_class-native() {
+    true
+}
+
+do_install_class-native() {
+    oe_runmake \
+        -C ${B}/src/${GO_IMPORT} \
+        V=1 \
+        prefix=${D} \
+        bindir=${bindir} \
+        install-modules-gen
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2019 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,18 +13,17 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import os
-import pytest
 import subprocess
 
-# Make sure common is imported after fabric, because we override some functions.
-from common import *
+import pytest
+
+from utils.common import build_image, latest_build_artifact
 
 
 class TestBootImg:
     @pytest.mark.min_mender_version("1.0.0")
     def test_bootimg_creation(
-        self, bitbake_variables, prepared_test_build, bitbake_image
+        self, request, bitbake_variables, prepared_test_build, bitbake_image
     ):
         """Test that we can build a bootimg successfully."""
 
@@ -36,10 +35,10 @@ class TestBootImg:
         )
 
         built_img = latest_build_artifact(
-            prepared_test_build["build_dir"], "core-image*.bootimg"
+            request, prepared_test_build["build_dir"], "core-image*.bootimg"
         )
 
-        distro_features = bitbake_variables["DISTRO_FEATURES"].split()
+        distro_features = bitbake_variables["MENDER_FEATURES"].split()
         if "mender-grub" in distro_features and "mender-image-uefi" in distro_features:
             output = subprocess.check_output(
                 ["mdir", "-i", built_img, "-b", "/EFI/BOOT"]

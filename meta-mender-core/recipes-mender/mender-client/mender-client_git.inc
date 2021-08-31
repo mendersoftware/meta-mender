@@ -17,6 +17,10 @@ def mender_autorev_if_git_version(d):
         return "f6ffa190892202263fdb75975059fbb201adab6a"
 SRCREV ?= '${@mender_autorev_if_git_version(d)}'
 
+# Force the version of master and feature-branch packages to compare very highly
+# to other versions.
+PKGV = "${@'999+${PV}' if any(['${PV}'.startswith(p) for p in ['master', 'feature-']]) else '${PV}'}"
+
 def mender_branch_from_preferred_version(d):
     import re
     version = d.getVar("PREFERRED_VERSION")
@@ -52,44 +56,24 @@ def mender_version_from_preferred_version(d, srcpv):
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=${MENDER_BRANCH}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below.
+# dependencies) are included in the LICENSE variable below. Note that for
+# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
+# file.
 def mender_license(branch):
-    if branch == "1.7.x":
+    import re
+    if branch.startswith("1."):
         return {
-                   "md5": "5632b9f17043c6f5f532501778595c78",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
-    elif branch.startswith("1."):
+    elif re.match(r"2\.[0-3]\.x", branch) is not None:
         return {
-                   "md5": "debbe5e440f2e65465e86b25fc7c9fcc",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
-        }
-    elif branch == "2.0.x":
-        return {
-                   "md5": "ccb00e21c31df7189b2bd237ed86e7c2",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
-        }
-    elif branch == "2.1.x":
-        return {
-                   "md5": "1c872e33af7af0e7ee99e17f38dbcffc",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
-        }
-    elif branch == "2.2.x":
-        return {
-                   "md5": "80ba3790b689991e47685da401fd3375",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
-        }
-    elif branch == "2.3.x":
-        return {
-                   "md5": "3e7426c258f60f9876ae3746f54c49d4",
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
     else:
         return {
-                   "md5": "5649992d13a6fda40abfac7730a62b07",
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL",
         }
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=${@mender_license(d.getVar('MENDER_BRANCH'))['md5']}"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LICENSE;md5=fbe9cd162201401ffbb442445efecfdc"
 LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.

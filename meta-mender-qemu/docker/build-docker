@@ -72,12 +72,12 @@ if [ $BUILD_DEFAULTS = 1 ]; then
     fi
 
     # Fish out some settings from Bitbake.
-    eval "$(bitbake -e $IMAGE_NAME | egrep '^DISTRO_FEATURES=')"
+    eval "$(bitbake -e $IMAGE_NAME | egrep '^MENDER_FEATURES=')"
     eval "$(bitbake -e $IMAGE_NAME | egrep '^IMAGE_LINK_NAME=')"
 
-    if egrep -q '\bmender-image-uefi\b' <<<"$DISTRO_FEATURES"; then
+    if egrep -q '\bmender-image-uefi\b' <<<"$MENDER_FEATURES"; then
         DISK_IMG="$IMAGE_LINK_NAME.uefiimg"
-    elif egrep -q '\bmender-image-sd\b' <<<"$DISTRO_FEATURES"; then
+    elif egrep -q '\bmender-image-sd\b' <<<"$MENDER_FEATURES"; then
         DISK_IMG="$IMAGE_LINK_NAME.sdimg"
     else
         echo "Neither mender-image-uefi nor mender-image-sd are set! Don't know which image to use!" 1>&2

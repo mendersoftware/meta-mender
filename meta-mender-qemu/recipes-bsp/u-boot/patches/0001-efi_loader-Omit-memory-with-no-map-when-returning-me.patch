@@ -1,0 +1,58 @@
+From 2257324fd357760a131049d41cda6068fa9bde60 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@northern.tech>
+Date: Wed, 25 Aug 2021 15:22:30 +0200
+Subject: [PATCH 1/2] efi_loader: Omit memory with "no-map" when returning
+ memory map.
+
+efi_reserve_memory() states that memory marked with "no-map" shall not
+be accessed by the UEFI payload. Make sure efi_get_memory_map() honors
+this.
+
+This helps the case when booting vexpress_ca9x4 under QEMU. Because
+the kernel wants to use an address in the lowest 128MiB of the range,
+but this range is reserved with "no-map", the kernel complains that it
+can not allocate the low memory it needs. In reality the actual usable
+memory starts much higher, which is reflected correctly in the memory
+map after this fix.
+
+Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+---
+ lib/efi_loader/efi_memory.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/lib/efi_loader/efi_memory.c b/lib/efi_loader/efi_memory.c
+index be2f655dff..cb4b262710 100644
+--- a/lib/efi_loader/efi_memory.c
++++ b/lib/efi_loader/efi_memory.c
+@@ -645,8 +645,16 @@ efi_status_t efi_get_memory_map(efi_uintn_t *memory_map_size,
+ 
+ 	provided_map_size = *memory_map_size;
+ 
+-	list_for_each(lhandle, &efi_mem)
++	list_for_each(lhandle, &efi_mem) {
++		struct efi_mem_list *lmem;
++
++		lmem = list_entry(lhandle, struct efi_mem_list, link);
++
++		if (lmem->desc.type == EFI_RESERVED_MEMORY_TYPE)
++			continue;
++
+ 		map_entries++;
++	}
+ 
+ 	map_size = map_entries * sizeof(struct efi_mem_desc);
+ 
+@@ -671,6 +679,10 @@ efi_status_t efi_get_memory_map(efi_uintn_t *memory_map_size,
+ 		struct efi_mem_list *lmem;
+ 
+ 		lmem = list_entry(lhandle, struct efi_mem_list, link);
++
++		if (lmem->desc.type == EFI_RESERVED_MEMORY_TYPE)
++			continue;
++
+ 		*memory_map = lmem->desc;
+ 		memory_map--;
+ 	}
+-- 
+2.17.1
+

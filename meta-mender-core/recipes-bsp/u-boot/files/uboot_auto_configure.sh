@@ -122,7 +122,7 @@ tools/env/fw_printenv -l fw_printenv.lock > "$TMP_DIR/compiled-environment.txt" 
 rm -rf fw_printenv.lock
 if [ $ret -ne 0 ]; then
     if [ $ret -eq 134 -o $ret -eq 139 ]; then
-        echo "Detected SIGABRT or SIGSEGV. This may be an indication that your u-boot-fw-utils package is lacking an important patch. See https://docs.mender.io/troubleshooting/yocto-project-build#do_mender_uboot_auto_configure-fails-when-executing-toolsenvfw_p"
+        echo "Detected SIGABRT or SIGSEGV. This may be an indication that your u-boot-fw-utils package is lacking an important patch. See https://docs.mender.io/troubleshoot/yocto-project-build#do_mender_uboot_auto_configure-fails-when-executing-tools-env-fw"
     fi
     exit $ret
 fi

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2018 Northern.tech AS
+# Copyright 2020 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,8 +14,10 @@
 #    limitations under the License.
 
 import os
+
 import pytest
-from common import put_no_sftp
+
+from utils.common import put_no_sftp
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
@@ -34,7 +36,7 @@ class TestInventory:
         """Test that the bootloader integration type matches what we would
         expect from the build."""
 
-        features = bitbake_variables["DISTRO_FEATURES"].split()
+        features = bitbake_variables["MENDER_FEATURES"].split()
         arch = bitbake_variables["HOST_ARCH"]
 
         output = connection.run(

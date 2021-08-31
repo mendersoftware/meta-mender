@@ -2,4 +2,3 @@
 	path = tests/acceptance/image-tests
 	url = https://github.com/mendersoftware/mender-image-tests
 	branch = master
-	ignore = all
