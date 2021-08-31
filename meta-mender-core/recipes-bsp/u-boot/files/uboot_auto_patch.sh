@@ -369,15 +369,18 @@ patch_all_candidates_sdimg() {
 patch_all_candidates_ubi() {
     # This was the old way to refer to CONFIG_MTDIDS_DEFAULT and
     # CONFIG_MTDPARTS_DEFAULT, without the "CONFIG_" prefix. Alias them to the
-    # new ones.
-    replace_definition \
-        'MTDIDS_DEFAULT' \
-        'MTDIDS_DEFAULT' \
-        'CONFIG_MTDIDS_DEFAULT'
-    replace_definition \
-        'MTDPARTS_DEFAULT' \
-        'MTDPARTS_DEFAULT' \
-        'CONFIG_MTDPARTS_DEFAULT'
+    # new ones. However, if config_defaults.h doesn't exist, than we know it's
+    # recent enough.
+    if [ -e include/config_defaults.h ]; then
+        replace_definition \
+            'MTDIDS_DEFAULT' \
+            'MTDIDS_DEFAULT' \
+            'CONFIG_MTDIDS_DEFAULT'
+        replace_definition \
+            'MTDPARTS_DEFAULT' \
+            'MTDPARTS_DEFAULT' \
+            'CONFIG_MTDPARTS_DEFAULT'
+    fi
 
     replace_definition \
         'CONFIG_MTDIDS_DEFAULT' \
@@ -426,8 +429,12 @@ patch_all_candidates_ubi() {
             'CONFIG_MTD_DEVICE'
     fi
 
-    add_definition \
-        'CONFIG_MTD_PARTITIONS'
+    # If config_defaults.h doesn't exist, than we know it's recent enough not to
+    # need this.
+    if [ -e include/config_defaults.h ]; then
+        add_definition \
+            'CONFIG_MTD_PARTITIONS'
+    fi
 }
 
 if [ "$1" = "--patch-config-file" ]; then

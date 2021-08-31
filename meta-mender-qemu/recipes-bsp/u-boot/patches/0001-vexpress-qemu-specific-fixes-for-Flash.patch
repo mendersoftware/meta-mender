@@ -18,9 +18,9 @@ index f10e73f86e..aba00879f3 100644
 --- a/configs/vexpress_ca9x4_defconfig
 +++ b/configs/vexpress_ca9x4_defconfig
 @@ -35,3 +35,5 @@ CONFIG_BAUDRATE=38400
- CONFIG_CONS_INDEX=0
- CONFIG_OF_LIBFDT=y
- # CONFIG_EFI_LOADER is not set
+ CONFIG_CFI_FLASH=y
+ CONFIG_DM_MTD=y
+ CONFIG_CLK=y
 +CONFIG_RBTREE=y
 +CONFIG_LZO=y
 diff --git a/include/configs/vexpress_ca9x4.h b/include/configs/vexpress_ca9x4.h

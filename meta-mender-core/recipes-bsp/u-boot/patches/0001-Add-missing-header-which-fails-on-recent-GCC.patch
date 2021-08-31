@@ -1,4 +1,4 @@
-From 3867d5380c0ca99f91ccce656c50336395cf59ed Mon Sep 17 00:00:00 2001
+From d98fa92ea27a6a421310ebe1676c07d34c0c9bc8 Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@mender.io>
 Date: Mon, 15 Feb 2016 15:57:32 +0100
 Subject: [PATCH 1/4] Add missing header which fails on recent GCC.
@@ -8,7 +8,7 @@ Subject: [PATCH 1/4] Add missing header which fails on recent GCC.
  1 file changed, 1 insertion(+)
 
 diff --git a/tools/env/fw_env.c b/tools/env/fw_env.c
-index 381739d28d..54837db68e 100644
+index 2a61a5d6f0..b0bce1b5ac 100644
 --- a/tools/env/fw_env.c
 +++ b/tools/env/fw_env.c
 @@ -20,6 +20,7 @@
