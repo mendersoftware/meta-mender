@@ -1,4 +1,4 @@
-From cc952c9506518c53c8758d6bf22aa498f089490d Mon Sep 17 00:00:00 2001
+From 7a55a01d013abfc7c0957c7546d993c7c5db09ca Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@northern.tech>
 Date: Tue, 17 Aug 2021 13:46:47 +0200
 Subject: [PATCH 1/1] ARM: vexpress_ca9x4: Reintroduce board in order to use
@@ -44,6 +44,8 @@ A number of differences to note from the original:
   does not work, I suppose because U-Boot doesn't use the same
   mechanics as the kernel when it's booting.
 
+* Load addresses have been changed to fit QEMU use case.
+
 People wanting to get a more detailed, yet somewhat isolated, diff
 between this and the original, can run this command:
 
@@ -67,7 +69,8 @@ Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
  board/armltd/vexpress/vexpress_common.c | 167 +++++++++
  configs/vexpress_ca9x4_defconfig        |  49 +++
  include/configs/vexpress_ca9x4.h        |  16 +
- 12 files changed, 1069 insertions(+)
+ include/configs/vexpress_common.h       |  25 +-
+ 13 files changed, 1072 insertions(+), 22 deletions(-)
  create mode 100644 arch/arm/dts/vexpress-v2m.dtsi
  create mode 100644 arch/arm/dts/vexpress-v2p-ca9.dts
  create mode 100644 board/armltd/vexpress/Kconfig
@@ -78,7 +81,7 @@ Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
  create mode 100644 include/configs/vexpress_ca9x4.h
 
 diff --git a/.azure-pipelines.yml b/.azure-pipelines.yml
-index 221e600806..74836dde25 100644
+index 15507a7357..284b32956d 100644
 --- a/.azure-pipelines.yml
 +++ b/.azure-pipelines.yml
 @@ -195,6 +195,9 @@ jobs:
@@ -92,10 +95,10 @@ index 221e600806..74836dde25 100644
            TEST_PY_BD: "integratorcp_cm926ejs"
            TEST_PY_ID: "--id qemu"
 diff --git a/.gitlab-ci.yml b/.gitlab-ci.yml
-index d072e833a3..ff76aaf29e 100644
+index ffdeaae5a8..78a55224ae 100644
 --- a/.gitlab-ci.yml
 +++ b/.gitlab-ci.yml
-@@ -205,6 +205,12 @@ sandbox_flattree test.py:
+@@ -204,6 +204,12 @@ sandbox_flattree test.py:
      TEST_PY_BD: "sandbox_flattree"
    <<: *buildman_and_testpy_dfn
  
@@ -109,10 +112,10 @@ index d072e833a3..ff76aaf29e 100644
    variables:
      TEST_PY_BD: "integratorcp_cm926ejs"
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 993772b643..6351a74d34 100644
+index d692139199..0fcfb921e5 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
-@@ -677,6 +677,11 @@ config ARCH_BCMSTB
+@@ -626,6 +626,11 @@ config ARCH_BCMSTB
  	  This enables support for Broadcom ARM-based set-top box
  	  chipsets, including the 7445 family of chips.
  
@@ -124,8 +127,8 @@ index 993772b643..6351a74d34 100644
  config TARGET_BCMCYGNUS
  	bool "Support bcmcygnus"
  	select CPU_V7A
-@@ -2086,6 +2091,7 @@ source "board/Marvell/aspenite/Kconfig"
- source "board/Marvell/gplugd/Kconfig"
+@@ -2050,6 +2055,7 @@ source "board/CarMediaLab/flea3/Kconfig"
+ source "board/Marvell/aspenite/Kconfig"
  source "board/Marvell/octeontx/Kconfig"
  source "board/Marvell/octeontx2/Kconfig"
 +source "board/armltd/vexpress/Kconfig"
@@ -133,10 +136,10 @@ index 993772b643..6351a74d34 100644
  source "board/cortina/presidio-asic/Kconfig"
  source "board/broadcom/bcm963158/Kconfig"
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index 9fb38682e6..ada231d6a1 100644
+index c42715ead4..adbb3c9ef6 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -1104,6 +1104,8 @@ dtb-$(CONFIG_TARGET_GE_BX50V3) += \
+@@ -1119,6 +1119,8 @@ dtb-$(CONFIG_TARGET_GE_BX50V3) += \
  dtb-$(CONFIG_TARGET_GE_B1X5V2) += imx6dl-b1x5v2.dtb
  dtb-$(CONFIG_TARGET_MX53PPD) += imx53-ppd.dtb
  
@@ -1246,6 +1249,43 @@ index 0000000000..8157a5868d
 +#include "vexpress_common.h"
 +
 +#endif /* VEXPRESS_CA9X4_H */
+diff --git a/include/configs/vexpress_common.h b/include/configs/vexpress_common.h
+index b131480e5b..99a5dd064a 100644
+--- a/include/configs/vexpress_common.h
++++ b/include/configs/vexpress_common.h
+@@ -169,29 +169,10 @@
+         func(DHCP, dhcp, na)
+ #include <config_distro_bootcmd.h>
+ 
+-#ifdef CONFIG_VEXPRESS_ORIGINAL_MEMORY_MAP
+-#define CONFIG_PLATFORM_ENV_SETTINGS \
+-		"loadaddr=0x80008000\0" \
+-		"ramdisk_addr_r=0x61000000\0" \
+-		"kernel_addr=0x44100000\0" \
+-		"ramdisk_addr=0x44800000\0" \
+-		"maxramdisk=0x1800000\0" \
+-		"pxefile_addr_r=0x88000000\0" \
+-		"scriptaddr=0x88000000\0" \
+-		"kernel_addr_r=0x80008000\0"
+-#elif defined(CONFIG_VEXPRESS_EXTENDED_MEMORY_MAP)
+-#define CONFIG_PLATFORM_ENV_SETTINGS \
+-		"loadaddr=0xa0008000\0" \
+-		"ramdisk_addr_r=0x81000000\0" \
+-		"kernel_addr=0x0c100000\0" \
+-		"ramdisk_addr=0x0c800000\0" \
+-		"maxramdisk=0x1800000\0" \
+-		"pxefile_addr_r=0xa8000000\0" \
+-		"scriptaddr=0xa8000000\0" \
+-		"kernel_addr_r=0xa0008000\0"
+-#endif
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+-		CONFIG_PLATFORM_ENV_SETTINGS \
++                "kernel_addr_r=0x60100000\0" \
++                "fdt_addr_r=0x60000000\0" \
++                "bootargs=console=tty0 console=ttyAMA0,38400n8\0" \
+                 BOOTENV \
+ 		"console=ttyAMA0,38400n8\0" \
+ 		"dram=1024M\0" \
 -- 
 2.17.1
 
