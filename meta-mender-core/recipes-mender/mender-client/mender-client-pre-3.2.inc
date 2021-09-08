@@ -102,7 +102,7 @@ INSANE_SKIP_${PN}-ptest = "ldflags textrel"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
 
-_MENDER_PACKAGECONFIG_DEFAULT = "${@mender_feature_is_enabled("mender-client-install", "modules inventory-network-scripts", "", d)}"
+_MENDER_PACKAGECONFIG_DEFAULT = "${@mender_feature_is_enabled("mender-client-install", "dbus modules inventory-network-scripts", "", d)}"
 PACKAGECONFIG ?= "${_MENDER_PACKAGECONFIG_DEFAULT}"
 
 PACKAGECONFIG_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
@@ -116,12 +116,17 @@ PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
 # a very large requirement, which we will not mandate. Bash however, we require,
 # because otherwise the Yocto QA checks will complain.
 PACKAGECONFIG[modules] = ",,,bash"
+PACKAGECONFIG[dbus] = ",,glib-2.0,glib-2.0"
 PACKAGECONFIG[inventory-network-scripts] = ",,,"
 
 # NOTE: Splits the mender.conf file by default into a transient and a persistent config. Needs to be
 # explicitly disabled if this is not to apply.
 PACKAGECONFIG[split-mender-config] = ",,,"
 PACKAGECONFIG_append = " split-mender-config"
+
+_MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
+EXTRA_OEMAKE_append = " TAGS='${_MENDER_TAGS}'"
+GOPTESTBUILDFLAGS_append = " -tags '${_MENDER_TAGS}'"
 
 do_compile() {
     GOPATH="${B}:${S}"
@@ -267,17 +272,23 @@ do_install() {
     fi
 
     # install dbus files
-    # install the D-Bus policy file
-    oe_runmake \
-        -C ${B}/src/${GO_IMPORT} \
-        V=1 \
-        prefix=${D} \
-        datadir=${datadir} \
-        install-dbus
+    if grep -q install-dbus ${B}/src/${GO_IMPORT}/Makefile; then
+        if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
+            # install the D-Bus policy file
+            oe_runmake \
+                -C ${B}/src/${GO_IMPORT} \
+                V=1 \
+                prefix=${D} \
+                datadir=${datadir} \
+                install-dbus
 
-    # install the D-Bus interface file(s)
-    install -d ${D}${datadir}/dbus-1/interface
-    install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+            # install the D-Bus interface file(s)
+            if [ -f ${B}/src/${GO_IMPORT}/Documentation/io.mender.Authentication1.xml ]; then
+                install -d ${D}${datadir}/dbus-1/interface
+                install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+            fi
+        fi
+    fi
 
     #install our prepared configuration
     install -d ${D}/${sysconfdir}/mender

@@ -1,7 +1,7 @@
 require mender-client.inc
 
-DEPENDS = "xz openssl"
-RDEPENDS_${PN} = "liblzma openssl"
+DEPENDS = "glib-2.0 xz openssl"
+RDEPENDS_${PN} = "glib-2.0 liblzma openssl"
 
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
