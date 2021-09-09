@@ -10,7 +10,11 @@ def mender_monitor_srcrev_from_src_uri(d, src_uri):
         import glob
         import re
         # Remove "file://" prefix
-        src_uri_glob = src_uri.split()[0][len("file://"):]
+        src_uri_list = src_uri.split()
+        if len(src_uri_list) == 0:
+            # No source specified. We won't be building this component.
+            return ""
+        src_uri_glob = src_uri_list[0][len("file://"):]
         # Get the filename
         filenames = glob.glob(src_uri_glob)
         if len(filenames) != 1:
