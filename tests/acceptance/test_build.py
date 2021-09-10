@@ -1140,43 +1140,6 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         assert re.search(test3_re, fstab, flags=re.MULTILINE) is not None
         assert re.search(test4_re, fstab, flags=re.MULTILINE) is not None
 
-    @pytest.mark.min_mender_version("1.0.0")
-    def test_build_nodbus(self, request, prepared_test_build, bitbake_path):
-        """Test that we can remove dbus from PACKAGECONFIG, and that this causes the
-        library dependency to be gone. The opposite is not tested, since we
-        assume failure to link to the library will be caught in other tests that
-        test DBus functionality."""
-
-        build_image(
-            prepared_test_build["build_dir"],
-            prepared_test_build["bitbake_corebase"],
-            "mender-client",
-            ['PACKAGECONFIG_remove = "dbus"'],
-        )
-
-        env = get_bitbake_variables(
-            request, "mender-client", prepared_test_build=prepared_test_build
-        )
-
-        # Get dynamic section info from binary.
-        output = subprocess.check_output(
-            [env["READELF"], "-d", os.path.join(env["D"], "usr/bin/mender")]
-        ).decode()
-
-        # Verify the output is sane.
-        assert "libc" in output
-
-        # Actual test.
-        assert "libglib" not in output
-
-        # Make sure busconfig files are also gone.
-        assert not os.path.exists(
-            os.path.join(env["D"], "usr/share/dbus-1/system.d/io.mender.conf")
-        )
-        assert not os.path.exists(
-            os.path.join(env["D"], "etc/dbus-1/system.d/io.mender.conf")
-        )
-
     @pytest.mark.min_mender_version("2.5.0")
     @pytest.mark.only_with_image("ext4")
     def test_mender_inventory_network_scripts(
@@ -1251,40 +1214,29 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             "io.mender.Update1.xml",
         ]
 
-        for dbus_enabled in [True, False]:
+        # clean up the mender-client
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            target="-c clean mender-client",
+        )
 
-            # clean up the mender-client
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                bitbake_image,
-                target="-c clean mender-client",
-            )
+        # build mender-client
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            "mender-client",
+        )
 
-            # build mender-client
-            maybe_remove_dbus = []
-            if not dbus_enabled:
-                maybe_remove_dbus.append('PACKAGECONFIG_remove = "dbus"')
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                "mender-client",
-                extra_conf_params=maybe_remove_dbus,
-            )
-
-            # verify the files
-            deploy_dir_rpm = os.path.join(
-                prepared_test_build["build_dir"], "tmp", "deploy", "rpm"
-            )
-            output = subprocess.check_output(
-                ["rpm", "-qlp", f"{deploy_dir_rpm}/*/mender-client-dev-*.rpm"],
-            )
-            for file in EXPECTED_FILES:
-                if dbus_enabled:
-                    assert (
-                        bytes(file, "utf-8") in output
-                    ), f"{file} seems not to be a part of the mender-client-dev package, like it should"
-                else:
-                    assert (
-                        bytes(file, "utf-8") not in output
-                    ), f"{file} seems to be a part of the mender-client-dev package, but it should not"
+        # verify the files
+        deploy_dir_rpm = os.path.join(
+            prepared_test_build["build_dir"], "tmp", "deploy", "rpm"
+        )
+        output = subprocess.check_output(
+            ["rpm", "-qlp", f"{deploy_dir_rpm}/*/mender-client-dev-*.rpm"],
+        )
+        for file in EXPECTED_FILES:
+            assert (
+                bytes(file, "utf-8") in output
+            ), f"{file} seems not to be a part of the mender-client-dev package, like it should"
