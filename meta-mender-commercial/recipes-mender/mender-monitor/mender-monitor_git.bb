@@ -1,5 +1,7 @@
 require mender-monitor.inc
 
+# This is the developent recipe for which the recipe version gets defined from the downloaded archive name.
+
 def mender_monitor_srcrev_from_src_uri(d, src_uri):
     pref_version = d.getVar("PREFERRED_VERSION")
     if pref_version is not None and pref_version.find("-build") >= 0:
@@ -17,13 +19,16 @@ def mender_monitor_srcrev_from_src_uri(d, src_uri):
         src_uri_glob = src_uri_list[0][len("file://"):]
         # Get the filename
         filenames = glob.glob(src_uri_glob)
-        if len(filenames) != 1:
-            bb.error("Expected exactly one file, found: %s" % filenames)
-        filename = filenames[0]
-        # Now extract the git sha from the filename
-        m = re.match(r".*/mender-monitor-([0-9a-f]+)\.tar\.gz", filename)
+        if len(filenames) == 0:
+            bb.error("Failed to find mender monitor on path %s" % src_uri_glob)
+            bb.error("Please make sure SRC_URI_pn-mender-monitor is pointing to the downloaded tarball ")
+        elif len(filenames) != 1:
+            bb.warning("Expected exactly one file, found: %s" % filenames)
+        filename = os.path.basename(filenames[0])
+        # Now extract the SRCREV from the filename
+        m = re.match(r"mender-monitor-(.*)\.tar\.gz", filename)
         if m is None:
-            bb.error("Cannot extract git sha from filename: %s" % filename)
+            bb.error("Cannot extract SRCREV from filename: %s" % filename)
         return m.group(1)
 
 SRCREV = "${@mender_monitor_srcrev_from_src_uri(d, '${SRC_URI}')}"
@@ -36,8 +41,7 @@ def mender_monitor_version_from_preferred_version(d, srcrev):
         # final tags, which will need their own recipe.
         return pref_version
     else:
-        # Else return "master-git${SRCREV}".
-        return "master-git%s" % srcrev
+        return "%s" % srcrev
 
 PV = "${@mender_monitor_version_from_preferred_version(d, '${SRCREV}')}"
 
