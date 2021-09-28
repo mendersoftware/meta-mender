@@ -23,7 +23,9 @@ def mender_monitor_srcrev_from_src_uri(d, src_uri):
         # Now extract the git sha from the filename
         m = re.match(r".*/mender-monitor-([0-9a-f]+)\.tar\.gz", filename)
         if m is None:
-            bb.error("Cannot extract git sha from filename: %s" % filename)
+            # No match probably means that the tarball is a tagged version, in
+            # which case this recipe is not to be used but still needs to parse
+            return ""
         return m.group(1)
 
 SRCREV = "${@mender_monitor_srcrev_from_src_uri(d, '${SRC_URI}')}"
