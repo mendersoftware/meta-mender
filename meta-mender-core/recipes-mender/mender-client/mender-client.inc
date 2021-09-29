@@ -254,40 +254,27 @@ do_install() {
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
 
     # install inventory scripts
-    if grep -q install-inventory-local-scripts ${B}/src/${GO_IMPORT}/Makefile; then
-        oe_runmake \
-            -C ${B}/src/${GO_IMPORT} \
-            V=1 \
-            prefix=${D} \
-            datadir=${datadir} \
-            install-inventory-local-scripts \
-            ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)}
-    else
-        oe_runmake \
-            -C ${B}/src/${GO_IMPORT} \
-            V=1 \
-            prefix=${D} \
-            datadir=${datadir} \
-            install-inventory-scripts
-    fi
+    oe_runmake \
+        -C ${B}/src/${GO_IMPORT} \
+        V=1 \
+        prefix=${D} \
+        datadir=${datadir} \
+        install-inventory-local-scripts \
+        ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)}
 
     # install dbus files
-    if grep -q install-dbus ${B}/src/${GO_IMPORT}/Makefile; then
-        if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
-            # install the D-Bus policy file
-            oe_runmake \
-                -C ${B}/src/${GO_IMPORT} \
-                V=1 \
-                prefix=${D} \
-                datadir=${datadir} \
-                install-dbus
+    if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
+        # install the D-Bus policy file
+        oe_runmake \
+            -C ${B}/src/${GO_IMPORT} \
+            V=1 \
+            prefix=${D} \
+            datadir=${datadir} \
+            install-dbus
 
-            # install the D-Bus interface file(s)
-            if [ -f ${B}/src/${GO_IMPORT}/Documentation/io.mender.Authentication1.xml ]; then
-                install -d ${D}${datadir}/dbus-1/interface
-                install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
-            fi
-        fi
+        # install the D-Bus interface file(s)
+        install -d ${D}${datadir}/dbus-1/interface
+        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
     fi
 
     #install our prepared configuration
