@@ -132,7 +132,7 @@ do_compile() {
     PATH="${B}/bin:$PATH"
     export PATH
 
-    DEFAULT_CERT_MD5="1fba17436027eb1f5ceff4af9a63c9c2"
+    DEFAULT_CERT_MD5="3112d737da65df1b7314bfe0a98accbc"
 
     if [ "$(md5sum ${WORKDIR}/server.crt | awk '{ print $1 }')" = $DEFAULT_CERT_MD5 ]; then
         bbwarn "You are building with the default server certificate, which is not intended for production use"
@@ -279,12 +279,19 @@ do_install() {
     # install dbus files
     if grep -q install-dbus ${B}/src/${GO_IMPORT}/Makefile; then
         if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
+            # install the D-Bus policy file
             oe_runmake \
                 -C ${B}/src/${GO_IMPORT} \
                 V=1 \
                 prefix=${D} \
                 datadir=${datadir} \
                 install-dbus
+
+            # install the D-Bus interface file(s)
+            if [ -f ${B}/src/${GO_IMPORT}/Documentation/io.mender.Authentication1.xml ]; then
+                install -d ${D}${datadir}/dbus-1/interface
+                install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+            fi
         fi
     fi
 
@@ -350,12 +357,6 @@ do_install() {
     install -d ${D}${sysconfdir}/udev/mount.blacklist.d
     echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
-
-    # install the D-Bus interface file
-    if [ -f ${B}/src/${GO_IMPORT}/Documentation/io.mender.Authentication1.xml ]; then
-        install -d ${D}${datadir}/dbus-1/interface
-        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
-    fi
 }
 
 do_install_append_mender-image_mender-systemd() {

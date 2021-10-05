@@ -168,6 +168,7 @@ class TestDeltaUpdateModule:
         prepared_test_build,
         bitbake_variables,
         bitbake_image,
+        bitbake_path,
         connection,
         http_server,
         board_type,

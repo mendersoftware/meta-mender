@@ -88,7 +88,8 @@ class TestBuild:
         # Currently this is hardcoded to the md5 sums of the split demo
         # certificate as of 2021-04-07. Please update if it is replaced.
         md5sums = """02d20627f63664f9495cea2e54b28e1b  ./usr/local/share/ca-certificates/mender/server-1.crt
-b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/server-2.crt"""
+b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/server-2.crt
+801a667c7a146b3252647b3440483d47  ./usr/local/share/ca-certificates/mender/server-3.crt"""
 
         rootfs = get_bitbake_variables(request, bitbake_image)["IMAGE_ROOTFS"]
         output = (
@@ -1243,29 +1244,43 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
         EXPECTED_FILES = [
             "io.mender.Authentication1.xml",
+            "io.mender.Update1.xml",
         ]
 
-        # clean up the mender-client
-        build_image(
-            prepared_test_build["build_dir"],
-            prepared_test_build["bitbake_corebase"],
-            bitbake_image,
-            target="-c clean mender-client",
-        )
+        for dbus_enabled in [True, False]:
 
-        # build mender-client
-        build_image(
-            prepared_test_build["build_dir"],
-            prepared_test_build["bitbake_corebase"],
-            "mender-client",
-        )
+            # clean up the mender-client
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                bitbake_image,
+                target="-c clean mender-client",
+            )
 
-        # verify the files
-        deploy_dir_rpm = get_bitbake_variables(request, bitbake_image)["DEPLOY_DIR_RPM"]
-        output = subprocess.check_output(
-            ["rpm", "-qlp", f"{deploy_dir_rpm}/*/mender-client-dev-*.rpm"],
-        )
-        for file in EXPECTED_FILES:
-            assert (
-                bytes(file, "utf-8") in output
-            ), f"{file} seems not to be a part of the mender-client-dev package, like it should"
+            # build mender-client
+            maybe_remove_dbus = []
+            if not dbus_enabled:
+                maybe_remove_dbus.append('PACKAGECONFIG_remove = "dbus"')
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                "mender-client",
+                extra_conf_params=maybe_remove_dbus,
+            )
+
+            # verify the files
+            deploy_dir_rpm = os.path.join(
+                prepared_test_build["build_dir"], "tmp", "deploy", "rpm"
+            )
+            output = subprocess.check_output(
+                ["rpm", "-qlp", f"{deploy_dir_rpm}/*/mender-client-dev-*.rpm"],
+            )
+            for file in EXPECTED_FILES:
+                if dbus_enabled:
+                    assert (
+                        bytes(file, "utf-8") in output
+                    ), f"{file} seems not to be a part of the mender-client-dev package, like it should"
+                else:
+                    assert (
+                        bytes(file, "utf-8") not in output
+                    ), f"{file} seems to be a part of the mender-client-dev package, but it should not"
