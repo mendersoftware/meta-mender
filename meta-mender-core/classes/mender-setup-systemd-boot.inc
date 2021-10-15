@@ -20,11 +20,6 @@ WKS_FILE_DEPENDS_BOOTLOADERS_remove_mender-systemd-boot = "grub-efi"
 
 IMAGE_INSTALL_append = " systemd-mender-config"
 
-PACKAGE_INSTALL_remove = " \
-    initramfs-live-install \
-    initramfs-module-install \
-    "
-
 _MENDER_PART_IMAGE_DEPENDS_append_mender-systemd-boot = " \
     ${IMAGE_BASENAME}:do_uefiapp_deploy \
     "
