@@ -5,8 +5,8 @@ RDEPENDS_${PN} = "python3"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI = " \
-	file://ab_setup.py \
-	"
+    file://ab_setup.py \
+    "
 
 S = "${WORKDIR}"
 
@@ -15,10 +15,10 @@ do_compile() {
 }
 
 do_install() {
-	install -d ${D}${sbindir}
-	install -m 0755 "${WORKDIR}/ab_setup.py" "${D}${sbindir}"
-	ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/fw_printenv"
-	ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/fw_setenv"
+    install -d ${D}${sbindir}
+    install -m 0755 "${WORKDIR}/ab_setup.py" "${D}${sbindir}"
+    ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/fw_printenv"
+    ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/fw_setenv"
 }
 
 BBCLASSEXTEND += "native"
