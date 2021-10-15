@@ -18,7 +18,7 @@ MENDER_IMAGE_BOOT_FILES_append_mender-systemd-boot = " \
 
 WKS_FILE_DEPENDS_BOOTLOADERS_remove_mender-systemd-boot = "grub-efi"
 
-IMAGE_INSTALL_append = " systemd-mender-config"
+IMAGE_INSTALL_append_mender-systemd-boot = " systemd-mender-config"
 
 _MENDER_PART_IMAGE_DEPENDS_append_mender-systemd-boot = " \
     ${IMAGE_BASENAME}:do_uefiapp_deploy \
