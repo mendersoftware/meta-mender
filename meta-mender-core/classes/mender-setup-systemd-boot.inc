@@ -6,12 +6,12 @@ EFI_PROVIDER_mender-systemd-boot = "systemd-boot"
 MENDER_BOOT_PART_SIZE_MB_DEFAULT_mender-systemd-boot = "64"
 
 # Move required files into the image partition boot sector
-EFI_ARCH_LOCAL ?= "x64"
-EFI_BOOT_IMAGE ?= "boot${EFI_ARCH_LOCAL}.efi"
+EFI_BOOT_IMAGE_PART ?= \
+    "${IMAGE_LINK_NAME}.${EFI_BOOT_IMAGE};EFI/Linux/${EFI_BOOT_IMAGE}"
 MENDER_IMAGE_BOOT_FILES_append_mender-systemd-boot = " \
     systemd-${EFI_BOOT_IMAGE};EFI/BOOT/${EFI_BOOT_IMAGE} \
-    ${IMAGE_LINK_NAME}.boot${EFI_ARCH_LOCAL}_a.efi;EFI/Linux/bootx64_a.efi \
-    ${IMAGE_LINK_NAME}.boot${EFI_ARCH_LOCAL}_b.efi;EFI/Linux/bootx64_b.efi \
+    ${@ "${EFI_BOOT_IMAGE_PART}".replace('.efi','_a.efi') } \
+    ${@ "${EFI_BOOT_IMAGE_PART}".replace('.efi','_b.efi') } \
     ${IMAGE_LINK_NAME}.esp/loader/main/config*;loader/main/ \
     ${IMAGE_LINK_NAME}.esp/loader/backup/config*;loader/backup/ \
     "
