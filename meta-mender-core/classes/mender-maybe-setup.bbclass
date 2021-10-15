@@ -37,6 +37,9 @@ python() {
         # Integration with GRUB.
         'mender-grub',
 
+        # Enabled by GRUB/systemd-boot to extend UEFI overlay recipes.
+        'mender-efi-boot',
+
         # Install of Mender, with the minimum components. This includes no
         # references to specific partition layouts.
         'mender-client-install',

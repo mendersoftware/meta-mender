@@ -19,3 +19,5 @@ python() {
     if d.getVar('MENDER_GRUB_STORAGE_DEVICE'):
         bb.fatal("MENDER_GRUB_STORAGE_DEVICE is deprecated. This is now dynamically determined at runtime.")
 }
+
+MENDER_FEATURES_ENABLE_append_mender-grub = "mender-efi-boot"
