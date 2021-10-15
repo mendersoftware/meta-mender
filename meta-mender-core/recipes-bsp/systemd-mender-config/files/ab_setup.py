@@ -160,6 +160,7 @@ def extract_kernel(esp_base, config, slot):
 
     check_call(["umount", inactive_base])
     os.rmdir(inactive_base)
+    os.sync()
 
 def set_mender_key(esp_base, config, key, value):
     if key == "mender_boot_part":
