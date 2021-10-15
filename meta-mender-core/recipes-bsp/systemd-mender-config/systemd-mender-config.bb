@@ -17,8 +17,14 @@ do_compile() {
 do_install() {
     install -d ${D}${sbindir}
     install -m 0755 "${WORKDIR}/ab_setup.py" "${D}${sbindir}"
+
+    # these names are required for dunfell compatibility
     ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/fw_printenv"
     ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/fw_setenv"
+
+    # these names will be used after dunfell and should be preferred
+    ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/systemd-boot-printenv"
+    ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/systemd-boot-setenv"
 }
 
 BBCLASSEXTEND += "native"

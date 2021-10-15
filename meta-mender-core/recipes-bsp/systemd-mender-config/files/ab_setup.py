@@ -228,15 +228,15 @@ def fw_cmd():
 
 if __name__ == "__main__":
     progname = sys.argv[0]
-    if not (progname.endswith("fw_printenv") or progname.endswith("fw_setenv")):
+    if not (progname.endswith("printenv") or progname.endswith("setenv")):
         fw_cmd()
 
     esp_base = "/boot"
     config = parse_config(get_config(esp_base))
 
-    if "fw_printenv" in progname:
+    if "printenv" in progname:
         fw_printenv(config)
-    elif "fw_setenv" in progname:
+    elif "setenv" in progname:
         fw_setenv(esp_base, config)
     else:
         sys.exit(1)
