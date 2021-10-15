@@ -29,7 +29,6 @@ DISTRO_FEATURES_NATIVE_append = " systemd"
 DISTRO_FEATURES_BACKFILL_CONSIDERED_append = " sysvinit"
 
 _MENDER_BOOTLOADER_DEFAULT = "mender-systemd-boot"
-MENDER_FEATURES_DISABLE = "mender-growfs-data"
 MENDER_STORAGE_TOTAL_SIZE_MB = "4096"
 
 # set one of these:
