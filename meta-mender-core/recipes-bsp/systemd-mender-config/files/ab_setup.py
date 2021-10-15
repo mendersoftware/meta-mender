@@ -3,6 +3,7 @@
 from subprocess import check_call
 
 import hashlib
+import shutil
 import struct
 import sys
 import os
@@ -150,17 +151,12 @@ def extract_kernel(esp_base, config, slot):
 
     source_kernel_path = "{}/bin/bootx64_{}.efi".format(inactive_base, slot_name)
     target_kernel_path = "{}{}".format(esp_base, config["{}_efi".format(slot_name)].replace("\\", "/"))
-    kernel_image = None
 
     # Mount inactive slot and extract file
     os.makedirs(inactive_base, exist_ok=True)
     check_call(["mount", partition_name, inactive_base])
 
-    with open(source_kernel_path, "rb") as f:
-        kernel_image = f.read()
-
-    with open(target_kernel_path, "wb") as f:
-        f.write(kernel_image)
+    shutil.copyfile(source_kernel_path, target_kernel_path);
 
     check_call(["umount", inactive_base])
     os.rmdir(inactive_base)
