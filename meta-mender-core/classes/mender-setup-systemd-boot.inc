@@ -23,3 +23,5 @@ IMAGE_INSTALL_append_mender-systemd-boot = " systemd-mender-config"
 _MENDER_PART_IMAGE_DEPENDS_append_mender-systemd-boot = " \
     ${IMAGE_BASENAME}:do_uefiapp_deploy \
     "
+
+MENDER_FEATURES_ENABLE += "mender-efi-boot"
