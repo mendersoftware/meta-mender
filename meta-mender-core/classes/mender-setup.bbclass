@@ -226,6 +226,9 @@ python() {
         # For GRUB, use BIOS for booting, instead of the default, UEFI.
         'mender-bios',
 
+        # Enabled by GRUB/systemd-boot to extend UEFI overlay recipes.
+        'mender-efi-boot',
+
         # Integration with GRUB.
         'mender-grub',
 
