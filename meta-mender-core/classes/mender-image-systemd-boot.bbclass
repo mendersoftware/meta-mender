@@ -1,5 +1,7 @@
 # mender-image-systemd-boot: prepare image for a systemd-boot system
 
+require conf/image-uefi.conf
+
 do_uefiapp[vardeps] += "APPEND MENDER_ROOTFS_PART_A MENDER_ROOTFS_PART_B"
 do_uefiapp[depends] += "systemd-mender-config-native:do_populate_sysroot"
 inherit uefi-comboapp
