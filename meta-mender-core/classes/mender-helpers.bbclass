@@ -36,7 +36,7 @@ get_part_number_from_device() {
         /dev/mmcblk*p* )
             dev_base=$(echo $1 | cut -dk -f2 | cut -dp -f2)
             ;;
-        /dev/[sh]d[a-z][1-9])
+        /dev/[shv]d[a-z][1-9])
             dev_base=${1##*d[a-z]}
             ;;
         /dev/nvme[0-9]n[0-9]p[0-9])
