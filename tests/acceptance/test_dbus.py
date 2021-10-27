@@ -55,7 +55,12 @@ class TestDBus:
             # Wait one state machine cycle for the D-Bus API to be available
             for _ in range(12):
                 result = connection.run("journalctl -u mender-client")
-                if "Authorize failed:" in result.stdout:
+                # "Authorize failed" - 3.1 and lower
+                # "Not authorized" - 3.2 and higher
+                if (
+                    "Authorize failed:" in result.stdout
+                    or "Not authorized" in result.stdout
+                ):
                     break
                 time.sleep(5)
             else:
