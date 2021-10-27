@@ -249,22 +249,13 @@ do_install() {
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
 
     # install inventory scripts
-    if grep -q install-inventory-local-scripts ${B}/src/${GO_IMPORT}/Makefile; then
-        oe_runmake \
-            -C ${B}/src/${GO_IMPORT} \
-            V=1 \
-            prefix=${D} \
-            datadir=${datadir} \
-            install-inventory-local-scripts \
-            ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)}
-    else
-        oe_runmake \
-            -C ${B}/src/${GO_IMPORT} \
-            V=1 \
-            prefix=${D} \
-            datadir=${datadir} \
-            install-inventory-scripts
-    fi
+    oe_runmake \
+        -C ${B}/src/${GO_IMPORT} \
+        V=1 \
+        prefix=${D} \
+        datadir=${datadir} \
+        install-inventory-local-scripts \
+        ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)}
 
     # install dbus files
     # install the D-Bus policy file
