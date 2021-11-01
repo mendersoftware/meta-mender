@@ -81,11 +81,16 @@ appropriate kernel image that has been installed on the EFI partition.
 
 # User Space Support
 
-The `systemd-mender-config` package provides `fw_printenv` and `fw_setenv`
-as drop-in replacements for their counterparts provided for U-Boot or GRUB.
-The underlying `ab_setup.py` script accesses the EFI partition, reads
-and writes the configuration files, and updates the EFI kernel images.
+The `systemd-mender-config` package provides `systemd-boot-printenv`
+and `systemd-boot-setenv`.  These symlinks point at the `ab_setup.py`
+script, which accesses the EFI partition, reads and writes the
+configuration files, and updates the EFI kernel images.
 
+In `dunfell`, additional symlinks are provided to from `fw_printenv` and
+`fw_setenv`, supporting their usage as drop-in replacements for the
+corresponding utilities provided in Mender-enabled systems using U-Boot
+or GRUB.  After `dunfell`, the symlinks have been dropped, as the Mender
+tools were modified to call these tools directly.
 
 While suitable for prototyping, the `ab_setup.py` script deserves to be
 reimplemented in C to eliminate the dependency on Python, once the
