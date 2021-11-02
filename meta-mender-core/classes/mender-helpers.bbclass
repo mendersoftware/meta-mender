@@ -263,8 +263,7 @@ def mender_get_extra_parts_offset(d):
 
 # Take the content from the rootfs that is going into the boot partition, coming
 # from MENDER_BOOT_PART_MOUNT_LOCATION, and merge with the files from
-# MENDER_IMAGE_BOOT_FILES, following the format from the Yocto documentation
-# for IMAGE_BOOT_FILES.
+# IMAGE_BOOT_FILES, following the format from the official Yocto documentation.
 mender_merge_bootfs_and_image_boot_files() {
     W="${WORKDIR}/bootfs.${BB_CURRENTTASK}"
     rm -rf "$W"
@@ -272,7 +271,7 @@ mender_merge_bootfs_and_image_boot_files() {
     cp -al "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
 
     # Put in variable to avoid expansion and ';' being parsed by shell.
-    image_boot_files="${MENDER_IMAGE_BOOT_FILES}"
+    image_boot_files="${IMAGE_BOOT_FILES}"
     for entry in $image_boot_files; do
         if echo "$entry" | grep -q ";"; then
             dest="$(echo "$entry" | sed -e 's/[^;]*;//')"
@@ -297,7 +296,7 @@ mender_merge_bootfs_and_image_boot_files() {
             fi
             if [ -e "$destfile" ]; then
                 if ! cmp --quiet "$file" "$destfile"; then
-                    bbfatal "$destfile already exists in boot partition. Please verify that packages do not put files in the boot partition that conflict with MENDER_IMAGE_BOOT_FILES."
+                    bbfatal "$destfile already exists in boot partition. Please verify that packages do not put files in the boot partition that conflict with IMAGE_BOOT_FILES."
                 fi
             else
                 # create a hardlink if possible (prerequisite: the paths are below the same mount point), do a normal copy otherwise
