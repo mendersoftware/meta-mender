@@ -17,7 +17,7 @@ MENDER_STORAGE_DEVICE_DEFAULT = "/dev/mmcblk0"
 MENDER_STORAGE_DEVICE_BASE ??= "${MENDER_STORAGE_DEVICE_BASE_DEFAULT}"
 def mender_linux_partition_base(dev):
     import re
-    if re.match("^/dev/[sh]d[a-z]", dev):
+    if re.match("^/dev/[shv]d[a-z]", dev):
         return dev
     else:
         return "%sp" % dev
