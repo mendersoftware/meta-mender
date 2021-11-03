@@ -8,7 +8,7 @@ HOMEPAGE = "https://symas.com/lightning-memory-mapped-database/"
 LICENSE = "OLDAP-2.8"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=153d07ef052c4a37a8fac23bc6031972"
 
-SRC_URI = "git://github.com/LMDB/lmdb.git;nobranch=1 \
+SRC_URI = "git://github.com/LMDB/lmdb.git;protocol=https;nobranch=1 \
            file://run-ptest \
 "
 
