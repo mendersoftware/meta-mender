@@ -92,7 +92,6 @@ def parse_config(config):
     _, pending, boot_count, max_boot_count, active_slot, _, a_efi, b_efi = struct.unpack(AB_FORMAT, config)
 
     active_slot = active_slot & 0x1
-    max_boot_count = max_boot_count
 
     return {
         "pending": pending,
@@ -172,6 +171,8 @@ def set_mender_key(esp_base, config, key, value):
         config["boot_count"] = 0
     elif key == "bootcount":
         config["boot_count"] = int(value)
+    elif key == "max_boot_count":
+        config[key] = int(value)
 
 def get_mender_key(config, key):
     if key == "mender_boot_part" or key == "mender_boot_part_hex":
@@ -182,6 +183,8 @@ def get_mender_key(config, key):
         return config["pending"]
     elif key == "bootcount":
         return config["boot_count"]
+    elif key == "max_boot_count":
+        return config["max_boot_count"]
     else:
         return ""
 
