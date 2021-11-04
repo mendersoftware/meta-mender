@@ -55,6 +55,7 @@ ARTIFACTIMG_FSTYPE = "ext4"
 IMAGE_FSTYPES_append = " ext4"
 IMAGE_TYPEDEP_wic += "ext4"
 IMAGE_TYPEDEP_uefiimg += "wic"
+IMAGE_ROOTFS_EXTRA_SPACE_append = " + 4096"
 
 ROOT_pn-systemd-bootconf = ""
 MENDER_STORAGE_DEVICE_BASE = "${MENDER_STORAGE_DEVICE}"
