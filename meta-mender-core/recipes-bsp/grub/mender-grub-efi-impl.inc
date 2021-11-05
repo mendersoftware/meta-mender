@@ -29,6 +29,7 @@ CONFFILES_${PN}_remove = " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '${EFI_BOOT_PATH}/grubenv', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '${EFI_BOOT_PATH}/boot-menu.inc', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '${EFI_BOOT_PATH}/efi-secure-boot.inc', '', d)} \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '${EFI_BOOT_PATH}/password.inc', '', d)} \
 "
 
 # Allow the cfg and signature files to be installed by grub-mender-grubenv
@@ -36,7 +37,7 @@ python do_cleanconfigs_class-target() {
     if bb.utils.contains('MENDER_FEATURES', 'mender-grub', True, False, d) and \
         bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', True, False, d):
             ext = d.getVar("SB_FILE_EXT")
-            for basename in ("grub.cfg", "grubenv", "boot-menu.inc", "efi-secure-boot.inc"):
+            for basename in ("grub.cfg", "grubenv", "boot-menu.inc", "efi-secure-boot.inc", "password.inc"):
                 filebase = d.getVar("D") + d.getVar("MENDER_BOOT_PART_MOUNT_LOCATION") + "/EFI/BOOT/" + basename
                 if os.path.exists(filebase):
                     os.remove(filebase)
