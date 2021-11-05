@@ -1,5 +1,17 @@
 # mender-image-systemd-boot: prepare image for a systemd-boot system
 
+# Move required files into the image partition boot sector
+EFI_BOOT_IMAGE_PART ?= \
+    "${IMAGE_LINK_NAME}.${EFI_BOOT_IMAGE};EFI/Linux/${EFI_BOOT_IMAGE}"
+IMAGE_BOOT_FILES_append_mender-systemd-boot = " \
+    ${@ "${EFI_BOOT_IMAGE_PART}".replace('.efi','_a.efi') } \
+    ${@ "${EFI_BOOT_IMAGE_PART}".replace('.efi','_b.efi') } \
+    ${IMAGE_LINK_NAME}.esp/loader/main/config*;loader/main/ \
+    ${IMAGE_LINK_NAME}.esp/loader/backup/config*;loader/backup/ \
+    "
+
+IMAGE_INSTALL_append_mender-systemd-boot = " systemd-mender-config"
+
 require conf/image-uefi.conf
 
 do_uefiapp[vardeps] += "APPEND MENDER_ROOTFS_PART_A MENDER_ROOTFS_PART_B"
