@@ -43,6 +43,8 @@ IMAGE_NAME_SUFFIX = ""
 # Block storage
 ################################################################################
 
+MENDER_RFS_PART_EMPTY_B ??= "n"
+
 mender_part_image() {
     suffix="$1"
     ptable_type="$2"
@@ -126,8 +128,17 @@ EOF
 
     cat >> "$wks" <<EOF
 part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $part_type_params
+EOF
+
+    if [ "${MENDER_RFS_PART_EMPTY_B}" = "y" ]; then
+        cat >> "$wks" <<EOF
+part --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $part_type_params
+EOF
+    else
+        cat >> "$wks" <<EOF
 part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $part_type_params
 EOF
+    fi
 
     if [ "${MENDER_SWAP_PART_SIZE_MB}" -ne "0" ]; then
         cat >> "$wks" <<EOF
