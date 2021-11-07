@@ -1200,7 +1200,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             b"mender-inventory-geo" not in output
         ), "mender-inventory-network-scripts unexpectedly a part of the image"
 
-    @pytest.mark.min_mender_version("2.7.0")
+    @pytest.mark.min_mender_version("3.2.0")
     def test_mender_dbus_interface_file(
         self, request, prepared_test_build, bitbake_image
     ):
@@ -1212,6 +1212,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         EXPECTED_FILES = [
             "io.mender.Authentication1.xml",
             "io.mender.Update1.xml",
+            "io.mender.Proxy1.xml",
         ]
 
         # clean up the mender-client
