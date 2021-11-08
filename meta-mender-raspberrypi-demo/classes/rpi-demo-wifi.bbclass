@@ -1,7 +1,7 @@
 # Global variables
-DISTRO_FEATURES_append = " wifi"
+DISTRO_FEATURES:append = " wifi"
 
-IMAGE_INSTALL_append = " iw wpa-supplicant linux-firmware-bcm43430 packagegroup-base"
+IMAGE_INSTALL:append = " iw wpa-supplicant linux-firmware-bcm43430 packagegroup-base"
 
 ENABLE_UART = "1"
 

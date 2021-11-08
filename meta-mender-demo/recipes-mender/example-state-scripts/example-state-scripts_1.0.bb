@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI = "file://example-script;subdir=${PN}-${PV} \
           file://LICENSE;subdir=${PN}-${PV} \

@@ -1,6 +1,6 @@
 # Class for those who want to enable all Mender required features.
 
-MENDER_FEATURES_ENABLE_append = " \
+MENDER_FEATURES_ENABLE:append = " \
     ${_MENDER_BOOTLOADER_DEFAULT} \
     mender-image \
     ${_MENDER_IMAGE_TYPE_DEFAULT} \
@@ -17,6 +17,6 @@ _MENDER_GROWFS_DATA_DEFAULT ?= "${@'' if d.getVar('MENDER_EXTRA_PARTS') else 'me
 # Beaglebone reads the first VFAT partition and only understands MBR partition
 # table. Even though this is a slight violation of the UEFI spec, change to that
 # for Beaglebone.
-_MENDER_IMAGE_TYPE_DEFAULT_beaglebone-yocto = "mender-image-sd"
+_MENDER_IMAGE_TYPE_DEFAULT:beaglebone-yocto = "mender-image-sd"
 
 inherit mender-setup

@@ -68,4 +68,4 @@ MENDER_IMAGE_ROOTFS_SIZE_DEFAULT ?= "${@eval('${MENDER_CALC_ROOTFS_SIZE} - (${IM
 #
 # We have custom sanity checks of image sizes that ensures that the generated
 # filesystem images fit in to the defined partition sizes of the disk image.
-IMAGE_ROOTFS_MAXSIZE_forcevariable = "102400000"
+IMAGE_ROOTFS_MAXSIZE:forcevariable = "102400000"

@@ -1,6 +1,6 @@
 require mender-connect.inc
 
-RDEPENDS_${PN} = "glib-2.0 mender-client (>= ${@mender_client_minimum_required_version(d)})"
+RDEPENDS:${PN} = "glib-2.0 mender-client (>= ${@mender_client_minimum_required_version(d)})"
 
 def mender_client_minimum_required_version(d):
     version = mender_connect_branch_from_preferred_version(d)

@@ -105,7 +105,7 @@ MENDER_DEVICE_TYPE ??= "${MENDER_DEVICE_TYPE_DEFAULT}"
 MENDER_DEVICE_TYPE_DEFAULT = "${MACHINE}"
 
 # To tell the difference from a beaglebone-yocto image with only U-Boot.
-MENDER_DEVICE_TYPE_DEFAULT_beaglebone-yocto_mender-grub = "${MACHINE}-grub"
+MENDER_DEVICE_TYPE_DEFAULT:beaglebone-yocto_mender-grub = "${MACHINE}-grub"
 
 # Space separated list of device types compatible with the built update.
 MENDER_DEVICE_TYPES_COMPATIBLE ??= "${MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT}"
@@ -229,7 +229,7 @@ MENDER_DATA_PART_LABEL ??= "data"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
-IMAGE_INSTALL_append = " mender-client"
+IMAGE_INSTALL:append = " mender-client"
 IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg mender-bootimg mender-datatar"
 
 # Originally defined in bitbake.conf. We define them here so that images with

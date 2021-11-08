@@ -1,13 +1,13 @@
 DESCRIPTION = "Mender add-on for remote terminal access."
 HOMEPAGE = "https://mender.io"
 
-DEPENDS_append = " glib-2.0"
-RDEPENDS_${PN} = "glib-2.0 mender-client (>= 3.2)"
+DEPENDS:append = " glib-2.0"
+RDEPENDS:${PN} = "glib-2.0 mender-client (>= 3.2)"
 
 MENDER_CONNECT_SHELL ??= "/bin/sh"
 MENDER_CONNECT_USER ??= "nobody"
 SYSTEMD_AUTO_ENABLE ?= "enable"
-SYSTEMD_SERVICE_${PN} = "mender-connect.service"
+SYSTEMD_SERVICE:${PN} = "mender-connect.service"
 
 B = "${WORKDIR}/build"
 
@@ -68,6 +68,6 @@ do_install() {
     install -m 0600 ${B}/mender-connect.conf ${D}/${sysconfdir}/mender/mender-connect.conf
 }
 
-FILES_${PN}_append += "\
+FILES:${PN}:append += "\
     ${systemd_unitdir}/system/mender-connect.service \
 "

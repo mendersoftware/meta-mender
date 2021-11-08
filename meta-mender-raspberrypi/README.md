@@ -37,11 +37,11 @@ in addition to `meta-mender` dependencies.
         # vfat boot partition. To be able to update the Linux kernel Mender
         # uses an image that resides on the root file system and below line
         # ensures that they are installed to /boot
-        IMAGE_INSTALL_append = " kernel-image kernel-devicetree"
+        IMAGE_INSTALL:append = " kernel-image kernel-devicetree"
 
         # Mender will build an image called `sdimg` which shall be used instead
         # of the `rpi-sdimg`.
-        IMAGE_FSTYPES_remove += " rpi-sdimg"
+        IMAGE_FSTYPES:remove += " rpi-sdimg"
 
         # Use the same type here as specified in ARTIFACTIMG_FSTYPE to avoid
         # building an unneeded image file.

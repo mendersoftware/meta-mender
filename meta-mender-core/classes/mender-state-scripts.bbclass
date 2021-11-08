@@ -70,7 +70,7 @@ install_or_deploy_scripts() {
     done
 }
 
-do_install_append() {
+do_install:append() {
     install_or_deploy_scripts install
 }
 
@@ -80,6 +80,6 @@ do_deploy() {
 addtask do_deploy after do_compile
 
 # Add our own deploy steps.
-do_deploy_append() {
+do_deploy:append() {
     install_or_deploy_scripts deploy
 }
