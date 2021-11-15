@@ -7,8 +7,8 @@ DEPENDS:class-native = ""
 
 PACKAGES:append = " mender-modules-gen"
 
-RDEPENDS:${PN}:append_mender-growfs-data_mender-systemd = " parted util-linux-fdisk"
-RDEPENDS:${PN}:append_mender-growfs-data_mender-systemd_mender-partlabel = " util-linux-blkid"
+RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd = " parted util-linux-fdisk"
+RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd:mender-partlabel = " util-linux-blkid"
 RDEPENDS:mender-modules-gen = "bash"
 
 MENDER_CLIENT ?= "mender-client"
@@ -62,27 +62,27 @@ FILES:mender-modules-gen = " \
 
 SYSROOT_DIRS += "/data"
 
-SRC_URI:append_mender-image_mender-systemd = " \
+SRC_URI:append:mender-image:mender-systemd = " \
     file://mender-client-data-dir.service \
 "
 
-SRC_URI:append_mender-persist-systemd-machine-id = " \
+SRC_URI:append:mender-persist-systemd-machine-id = " \
     file://mender-client-systemd-machine-id.service \
     file://mender-client-set-systemd-machine-id.sh \
 "
 
-SRC_URI:append_mender-growfs-data_mender-systemd = " \
+SRC_URI:append:mender-growfs-data:mender-systemd = " \
     file://mender-client-resize-data-part.sh.in \
     file://mender-grow-data.service \
     file://mender-systemd-growfs-data.service \
 "
 
-FILES:${PN}:append_mender-image_mender-systemd = " \
+FILES:${PN}:append:mender-image:mender-systemd = " \
     ${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service \
 "
 
-FILES:${PN}:append_mender-growfs-data_mender-systemd = " \
+FILES:${PN}:append:mender-growfs-data:mender-systemd = " \
     ${bindir}/mender-client-resize-data-part \
     ${systemd_unitdir}/system/mender-grow-data.service \
     ${systemd_unitdir}/system/mender-systemd-growfs-data.service \
@@ -90,7 +90,7 @@ FILES:${PN}:append_mender-growfs-data_mender-systemd = " \
     ${systemd_unitdir}/system/data.mount.wants/mender-systemd-growfs-data.service \
 "
 
-FILES:${PN}:append_mender-persist-systemd-machine-id = " \
+FILES:${PN}:append:mender-persist-systemd-machine-id = " \
     ${systemd_unitdir}/system/mender-client-systemd-machine-id.service \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/mender-client-systemd-machine-id.service \
     ${bindir}/mender-client-set-systemd-machine-id.sh \
@@ -315,13 +315,13 @@ do_install() {
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
 }
 
-do_install:append:class-target_mender-image_mender-systemd() {
+do_install:append:class-target:mender-image:mender-systemd() {
     install -m 644 ${WORKDIR}/mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service
 }
 
-do_install:append:class-target_mender-growfs-data_mender-systemd() {
+do_install:append:class-target:mender-growfs-data:mender-systemd() {
 
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid -L ${MENDER_DATA_PART_LABEL})#g" \
@@ -352,7 +352,7 @@ do_install:append:class-target_mender-growfs-data_mender-systemd() {
     ln -sf ../mender-systemd-growfs-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
 }
 
-do_install:append:class-target_mender-persist-systemd-machine-id() {
+do_install:append:class-target:mender-persist-systemd-machine-id() {
     install -m 644 ${WORKDIR}/mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/

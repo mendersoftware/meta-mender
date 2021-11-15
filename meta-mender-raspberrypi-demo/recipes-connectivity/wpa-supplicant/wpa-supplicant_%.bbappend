@@ -1,13 +1,13 @@
-FILESEXTRAPATHS:prepend_mender-systemd := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend:mender-systemd := "${THISDIR}/files:"
 
-SRC_URI:append_mender-systemd = " file://wpa_supplicant-wlan0.conf"
+SRC_URI:append:mender-systemd = " file://wpa_supplicant-wlan0.conf"
 
-FILES:${PN}:append_mender-systemd = " ${sysconfdir}/wpa_supplicant/wpa_supplicant-wlan0.conf"
+FILES:${PN}:append:mender-systemd = " ${sysconfdir}/wpa_supplicant/wpa_supplicant-wlan0.conf"
 
 MENDER_DEMO_WIFI_SSID ?= "ssid"
 MENDER_DEMO_WIFI_PASSKEY ?= "password"
 
-do_install:append_mender-systemd() {
+do_install:append:mender-systemd() {
 
   install -d ${D}${sysconfdir}/wpa_supplicant
 

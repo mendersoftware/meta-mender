@@ -1,4 +1,3 @@
-DEPENDS:append_mender-client-install = " p11-kit"
+DEPENDS:append:mender-client-install = " p11-kit"
 
-SRCREV_mender-client-install = "e1210903291b1de9eabcad26e740a4b2fbcca692"
-
+SRCREV:mender-client-install = "e1210903291b1de9eabcad26e740a4b2fbcca692"

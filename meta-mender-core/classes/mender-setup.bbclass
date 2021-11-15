@@ -105,7 +105,7 @@ MENDER_DEVICE_TYPE ??= "${MENDER_DEVICE_TYPE_DEFAULT}"
 MENDER_DEVICE_TYPE_DEFAULT = "${MACHINE}"
 
 # To tell the difference from a beaglebone-yocto image with only U-Boot.
-MENDER_DEVICE_TYPE_DEFAULT:beaglebone-yocto_mender-grub = "${MACHINE}-grub"
+MENDER_DEVICE_TYPE_DEFAULT:beaglebone-yocto:mender-grub = "${MACHINE}-grub"
 
 # Space separated list of device types compatible with the built update.
 MENDER_DEVICE_TYPES_COMPATIBLE ??= "${MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT}"
@@ -293,7 +293,7 @@ python mender_vars_handler() {
 
         for k in d.keys():
             if k.startswith("MENDER_"):
-                if re.search("_[-a-z0-9][-\w]*$", k) != None:
+                if re.search("[:_][-a-z0-9][-\w]*$", k) != None:
                     # skip variable overrides
                     continue;
 
@@ -331,7 +331,7 @@ python mender_vars_handler() {
         mender_vars = {}
         for k in d.keys():
             if k.startswith("MENDER_"):
-                if re.search("_[-a-z0-9][-\w]*$", k) == None:
+                if re.search("[:_][-a-z0-9][-\w]*$", k) == None:
                     mender_vars[k] = ""
                     #mender_vars[k] = d.getVar(k) might be useful for inspection
         with open (path, 'w') as f:

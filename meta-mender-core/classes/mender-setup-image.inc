@@ -5,10 +5,10 @@ IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-uefi', '
 IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-bios', ' biosimg biosimg.bmap', '', d)}"
 IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-gpt', ' gptimg gptimg.bmap', '', d)}"
 
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append_mender-image:x86 =     " kernel-image"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append_mender-image:x86-64 =  " kernel-image"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append_mender-image:arm =     " kernel-image kernel-devicetree"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append_mender-image:aarch64 = " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:x86 =     " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:x86-64 =  " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:arm =     " kernel-image kernel-devicetree"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:aarch64 = " kernel-image"
 
 python() {
     features = d.getVar('MENDER_FEATURES').split()
@@ -19,12 +19,12 @@ python() {
 }
 
 MENDER_BOOT_PART_MOUNT_LOCATION = "/boot/efi"
-MENDER_BOOT_PART_MOUNT_LOCATION_mender-uboot = "/uboot"
-MENDER_BOOT_PART_MOUNT_LOCATION_mender-systemd-boot = "/boot"
-MENDER_BOOT_PART_MOUNT_LOCATION_mender-grub_mender-bios = "/boot/grub"
+MENDER_BOOT_PART_MOUNT_LOCATION:mender-uboot = "/uboot"
+MENDER_BOOT_PART_MOUNT_LOCATION:mender-systemd-boot = "/boot"
+MENDER_BOOT_PART_MOUNT_LOCATION:mender-grub:mender-bios = "/boot/grub"
 
 # Set Yocto variable.
-EFI_PREFIX_mender-image = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
+EFI_PREFIX:mender-image = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
 
 # Update fstab for Mender
 ROOTFS_POSTPROCESS_COMMAND:append = " mender_update_fstab_file;"
@@ -91,7 +91,7 @@ mender_create_scripts_version_file() {
     echo -n "${MENDER_STATE_SCRIPTS_VERSION}" > ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/version
 }
 
-IMAGE_ROOTFS_EXCLUDE_PATH:append_mender-image = " data/ ${@d.getVar('MENDER_BOOT_PART_MOUNT_LOCATION')[1:]}/"
+IMAGE_ROOTFS_EXCLUDE_PATH:append:mender-image = " data/ ${@d.getVar('MENDER_BOOT_PART_MOUNT_LOCATION')[1:]}/"
 
 
 ################################################################################

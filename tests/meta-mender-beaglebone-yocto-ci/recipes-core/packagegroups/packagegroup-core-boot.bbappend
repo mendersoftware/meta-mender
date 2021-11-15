@@ -1,3 +1,3 @@
-RDEPENDS:${PN}:append_mender-testing-enabled = " \
+RDEPENDS:${PN}:append:mender-testing-enabled = " \
     mender-qa \
     "

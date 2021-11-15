@@ -1,6 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI:append_cfg_file += " file://cfg"
+SRC_URI:append:cfg_file += " file://cfg"
 
 
 do_check_config_efi_stub() {

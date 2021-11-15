@@ -1,6 +1,6 @@
-FILESEXTRAPATHS:prepend_mender-grub := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend:mender-grub := "${THISDIR}/files:"
 
-SRC_URI:append_mender-grub = " file://01_mender_serial_console_grub.cfg"
+SRC_URI:append:mender-grub = " file://01_mender_serial_console_grub.cfg"
 
 # We need these because we use QEMU with -nographic argument.
-GRUB_BUILDIN:append_mender-bios = " serial terminal"
+GRUB_BUILDIN:append:mender-bios = " serial terminal"

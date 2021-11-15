@@ -4,7 +4,7 @@ require grub-mender.inc
 
 inherit deploy
 
-SRC_URI:append_mender-bios = " file://bios-cfg"
+SRC_URI:append:mender-bios = " file://bios-cfg"
 
 GRUB_TARGET:x86 = "i386-pc"
 GRUB_TARGET:x86-64 = "i386-pc"
@@ -13,7 +13,7 @@ GRUB_TARGET:x86-64 = "i386-pc"
 GRUB_BUILDIN ?= "boot linux ext2 fat serial part_msdos part_gpt normal \
                  iso9660 configfile search loadenv test"
 
-GRUB_BUILDIN:append_mender-bios = " biosdisk"
+GRUB_BUILDIN:append:mender-bios = " biosdisk"
 
 python do_setcorelocation () {
 }

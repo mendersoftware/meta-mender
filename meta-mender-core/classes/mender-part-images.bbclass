@@ -269,11 +269,11 @@ _MENDER_PART_IMAGE_DEPENDS += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE', '
 #
 # This assumes that U-boot is used on ARM, this could become problematic
 # if we add support for other bootloaders on ARM, e.g Barebox.
-_MENDER_PART_IMAGE_DEPENDS:append_mender-grub_arm =     " u-boot:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS:append:mender-grub_arm =     " u-boot:do_deploy"
 
-_MENDER_PART_IMAGE_DEPENDS:append_mender-uboot = " u-boot:do_deploy"
-_MENDER_PART_IMAGE_DEPENDS:append_mender-grub_mender-bios = " grub:do_deploy"
-_MENDER_PART_IMAGE_DEPENDS:append_mender-systemd-boot = " \
+_MENDER_PART_IMAGE_DEPENDS:append:mender-uboot = " u-boot:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS:append:mender-grub:mender-bios = " grub:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS:append:mender-systemd-boot = " \
     systemd-boot:do_deploy \
     ${IMAGE_BASENAME}:do_uefiapp_deploy \
 "
@@ -288,23 +288,23 @@ do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
 do_image_gptimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
-IMAGE_TYPEDEP_sdimg:append   = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
-IMAGE_TYPEDEP_uefiimg:append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
-IMAGE_TYPEDEP_biosimg:append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
-IMAGE_TYPEDEP_gptimg:append  = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
+IMAGE_TYPEDEP:sdimg:append   = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
+IMAGE_TYPEDEP:uefiimg:append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
+IMAGE_TYPEDEP:biosimg:append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
+IMAGE_TYPEDEP:gptimg:append  = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
 
 # This isn't actually a dependency, but a way to avoid sdimg and uefiimg
 # building simultaneously, since wic will use the same file names in both, and
 # in parallel builds this is a recipe for disaster.
-IMAGE_TYPEDEP_uefiimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"
+IMAGE_TYPEDEP:uefiimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"
 # And same here.
-IMAGE_TYPEDEP_biosimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)}"
+IMAGE_TYPEDEP:biosimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)}"
 # And same here.
-IMAGE_TYPEDEP_gptimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
+IMAGE_TYPEDEP:gptimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
 # Make sure the Mender part image is available in the live installer
-IMAGE_TYPEDEP_hddimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
+IMAGE_TYPEDEP:hddimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'gptimg', ' gptimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
@@ -416,4 +416,4 @@ IMAGE_CMD:mtdimg() {
     ln -sfn "${IMAGE_NAME}.mtdimg" "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.mtdimg"
 }
 
-IMAGE_TYPEDEP_mtdimg:append = " ubimg"
+IMAGE_TYPEDEP:mtdimg:append = " ubimg"

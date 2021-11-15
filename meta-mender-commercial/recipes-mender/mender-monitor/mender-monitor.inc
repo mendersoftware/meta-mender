@@ -14,7 +14,7 @@ FILES:${PN} = " \
     /data/mender-monitor \
 "
 
-FILES:${PN}:append_mender-systemd = " \
+FILES:${PN}:append:mender-systemd = " \
     ${systemd_system_unitdir}/mender-monitor.service \
 "
 
@@ -30,7 +30,7 @@ do_version_check() {
 }
 addtask do_version_check after do_unpack before do_install
 
-SYSTEMD_SERVICE:${PN}_mender-systemd = "mender-monitor.service"
+SYSTEMD_SERVICE:${PN}:mender-systemd = "mender-monitor.service"
 
 do_install() {
     oe_runmake \
@@ -40,18 +40,17 @@ do_install() {
     install -d ${D}/${localstatedir}/lib/mender-monitor
 }
 
-do_install:append_mender-systemd() {
+do_install:append:mender-systemd() {
     oe_runmake \
         -C ${S} \
         DESTDIR=${D} \
         install-systemd
 }
 
-do_install:append_mender-image() {
+do_install:append:mender-image() {
         # symlink /var/lib/mender-monitor to /data/mender-monitor
         rm -rf ${D}/${localstatedir}/lib/mender-monitor
         ln -s /data/mender-monitor ${D}/${localstatedir}/lib/mender-monitor
 
         install -m 755 -d ${D}/data/mender-monitor
 }
-
