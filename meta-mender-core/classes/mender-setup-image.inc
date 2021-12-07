@@ -63,6 +63,11 @@ mender_update_fstab_file() {
         parts="${extra_part_fstab}"
         printf "%-20s %-20s %-10s %-21s %-2s %s\n" $parts >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
     fi
+
+    if [ "${MENDER_SWAP_PART_SIZE_MB}" -ne "0" ]; then
+        local swap_part_num="${@mender_get_swap_part_num(d)}"
+        printf "%-20s %-20s %-10s %-21s %-2s %s\n"  ${MENDER_STORAGE_DEVICE_BASE}${swap_part_num} swap swap defaults 0  0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    fi
 }
 
 def mender_default_state_scripts_version(d):
