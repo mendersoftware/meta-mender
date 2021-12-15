@@ -1,0 +1,316 @@
+commit 9859c61858d6a55dc648bafef46c554a93d87285
+Author: Liam White McShane <liam.white@timesys.com>
+Date:   Fri Jul 23 13:53:17 2021 -0400
+
+    Add slot config
+
+diff --git a/src/boot/efi/boot.c b/src/boot/efi/boot.c
+index 176028efa4..80c5641e2a 100644
+--- a/src/boot/efi/boot.c
++++ b/src/boot/efi/boot.c
+@@ -14,6 +14,7 @@
+ #include "pe.h"
+ #include "random-seed.h"
+ #include "shim.h"
++#include "slot.h"
+ #include "util.h"
+ 
+ #ifndef EFI_OS_INDICATIONS_BOOT_TO_FW_UI
+@@ -2257,6 +2258,46 @@ out_unload:
+         return err;
+ }
+ 
++static EFI_STATUS boot_ab(EFI_LOADED_IMAGE *parent_image, EFI_HANDLE device, EFI_FILE *root_dir, ABConfig *config) {
++        EFI_HANDLE image;
++        _cleanup_freepool_ EFI_DEVICE_PATH *path = NULL;
++        EFI_STATUS err;
++
++        if (config->boot_count >= config->max_boot_count) {
++                Print(L"Boot failed %d time(s) on slot %d\n", config->boot_count, config->active_slot);
++                uefi_call_wrapper(BS->Stall, 1, 3 * 1000 * 1000);
++                switch_active_slot(root_dir, config);
++        }
++
++        if (config->upgrade_pending) {
++                Print(L"Upgrade pending, trying new boot on slot %d\n", config->active_slot);
++                uefi_call_wrapper(BS->Stall, 1, 3 * 1000 * 1000);
++                increment_boot_count(root_dir, config);
++        }
++
++        path = FileDevicePath(device, config->active_slot == SLOT_A ? config->a_efi : config->b_efi);
++        if (!path) {
++                Print(L"Error getting device path\n");
++                uefi_call_wrapper(BS->Stall, 1, 3 * 1000 * 1000);
++                return EFI_INVALID_PARAMETER;
++        }
++
++        err = uefi_call_wrapper(BS->LoadImage, 6, TRUE, parent_image, path, NULL, 0, &image);
++        if (EFI_ERROR(err)) {
++                _cleanup_freepool_ CHAR16 *str = NULL;
++                str = DevicePathToStr(path);
++                Print(L"Error loading image %s: %r\n", str, err);
++                uefi_call_wrapper(BS->Stall, 1, 3 * 1000 * 1000);
++                return err;
++        }
++
++        efivar_set_time_usec(L"LoaderTimeExecUSec", 0);
++        err = uefi_call_wrapper(BS->StartImage, 3, image, NULL, NULL);
++
++        uefi_call_wrapper(BS->UnloadImage, 1, image);
++        return err;
++}
++
+ static EFI_STATUS reboot_into_firmware(VOID) {
+         _cleanup_freepool_ CHAR8 *b = NULL;
+         UINTN size;
+@@ -2332,6 +2373,7 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *sys_table) {
+         CHAR16 *loaded_image_path;
+         EFI_STATUS err;
+         Config config;
++        ABConfig ab_config;
+         UINT64 init_usec;
+         BOOLEAN menu = FALSE;
+         CHAR16 uuid[37];
+@@ -2377,6 +2419,10 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *sys_table) {
+                 }
+         }
+ 
++        if (get_ab_config(root_dir, &ab_config) && !EFI_ERROR(boot_ab(image, loaded_image->DeviceHandle, root_dir, &ab_config))) {
++              return EFI_SUCCESS;
++        }
++
+         /* the filesystem path to this image, to prevent adding ourselves to the menu */
+         loaded_image_path = DevicePathToStr(loaded_image->FilePath);
+         efivar_set(L"LoaderImageIdentifier", loaded_image_path, FALSE);
+diff --git a/src/boot/efi/meson.build b/src/boot/efi/meson.build
+index ed81cefcd5..fcae727a12 100644
+--- a/src/boot/efi/meson.build
++++ b/src/boot/efi/meson.build
+@@ -12,6 +12,7 @@ efi_headers = files('''
+         random-seed.h
+         sha256.h
+         shim.h
++        slot.h
+         splash.h
+         util.h
+ '''.split())
+@@ -31,6 +32,7 @@ systemd_boot_sources = '''
+         random-seed.c
+         sha256.c
+         shim.c
++        slot.c
+ '''.split()
+ 
+ stub_sources = '''
+diff --git a/src/boot/efi/slot.c b/src/boot/efi/slot.c
+new file mode 100644
+index 0000000000..7b364c078b
+--- /dev/null
++++ b/src/boot/efi/slot.c
+@@ -0,0 +1,175 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++
++#include <efi.h>
++#include <efilib.h>
++
++#include "sha256.h"
++#include "slot.h"
++#include "util.h"
++
++static EFI_STATUS read_file(EFI_FILE_HANDLE dir, const CHAR16 *name, UINTN size, UINT8 *buf) {
++        _cleanup_(FileHandleClosep) EFI_FILE_HANDLE handle = NULL;
++        EFI_STATUS err;
++
++        err = uefi_call_wrapper(dir->Open, 5, dir, &handle, (CHAR16 *) name, EFI_FILE_MODE_READ, 0ULL);
++        if (EFI_ERROR(err))
++                return err;
++
++        err = uefi_call_wrapper(handle->Read, 3, handle, &size, (CHAR8 *) buf);
++        if (EFI_ERROR(err))
++                return err;
++
++        return err;
++}
++
++static EFI_STATUS write_file(EFI_FILE_HANDLE dir, const CHAR16 *name, UINTN size, UINT8 *buf) {
++        _cleanup_(FileHandleClosep) EFI_FILE_HANDLE handle = NULL;
++        EFI_STATUS err;
++
++        err = uefi_call_wrapper(dir->Open, 5, dir, &handle, (CHAR16 *) name, EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0ULL);
++        if (EFI_ERROR(err)) {
++                return err;
++        }
++
++        err = uefi_call_wrapper(handle->Write, 3, handle, &size, (CHAR8 *) buf);
++        if (EFI_ERROR(err)) {
++                return err;
++        }
++
++        return err;
++}
++
++static EFI_STATUS hash_and_write_file(EFI_FILE_HANDLE dir, const CHAR16 *name, const CHAR16 *sum_name, UINTN size, UINT8 *buf) {
++        struct sha256_ctx ctx;
++        UINT8 hash[32];
++        EFI_STATUS err;
++
++        sha256_init_ctx(&ctx);
++        sha256_process_bytes(buf, size, &ctx);
++        sha256_finish_ctx(&ctx, &hash);
++
++        err = write_file(dir, name, size, buf);
++        if (EFI_ERROR(err))
++                return err;
++
++        err = write_file(dir, sum_name, 32, (UINT8 *) &hash);
++        if (EFI_ERROR(err))
++                return err;
++
++        return err;
++}
++
++static BOOLEAN validate_sha256sum(const UINT8 *buf, UINTN size, UINT8 sum[32]) {
++        struct sha256_ctx ctx;
++        UINT8 hash[32];
++
++        sha256_init_ctx(&ctx);
++        sha256_process_bytes(buf, size, &ctx);
++        sha256_finish_ctx(&ctx, &hash);
++
++        return CompareMem(sum, hash, 32) == 0;
++}
++
++static BOOLEAN write_config(EFI_FILE_HANDLE root_dir, ABConfig *config) {
++        EFI_STATUS err;
++
++        err = hash_and_write_file(root_dir, L"\\loader\\main\\config", L"\\loader\\main\\config.sha256", sizeof(ABConfig), (UINT8 *) config);
++        if (EFI_ERROR(err)) {
++                Print(L"Couldn't write config_a!\n");
++                uefi_call_wrapper(BS->Stall, 1, 3 * 1000 * 1000);
++                return FALSE;
++        }
++
++        err = hash_and_write_file(root_dir, L"\\loader\\backup\\config", L"\\loader\\backup\\config.sha256", sizeof(ABConfig), (UINT8 *) config);
++        if (EFI_ERROR(err)) {
++                Print(L"Couldn't write config_b!\n");
++                uefi_call_wrapper(BS->Stall, 1, 3 * 1000 * 1000);
++                return FALSE;
++        }
++
++        return TRUE;
++}
++
++BOOLEAN get_ab_config(EFI_FILE_HANDLE root_dir, ABConfig *config) {
++        ABConfig config_a, config_b;
++        UINT8 sum_a[32], sum_b[32];
++        BOOLEAN a_valid, b_valid;
++        EFI_STATUS err_a, err_b;
++
++        err_a = read_file(root_dir, L"\\loader\\main\\config", sizeof(config_a), (UINT8 *) &config_a);
++        err_b = read_file(root_dir, L"\\loader\\backup\\config", sizeof(config_b), (UINT8 *) &config_b);
++
++        if (EFI_ERROR(err_a) && EFI_ERROR(err_b)) {
++                /* No readable boot slots detected. Quiet error. */
++                return FALSE;
++        }
++
++        err_a = read_file(root_dir, L"\\loader\\main\\config.sha256", sizeof(sum_a), (UINT8 *) &sum_a);
++        err_b = read_file(root_dir, L"\\loader\\backup\\config.sha256", sizeof(sum_b), (UINT8 *) &sum_b);
++
++        if (EFI_ERROR(err_a) && EFI_ERROR(err_b)) {
++                Print(L"Boot slots detected but no checksums present\n");
++                return FALSE;
++        }
++
++        a_valid = validate_sha256sum((UINT8 *) &config_a, sizeof(config_a), sum_a);
++        b_valid = validate_sha256sum((UINT8 *) &config_b, sizeof(config_b), sum_b);
++
++        if (!a_valid && !b_valid) {
++                Print(L"Boot slots detected but all checksums invalid\n");
++                uefi_call_wrapper(BS->Stall, 1, 3 * 1000 * 1000);
++                return FALSE;
++        }
++
++        // If both config slots are valid but are not equal, assume B was
++        // interrupted in the process of writing and recreate it from A.
++        if (a_valid && b_valid && CompareMem(&config_a, &config_b, sizeof(config_a)) != 0) {
++                b_valid = FALSE;
++        }
++
++        if (a_valid && !b_valid) {
++                Print(L"Recovering config B from config A\n");
++
++                CopyMem(&config_b, &config_a, sizeof(config_a));
++                CopyMem(&sum_b, &sum_a, sizeof(sum_a));
++
++                write_file(root_dir, L"\\loader\\backup\\config", sizeof(config_a), (UINT8 *) &config_b);
++                write_file(root_dir, L"\\loader\\backup\\config.sha256", sizeof(sum_b), (UINT8 *) &sum_b);
++
++                b_valid = TRUE;
++        }
++
++        if (b_valid && !a_valid) {
++                Print(L"Recovering config A from config B\n");
++
++                CopyMem(&config_a, &config_b, sizeof(config_b));
++                CopyMem(&sum_a, &sum_b, sizeof(sum_b));
++
++                write_file(root_dir, L"\\loader\\main\\config", sizeof(config_a), (UINT8 *) &config_a);
++                write_file(root_dir, L"\\loader\\main\\config.sha256", sizeof(sum_a), (UINT8 *) &sum_a);
++
++                a_valid = TRUE;
++        }
++
++        *config = config_a;
++        return TRUE;
++}
++
++BOOLEAN increment_boot_count(EFI_FILE_HANDLE root_dir, ABConfig *config) {
++        if (config->boot_count >= config->max_boot_count) {
++                Print(L"Boot count already at max, not incrementing!\n");
++                return FALSE;
++        }
++
++        config->boot_count++;
++
++        return write_config(root_dir, config);
++}
++
++BOOLEAN switch_active_slot(EFI_FILE_HANDLE root_dir, ABConfig *config) {
++        config->active_slot = !config->active_slot;
++        config->upgrade_pending = FALSE;
++        config->boot_count = 0;
++
++        return write_config(root_dir, config);
++}
+diff --git a/src/boot/efi/slot.h b/src/boot/efi/slot.h
+new file mode 100644
+index 0000000000..04f7b2d78f
+--- /dev/null
++++ b/src/boot/efi/slot.h
+@@ -0,0 +1,25 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++#pragma once
++
++#include <efi.h>
++
++#define SLOT_A 0
++
++typedef struct {
++        /* Metadata about the structure */
++        UINT8 version;              // 0x1
++        UINT8 upgrade_pending;      // Set to nonzero value by userspace if boot_efi has changed
++        UINT8 boot_count;           // Incremented by bootloader when booting if upgrade_pending
++        UINT8 max_boot_count;       // Maximum allowed unsuccessful boot count
++        UINT8 active_slot;          // Zero -- a; Nonzero -- b
++        UINT8 reserved;
++
++        /* Paths of the unified kernel images */
++        CHAR16 a_efi[256];          // L"\\EFI\\Linux\\linux_a.efi"
++        CHAR16 b_efi[256];          // L"\\EFI\\Linux\\linux_b.efi"
++} ABConfig;
++
++BOOLEAN get_ab_config(EFI_FILE_HANDLE root_dir, ABConfig *config);
++
++BOOLEAN increment_boot_count(EFI_FILE_HANDLE root_dir, ABConfig *config);
++BOOLEAN switch_active_slot(EFI_FILE_HANDLE root_dir, ABConfig *config);

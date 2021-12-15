@@ -267,6 +267,10 @@ _MENDER_PART_IMAGE_DEPENDS_append_mender-grub_aarch64 = " u-boot:do_deploy"
 
 _MENDER_PART_IMAGE_DEPENDS_append_mender-uboot = " u-boot:do_deploy"
 _MENDER_PART_IMAGE_DEPENDS_append_mender-grub_mender-bios = " grub:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS_append_mender-systemd-boot = " \
+    systemd-boot:do_deploy \
+    ${IMAGE_BASENAME}:do_uefiapp_deploy \
+"
 
 do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bootfiles:do_populate_sysroot', '', d)}"
