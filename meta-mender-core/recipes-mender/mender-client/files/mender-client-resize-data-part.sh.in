@@ -4,8 +4,8 @@ set -e
 
 # All sizes are in blocks of 512 bytes
 
-MENDER_STORAGE_DEVICE=@MENDER_STORAGE_DEVICE@
 MENDER_DATA_PART=@MENDER_DATA_PART@
+MENDER_STORAGE_DEVICE=@MENDER_STORAGE_DEVICE@
 
 mender_storage_device_base=$(basename ${MENDER_STORAGE_DEVICE})
 mender_data_part_base=$(basename ${MENDER_DATA_PART})
