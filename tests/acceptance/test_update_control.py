@@ -139,7 +139,7 @@ def wait_for_state(connection, state_to_wait_for):
         if state_to_wait_for in log:
             break
 
-        time.sleep(2)
+        time.sleep(6)
 
         attempts -= 1
     else:
