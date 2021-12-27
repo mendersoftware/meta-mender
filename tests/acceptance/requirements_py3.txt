@@ -21,7 +21,7 @@ pyparsing==3.0.6
 pytest==6.2.5
 pytest-html==3.1.1
 pytest-metadata==1.11.0
-python-lzo==1.12
+python-lzo==1.14
 PyYAML==6.0
 requests==2.26.0
 six==1.16.0
