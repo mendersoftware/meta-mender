@@ -25,8 +25,8 @@ from utils.common import (
 )
 
 
-def put_mock_files(connection):
-    # TODO: These files could be installed as a yocto package, maybe extending mender-mock-server
+@pytest.fixture(scope="class")
+def with_mock_files(request, connection):
     mocks_dir = os.path.join(os.path.dirname(__file__), "mocks")
     put_no_sftp(
         os.path.join(mocks_dir, "mock_websocket_server.py"),
@@ -38,6 +38,11 @@ def put_mock_files(connection):
         connection,
         remote="/tmp/mock_dbus_server.py",
     )
+
+    def cleanup():
+        connection.run(f"rm -f /tmp/mock_websocket_server.py /tmp/mock_dbus_server.py")
+
+    request.addfinalizer(cleanup)
 
 
 class SshZombieProccess:
@@ -79,12 +84,6 @@ echo $! >{self._pid_file}
         self._conn.run(f"rm -f {self._sh_file} {self._pid_file}")
 
 
-def start_mock_dbus_server(connection):
-    return SshZombieProccess(
-        connection, "python3 /tmp/mock_dbus_server.py", "mock_dbus_server"
-    )
-
-
 def wait_for_mock_dbus_server(connection):
     start = time.time()
     while time.time() < start + 60:
@@ -114,12 +113,32 @@ def wait_for_mock_dbus_server(connection):
         )
 
 
-def start_mock_websockets_server(connection, port):
-    return SshZombieProccess(
-        connection,
-        f"python3 /tmp/mock_websocket_server.py {port}",
-        f"mock_websocket_server_{port}",
+@pytest.fixture(scope="function")
+def with_mock_servers(request, connection):
+    proc_server_dbus = SshZombieProccess(
+        connection, "python3 /tmp/mock_dbus_server.py", "mock_dbus_server"
     )
+    proc_server_ws_one = SshZombieProccess(
+        connection,
+        f"python3 /tmp/mock_websocket_server.py 5000",
+        f"mock_websocket_server_5000",
+    )
+    proc_server_ws_two = SshZombieProccess(
+        connection,
+        f"python3 /tmp/mock_websocket_server.py 6000",
+        f"mock_websocket_server_6000",
+    )
+
+    def cleanup():
+        proc_server_dbus.terminate()
+        proc_server_ws_one.terminate()
+        proc_server_ws_two.terminate()
+
+    request.addfinalizer(cleanup)
+
+    wait_for_mock_dbus_server(connection)
+
+    return [proc_server_dbus, proc_server_ws_one, proc_server_ws_two]
 
 
 def dbus_set_token_and_url(connection, token, server_url):
@@ -164,22 +183,11 @@ def wait_for_string_in_log(connection, since, timeout, search_string):
 class TestMenderConnect:
     @pytest.mark.min_mender_version("2.5.0")
     def test_mender_connect_auth_changes(
-        self, connection,
+        self, connection, with_mock_files, with_mock_servers,
     ):
         """Test that mender-connect can re-establish the connection on D-Bus signals"""
 
         try:
-            proc_server_dbus = None
-            proc_server_ws_one = None
-            proc_server_ws_two = None
-
-            # start the mocks
-            put_mock_files(connection)
-            proc_server_dbus = start_mock_dbus_server(connection)
-            proc_server_ws_one = start_mock_websockets_server(connection, 5000)
-            proc_server_ws_two = start_mock_websockets_server(connection, 6000)
-
-            wait_for_mock_dbus_server(connection)
             dbus_set_token_and_url(connection, "token1", "http://localhost:5000")
 
             # start the mender-connect service
@@ -255,33 +263,15 @@ class TestMenderConnect:
             connection.run(
                 "systemctl --job-mode=ignore-dependencies stop mender-connect || true"
             )
-            connection.run("cat /tmp/*.log || true")
-            if proc_server_dbus is not None:
-                proc_server_dbus.terminate()
-            if proc_server_ws_one is not None:
-                proc_server_ws_one.terminate()
-            if proc_server_ws_two is not None:
-                proc_server_ws_two.terminate()
             cleanup_mender_state(connection)
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_mender_connect_reconnect(
-        self, connection,
+        self, connection, with_mock_files, with_mock_servers,
     ):
         """Test that mender-connect can re-establish the connection on remote errors"""
 
         try:
-            proc_server_dbus = None
-            proc_server_ws_one = None
-            proc_server_ws_two = None
-
-            # start the mocks
-            put_mock_files(connection)
-            proc_server_dbus = start_mock_dbus_server(connection)
-            proc_server_ws_one = start_mock_websockets_server(connection, 5000)
-            proc_server_ws_two = start_mock_websockets_server(connection, 6000)
-
-            wait_for_mock_dbus_server(connection)
             dbus_set_token_and_url(connection, "badtoken", "http://localhost:12345")
 
             # start the mender-connect service
@@ -313,7 +303,7 @@ class TestMenderConnect:
             dbus_set_token_and_url(connection, "", "")
             kill_time = time.time()
             # kill the server and wait for error
-            proc_server_ws_one.kill()
+            with_mock_servers[1].kill()
             _ = wait_for_string_in_log(
                 connection, kill_time, 300, "error reconnecting:",
             )
@@ -334,12 +324,4 @@ class TestMenderConnect:
             connection.run(
                 "systemctl --job-mode=ignore-dependencies stop mender-connect || true"
             )
-            if proc_server_dbus is not None:
-                proc_server_dbus.terminate()
-            if proc_server_ws_one is not None:
-                proc_server_ws_one.terminate()
-            if proc_server_ws_two is not None:
-                proc_server_ws_two.terminate()
-            connection.run("cat /tmp/*.log || true")
-            connection.run("rm -f /tmp/*.log /tmp/*.py")
             cleanup_mender_state(connection)
