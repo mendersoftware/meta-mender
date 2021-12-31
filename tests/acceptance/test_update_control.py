@@ -490,8 +490,8 @@ class TestUpdateControl:
                 ), "Looks like the client did not pause!"
 
         except:
-            connection.run("journalctl -u mender-client | cat")
-            connection.run("journalctl -u mender-mock-server | cat")
+            connection.run("journalctl --unit mender-client | cat")
+            connection.run("journalctl --unit mender-mock-server | cat")
             raise
 
         finally:
@@ -611,8 +611,8 @@ class TestUpdateControl:
             assert "ArtifactFailure" not in log
 
         except:
-            connection.run("journalctl -u mender-client | cat")
-            connection.run("journalctl -u mender-mock-server | cat")
+            connection.run("journalctl --unit mender-client | cat")
+            connection.run("journalctl --unit mender-mock-server | cat")
             raise
 
         finally:
@@ -678,7 +678,7 @@ done
             # more than would cause a failure.
             while time.time() < timeout:
                 output = connection.run(
-                    "journalctl -u mender-client -S '%s' | grep 'State transition: mender-update-control '"
+                    "journalctl --unit mender-client --since '%s' | grep 'State transition: mender-update-control '"
                     % time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(now)),
                     warn=True,
                 ).stdout
@@ -708,8 +708,8 @@ done
             assert "ArtifactFailure" not in log
 
         except:
-            connection.run("journalctl -u mender-client | cat")
-            connection.run("journalctl -u mender-mock-server | cat")
+            connection.run("journalctl --unit mender-client | cat")
+            connection.run("journalctl --unit mender-mock-server | cat")
             raise
 
         finally:
