@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -424,6 +424,8 @@ class TestUpdateControl:
                 connection, bitbake_variables["MENDER_DEVICE_TYPE"]
             )
 
+            connection.run("mender check-update")
+
             log = []
             pause_state_observed = 0
             continue_map_inserted = False
@@ -462,6 +464,7 @@ class TestUpdateControl:
                         make_and_deploy_artifact(
                             connection, bitbake_variables["MENDER_DEVICE_TYPE"]
                         )
+                        connection.run("mender check-update")
                         second_deployment_done = True
                     else:
                         break
@@ -590,6 +593,7 @@ class TestUpdateControl:
                 deployment_id=MUID,
                 update_control_map=case["pause_map"],
             )
+            connection.run("mender check-update")
             wait_for_state(connection, case["pause_state"])
             set_update_control_map(connection, case["continue_map"])
             log = wait_for_state(connection, "Cleanup")
@@ -607,6 +611,7 @@ class TestUpdateControl:
                 deployment_id=MUID2,
                 update_control_map=None,
             )
+            connection.run("mender check-update")
             log = wait_for_state(connection, "Cleanup")
             assert "ArtifactFailure" not in log
 
@@ -672,6 +677,8 @@ done
             make_and_deploy_artifact(
                 connection, bitbake_variables["MENDER_DEVICE_TYPE"]
             )
+
+            connection.run("mender check-update")
 
             timeout = now + 300
             # Wait until we have received 100 state transitions, which is way
