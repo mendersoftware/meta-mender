@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -24,8 +24,11 @@ import json
 EXPIRATION_TIME = 90
 BOOT_EXPIRATION_TIME = 45
 
+# Note that while waiting for a Control Map update from the server,
+# `UpdatePollIntervalSeconds` is used if it is shorter, so set it to the same
+# value.
 MENDER_CONF = """{
-    "UpdatePollIntervalSeconds": 1,
+    "UpdatePollIntervalSeconds": %d,
     "InventoryPollIntervalSeconds": 5,
     "RetryPollIntervalSeconds": 1,
     "UpdateControlMapExpirationTimeSeconds": %d,
@@ -36,6 +39,7 @@ MENDER_CONF = """{
     }
 }
 """ % (
+    EXPIRATION_TIME,
     EXPIRATION_TIME,
     BOOT_EXPIRATION_TIME,
 )
