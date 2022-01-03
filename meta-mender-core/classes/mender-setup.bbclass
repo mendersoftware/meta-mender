@@ -223,6 +223,9 @@ MENDER_CONFIGURATION_VARS ?= "\
 # The configuration variables to migrate to the persistent configuration.
 MENDER_PERSISTENT_CONFIGURATION_VARS ?= "RootfsPartA RootfsPartB"
 
+# Partition Label names
+MENDER_BOOT_PART_LABEL ??= "${@bb.utils.contains('MENDER_BOOT_PART_FSTYPE', 'vfat', 'BOOT', 'boot', d)}"
+MENDER_DATA_PART_LABEL ??= "data"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
