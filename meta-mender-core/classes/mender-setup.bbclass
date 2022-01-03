@@ -63,7 +63,7 @@ MENDER_MTD_UBI_DEVICE_NAME ??= "${MENDER_MTD_UBI_DEVICE_NAME_DEFAULT}"
 MENDER_MTD_UBI_DEVICE_NAME_DEFAULT = ""
 
 # Filesystem type of data partition. Used for both FS generation and fstab construction
-# Leave as default (auto) to generate a partition using the same Filesystem as 
+# Leave as default (auto) to generate a partition using the same Filesystem as
 # the rootfs ($ARTIFACTIMG_FSTYPE) and set the fstab to auto-detect the partition type
 # Set to a known filesystem to generate the partition using that type
 MENDER_DATA_PART_FSTYPE ??= "${MENDER_DATA_PART_FSTYPE_DEFAULT}"
@@ -304,7 +304,7 @@ python mender_vars_handler() {
                 elif mender_vars[k] != "":
                     # If certain keys should have associated some restricted value
                     # (expressed in regular expression in the .json-file)
-                    # NOTE: empty strings (json-values) are only compared by key, 
+                    # NOTE: empty strings (json-values) are only compared by key,
                     #       whereas the value is arbitrary
                     expected_expressions = []
                     val = d.getVar(k)
@@ -314,14 +314,14 @@ python mender_vars_handler() {
                         for regex in mender_vars[k]: # (can be a list of items)
                             if re.search(regex, val) == None:
                                 expected_expressions += [regex]
-                        if len(expected_expressions) > 0: 
+                        if len(expected_expressions) > 0:
                             bb.note("Variable \"%s\" does not contain suggested value(s): {%s}" %\
                                     (k, ', '.join(expected_expressions)))
 
-                    else: 
+                    else:
                         # item is a single string
                         regex = mender_vars[k]
-                        if re.search(regex, val) == None: 
+                        if re.search(regex, val) == None:
                             bb.note("%s initialized with value \"%s\"" % (k, val),\
                                     " | Expected[regex]: \"%s\"" % regex)
 
