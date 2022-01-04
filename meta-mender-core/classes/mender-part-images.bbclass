@@ -124,9 +124,16 @@ EOF
         bbwarn "MENDER_BOOT_PART_SIZE_MB is set to zero, but IMAGE_BOOT_FILES is not empty. The files are being omitted from the image."
     fi
 
+    # 'squashfs' fstype doesn't support empty partitions. For all others we make
+    # it empty to save compression space.
+    if [ "${ARTIFACTIMG_FSTYPE}" = "squashfs" ]; then
+        part2_content="--source rawcopy --sourceparams=\"file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}\""
+    else
+        part2_content=
+    fi
     cat >> "$wks" <<EOF
 part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $part_type_params
-part --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $part_type_params
+part $part2_content --ondisk "$ondisk_dev" --fstype=${ARTIFACTIMG_FSTYPE} --align $alignment_kb --fixed-size ${MENDER_CALC_ROOTFS_SIZE}k $part_type_params
 EOF
 
     if [ "${MENDER_SWAP_PART_SIZE_MB}" -ne "0" ]; then
