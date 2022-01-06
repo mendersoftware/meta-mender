@@ -1,5 +1,7 @@
 require mender-monitor.inc
 
+# This is the developent recipe for which the recipe version gets defined from the archive name.
+
 def mender_monitor_srcrev_from_src_uri(d, src_uri):
     pref_version = d.getVar("PREFERRED_VERSION")
     if pref_version is not None and pref_version.find("-build") >= 0:
@@ -17,16 +19,28 @@ def mender_monitor_srcrev_from_src_uri(d, src_uri):
         src_uri_glob = src_uri_list[0][len("file://"):]
         # Get the filename
         filenames = glob.glob(src_uri_glob)
-        if len(filenames) != 1:
+        if len(filenames) == 0:
+            bb.error("Failed to find mender monitor on path %s" % src_uri_glob)
+            bb.error("Please make sure SRC_URI_pn-mender-monitor is pointing to the downloaded tarball ")
+        elif len(filenames) != 1:
             bb.error("Expected exactly one file, found: %s" % filenames)
-        filename = filenames[0]
-        # Now extract the git sha from the filename
-        m = re.match(r".*/mender-monitor-([0-9a-f]+)\.tar\.gz", filename)
-        if m is None:
-            # No match probably means that the tarball is a tagged version, in
-            # which case this recipe is not to be used but still needs to parse
+        filename = os.path.basename(filenames[0])
+        # Now extract the version from the filename
+        if filename == "mender-monitor-master.tar.gz":
+            # Building from external tarball, do not append git info
             return ""
-        return m.group(1)
+        m = re.match(r"mender-monitor-([0-9]+\.[0-9]+\.[0-9]+(?:-build[0-9]+)?)\.tar\.gz", filename)
+        if m is not None:
+            # The tarball is a tagged version, in which case SRCREV is not to
+            # be used but still needs to parse
+            return ""
+        m = re.match(r"mender-monitor-([0-9a-f]{7,})\.tar\.gz", filename)
+        if m is not None:
+            # Building from internal tarball, append git info
+            return "-git+" + m.group(1)
+        # At this point the version is unknown.
+        bb.fatal("Unknown version. Failed to parse %s" % filename)
+        return ""
 
 SRCREV = "${@mender_monitor_srcrev_from_src_uri(d, '${SRC_URI}')}"
 
@@ -38,8 +52,8 @@ def mender_monitor_version_from_preferred_version(d, srcrev):
         # final tags, which will need their own recipe.
         return pref_version
     else:
-        # Else return "master-git${SRCREV}".
-        return "master-git%s" % srcrev
+        # Else return "master${SRCREV}".
+        return "master%s" % srcrev
 
 PV = "${@mender_monitor_version_from_preferred_version(d, '${SRCREV}')}"
 
