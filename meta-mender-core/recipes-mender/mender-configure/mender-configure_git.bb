@@ -33,6 +33,8 @@ MENDER_CONFIGURE_BRANCH = "${@mender_configure_branch_from_preferred_version(d)}
 
 def mender_configure_version_from_preferred_version(d, srcpv):
     pref_version = d.getVar("PREFERRED_VERSION")
+    if pref_version is None:
+        pref_version = d.getVar("PREFERRED_VERSION_%s" % d.getVar("PN"))
     if pref_version is not None and pref_version.find("-git") >= 0:
         # If "-git" is in the version, remove it along with any suffix it has,
         # and then readd it with commit SHA.
