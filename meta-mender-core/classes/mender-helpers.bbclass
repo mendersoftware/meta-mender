@@ -275,7 +275,7 @@ mender_merge_bootfs_and_image_boot_files() {
     W="${WORKDIR}/bootfs.${BB_CURRENTTASK}"
     rm -rf "$W"
 
-    cp -al "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
+    cp -a "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
 
     # Put in variable to avoid expansion and ';' being parsed by shell.
     image_boot_files="${IMAGE_BOOT_FILES}"
@@ -307,7 +307,7 @@ mender_merge_bootfs_and_image_boot_files() {
                 fi
             else
                 # create a hardlink if possible (prerequisite: the paths are below the same mount point), do a normal copy otherwise
-                cp -l "$file" "$destfile" || cp "$file" "$destfile"
+                cp "$file" "$destfile"
             fi
         done
     done
