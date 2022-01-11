@@ -43,6 +43,8 @@ MENDER_CONNECT_BRANCH = "${@mender_connect_branch_from_preferred_version(d)}"
 
 def mender_connect_version_from_preferred_version(d, srcpv):
     pref_version = d.getVar("PREFERRED_VERSION")
+    if pref_version is None:
+        pref_version = d.getVar("PREFERRED_VERSION_%s" % d.getVar("PN"))
     if pref_version is not None and pref_version.find("-git") >= 0:
         # If "-git" is in the version, remove it along with any suffix it has,
         # and then readd it with commit SHA.
@@ -68,7 +70,7 @@ def mender_connect_license(branch):
     return {
                "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
     }
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-connect/LICENSE;md5=fbe9cd162201401ffbb442445efecfdc"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-connect/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87"
 LICENSE = "${@mender_connect_license(d.getVar('MENDER_CONNECT_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.
