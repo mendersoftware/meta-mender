@@ -2,7 +2,6 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI_append_cfg_file += " file://cfg"
 
-require version_logic.inc
 
 do_check_config_efi_stub() {
 }
