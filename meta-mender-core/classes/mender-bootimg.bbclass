@@ -30,7 +30,7 @@ IMAGE_CMD_bootimg() {
             mkfs.${MENDER_BOOT_PART_FSTYPE_TO_GEN} \
                 $force_flag \
                 "${WORKDIR}/boot.${MENDER_BOOT_PART_FSTYPE_TO_GEN}" \
-                ${MENDER_BOOT_PART_FSOPTS} $label_flag "BOOT"
+                ${MENDER_BOOT_PART_FSOPTS} $label_flag "${MENDER_BOOT_PART_LABEL}"
             for i in $(find ${WORKDIR}/bootfs.${BB_CURRENTTASK}/ -mindepth 1 -maxdepth 1); do
                mcopy -i "${WORKDIR}/boot.vfat" -s "$i" ::/
             done
@@ -39,7 +39,7 @@ IMAGE_CMD_bootimg() {
                 $force_flag \
                 "${WORKDIR}/boot.${MENDER_BOOT_PART_FSTYPE_TO_GEN}" \
                 $root_dir_flag "${WORKDIR}/bootfs.${BB_CURRENTTASK}" \
-                $label_flag boot \
+                $label_flag "${MENDER_BOOT_PART_LABEL}" \
                 ${MENDER_BOOT_PART_FSOPTS}
         fi
         install -m 0644 "${WORKDIR}/boot.${MENDER_BOOT_PART_FSTYPE_TO_GEN}" "${IMGDEPLOYDIR}/${IMAGE_NAME}.bootimg"

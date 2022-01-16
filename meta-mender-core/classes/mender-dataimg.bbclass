@@ -15,7 +15,7 @@ IMAGE_CMD_dataimg() {
         $force_flag \
         "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}" \
         $root_dir_flag "${IMAGE_ROOTFS}/data" \
-        -L data \
+        -L "${MENDER_DATA_PART_LABEL}" \
         ${MENDER_DATA_PART_FSOPTS}
     install -m 0644 "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }

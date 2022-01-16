@@ -8,6 +8,7 @@ DEPENDS_class-native = ""
 PACKAGES_append = " mender-modules-gen"
 
 RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted util-linux-fdisk"
+RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd_mender-partlabel = " util-linux-blkid"
 RDEPENDS_mender-modules-gen = "bash"
 
 MENDER_CLIENT ?= "mender-client"
@@ -321,11 +322,20 @@ do_install_append_class-target_mender-image_mender-systemd() {
 }
 
 do_install_append_class-target_mender-growfs-data_mender-systemd() {
-    sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
-        ${WORKDIR}/mender-client-resize-data-part.sh.in
 
-    sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
-        ${WORKDIR}/mender-client-resize-data-part.sh.in
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}; then
+        sed -i "s#@MENDER_DATA_PART@#\$(blkid -L ${MENDER_DATA_PART_LABEL})#g" \
+            ${WORKDIR}/mender-client-resize-data-part.sh.in
+
+        sed -i "s#@MENDER_STORAGE_DEVICE@#/dev/\$(basename \$(readlink -f \"/sys/class/block/\$(basename \$MENDER_DATA_PART)/..\"))#g" \
+            ${WORKDIR}/mender-client-resize-data-part.sh.in
+    else
+        sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
+            ${WORKDIR}/mender-client-resize-data-part.sh.in
+
+        sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
+            ${WORKDIR}/mender-client-resize-data-part.sh.in
+    fi
 
     sed -i "s#@MENDER_DATA_PART_NUMBER@#${MENDER_DATA_PART_NUMBER}#g" \
         ${WORKDIR}/mender-client-resize-data-part.sh.in

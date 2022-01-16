@@ -32,9 +32,13 @@ mender_update_fstab_file() {
     local tmpBootPart="${MENDER_BOOT_PART}"
     local tmpDataPart="${MENDER_DATA_PART}"
     local partuuid="${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}"
+    local partlabel="${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}"
     if [ ${partuuid} = "true" ]; then
         tmpBootPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_BOOT_PART}')}"
         tmpDataPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')}"
+    elif [ ${partlabel} = "true" ]; then
+        tmpBootPart="LABEL=${MENDER_BOOT_PART_LABEL}"
+        tmpDataPart="LABEL=${MENDER_DATA_PART_LABEL}"
     fi
 
     if ! ${@bb.utils.contains('MENDER_FEATURES', 'mender-image-ubi', 'true', 'false', d)}; then
