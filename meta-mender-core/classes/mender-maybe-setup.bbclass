@@ -37,6 +37,9 @@ python() {
         # Integration with GRUB.
         'mender-grub',
 
+        # Enabled by GRUB/systemd-boot to extend UEFI overlay recipes.
+        'mender-efi-boot',
+
         # Install of Mender, with the minimum components. This includes no
         # references to specific partition layouts.
         'mender-client-install',
@@ -63,6 +66,9 @@ python() {
         # Include Mender as a systemd service.
         'mender-systemd',
 
+        # Use Mender together with systemd-boot.
+        'mender-systemd-boot',
+
         # Enable Mender configuration specific to UBI.
         'mender-ubi',
 
@@ -71,6 +77,9 @@ python() {
 
         # Use PARTUUID to set fixed drive locations.
         'mender-partuuid',
+
+        # Use PARTLABEL to avoid hardcoded drive device path.
+        'mender-partlabel',
 
         # Setup the systemd machine ID to be persistent across OTA updates.
         'mender-persist-systemd-machine-id',

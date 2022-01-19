@@ -20,6 +20,7 @@ python() {
 
 MENDER_BOOT_PART_MOUNT_LOCATION = "/boot/efi"
 MENDER_BOOT_PART_MOUNT_LOCATION_mender-uboot = "/uboot"
+MENDER_BOOT_PART_MOUNT_LOCATION_mender-systemd-boot = "/boot"
 MENDER_BOOT_PART_MOUNT_LOCATION_mender-grub_mender-bios = "/boot/grub"
 
 # Set Yocto variable.
@@ -31,9 +32,13 @@ mender_update_fstab_file() {
     local tmpBootPart="${MENDER_BOOT_PART}"
     local tmpDataPart="${MENDER_DATA_PART}"
     local partuuid="${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}"
+    local partlabel="${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}"
     if [ ${partuuid} = "true" ]; then
         tmpBootPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_BOOT_PART}')}"
         tmpDataPart="PARTUUID=${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')}"
+    elif [ ${partlabel} = "true" ]; then
+        tmpBootPart="LABEL=${MENDER_BOOT_PART_LABEL}"
+        tmpDataPart="LABEL=${MENDER_DATA_PART_LABEL}"
     fi
 
     if ! ${@bb.utils.contains('MENDER_FEATURES', 'mender-image-ubi', 'true', 'false', d)}; then
@@ -62,6 +67,11 @@ mender_update_fstab_file() {
 
         parts="${extra_part_fstab}"
         printf "%-20s %-20s %-10s %-21s %-2s %s\n" $parts >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    fi
+
+    if [ "${MENDER_SWAP_PART_SIZE_MB}" -ne "0" ]; then
+        local swap_part_num="${@mender_get_swap_part_num(d)}"
+        printf "%-20s %-20s %-10s %-21s %-2s %s\n"  ${MENDER_STORAGE_DEVICE_BASE}${swap_part_num} swap swap defaults 0  0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
     fi
 }
 

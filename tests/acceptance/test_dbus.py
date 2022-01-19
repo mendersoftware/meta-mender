@@ -22,7 +22,10 @@ from multiprocessing import Process
 
 from mock_server import setup_mock_server
 
-from utils.common import cleanup_mender_state
+from utils.common import (
+    cleanup_mender_state,
+    version_is_minimum,
+)
 
 
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
@@ -54,8 +57,11 @@ class TestDBus:
 
             # Wait one state machine cycle for the D-Bus API to be available
             for _ in range(12):
-                result = connection.run("journalctl -u mender-client")
-                if "Authorize failed:" in result.stdout:
+                result = connection.run("journalctl --unit mender-client")
+                if (
+                    "Authorize failed:" in result.stdout
+                    or "Failed to authorize" in result.stdout
+                ):
                     break
                 time.sleep(5)
             else:
@@ -101,6 +107,11 @@ class TestDBus:
                 time.sleep(5)
 
             assert f'string "{self.JWT_TOKEN}' in output
+            if version_is_minimum(bitbake_variables, "mender-client", "3.2.0"):
+                assert 'string "http://localhost:' in output
+            else:
+                assert 'string "https://docker.mender.io' in output
+
         finally:
             connection.run("systemctl stop mender-client")
             cleanup_mender_state(connection)
@@ -167,6 +178,10 @@ class TestDBus:
 
                 output = result.stdout.strip()
                 assert f'string "{self.JWT_TOKEN}' in output
+                if version_is_minimum(bitbake_variables, "mender-client", "3.2.0"):
+                    assert 'string "http://localhost:' in output
+                else:
+                    assert 'string "https://docker.mender.io' in output
 
             finally:
                 p.terminate()

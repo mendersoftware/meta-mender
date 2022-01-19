@@ -14,6 +14,7 @@
 #    limitations under the License.
 
 import distutils.spawn
+from distutils.version import LooseVersion
 import os
 import re
 import shutil
@@ -23,6 +24,7 @@ import pytest
 
 from utils.common import (
     build_image,
+    get_bitbake_variables,
     latest_build_artifact,
     reboot,
     run_after_connect,
@@ -168,6 +170,7 @@ class TestDeltaUpdateModule:
         prepared_test_build,
         bitbake_variables,
         bitbake_image,
+        bitbake_path,
         connection,
         http_server,
         board_type,
@@ -198,6 +201,14 @@ class TestDeltaUpdateModule:
             use_s3,
             s3_address,
         )
+
+        binary_delta_vars = get_bitbake_variables(
+            request, "mender-binary-delta", prepared_test_build
+        )
+        if LooseVersion(binary_delta_vars["PV"]) < LooseVersion("1.3.0"):
+            pytest.skip(
+                "This version of mender-binary-delta does not support grub-mender-grubenv-print and friends."
+            )
 
         with make_tempdir() as tmpdir:
             # Copy previous build

@@ -8,6 +8,7 @@ DEPENDS_class-native = ""
 PACKAGES_append = " mender-modules-gen"
 
 RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted util-linux-fdisk"
+RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd_mender-partlabel = " util-linux-blkid"
 RDEPENDS_mender-modules-gen = "bash"
 
 MENDER_CLIENT ?= "mender-client"
@@ -254,40 +255,27 @@ do_install() {
         ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'install-modules', '', d)}
 
     # install inventory scripts
-    if grep -q install-inventory-local-scripts ${B}/src/${GO_IMPORT}/Makefile; then
-        oe_runmake \
-            -C ${B}/src/${GO_IMPORT} \
-            V=1 \
-            prefix=${D} \
-            datadir=${datadir} \
-            install-inventory-local-scripts \
-            ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)}
-    else
-        oe_runmake \
-            -C ${B}/src/${GO_IMPORT} \
-            V=1 \
-            prefix=${D} \
-            datadir=${datadir} \
-            install-inventory-scripts
-    fi
+    oe_runmake \
+        -C ${B}/src/${GO_IMPORT} \
+        V=1 \
+        prefix=${D} \
+        datadir=${datadir} \
+        install-inventory-local-scripts \
+        ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'install-inventory-network-scripts', '', d)}
 
     # install dbus files
-    if grep -q install-dbus ${B}/src/${GO_IMPORT}/Makefile; then
-        if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
-            # install the D-Bus policy file
-            oe_runmake \
-                -C ${B}/src/${GO_IMPORT} \
-                V=1 \
-                prefix=${D} \
-                datadir=${datadir} \
-                install-dbus
+    if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
+        # install the D-Bus policy file
+        oe_runmake \
+            -C ${B}/src/${GO_IMPORT} \
+            V=1 \
+            prefix=${D} \
+            datadir=${datadir} \
+            install-dbus
 
-            # install the D-Bus interface file(s)
-            if [ -f ${B}/src/${GO_IMPORT}/Documentation/io.mender.Authentication1.xml ]; then
-                install -d ${D}${datadir}/dbus-1/interface
-                install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
-            fi
-        fi
+        # install the D-Bus interface file(s)
+        install -d ${D}${datadir}/dbus-1/interface
+        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
     fi
 
     #install our prepared configuration
@@ -334,11 +322,20 @@ do_install_append_class-target_mender-image_mender-systemd() {
 }
 
 do_install_append_class-target_mender-growfs-data_mender-systemd() {
-    sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
-        ${WORKDIR}/mender-client-resize-data-part.sh.in
 
-    sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
-        ${WORKDIR}/mender-client-resize-data-part.sh.in
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}; then
+        sed -i "s#@MENDER_DATA_PART@#\$(blkid -L ${MENDER_DATA_PART_LABEL})#g" \
+            ${WORKDIR}/mender-client-resize-data-part.sh.in
+
+        sed -i "s#@MENDER_STORAGE_DEVICE@#/dev/\$(basename \$(readlink -f \"/sys/class/block/\$(basename \$MENDER_DATA_PART)/..\"))#g" \
+            ${WORKDIR}/mender-client-resize-data-part.sh.in
+    else
+        sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
+            ${WORKDIR}/mender-client-resize-data-part.sh.in
+
+        sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
+            ${WORKDIR}/mender-client-resize-data-part.sh.in
+    fi
 
     sed -i "s#@MENDER_DATA_PART_NUMBER@#${MENDER_DATA_PART_NUMBER}#g" \
         ${WORKDIR}/mender-client-resize-data-part.sh.in

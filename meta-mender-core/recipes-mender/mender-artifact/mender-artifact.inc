@@ -24,5 +24,13 @@ do_compile() {
 
 do_install() {
     install -d ${D}${bindir}
-    install ${B}/bin/mender-artifact -m 0755 ${D}${bindir}
+
+    # go cross-compilation builds are in different place than native ones.
+    if [ "${BUILD_ARCH}" = "${HOST_ARCH}" ]; then
+        BUILD_BIN_FOLDER=${B}/bin
+    else
+        BUILD_BIN_FOLDER=${B}/bin/${GOOS}_${GOARCH}
+    fi
+
+    install ${BUILD_BIN_FOLDER}/mender-artifact -m 0755 ${D}${bindir}
 }

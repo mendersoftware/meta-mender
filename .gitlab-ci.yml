@@ -13,7 +13,7 @@ include:
     file: '.gitlab-ci-github-status-updates.yml'
 
 variables:
-  LICENSE_HEADERS_IGNORE_FILES_REGEXP: '\./meta-mender-core/recipes-bsp/u-boot/files/.*\.py'
+  LICENSE_HEADERS_IGNORE_FILES_REGEXP: '\./meta-mender-core/recipes-bsp/u-boot/files/.*\.py\|\./meta-mender-core/recipes-bsp/systemd-mender-config/files/ab_setup\.py'
 
 trigger:mender-qa:
   image: python:alpine

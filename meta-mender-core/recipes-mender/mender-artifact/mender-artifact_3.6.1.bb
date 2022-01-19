@@ -1,4 +1,4 @@
-require mender-client.inc
+require mender-artifact.inc
 
 ################################################################################
 #-------------------------------------------------------------------------------
@@ -8,10 +8,10 @@ require mender-client.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=2.6.x"
+SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=3.6.x"
 
-# Tag: 2.6.1
-SRCREV = "ec5271500259b6f0adfb5c6505523c2c389cd2dd"
+# Tag: 3.6.1
+SRCREV = "af2a3e3fb0069df3297dfea78e258c4b4d9dbd4d"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
@@ -24,8 +24,7 @@ SRCREV = "ec5271500259b6f0adfb5c6505523c2c389cd2dd"
 # dependencies) are included in the LICENSE variable below. Note that for
 # releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
 # file.
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM.sha256;md5=69a48b331ae876b6775139310ec72f1b"
-LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL"
+LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LIC_FILES_CHKSUM.sha256;md5=0da2ded6556051c5d2fd88ca8339efd4"
 
-DEPENDS += "xz openssl"
-RDEPENDS_${PN} += "liblzma openssl"
+DEPENDS += "xz"
