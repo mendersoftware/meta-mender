@@ -1,6 +1,8 @@
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
+SRCREV = "${PV}"
+
 BBCLASSEXTEND = "native"
 RDEPENDS_${PN}_class-native = ""
 DEPENDS_class-native = ""
