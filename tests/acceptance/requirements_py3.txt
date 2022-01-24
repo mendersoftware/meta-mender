@@ -17,7 +17,7 @@ psutil==5.9.0
 py==1.11.0
 pycparser==2.21
 PyNaCl==1.5.0
-pyparsing==3.0.6
+pyparsing==3.0.7
 pytest==6.2.5
 pytest-html==3.1.1
 pytest-metadata==1.11.0
