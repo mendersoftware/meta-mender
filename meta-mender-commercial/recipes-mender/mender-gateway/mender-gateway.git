@@ -1,0 +1,24 @@
+require mender-gateway.inc
+
+inherit mender-closed-source-tar-utils
+
+SRCREV = "${@mender_closed_source_srcrev_from_src_uri(d, '${SRC_URI}')}"
+
+def mender_gateway_version_from_preferred_version(d, srcrev):
+    pref_version = d.getVar("PREFERRED_VERSION")
+    if pref_version is not None and pref_version.find("-build") >= 0:
+        # If "-build" is in the version, use the version as is. This means that
+        # we can build tags with "-build" in them from this recipe, but not
+        # final tags, which will need their own recipe.
+        return pref_version
+    else:
+        # Else return "master${SRCREV}".
+        return "master%s" % srcrev
+
+PV = "${@mender_gateway_version_from_preferred_version(d, '${SRCREV}')}"
+
+# Skip version check
+MENDER_DEVMODE = "true"
+
+# Downprioritize this recipe in version selections.
+DEFAULT_PREFERENCE = "-1"
