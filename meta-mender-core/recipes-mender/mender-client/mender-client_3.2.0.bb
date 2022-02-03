@@ -16,7 +16,7 @@ SRCREV = "f6e9401329ff26e27955651a20f9025275c717bf"
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
 # Downprioritize this recipe in version selections.
-DEFAULT_PREFERENCE = "-1"
+# DEFAULT_PREFERENCE = "-1"
 
 ################################################################################
 
