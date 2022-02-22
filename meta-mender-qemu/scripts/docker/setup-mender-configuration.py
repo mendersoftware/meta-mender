@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+# Copyright 2022 Northern.tech AS
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 
 import argparse
 import json
@@ -16,6 +29,7 @@ def main():
     parser.add_argument("--server-crt", help="server.crt file to put in image")
     parser.add_argument("--server-url", help="Server address to put in configuration")
     parser.add_argument("--verify-key", help="Key used to verify signed image")
+    parser.add_argument("--mender-gateway-conffile", help="Configuration file to be copied to /etc/mender/mender-gateway.conf")
     args = parser.parse_args()
 
     if len(sys.argv) == 1:
@@ -93,6 +107,10 @@ EOF
             rootfs=rootfs)
         os.unlink("mender-inventory-docker-ip")
 
+    if args.mender_gateway_conffile:
+        put(local_path=args.mender_gateway_conffile,
+            remote_path="/etc/mender/mender-gateway.conf",
+            rootfs=rootfs)
 
     # Put back ext4 image into img.
     insert_ext4(img=args.img, rootfs=rootfs)
