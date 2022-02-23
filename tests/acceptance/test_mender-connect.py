@@ -26,21 +26,23 @@ from utils.common import (
 
 
 @pytest.fixture(scope="class")
-def with_mock_files(request, connection):
+def with_mock_files(request, session_connection):
     mocks_dir = os.path.join(os.path.dirname(__file__), "mocks")
     put_no_sftp(
         os.path.join(mocks_dir, "mock_websocket_server.py"),
-        connection,
+        session_connection,
         remote="/tmp/mock_websocket_server.py",
     )
     put_no_sftp(
         os.path.join(mocks_dir, "mock_dbus_server.py"),
-        connection,
+        session_connection,
         remote="/tmp/mock_dbus_server.py",
     )
 
     def cleanup():
-        connection.run(f"rm -f /tmp/mock_websocket_server.py /tmp/mock_dbus_server.py")
+        session_connection.run(
+            f"rm -f /tmp/mock_websocket_server.py /tmp/mock_dbus_server.py"
+        )
 
     request.addfinalizer(cleanup)
 
