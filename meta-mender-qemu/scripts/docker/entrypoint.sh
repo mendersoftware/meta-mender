@@ -34,9 +34,10 @@ if [ ! -e /mender-setup-complete ]; then
     ./setup-mender-configuration.py --img="$DISK_IMG" \
                                     --server-url=$SERVER_URL \
                                     --tenant-token=$TENANT_TOKEN $CONFIG_ARGS \
-                                    --docker-ip="$DOCKER_IP"
+                                    --docker-ip="$DOCKER_IP" \
+                                    --mender-gateway-conffile "$MENDER_GATEWAY_CONFFILE"
     touch /mender-setup-complete
 fi
 
-export QEMU_NET_HOSTFWD=",hostfwd=tcp::80-:80,hostfwd=tcp::85-:85"
+export QEMU_NET_HOSTFWD=",hostfwd=tcp::80-:80,hostfwd=tcp::85-:85,hostfwd=tcp::8080-:8080"
 ./mender-qemu "$@"

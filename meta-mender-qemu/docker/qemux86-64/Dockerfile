@@ -17,6 +17,9 @@
 #       Use SERVER_URL as server address for client.
 # -e TENANT_TOKEN=<token>
 #       Use token as tenant token for client.
+# -e MENDER_GATEWAY_CONFFILE=<conffile>
+#       Copy the configuration file for mender-gateway
+#       Note that the file needs to be mounted into the Docker container
 
 FROM alpine:3.15.0
 
