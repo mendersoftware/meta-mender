@@ -1,27 +1,27 @@
 LICENSE = "CLOSED"
 LICENSE_FLAGS = "commercial"
 
-SUB_FOLDER_arm = "arm"
-SUB_FOLDER_aarch64 = "aarch64"
-SUB_FOLDER_x86-64 = "x86_64"
+SUB_FOLDER:arm = "arm"
+SUB_FOLDER:aarch64 = "aarch64"
+SUB_FOLDER:x86-64 = "x86_64"
 
-SRC_URI_arm = "file://${SUB_FOLDER}/mender-binary-delta"
-SRC_URI_aarch64 = "file://${SUB_FOLDER}/mender-binary-delta"
-SRC_URI_x86-64 = "file://${SUB_FOLDER}/mender-binary-delta"
+SRC_URI:arm = "file://${SUB_FOLDER}/mender-binary-delta"
+SRC_URI:aarch64 = "file://${SUB_FOLDER}/mender-binary-delta"
+SRC_URI:x86-64 = "file://${SUB_FOLDER}/mender-binary-delta"
 
 COMPATIBLE_HOSTS = "arm|aarch64|x86_64"
 
 # "lsb-ld" is needed because Yocto by default does not provide a cross platform
 # dynamic linker. On x86_64 this manifests as a missing
 # `/lib64/ld-linux-x86-64.so.2`
-RDEPENDS_${PN} = "lsb-ld xz liblzma"
+RDEPENDS:${PN} = "lsb-ld xz liblzma"
 
-FILES_${PN} = " \
+FILES:${PN} = " \
     ${sysconfdir}/mender/mender-binary-delta.conf \
     ${datadir}/mender/modules/v3/mender-binary-delta \
 "
 
-INSANE_SKIP_${PN} = "already-stripped"
+INSANE_SKIP:${PN} = "already-stripped"
 
 do_version_check() {
     if ! ${@'true' if d.getVar('MENDER_DEVMODE') else 'false'}; then

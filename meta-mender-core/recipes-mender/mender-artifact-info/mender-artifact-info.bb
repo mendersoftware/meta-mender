@@ -25,6 +25,6 @@ do_install() {
     install -m 0644 -t ${D}${sysconfdir}/mender ${B}/artifact_info
 }
 
-FILES_${PN} += " \
+FILES:${PN} += " \
     ${sysconfdir}/mender/artifact_info \
 "

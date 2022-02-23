@@ -1,7 +1,7 @@
 # Class to create the "dataimg" type, which contains the data partition as a raw
 # filesystem.
 
-IMAGE_CMD_dataimg() {
+IMAGE_CMD:dataimg() {
     if [ ${MENDER_DATA_PART_FSTYPE_TO_GEN} = "btrfs" ]; then
         force_flag="-f"
         root_dir_flag="-r"
@@ -19,7 +19,7 @@ IMAGE_CMD_dataimg() {
         ${MENDER_DATA_PART_FSOPTS}
     install -m 0644 "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }
-IMAGE_CMD_dataimg_mender-image-ubi() {
+IMAGE_CMD:dataimg_mender-image-ubi() {
     mkfs.ubifs -o "${WORKDIR}/data.ubifs" -r "${IMAGE_ROOTFS}/data" ${MKUBIFS_ARGS}
     install -m 0644 "${WORKDIR}/data.ubifs" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }

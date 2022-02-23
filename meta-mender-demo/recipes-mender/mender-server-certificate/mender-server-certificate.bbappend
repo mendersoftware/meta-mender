@@ -1,5 +1,5 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI_append = " file://server.crt"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+SRC_URI:append = " file://server.crt"
 
 do_compile() {
     DEFAULT_CERT_MD5="3112d737da65df1b7314bfe0a98accbc"

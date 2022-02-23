@@ -144,7 +144,7 @@ UBINIZE_ARGS ??= "-p ${MENDER_STORAGE_PEB_SIZE} -m ${MENDER_FLASH_MINIMUM_IO_UNI
 
 # The volume numbers containing the two environment copies. The volume numbers
 # are customizable because the kernel only accepts numbers, but U-boot only
-# accepts names, and these are not currently customizable (see IMAGE_CMD_ubimg).
+# accepts names, and these are not currently customizable (see IMAGE_CMD:ubimg).
 # Normally one does not need to set these unless there is a custom ubimg builder
 # involved.
 MENDER_UBOOT_ENV_UBIVOL_NUMBER_1 ??= "3"

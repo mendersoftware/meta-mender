@@ -1,6 +1,6 @@
-SUMMARY_append_mender-testing-enabled = ": Build mender-artifact with coverage recording enabled"
+SUMMARY:append_mender-testing-enabled = ": Build mender-artifact with coverage recording enabled"
 
-DEPENDS_append_mender-testing-enabled = " gobinarycoverage-native rsync-native"
+DEPENDS:append_mender-testing-enabled = " gobinarycoverage-native rsync-native"
 
 do_instrument_mender-artifact[dirs] =+ "${GOTMPDIR}"
 do_instrument_mender-artifact[doc] = "Modifies the mender-artifact source to enable coverage analysis"
@@ -10,7 +10,7 @@ do_instrument_artifact () {
     oe_runmake instrument-binary
 }
 
-do_configure_prepend_mender-testing-enabled () {
+do_configure:prepend_mender-testing-enabled () {
     # Remove all the src present in build if it is not a symbolic link to ${S}
     if [ -d ${B}src ]; then
         rm -rf ${B}src
@@ -18,7 +18,7 @@ do_configure_prepend_mender-testing-enabled () {
 
 }
 
-do_configure_append_mender-testing-enabled () {
+do_configure:append_mender-testing-enabled () {
     # Remove the symbolic link created by go.bbclass in do_configure
     if [ -h ${B}src ]; then
         rm ${B}src

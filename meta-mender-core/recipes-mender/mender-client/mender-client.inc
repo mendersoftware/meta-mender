@@ -2,14 +2,14 @@ DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
 BBCLASSEXTEND = "native"
-RDEPENDS_${PN}_class-native = ""
-DEPENDS_class-native = ""
+RDEPENDS:${PN}:class-native = ""
+DEPENDS:class-native = ""
 
-PACKAGES_append = " mender-modules-gen"
+PACKAGES:append = " mender-modules-gen"
 
-RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted util-linux-fdisk"
-RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd_mender-partlabel = " util-linux-blkid"
-RDEPENDS_mender-modules-gen = "bash"
+RDEPENDS:${PN}:append_mender-growfs-data_mender-systemd = " parted util-linux-fdisk"
+RDEPENDS:${PN}:append_mender-growfs-data_mender-systemd_mender-partlabel = " util-linux-blkid"
+RDEPENDS:mender-modules-gen = "bash"
 
 MENDER_CLIENT ?= "mender-client"
 MENDER_SERVER_URL ?= "https://docker.mender.io"
@@ -28,8 +28,8 @@ inherit go-ptest
 inherit pkgconfig
 inherit systemd
 
-SYSTEMD_SERVICE_${PN} = "${MENDER_CLIENT}.service"
-FILES_${PN} += "\
+SYSTEMD_SERVICE:${PN} = "${MENDER_CLIENT}.service"
+FILES:${PN} += "\
     ${datadir}/dbus-1/system.d/io.mender.AuthenticationManager.conf \
     ${datadir}/dbus-1/system.d/io.mender.UpdateManager.conf \
     ${datadir}/mender/identity \
@@ -51,10 +51,10 @@ FILES_${PN} += "\
     /data/mender/device_type \
     /data/mender/mender.conf \
 "
-FILES_${PN}-dev += " \
+FILES:${PN}-dev += " \
     ${datadir}/dbus-1/interface \
 "
-FILES_mender-modules-gen = " \
+FILES:mender-modules-gen = " \
     ${bindir}/directory-artifact-gen \
     ${bindir}/single-file-artifact-gen \
     ${bindir}/docker-artifact-gen \
@@ -62,27 +62,27 @@ FILES_mender-modules-gen = " \
 
 SYSROOT_DIRS += "/data"
 
-SRC_URI_append_mender-image_mender-systemd = " \
+SRC_URI:append_mender-image_mender-systemd = " \
     file://mender-client-data-dir.service \
 "
 
-SRC_URI_append_mender-persist-systemd-machine-id = " \
+SRC_URI:append_mender-persist-systemd-machine-id = " \
     file://mender-client-systemd-machine-id.service \
     file://mender-client-set-systemd-machine-id.sh \
 "
 
-SRC_URI_append_mender-growfs-data_mender-systemd = " \
+SRC_URI:append_mender-growfs-data_mender-systemd = " \
     file://mender-client-resize-data-part.sh.in \
     file://mender-grow-data.service \
     file://mender-systemd-growfs-data.service \
 "
 
-FILES_${PN}_append_mender-image_mender-systemd = " \
+FILES:${PN}:append_mender-image_mender-systemd = " \
     ${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service \
 "
 
-FILES_${PN}_append_mender-growfs-data_mender-systemd = " \
+FILES:${PN}:append_mender-growfs-data_mender-systemd = " \
     ${bindir}/mender-client-resize-data-part \
     ${systemd_unitdir}/system/mender-grow-data.service \
     ${systemd_unitdir}/system/mender-systemd-growfs-data.service \
@@ -90,7 +90,7 @@ FILES_${PN}_append_mender-growfs-data_mender-systemd = " \
     ${systemd_unitdir}/system/data.mount.wants/mender-systemd-growfs-data.service \
 "
 
-FILES_${PN}_append_mender-persist-systemd-machine-id = " \
+FILES:${PN}:append_mender-persist-systemd-machine-id = " \
     ${systemd_unitdir}/system/mender-client-systemd-machine-id.service \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/mender-client-systemd-machine-id.service \
     ${bindir}/mender-client-set-systemd-machine-id.sh \
@@ -98,17 +98,17 @@ FILES_${PN}_append_mender-persist-systemd-machine-id = " \
 
 # Go binaries produce unexpected effects that the Yocto QA mechanism doesn't
 # like. We disable those checks here.
-INSANE_SKIP_${PN} = "ldflags textrel"
-INSANE_SKIP_${PN}-ptest = "ldflags textrel"
+INSANE_SKIP:${PN} = "ldflags textrel"
+INSANE_SKIP:${PN}-ptest = "ldflags textrel"
 
 GO_IMPORT = "github.com/mendersoftware/mender"
 
 _MENDER_PACKAGECONFIG_DEFAULT = "${@mender_feature_is_enabled("mender-client-install", "dbus modules inventory-network-scripts", "", d)}"
 PACKAGECONFIG ?= "${_MENDER_PACKAGECONFIG_DEFAULT}"
 
-PACKAGECONFIG_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
-PACKAGECONFIG_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
-PACKAGECONFIG_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-grub', ' grub', '', d)}"
+PACKAGECONFIG:append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
+PACKAGECONFIG:append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
+PACKAGECONFIG:append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-grub', ' grub', '', d)}"
 
 PACKAGECONFIG[mender-client-install] = ",,,mender-artifact-info ca-certificates"
 PACKAGECONFIG[u-boot] = ",,,libubootenv-bin"
@@ -123,11 +123,11 @@ PACKAGECONFIG[inventory-network-scripts] = ",,,"
 # NOTE: Splits the mender.conf file by default into a transient and a persistent config. Needs to be
 # explicitly disabled if this is not to apply.
 PACKAGECONFIG[split-mender-config] = ",,,"
-PACKAGECONFIG_append = " split-mender-config"
+PACKAGECONFIG:append = " split-mender-config"
 
 _MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
-EXTRA_OEMAKE_append = " TAGS='${_MENDER_TAGS}'"
-GOPTESTBUILDFLAGS_append = " -tags '${_MENDER_TAGS}'"
+EXTRA_OEMAKE:append = " TAGS='${_MENDER_TAGS}'"
+GOPTESTBUILDFLAGS:append = " -tags '${_MENDER_TAGS}'"
 
 do_compile() {
     GOPATH="${B}:${S}"
@@ -315,13 +315,13 @@ do_install() {
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
 }
 
-do_install_append_class-target_mender-image_mender-systemd() {
+do_install:append:class-target_mender-image_mender-systemd() {
     install -m 644 ${WORKDIR}/mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}-data-dir.service
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-client-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/${MENDER_CLIENT}-data-dir.service
 }
 
-do_install_append_class-target_mender-growfs-data_mender-systemd() {
+do_install:append:class-target_mender-growfs-data_mender-systemd() {
 
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid -L ${MENDER_DATA_PART_LABEL})#g" \
@@ -352,7 +352,7 @@ do_install_append_class-target_mender-growfs-data_mender-systemd() {
     ln -sf ../mender-systemd-growfs-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
 }
 
-do_install_append_class-target_mender-persist-systemd-machine-id() {
+do_install:append:class-target_mender-persist-systemd-machine-id() {
     install -m 644 ${WORKDIR}/mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
@@ -361,11 +361,11 @@ do_install_append_class-target_mender-persist-systemd-machine-id() {
 }
 
 # Native overrides, installing scripts for package mender-modules-gen
-do_compile_class-native() {
+do_compile:class-native() {
     true
 }
 
-do_install_class-native() {
+do_install:class-native() {
     oe_runmake \
         -C ${B}/src/${GO_IMPORT} \
         V=1 \

@@ -174,7 +174,7 @@ def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build, bitbake_
         prepared_test_build["build_dir"],
         prepared_test_build["bitbake_corebase"],
         bitbake_image,
-        ['MENDER_FEATURES_DISABLE_append = " mender-uboot"'],
+        ['MENDER_FEATURES_DISABLE:append = " mender-uboot"'],
     )
 
     ubimg = latest_build_artifact(
@@ -268,7 +268,7 @@ class TestUbimg:
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['MENDER_FEATURES_DISABLE_append = " mender-uboot"'],
+            ['MENDER_FEATURES_DISABLE:append = " mender-uboot"'],
         )
 
         bufsize = 1048576  # 1MiB

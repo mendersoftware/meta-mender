@@ -23,7 +23,7 @@ def mender_features(d, separator=" "):
     return separator.join([feature for feature in enabled if feature not in disabled])
 
 MENDER_FEATURES = "${@mender_features(d)}"
-DISTROOVERRIDES_append = ":${@mender_features(d, separator=':')}"
+DISTROOVERRIDES:append = ":${@mender_features(d, separator=':')}"
 
 python() {
     # Add all possible Mender features here. This list is here to have an

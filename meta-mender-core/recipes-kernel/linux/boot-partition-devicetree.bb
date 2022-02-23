@@ -3,7 +3,7 @@
 
 LICENSE = "GPL-2.0"
 
-FILES_${PN} = " ${MENDER_BOOT_PART_MOUNT_LOCATION}/dtb"
+FILES:${PN} = " ${MENDER_BOOT_PART_MOUNT_LOCATION}/dtb"
 
 DEPENDS = "virtual/kernel"
 
