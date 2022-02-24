@@ -1,14 +1,14 @@
-PACKAGES:append_mender-testing-enabled = " rssh-tunnel"
-FILESEXTRAPATHS:prepend_mender-testing-enabled := "${THISDIR}/files/beagleboneblack/:${THISDIR}/files/:"
+PACKAGES:append:mender-testing-enabled = " rssh-tunnel"
+FILESEXTRAPATHS:prepend:mender-testing-enabled := "${THISDIR}/files/beagleboneblack/:${THISDIR}/files/:"
 
-SRC_URI:append_mender-testing-enabled = " \
+SRC_URI:append:mender-testing-enabled = " \
                    file://rssh.service \
                    file://id_rsa \
                    file://id_rsa.pub \
                    file://authorized_keys \
                    file://uEnv.txt"
 
-FILES:${PN}:append_mender-testing-enabled = " \
+FILES:${PN}:append:mender-testing-enabled = " \
                 ${systemd_unitdir}/system/rssh.service \
                 ${systemd_unitdir}/system/network.target.wants \
                 ${datadir}/mender-qa/rssh \
@@ -19,7 +19,7 @@ FILES:${PN}:append_mender-testing-enabled = " \
                 /home/root/.ssh \
                 /home/root/.ssh/authorized_keys"
 
-do_install:append_mender-testing-enabled() {
+do_install:append:mender-testing-enabled() {
     install -m 0644 -t ${D}${datadir}/mender-qa ${WORKDIR}/uEnv.txt
 
     install -d ${D}${systemd_unitdir}/system/network.target.wants

@@ -3,7 +3,7 @@
 # Move required files into the image partition boot sector
 EFI_BOOT_IMAGE_PART ?= \
     "${IMAGE_LINK_NAME}.${EFI_BOOT_IMAGE};EFI/Linux/${EFI_BOOT_IMAGE}"
-IMAGE_BOOT_FILES:append_mender-systemd-boot = " \
+IMAGE_BOOT_FILES:append:mender-systemd-boot = " \
     systemd-${EFI_BOOT_IMAGE};EFI/BOOT/${EFI_BOOT_IMAGE} \
     ${@ "${EFI_BOOT_IMAGE_PART}".replace('.efi','_a.efi') } \
     ${@ "${EFI_BOOT_IMAGE_PART}".replace('.efi','_b.efi') } \
@@ -11,7 +11,7 @@ IMAGE_BOOT_FILES:append_mender-systemd-boot = " \
     ${IMAGE_LINK_NAME}.esp/loader/backup/config*;loader/backup/ \
     "
 
-IMAGE_INSTALL:append_mender-systemd-boot = " systemd-mender-config"
+IMAGE_INSTALL:append:mender-systemd-boot = " systemd-mender-config"
 
 require conf/image-uefi.conf
 

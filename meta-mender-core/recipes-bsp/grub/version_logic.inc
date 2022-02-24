@@ -1,7 +1,7 @@
-DEPENDS:append_mender-grub:arm = " u-boot"
-DEPENDS:append_mender-grub:aarch64 = " u-boot"
-RDEPENDS:${PN}:append_mender-grub:arm = " u-boot"
-RDEPENDS:${PN}:append_mender-grub:aarch64 = " u-boot"
+DEPENDS:append:mender-grub:arm = " u-boot"
+DEPENDS:append:mender-grub:aarch64 = " u-boot"
+RDEPENDS:${PN}:append:mender-grub:arm = " u-boot"
+RDEPENDS:${PN}:append:mender-grub:aarch64 = " u-boot"
 
 # MEN-2404: These older versions have broken EFI support. Unfortunately it does
 # not seem to be possible to specify a range of conflicting versions. If so, we
@@ -20,11 +20,11 @@ def mender_u_boot_version_conflict(d):
         return " %s (<= %s)" % (pp, bad_version)
     else:
         return ""
-RCONFLICTS:${PN}_mender-grub:arm = "${@mender_u_boot_version_conflict(d)}"
-RCONFLICTS:${PN}_mender-grub:aarch64 = "${@mender_u_boot_version_conflict(d)}"
+RCONFLICTS:${PN}:mender-grub:arm = "${@mender_u_boot_version_conflict(d)}"
+RCONFLICTS:${PN}:mender-grub:aarch64 = "${@mender_u_boot_version_conflict(d)}"
 
 # It's actually U-Boot that needs the dtb files to be in the boot partition, in
 # order to load EFI apps correctly, but due to the wide range of U-Boot recipes
 # out there, it's easier to add the dependency here.
-RDEPENDS:${PN}:append_mender-image_mender-grub:arm = " boot-partition-devicetree"
-RDEPENDS:${PN}:append_mender-image_mender-grub:aarch64 = " boot-partition-devicetree"
+RDEPENDS:${PN}:append:mender-image:mender-grub:arm = " boot-partition-devicetree"
+RDEPENDS:${PN}:append:mender-image:mender-grub:aarch64 = " boot-partition-devicetree"

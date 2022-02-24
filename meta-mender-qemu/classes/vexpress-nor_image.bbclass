@@ -1,7 +1,7 @@
 inherit image_types
 
 # we need ubimg to be present
-IMAGE_TYPEDEP_vexpress-nor = "mtdimg"
+IMAGE_TYPEDEP:vexpress-nor = "mtdimg"
 
 IMAGE_CMD:vexpress-nor() {
     set -ex

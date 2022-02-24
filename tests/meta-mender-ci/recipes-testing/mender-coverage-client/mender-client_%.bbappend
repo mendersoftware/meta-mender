@@ -1,6 +1,6 @@
-SUMMARY:append_mender-testing-enabled = ": Build a Mender client which records coverage during its invocation"
+SUMMARY:append:mender-testing-enabled = ": Build a Mender client which records coverage during its invocation"
 
-DEPENDS:append_mender-testing-enabled = " gobinarycoverage-native rsync-native"
+DEPENDS:append:mender-testing-enabled = " gobinarycoverage-native rsync-native"
 
 do_instrument_client[dirs] =+ "${GOTMPDIR}"
 do_instrument_client[doc] = "Modifies the Mender client source to enable coverage analysis"
@@ -14,7 +14,7 @@ do_instrument_client:class-native() {
     true
 }
 
-do_configure:prepend_mender-testing-enabled () {
+do_configure:prepend:mender-testing-enabled () {
     # Remove all the src present in build if it is not a symbolic link to ${S}
     if [ -d ${B}src ]; then
         rm -rf ${B}src
@@ -22,7 +22,7 @@ do_configure:prepend_mender-testing-enabled () {
 
 }
 
-do_configure:append_mender-testing-enabled () {
+do_configure:append:mender-testing-enabled () {
     # Remove the symbolic link created by go.bbclass in do_configure
     if [ -h ${B}src ]; then
         rm ${B}src

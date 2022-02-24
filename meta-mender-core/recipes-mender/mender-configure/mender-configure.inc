@@ -16,11 +16,11 @@ FILES:${PN} = " \
     /data/mender-configure \
 "
 
-FILES:${PN}:append_mender-systemd = " \
+FILES:${PN}:append:mender-systemd = " \
     ${systemd_system_unitdir}/mender-configure-apply-device-config.service \
 "
 
-SYSTEMD_SERVICE:${PN}_mender-systemd = "mender-configure-apply-device-config.service"
+SYSTEMD_SERVICE:${PN}:mender-systemd = "mender-configure-apply-device-config.service"
 
 FILES:${PN}-demo = " \
     ${libdir}/mender-configure/apply-device-config.d/mender-demo-raspberrypi-led \
@@ -56,7 +56,7 @@ EOF
     echo '}' >> ${D}/data/mender-configure/device-config.json
 }
 
-do_install:append_mender-systemd() {
+do_install:append:mender-systemd() {
     oe_runmake \
         -C ${S} \
         DESTDIR=${D} \

@@ -117,4 +117,4 @@ IMAGE_CMD:mender () {
 
 IMAGE_CMD:mender[vardepsexclude] += "IMAGE_ID"
 # We need to have the filesystem image generated already.
-IMAGE_TYPEDEP_mender:append = " ${ARTIFACTIMG_FSTYPE}"
+IMAGE_TYPEDEP:mender:append = " ${ARTIFACTIMG_FSTYPE}"

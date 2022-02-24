@@ -6,7 +6,7 @@ inherit grub-mender-grubenv
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 GRUB_CONF_LOCATION = "${EFI_FILES_PATH}"
-GRUB_CONF_LOCATION_mender-bios = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
+GRUB_CONF_LOCATION:mender-bios = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
 
 FILES:${PN} += "/data/mender_grubenv.config \
                 ${GRUB_CONF_LOCATION}/grub.cfg \
@@ -30,10 +30,10 @@ SRC_URI:append = "${@bb.utils.contains('PACKAGECONFIG', 'force-grub-prompt', ' f
 PACKAGECONFIG[debug-log] = ",,,"
 
 RDEPENDS:${PN} = "grub-efi"
-RDEPENDS:${PN}_mender-bios = "grub"
+RDEPENDS:${PN}:mender-bios = "grub"
 
 PROVIDES = "${@mender_feature_is_enabled('mender-grub', "virtual/grub-bootconf", "", d)}"
-RPROVIDES:${PN} = "${@mender_feature_is_enabled('mender-grub', "virtual/grub-bootconf", "", d)}"
+RPROVIDES:${PN} = "${@mender_feature_is_enabled('mender-grub', "virtual-grub-bootconf", "", d)}"
 
 # See https://www.gnu.org/software/grub/manual/grub/grub.html#debug
 DEBUG_LOG_CATEGORY ?= "all"

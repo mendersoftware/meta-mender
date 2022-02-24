@@ -2,9 +2,9 @@ include ${@mender_feature_is_enabled("mender-uboot","u-boot-mender-helpers.inc",
 
 RPROVIDES:${PN} += "u-boot-default-env"
 
-FILES:${PN}:append_mender-uboot = " /data/u-boot/fw_env.config"
+FILES:${PN}:append:mender-uboot = " /data/u-boot/fw_env.config"
 
-do_compile:append_mender-uboot() {
+do_compile:append:mender-uboot() {
     alignment_bytes=${MENDER_PARTITION_ALIGNMENT}
     if [ $(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} % $alignment_bytes) -ne 0 ]; then
         bberror "MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET must be aligned to" \
@@ -19,7 +19,7 @@ do_compile:append_mender-uboot() {
 }
 do_compile[depends] += "u-boot:do_deploy"
 
-do_install:append_mender-uboot() {
+do_install:append:mender-uboot() {
     install -d -m 755 ${D}${sysconfdir}
     ln -sf /data/u-boot/fw_env.config ${D}${sysconfdir}/fw_env.config
 

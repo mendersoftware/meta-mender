@@ -1,1 +1,1 @@
-NETWORK_MANAGER_mender-image = "systemd"
+NETWORK_MANAGER:mender-image = "systemd"

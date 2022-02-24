@@ -1,9 +1,9 @@
-FILESEXTRAPATHS:prepend_mender-client-install := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend:mender-client-install := "${THISDIR}/files:"
 
-SRC_URI:append_mender-client-install = " \
+SRC_URI:append:mender-client-install = " \
 	file://mender.io.png \
 "
 
 # Explicitly set to all arch/machines, otherwise breaks on raspberrypi builds
 # with error "Nothing RPROVIDES 'psplash-raspberrypi'"
-SPLASH_IMAGES_mender-client-install:all = "file://mender.io.png;outsuffix=default"
+SPLASH_IMAGES:mender-client-install:all = "file://mender.io.png;outsuffix=default"

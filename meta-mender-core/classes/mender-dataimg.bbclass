@@ -19,7 +19,7 @@ IMAGE_CMD:dataimg() {
         ${MENDER_DATA_PART_FSOPTS}
     install -m 0644 "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }
-IMAGE_CMD:dataimg_mender-image-ubi() {
+IMAGE_CMD:dataimg:mender-image-ubi() {
     mkfs.ubifs -o "${WORKDIR}/data.ubifs" -r "${IMAGE_ROOTFS}/data" ${MKUBIFS_ARGS}
     install -m 0644 "${WORKDIR}/data.ubifs" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }

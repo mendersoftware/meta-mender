@@ -1,1 +1,1 @@
-FILESEXTRAPATHS:prepend_rpi_mender-client-install := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend:rpi:mender-client-install := "${THISDIR}/files:"

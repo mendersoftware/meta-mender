@@ -12,12 +12,12 @@ PREFERRED_RPROVIDER_virtual/grub-bootconf ?= "grub-mender-grubenv"
 # Set EFI_PROVIDER.  Not all MACHINE configs use it but notably
 # intel-corei7-64 does and without this we use the default of systemd-boot.
 EFI_PROVIDER ?= ""
-EFI_PROVIDER_mender-grub = "grub-efi"
-EFI_PROVIDER_mender-grub_mender-bios = ""
+EFI_PROVIDER:mender-grub = "grub-efi"
+EFI_PROVIDER:mender-grub:mender-bios = ""
 
 python() {
     if d.getVar('MENDER_GRUB_STORAGE_DEVICE'):
         bb.fatal("MENDER_GRUB_STORAGE_DEVICE is deprecated. This is now dynamically determined at runtime.")
 }
 
-MENDER_FEATURES_ENABLE:append_mender-grub = " mender-efi-boot"
+MENDER_FEATURES_ENABLE:append:mender-grub = " mender-efi-boot"
