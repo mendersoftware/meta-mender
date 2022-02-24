@@ -21,8 +21,8 @@ S = "${WORKDIR}/mender-gateway-${PV}"
 
 do_version_check() {
     if ! ${@'true' if d.getVar('MENDER_DEVMODE') else 'false'}; then
-        if ! strings ${WORKDIR}/${SUB_FOLDER}/mender-gateway | fgrep -q "${PN} ${PV}"; then
-            bbfatal "String '${PN} ${PV}' not found in binary. Is it the correct version? Check with --version. Possible candidates: $(strings ${WORKDIR}/${SUB_FOLDER}/mender-gateway | grep '${PN} [a-f0-9]')"
+        if ! strings ${S}/${SUB_FOLDER}/mender-gateway | grep -q "^${PV}$"; then
+            bbfatal "String '${PV}' not found in binary. Is it the correct version? Check with --version."
         fi
     fi
 }
