@@ -246,6 +246,11 @@ def mender_get_data_part_num(d):
     data_num, _ = mender_get_data_and_total_parts_num(d)
     return data_num
 
+def mender_get_swap_part_num(d):
+    data_num, _ = mender_get_data_and_total_parts_num(d)
+    # swap is always before data partition
+    return data_num - 1
+
 def mender_get_total_parts_num(d):
     _, total_part_num = mender_get_data_and_total_parts_num(d)
     return total_part_num
