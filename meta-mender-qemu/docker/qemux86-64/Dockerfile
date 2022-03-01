@@ -15,6 +15,8 @@
 #       Use server.crt and/or artifact-verify-key.pem from config-dir, if it exists.
 # -e SERVER_URL=https://whatever.mender.io
 #       Use SERVER_URL as server address for client.
+# -e SERVER_IP=192.168.1.1
+#       Set a "<SERVER_IP> <SERVER_HOST>" entry in /etc/hosts
 # -e TENANT_TOKEN=<token>
 #       Use token as tenant token for client.
 # -e MENDER_GATEWAY_CONFFILE=<conffile>
