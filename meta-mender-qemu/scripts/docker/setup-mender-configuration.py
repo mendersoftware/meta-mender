@@ -98,9 +98,9 @@ def main():
             fd.write("""#!/bin/sh
 cat <<EOF
 network_interfaces=docker
-ipv4_docker=%s
+%s
 EOF
-""" % args.docker_ip)
+""" % "\n".join(["ipv4_docker=%s" % ip for ip in args.docker_ip.split()]))
         os.chmod("mender-inventory-docker-ip", stat.S_IRWXU|stat.S_IRGRP|stat.S_IXGRP|stat.S_IROTH|stat.S_IXOTH)
         put(local_path="mender-inventory-docker-ip",
             remote_path="/usr/share/mender/inventory/mender-inventory-docker-ip",
