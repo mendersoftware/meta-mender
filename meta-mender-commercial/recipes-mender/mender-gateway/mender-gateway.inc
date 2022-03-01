@@ -17,6 +17,10 @@ FILES_${PN}_append_mender-systemd = " \
     ${systemd_system_unitdir}/mender-gateway.service \
 "
 
+FILES_${PN}_append_mender-client-install = " \
+    ${datadir}/mender/inventory/mender-inventory-mender-gateway \
+"
+
 S = "${WORKDIR}/mender-gateway-${PV}"
 
 do_version_check() {
@@ -46,4 +50,9 @@ do_install() {
 do_install_append_mender-systemd() {
     install -d -m 755 ${D}${systemd_unitdir}/system/
     install -m 644 ${S}/support/mender-gateway.service ${D}${systemd_unitdir}/system/mender-gateway.service
+}
+
+do_install_append_mender-client-install() {
+    install -d -m 755 ${D}${datadir}/mender/inventory/
+    install -m 775 ${S}/support/mender-inventory-mender-gateway ${D}${datadir}/mender/inventory/mender-inventory-mender-gateway
 }

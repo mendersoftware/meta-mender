@@ -44,7 +44,11 @@ class TestMenderGateway:
             request, prepared_test_build["build_dir"], "core-image*.ext4"
         )
 
-        output = subprocess.check_output(
-            ["debugfs", "-R", "stat /usr/bin/mender-gateway", image]
-        ).decode()
-        assert "Type: regular" in output
+        for file in (
+            "/usr/bin/mender-gateway",
+            "/usr/share/mender/inventory/mender-inventory-mender-gateway",
+        ):
+            output = subprocess.check_output(
+                ["debugfs", "-R", f"stat {file}", image]
+            ).decode()
+            assert "Type: regular" in output
