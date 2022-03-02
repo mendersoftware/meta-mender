@@ -28,6 +28,7 @@ def main():
     parser.add_argument("--tenant-token", help="tenant token to use by client")
     parser.add_argument("--server-crt", help="server.crt file to put in image")
     parser.add_argument("--server-url", help="Server address to put in configuration")
+    parser.add_argument("--server-ip", help="Server IP to add to /etc/hosts pointing to Server host. Requires --server-url.")
     parser.add_argument("--verify-key", help="Key used to verify signed image")
     parser.add_argument("--mender-gateway-conffile", help="Configuration file to be copied to /etc/mender/mender-gateway.conf")
     args = parser.parse_args()
@@ -72,6 +73,23 @@ def main():
             remote_path="/etc/mender/mender.conf",
             rootfs=rootfs)
         os.unlink("mender.conf")
+
+    if args.server_ip:
+        if not args.server_url:
+            print("Error: --server-ip requires --server-url")
+            sys.exit(1)
+        get(local_path="hosts",
+            remote_path="/etc/hosts",
+            rootfs=rootfs)
+        with open("hosts", "a") as fd:
+            fd.write("\n")
+            fd.write("# Added by setup-mender-configuration.py\n")
+            server_host = args.server_url.removeprefix("http://").removeprefix("https://")
+            fd.write(f"{args.server_ip} {server_host}\n")
+        put(local_path="hosts",
+            remote_path="/etc/hosts",
+            rootfs=rootfs)
+        os.unlink("hosts")
 
     if args.verify_key:
         key_img_location = "/etc/mender/artifact-verify-key.pem"
