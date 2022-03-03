@@ -16,6 +16,8 @@ The following layers in this repository are officially supported by Mender:
 
 Commercially available components are available through the `meta-mender-commercial` layer. See the [Readme](meta-mender-commercial/README.md) for further information.
 
+Additional hardware platform support is maintained separately in the [meta-mender-community](https://github.com/mendersoftware/meta-mender-community) repository.
+
 ## Contributing
 
 We welcome and ask for your contribution. If you would like to contribute to Mender, please read our guide on how to best get started [contributing code or documentation](https://github.com/mendersoftware/mender/blob/master/CONTRIBUTING.md).
