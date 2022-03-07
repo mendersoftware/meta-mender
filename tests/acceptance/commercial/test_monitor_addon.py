@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ class TestMonitorAddon:
             request, prepared_test_build["build_dir"], "core-image*.ext4"
         )
 
-        for expected_node in [
+        for expected_node in (
             "/usr/bin/mender-monitorctl",
             "/usr/bin/mender-monitord",
             "/etc/mender-monitor/monitor.d/log.sh",
@@ -58,7 +58,7 @@ class TestMonitorAddon:
             "/usr/share/mender-monitor/lib/monitor-lib.sh",
             "/usr/share/mender-monitor/lib/service-lib.sh",
             "/var/lib/mender-monitor",
-        ]:
+        ):
             output = subprocess.check_output(
                 ["debugfs", "-R", "stat %s" % expected_node, image]
             ).decode()
