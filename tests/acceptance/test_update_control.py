@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ def wait_for_state(connection, state_to_wait_for):
         if state_to_wait_for in log:
             break
 
-        time.sleep(2)
+        time.sleep(6)
 
         attempts -= 1
     else:
@@ -424,6 +424,8 @@ class TestUpdateControl:
                 connection, bitbake_variables["MENDER_DEVICE_TYPE"]
             )
 
+            connection.run("mender check-update")
+
             log = []
             pause_state_observed = 0
             continue_map_inserted = False
@@ -462,6 +464,7 @@ class TestUpdateControl:
                         make_and_deploy_artifact(
                             connection, bitbake_variables["MENDER_DEVICE_TYPE"]
                         )
+                        connection.run("mender check-update")
                         second_deployment_done = True
                     else:
                         break
@@ -490,8 +493,8 @@ class TestUpdateControl:
                 ), "Looks like the client did not pause!"
 
         except:
-            connection.run("journalctl -u mender-client | cat")
-            connection.run("journalctl -u mender-mock-server | cat")
+            connection.run("journalctl --unit mender-client | cat")
+            connection.run("journalctl --unit mender-mock-server | cat")
             raise
 
         finally:
@@ -590,6 +593,7 @@ class TestUpdateControl:
                 deployment_id=MUID,
                 update_control_map=case["pause_map"],
             )
+            connection.run("mender check-update")
             wait_for_state(connection, case["pause_state"])
             set_update_control_map(connection, case["continue_map"])
             log = wait_for_state(connection, "Cleanup")
@@ -607,12 +611,13 @@ class TestUpdateControl:
                 deployment_id=MUID2,
                 update_control_map=None,
             )
+            connection.run("mender check-update")
             log = wait_for_state(connection, "Cleanup")
             assert "ArtifactFailure" not in log
 
         except:
-            connection.run("journalctl -u mender-client | cat")
-            connection.run("journalctl -u mender-mock-server | cat")
+            connection.run("journalctl --unit mender-client | cat")
+            connection.run("journalctl --unit mender-mock-server | cat")
             raise
 
         finally:
@@ -673,12 +678,14 @@ done
                 connection, bitbake_variables["MENDER_DEVICE_TYPE"]
             )
 
+            connection.run("mender check-update")
+
             timeout = now + 300
             # Wait until we have received 100 state transitions, which is way
             # more than would cause a failure.
             while time.time() < timeout:
                 output = connection.run(
-                    "journalctl -u mender-client -S '%s' | grep 'State transition: mender-update-control '"
+                    "journalctl --unit mender-client --since '%s' | grep 'State transition: mender-update-control '"
                     % time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(now)),
                     warn=True,
                 ).stdout
@@ -708,8 +715,8 @@ done
             assert "ArtifactFailure" not in log
 
         except:
-            connection.run("journalctl -u mender-client | cat")
-            connection.run("journalctl -u mender-mock-server | cat")
+            connection.run("journalctl --unit mender-client | cat")
+            connection.run("journalctl --unit mender-mock-server | cat")
             raise
 
         finally:
