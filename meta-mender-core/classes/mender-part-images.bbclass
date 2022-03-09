@@ -279,7 +279,7 @@ _MENDER_PART_IMAGE_DEPENDS:append:mender-systemd-boot = " \
 "
 
 do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
-do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'bootfiles:do_populate_sysroot', '', d)}"
+do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'rpi-bootfiles:do_populate_sysroot', '', d)}"
 
 do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS} \
                               gptfdisk-native:do_populate_sysroot"
