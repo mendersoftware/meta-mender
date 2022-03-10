@@ -23,6 +23,8 @@ A branch can be in one of the following maintenance states:
 | stable | Ready for production. Stability takes precedence over features. |
 | end of life | No maintenance. Expect increasing security problems and breakage. Updating to a stable branch is highly recommended. |
 
+For additional infomation, please see the [Yocto Project compatibility section](https://docs.mender.io/overview/compatibility#mender-client-and-yocto-project-version) in the Mender documentation.
+
 ## Supported layers
 
 The following layers in this repository are officially supported by Mender:
