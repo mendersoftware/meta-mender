@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+# Copyright 2022 Northern.tech AS
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 
 import argparse
 import json
@@ -15,7 +28,9 @@ def main():
     parser.add_argument("--tenant-token", help="tenant token to use by client")
     parser.add_argument("--server-crt", help="server.crt file to put in image")
     parser.add_argument("--server-url", help="Server address to put in configuration")
+    parser.add_argument("--server-ip", help="Server IP to add to /etc/hosts pointing to Server host. Requires --server-url.")
     parser.add_argument("--verify-key", help="Key used to verify signed image")
+    parser.add_argument("--mender-gateway-conffile", help="Configuration file to be copied to /etc/mender/mender-gateway.conf")
     args = parser.parse_args()
 
     if len(sys.argv) == 1:
@@ -59,6 +74,23 @@ def main():
             rootfs=rootfs)
         os.unlink("mender.conf")
 
+    if args.server_ip:
+        if not args.server_url:
+            print("Error: --server-ip requires --server-url")
+            sys.exit(1)
+        get(local_path="hosts",
+            remote_path="/etc/hosts",
+            rootfs=rootfs)
+        with open("hosts", "a") as fd:
+            fd.write("\n")
+            fd.write("# Added by setup-mender-configuration.py\n")
+            server_host = args.server_url.removeprefix("http://").removeprefix("https://")
+            fd.write(f"{args.server_ip} {server_host}\n")
+        put(local_path="hosts",
+            remote_path="/etc/hosts",
+            rootfs=rootfs)
+        os.unlink("hosts")
+
     if args.verify_key:
         key_img_location = "/etc/mender/artifact-verify-key.pem"
         if not os.path.exists(args.verify_key):
@@ -84,15 +116,19 @@ def main():
             fd.write("""#!/bin/sh
 cat <<EOF
 network_interfaces=docker
-ipv4_docker=%s
+%s
 EOF
-""" % args.docker_ip)
+""" % "\n".join(["ipv4_docker=%s" % ip for ip in args.docker_ip.split()]))
         os.chmod("mender-inventory-docker-ip", stat.S_IRWXU|stat.S_IRGRP|stat.S_IXGRP|stat.S_IROTH|stat.S_IXOTH)
         put(local_path="mender-inventory-docker-ip",
             remote_path="/usr/share/mender/inventory/mender-inventory-docker-ip",
             rootfs=rootfs)
         os.unlink("mender-inventory-docker-ip")
 
+    if args.mender_gateway_conffile:
+        put(local_path=args.mender_gateway_conffile,
+            remote_path="/etc/mender/mender-gateway.conf",
+            rootfs=rootfs)
 
     # Put back ext4 image into img.
     insert_ext4(img=args.img, rootfs=rootfs)

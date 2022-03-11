@@ -24,17 +24,17 @@ from utils.common import (
 
 
 @pytest.mark.commercial
-@pytest.mark.min_mender_version("3.1.0")
-class TestMonitorAddon:
+@pytest.mark.min_mender_version("3.3.0")
+class TestMenderGateway:
     @pytest.mark.only_with_image("ext4")
-    def test_build_addon(
+    def test_build_mender_gateway(
         self, request, bitbake_variables, prepared_test_build, bitbake_image
     ):
         build_image(
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['IMAGE_INSTALL_append = " mender-monitor"'],
+            ['IMAGE_INSTALL_append = " mender-gateway"'],
             [
                 'BBLAYERS_append = " %s/../meta-mender-commercial"'
                 % bitbake_variables["LAYERDIR_MENDER"]
@@ -44,24 +44,11 @@ class TestMonitorAddon:
             request, prepared_test_build["build_dir"], "core-image*.ext4"
         )
 
-        for expected_node in (
-            "/usr/bin/mender-monitorctl",
-            "/usr/bin/mender-monitord",
-            "/etc/mender-monitor/monitor.d/log.sh",
-            "/etc/mender-monitor/monitor.d/service.sh",
-            "/usr/share/mender-monitor/mender-monitorctl",
-            "/usr/share/mender-monitor/mender-monitord",
-            "/usr/share/mender-monitor/ctl.sh",
-            "/usr/share/mender-monitor/daemon.sh",
-            "/usr/share/mender-monitor/common/common.sh",
-            "/usr/share/mender-monitor/config/config.sh",
-            "/usr/share/mender-monitor/lib/monitor-lib.sh",
-            "/usr/share/mender-monitor/lib/service-lib.sh",
-            "/var/lib/mender-monitor",
+        for file in (
+            "/usr/bin/mender-gateway",
+            "/usr/share/mender/inventory/mender-inventory-mender-gateway",
         ):
             output = subprocess.check_output(
-                ["debugfs", "-R", "stat %s" % expected_node, image]
+                ["debugfs", "-R", f"stat {file}", image]
             ).decode()
-
-            # The nodes are either files or symlinks
-            assert "Type: regular" in output or "Type: symlink" in output
+            assert "Type: regular" in output
