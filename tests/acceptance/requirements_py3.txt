@@ -10,7 +10,7 @@ idna==3.3
 iniconfig==1.1.1
 invoke==1.6.0
 packaging==21.3
-paramiko==2.9.2
+paramiko==2.10.1
 pathlib2==2.3.7.post1
 pluggy==1.0.0
 psutil==5.9.0
