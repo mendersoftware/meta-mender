@@ -37,14 +37,6 @@ SYSTEMD_SERVICE_${PN}_mender-systemd = "mender-gateway.service"
 do_install() {
     install -d -m 755 ${D}${bindir}
     install -m 755 ${S}/${SUB_FOLDER}/mender-gateway ${D}${bindir}/mender-gateway
-
-    # install config file if provided
-    if [ -f ${WORKDIR}/mender-gateway.conf ]; then
-        install -d -m 755 ${D}/${sysconfdir}/mender
-        install -m 0600 ${WORKDIR}/mender-gateway.conf ${D}/${sysconfdir}/mender/mender-gateway.conf
-    else
-        bbwarn "No mender-gateway.conf found in SRC_URI, no mender-gateway.conf installed. The gateway will run with the default parameters"
-    fi
 }
 
 do_install_append_mender-systemd() {
