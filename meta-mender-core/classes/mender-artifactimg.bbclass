@@ -40,7 +40,7 @@ apply_arguments () {
     cmd=$res
 }
 
-IMAGE_CMD_mender () {
+IMAGE_CMD:mender () {
     set -x
 
     if [ -z "${MENDER_ARTIFACT_NAME}" ]; then
@@ -115,6 +115,6 @@ IMAGE_CMD_mender () {
         -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender
 }
 
-IMAGE_CMD_mender[vardepsexclude] += "IMAGE_ID"
+IMAGE_CMD:mender[vardepsexclude] += "IMAGE_ID"
 # We need to have the filesystem image generated already.
-IMAGE_TYPEDEP_mender_append = " ${ARTIFACTIMG_FSTYPE}"
+IMAGE_TYPEDEP:mender:append = " ${ARTIFACTIMG_FSTYPE}"

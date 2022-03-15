@@ -13,4 +13,4 @@ do_deploy() {
     cp ${WORKDIR}/ArtifactInstall_Leave_50 ${MENDER_STATE_SCRIPTS_DIR}/ArtifactInstall_Leave_50
 }
 
-ALLOW_EMPTY_${PN} = "1"
+ALLOW_EMPTY:${PN} = "1"

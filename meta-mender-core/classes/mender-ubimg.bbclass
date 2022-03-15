@@ -12,7 +12,7 @@ inherit image_types
 
 do_image_ubimg[depends] += "mtd-utils-native:do_populate_sysroot rsync-native:do_populate_sysroot"
 
-IMAGE_CMD_ubimg () {
+IMAGE_CMD:ubimg () {
     set -e -x
 
     # For some reason, logging is not working correctly inside IMAGE_CMD bodies,
@@ -110,7 +110,7 @@ EOF
 
 }
 
-IMAGE_TYPEDEP_ubimg_append = " ubifs dataimg ${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '', 'bootimg', d)}"
+IMAGE_TYPEDEP:ubimg:append = " ubifs dataimg ${@bb.utils.contains('MENDER_BOOT_PART_SIZE_MB', '0', '', 'bootimg', d)}"
 
 # So that we can use the files from excluded paths in the full images.
 do_image_ubimg[respect_exclude_path] = "0"

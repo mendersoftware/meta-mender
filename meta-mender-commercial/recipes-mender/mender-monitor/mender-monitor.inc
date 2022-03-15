@@ -3,9 +3,9 @@ LICENSE_FLAGS = "commercial"
 
 inherit systemd
 
-RDEPENDS_${PN} = "bash mender-client (>= 2.5) lmdb"
+RDEPENDS:${PN} = "bash mender-client (>= 2.5) lmdb"
 
-FILES_${PN} = " \
+FILES:${PN} = " \
     ${bindir}/mender-monitord \
     ${bindir}/mender-monitorctl \
     ${sysconfdir}/mender-monitor \
@@ -14,7 +14,7 @@ FILES_${PN} = " \
     /data/mender-monitor \
 "
 
-FILES_${PN}_append_mender-systemd = " \
+FILES:${PN}:append_mender-systemd = " \
     ${systemd_system_unitdir}/mender-monitor.service \
 "
 
@@ -30,7 +30,7 @@ do_version_check() {
 }
 addtask do_version_check after do_unpack before do_install
 
-SYSTEMD_SERVICE_${PN}_mender-systemd = "mender-monitor.service"
+SYSTEMD_SERVICE:${PN}_mender-systemd = "mender-monitor.service"
 
 do_install() {
     oe_runmake \
@@ -40,14 +40,14 @@ do_install() {
     install -d ${D}/${localstatedir}/lib/mender-monitor
 }
 
-do_install_append_mender-systemd() {
+do_install:append_mender-systemd() {
     oe_runmake \
         -C ${S} \
         DESTDIR=${D} \
         install-systemd
 }
 
-do_install_append_mender-image() {
+do_install:append_mender-image() {
         # symlink /var/lib/mender-monitor to /data/mender-monitor
         rm -rf ${D}/${localstatedir}/lib/mender-monitor
         ln -s /data/mender-monitor ${D}/${localstatedir}/lib/mender-monitor

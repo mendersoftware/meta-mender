@@ -4,7 +4,7 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
 DEPENDS = "ca-certificates"
-RDEPENDS_${PN} = "ca-certificates"
+RDEPENDS:${PN} = "ca-certificates"
 
 S = "${WORKDIR}"
 localdatadir = "${prefix}/local/share"
@@ -40,10 +40,10 @@ do_install() {
     fi
 }
 
-FILES_${PN} += " \
+FILES:${PN} += " \
     ${localdatadir}/ca-certificates/mender/ \
 "
 
-pkg_postinst_${PN} () {
+pkg_postinst:${PN} () {
     SYSROOT="$D" $D${sbindir}/update-ca-certificates
 }

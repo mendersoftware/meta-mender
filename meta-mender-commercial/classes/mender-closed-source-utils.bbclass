@@ -20,7 +20,7 @@ def mender_closed_source_srcrev_from_src_uri(d, src_uri, repo_name):
         filenames = glob.glob(src_uri_glob)
         if len(filenames) == 0:
             bb.error("Failed to find %s in path %s" % (src_uri_glob, repo_name))
-            bb.error("Please make sure SRC_URI_pn-%s is pointing to the downloaded tarball " % repo_name)
+            bb.error("Please make sure SRC_URI:pn-%s is pointing to the downloaded tarball " % repo_name)
         elif len(filenames) != 1:
             bb.error("Expected exactly one file, found: %s" % filenames)
         filename = os.path.basename(filenames[0])

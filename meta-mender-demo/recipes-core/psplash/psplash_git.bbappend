@@ -1,6 +1,6 @@
-FILESEXTRAPATHS_prepend_mender-client-install := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend_mender-client-install := "${THISDIR}/files:"
 
-SRC_URI_append_mender-client-install = " \
+SRC_URI:append_mender-client-install = " \
 	file://mender.io.png \
 "
 

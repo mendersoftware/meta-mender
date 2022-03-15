@@ -5,7 +5,7 @@
 
 LICENSE = "Apache-2.0"
 
-FILES_${PN} = " \
+FILES:${PN} = " \
     ${base_bindir}/lsb_release \
     ${bindir}/lsb_release \
     /data${base_bindir} \

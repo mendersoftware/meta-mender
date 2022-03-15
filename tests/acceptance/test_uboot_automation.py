@@ -429,7 +429,7 @@ class TestUbootAutomation:
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"'],
+                ['MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"'],
                 capture=True,
             )
 
@@ -493,8 +493,8 @@ class TestUbootAutomation:
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
                 [
-                    'MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"',
-                    'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"'
+                    'MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"',
+                    'TEST_SRC_URI_APPEND:pn-u-boot = " file://%s"'
                     % os.path.basename(new_patch_name),
                 ],
                 target="-c clean u-boot",
@@ -577,8 +577,8 @@ class TestUbootAutomation:
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
                 [
-                    'MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"',
-                    'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"'
+                    'MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"',
+                    'TEST_SRC_URI_APPEND:pn-u-boot = " file://%s"'
                     % os.path.basename(new_patch_name),
                 ],
                 target="-c clean u-boot",

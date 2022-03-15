@@ -28,4 +28,4 @@ LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LIC_FILES_CHKSUM
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL"
 
 DEPENDS += "xz openssl"
-RDEPENDS_${PN} += "liblzma openssl"
+RDEPENDS:${PN} += "liblzma openssl"

@@ -1,1 +1,1 @@
-IMAGE_INSTALL_append = " mender-gateway-doc"
+IMAGE_INSTALL:append = " mender-gateway-doc"

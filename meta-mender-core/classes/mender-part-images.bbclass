@@ -233,16 +233,16 @@ EOF
     fi
 }
 
-IMAGE_CMD_sdimg() {
+IMAGE_CMD:sdimg() {
     mender_part_image sdimg msdos
 }
-IMAGE_CMD_uefiimg() {
+IMAGE_CMD:uefiimg() {
     mender_part_image uefiimg gpt "--part-type EF00"
 }
-IMAGE_CMD_biosimg() {
+IMAGE_CMD:biosimg() {
     mender_part_image biosimg msdos
 }
-IMAGE_CMD_gptimg() {
+IMAGE_CMD:gptimg() {
     mender_part_image gptimg gpt
 }
 
@@ -269,12 +269,12 @@ _MENDER_PART_IMAGE_DEPENDS += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE', '
 #
 # This assumes that U-boot is used on ARM, this could become problematic
 # if we add support for other bootloaders on ARM, e.g Barebox.
-_MENDER_PART_IMAGE_DEPENDS_append_mender-grub_arm =     " u-boot:do_deploy"
-_MENDER_PART_IMAGE_DEPENDS_append_mender-grub_aarch64 = " u-boot:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS:append_mender-grub:arm =     " u-boot:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS:append_mender-grub:aarch64 = " u-boot:do_deploy"
 
-_MENDER_PART_IMAGE_DEPENDS_append_mender-uboot = " u-boot:do_deploy"
-_MENDER_PART_IMAGE_DEPENDS_append_mender-grub_mender-bios = " grub:do_deploy"
-_MENDER_PART_IMAGE_DEPENDS_append_mender-systemd-boot = " \
+_MENDER_PART_IMAGE_DEPENDS:append_mender-uboot = " u-boot:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS:append_mender-grub_mender-bios = " grub:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS:append_mender-systemd-boot = " \
     systemd-boot:do_deploy \
     ${IMAGE_BASENAME}:do_uefiapp_deploy \
 "
@@ -289,23 +289,23 @@ do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
 do_image_gptimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
-IMAGE_TYPEDEP_sdimg_append   = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
-IMAGE_TYPEDEP_uefiimg_append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
-IMAGE_TYPEDEP_biosimg_append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
-IMAGE_TYPEDEP_gptimg_append  = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
+IMAGE_TYPEDEP:sdimg:append   = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
+IMAGE_TYPEDEP:uefiimg:append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
+IMAGE_TYPEDEP:biosimg:append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
+IMAGE_TYPEDEP:gptimg:append  = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
 
 # This isn't actually a dependency, but a way to avoid sdimg and uefiimg
 # building simultaneously, since wic will use the same file names in both, and
 # in parallel builds this is a recipe for disaster.
-IMAGE_TYPEDEP_uefiimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"
+IMAGE_TYPEDEP:uefiimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"
 # And same here.
-IMAGE_TYPEDEP_biosimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)}"
+IMAGE_TYPEDEP:biosimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)}"
 # And same here.
-IMAGE_TYPEDEP_gptimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
+IMAGE_TYPEDEP:gptimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
 # Make sure the Mender part image is available in the live installer
-IMAGE_TYPEDEP_hddimg_append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
+IMAGE_TYPEDEP:hddimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'gptimg', ' gptimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
@@ -329,7 +329,7 @@ python() {
 
     # Remove the boot option on the Live installer; it won't work since Mender hard codes
     # the device nodes
-    d.setVar('LABELS_LIVE_remove', 'boot')
+    d.setVar('LABELS_LIVE:remove', 'boot')
 }
 
 # So that we can use the files from excluded paths in the full images.
@@ -378,7 +378,7 @@ mender_flash_mtdpart() {
         conv=notrunc
 }
 
-IMAGE_CMD_mtdimg() {
+IMAGE_CMD:mtdimg() {
     set -ex
 
     # We don't actually use the result from this one, it's only to trigger a
@@ -417,4 +417,4 @@ IMAGE_CMD_mtdimg() {
     ln -sfn "${IMAGE_NAME}.mtdimg" "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.mtdimg"
 }
 
-IMAGE_TYPEDEP_mtdimg_append = " ubimg"
+IMAGE_TYPEDEP:mtdimg:append = " ubimg"

@@ -1,9 +1,9 @@
 inherit image_types
 
 # we need ubimg to be present
-IMAGE_TYPEDEP_vexpress-nor = "mtdimg"
+IMAGE_TYPEDEP:vexpress-nor = "mtdimg"
 
-IMAGE_CMD_vexpress-nor() {
+IMAGE_CMD:vexpress-nor() {
     set -ex
 
     mtdimgfile=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.mtdimg

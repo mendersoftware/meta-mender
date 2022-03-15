@@ -13,4 +13,4 @@ rpi_install_firmware_to_rootfs() {
 }
 ROOTFS_POSTPROCESS_COMMAND += "rpi_install_firmware_to_rootfs; "
 
-IMAGE_INSTALL_append = " update-firmware-state-script"
+IMAGE_INSTALL:append = " update-firmware-state-script"

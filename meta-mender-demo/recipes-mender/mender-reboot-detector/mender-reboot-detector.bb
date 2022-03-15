@@ -1,15 +1,15 @@
 LICENSE = "Apache-2.0"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI = "file://mender-reboot-detector.service file://LICENSE"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=0ea4e253cc22ddc22117b9796e5ce5b7"
 
 inherit systemd
 
-SYSTEMD_SERVICE_${PN} = "mender-reboot-detector.service"
-FILES_${PN} = "${systemd_unitdir}/system/mender-reboot-detector.service"
+SYSTEMD_SERVICE:${PN} = "mender-reboot-detector.service"
+FILES:${PN} = "${systemd_unitdir}/system/mender-reboot-detector.service"
 
-RDEPENDS_${PN} = "bash openssh-sshd"
+RDEPENDS:${PN} = "bash openssh-sshd"
 
 S = "${WORKDIR}"
 

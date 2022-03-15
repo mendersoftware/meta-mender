@@ -14,10 +14,10 @@ def mender_get_uboot_env_mmc_linux_device_path(d):
     # [linux kernel mmc-dev-parts documentation](https://www.kernel.org/doc/Documentation/mmc/mmc-dev-parts.txt)
     storage_device=d.getVar("MENDER_STORAGE_DEVICE",True)
     env_part=d.getVar("MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART",True)
-    env_part_append=""
+    env_part:append=""
     if env_part != "0":
-        env_part_append="boot%d" % (int(env_part)-1)
-    return storage_device + env_part_append
+        env_part:append="boot%d" % (int(env_part)-1)
+    return storage_device + env_part:append
 
 MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH ?= "${@mender_get_uboot_env_mmc_linux_device_path(d)}"
 

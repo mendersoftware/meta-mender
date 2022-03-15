@@ -3,7 +3,7 @@
 
 inherit mender-helpers
 
-IMAGE_CMD_bootimg() {
+IMAGE_CMD:bootimg() {
     if [ ${MENDER_BOOT_PART_SIZE_MB} -ne 0 ]; then
         if [ ${MENDER_BOOT_PART_FSTYPE_TO_GEN} = "vfat" ]; then
             force_flag=""

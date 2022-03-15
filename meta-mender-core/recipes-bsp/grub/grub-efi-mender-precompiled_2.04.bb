@@ -13,7 +13,7 @@
 require conf/image-uefi.conf
 inherit grub-mender-grubenv
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LICENSE = "GPL-3.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-3.0;md5=c79ff39f19dfec6d293b95dea7b07891"
@@ -31,11 +31,11 @@ S = "${WORKDIR}/git"
 require version_logic.inc
 
 PROVIDES = "grub-efi grub-editenv"
-RPROVIDES_${PN} = "grub-efi grub-editenv"
+RPROVIDES:${PN} = "grub-efi grub-editenv"
 
 COMPATIBLE_HOST = "arm|aarch64"
 
-FILES_${PN} = " \
+FILES:${PN} = " \
     ${EFI_FILES_PATH}/${EFI_BOOT_IMAGE} \
     ${bindir}/grub-editenv \
 "
@@ -72,4 +72,4 @@ do_install() {
     install -m 755 ${WORKDIR}/grub-editenv ${D}${bindir}/
 }
 
-INSANE_SKIP_${PN} = "already-stripped"
+INSANE_SKIP:${PN} = "already-stripped"

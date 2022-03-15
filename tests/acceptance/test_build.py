@@ -169,7 +169,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['IMAGE_ROOTFS_EXTRA_SPACE_append = " + 640 - 222 + 900"'],
+            ['IMAGE_ROOTFS_EXTRA_SPACE:append = " + 640 - 222 + 900"'],
         )
 
         built_rootfs = latest_build_artifact(
@@ -334,7 +334,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['IMAGE_INSTALL_append = " example-state-scripts"'],
+                ['IMAGE_INSTALL:append = " example-state-scripts"'],
             )
 
             found_rootfs_scripts = {
@@ -629,9 +629,9 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             bitbake_image,
             [
                 """
-IMAGE_INSTALL_append = " test-boot-files"
+IMAGE_INSTALL:append = " test-boot-files"
 
-IMAGE_BOOT_FILES_append = " deployed-test1 deployed-test-dir2/deployed-test2 \
+IMAGE_BOOT_FILES:append = " deployed-test1 deployed-test-dir2/deployed-test2 \
     deployed-test3;renamed-deployed-test3 \
  deployed-test-dir4/deployed-test4;renamed-deployed-test4	deployed-test5;renamed-deployed-test-dir5/renamed-deployed-test5 \
 deployed-test-dir6/deployed-test6;renamed-deployed-test-dir6/renamed-deployed-test6 \
@@ -669,7 +669,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['IMAGE_BOOT_FILES_append = " conflict-test1"'],
+                ['IMAGE_BOOT_FILES:append = " conflict-test1"'],
             )
 
             # Conflicting file with different content should fail.
@@ -678,7 +678,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                     prepared_test_build["build_dir"],
                     prepared_test_build["bitbake_corebase"],
                     bitbake_image,
-                    ['IMAGE_BOOT_FILES_append = " conflict-test2"'],
+                    ['IMAGE_BOOT_FILES:append = " conflict-test2"'],
                 )
                 pytest.fail(
                     "Bitbake succeeded, but should have failed with a file conflict"
@@ -723,7 +723,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['PACKAGECONFIG_remove = "modules"'],
+                ['PACKAGECONFIG:remove = "modules"'],
             )
         else:
             assert not any([e in entries for e in default_update_modules])
@@ -731,7 +731,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['PACKAGECONFIG_append = " modules"'],
+                ['PACKAGECONFIG:append = " modules"'],
             )
 
         new_rootfs = latest_build_artifact(
@@ -1151,7 +1151,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             "mender-client",
-            ['PACKAGECONFIG_remove = "dbus"'],
+            ['PACKAGECONFIG:remove = "dbus"'],
         )
 
         env = get_bitbake_variables(
@@ -1202,7 +1202,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['PACKAGECONFIG_append_pn-mender-client = " inventory-network-scripts"'],
+            ['PACKAGECONFIG:append:pn-mender-client = " inventory-network-scripts"'],
         )
         rootfs = latest_build_artifact(
             request, prepared_test_build["build_dir"], "core-image*.ext4"
@@ -1224,7 +1224,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['PACKAGECONFIG_remove_pn-mender-client = " inventory-network-scripts"'],
+            ['PACKAGECONFIG:remove:pn-mender-client = " inventory-network-scripts"'],
         )
         rootfs = latest_build_artifact(
             request, prepared_test_build["build_dir"], "core-image*.ext4"
@@ -1262,9 +1262,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             )
 
             # build mender-client
-            maybe_remove_dbus = []
+            maybe:remove_dbus = []
             if not dbus_enabled:
-                maybe_remove_dbus.append('PACKAGECONFIG_remove = "dbus"')
+                maybe:remove_dbus.append('PACKAGECONFIG:remove = "dbus"')
             build_image(
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
