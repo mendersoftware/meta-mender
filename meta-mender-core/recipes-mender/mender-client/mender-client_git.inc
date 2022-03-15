@@ -38,8 +38,9 @@ def mender_branch_from_preferred_version(d):
         return "master"
 MENDER_BRANCH = "${@mender_branch_from_preferred_version(d)}"
 
-def mender_version_from_preferred_version(d, srcpv):
+def mender_version_from_preferred_version(d):
     pref_version = d.getVar("PREFERRED_VERSION")
+    srcpv = d.getVar("SRCPV")
     if pref_version is None:
         pref_version = d.getVar("PREFERRED_VERSION_%s" % d.getVar("PN"))
     if pref_version is not None and pref_version.find("-git") >= 0:
