@@ -8,7 +8,7 @@ fabric==2.6.0
 filelock==3.4.0
 idna==3.3
 iniconfig==1.1.1
-invoke==1.6.0
+invoke==1.7.0
 packaging==21.3
 paramiko==2.10.2
 pathlib2==2.3.7.post1
