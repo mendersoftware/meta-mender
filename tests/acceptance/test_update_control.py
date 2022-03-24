@@ -127,7 +127,7 @@ def make_and_deploy_artifact(
         )
 
 
-def wait_for_state(connection, state_to_wait_for):
+def wait_for_state(connection, state_to_wait_for, message=None):
     log = []
     attempts = 10
     while attempts > 0:
@@ -143,7 +143,10 @@ def wait_for_state(connection, state_to_wait_for):
 
         attempts -= 1
     else:
-        pytest.fail(f"Could not find {state_to_wait_for} in log")
+        if message:
+            pytest.fail(f"Could not find {state_to_wait_for} in log; {message}")
+        else:
+            pytest.fail(f"Could not find {state_to_wait_for} in log")
     return log
 
 
@@ -596,7 +599,11 @@ class TestUpdateControl:
             connection.run("mender check-update")
             wait_for_state(connection, case["pause_state"])
             set_update_control_map(connection, case["continue_map"])
-            log = wait_for_state(connection, "Cleanup")
+            log = wait_for_state(
+                connection,
+                "Cleanup",
+                "This is probably a spurious failue, if you have not modified anything, re-run, or ignore after brief investigation. See 'disk space full' fix by Kristian.",
+            )
             if case["expect_failure"]:
                 assert "ArtifactFailure" in log
             else:
