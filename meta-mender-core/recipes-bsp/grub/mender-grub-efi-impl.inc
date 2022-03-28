@@ -1,8 +1,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI:append:cfg_file += " file://cfg"
-
-
 do_check_config_efi_stub() {
 }
 do_check_config_efi_stub_mender-grub() {
