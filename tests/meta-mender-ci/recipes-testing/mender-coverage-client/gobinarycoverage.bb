@@ -1,7 +1,7 @@
 DESCRIPTION = "Mender image artifact library"
 GO_IMPORT = "github.com/mendersoftware/gobinarycoverage"
 
-inherit go
+inherit go-mod
 inherit go-ptest
 
 SRC_URI = "git://${GO_IMPORT};protocol=https"
