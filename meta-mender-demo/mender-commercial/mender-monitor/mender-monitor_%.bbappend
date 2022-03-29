@@ -1,6 +1,6 @@
 
 
-do_install_append() {
+do_install:append() {
     oe_runmake \
         -C ${S} \
         DESTDIR=${D} \
