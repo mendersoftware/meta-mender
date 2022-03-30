@@ -26,6 +26,7 @@ libbz2-dev
 libfdt-dev
 libffi-dev
 libglib2.0-dev
+liblz4-tool
 liblzma-dev
 liblzo2-dev
 libpixman-1-dev
@@ -57,3 +58,4 @@ sysstat
 texinfo
 wget
 zlib1g-dev
+zstd
