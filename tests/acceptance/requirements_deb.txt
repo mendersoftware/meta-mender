@@ -4,6 +4,7 @@ awscli
 bash
 bc
 build-essential
+cargo
 chrpath
 cpio
 curl
@@ -25,6 +26,7 @@ libbz2-dev
 libfdt-dev
 libffi-dev
 libglib2.0-dev
+liblz4-tool
 liblzma-dev
 liblzo2-dev
 libpixman-1-dev
@@ -47,6 +49,7 @@ qemu-kvm
 qemu-system-arm
 qemu-system-x86
 qemu-utils
+rustc
 s3cmd
 screen
 sudo
@@ -55,5 +58,4 @@ sysstat
 texinfo
 wget
 zlib1g-dev
-rustc
-cargo
+zstd
