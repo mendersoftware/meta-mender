@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import json
 import os
 import re
 import shutil
@@ -40,6 +41,25 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
 
                 shutil.copyfileobj(body, self.wfile)
+        elif re.match(
+            "/api/devices/v2/deployments/device/deployments/([a-f0-9-]*)/update_control_map$",
+            self.path,
+            flags=re.IGNORECASE,
+        ):
+            if os.path.exists("/data/mender-mock-server-deployment-header.json"):
+                with open("/data/mender-mock-server-deployment-header.json", "rb") as body:
+                    # Extract only the update-control-map
+                    update = json.load(body)
+                    resp = json.dumps({
+                        "update_control_map": update["update_control_map"],
+                    }).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", len(resp))
+                    self.end_headers()
+                    self.wfile.write(resp)
+            else:
+                self.send_empty_response(404)
         else:
             self.send_empty_response(404)
 
