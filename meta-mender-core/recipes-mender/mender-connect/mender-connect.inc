@@ -68,6 +68,6 @@ do_install() {
     install -m 0600 ${B}/mender-connect.conf ${D}/${sysconfdir}/mender/mender-connect.conf
 }
 
-FILES:${PN}:append += "\
+FILES:${PN}:append = "\
     ${systemd_unitdir}/system/mender-connect.service \
 "
