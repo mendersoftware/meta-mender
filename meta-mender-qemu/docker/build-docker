@@ -4,6 +4,7 @@ cd "$(dirname "$0")"
 
 BUILD_DEFAULTS=1
 IMAGE_NAME="core-image-full-cmdline"
+EMBEDDED_IMAGE_NAME=""
 
 usage() {
     cat <<EOF
@@ -19,6 +20,9 @@ All options after MACHINE are given to "docker build".
 -i, --image <IMAGE_NAME>
 	The name of the image being used in the container. Defaults to
 	$IMAGE_NAME.
+-I, --embedded-image <IMAGE_NAME>
+	The image being put inside the generated image. Defaults to
+	$(bitbake -e $IMAGE_NAME | egrep '^IMAGE_LINK_NAME=').
 EOF
 }
 
@@ -34,6 +38,14 @@ while [ -n "$1" ]; do
                 exit 1
             fi
             IMAGE_NAME="$1"
+            ;;
+        -I|--embedded-image)
+            shift
+            if [ -z "$1" ]; then
+                echo "Need to specify image name with -I / --embedded-image." 1>&2
+                exit 1
+            fi
+            EMBEDDED_IMAGE_NAME="$1"
             ;;
         -h|--help)
             usage
@@ -83,7 +95,13 @@ if [ $BUILD_DEFAULTS = 1 ]; then
         echo "Neither mender-image-uefi nor mender-image-sd are set! Don't know which image to use!" 1>&2
         exit 1
     fi
-    ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$MACHINE/"
+    if [ "${EMBEDDED_IMAGE_NAME}" != "" ]; then
+     DISK_IMG=$(basename "${EMBEDDED_IMAGE_NAME}")
+     echo "using ${EMBEDDED_IMAGE_NAME} as embedded image."
+     ln -Lf "${EMBEDDED_IMAGE_NAME}" "$MACHINE/"
+    else
+     ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$MACHINE/"
+    fi
     cat > "$MACHINE/env.txt" <<EOF
 export MACHINE=$MACHINE
 export DISK_IMG=/$DISK_IMG
