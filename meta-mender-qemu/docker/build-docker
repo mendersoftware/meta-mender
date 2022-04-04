@@ -4,6 +4,9 @@ cd "$(dirname "$0")"
 
 BUILD_DEFAULTS=1
 IMAGE_NAME="core-image-full-cmdline"
+# the name of an extra image to embed in the conatiner
+# this image will be used in tests, see integration/tests/run.sh
+EMBEDDED_IMAGE_NAME=""
 
 usage() {
     cat <<EOF
@@ -19,6 +22,8 @@ All options after MACHINE are given to "docker build".
 -i, --image <IMAGE_NAME>
 	The name of the image being used in the container. Defaults to
 	$IMAGE_NAME.
+-I, --embedded-image <IMAGE_NAME>
+	The image being put inside the generated image.
 EOF
 }
 
@@ -34,6 +39,14 @@ while [ -n "$1" ]; do
                 exit 1
             fi
             IMAGE_NAME="$1"
+            ;;
+        -I|--embedded-image)
+            shift
+            if [ -z "$1" ]; then
+                echo "Need to specify image name with -I / --embedded-image." 1>&2
+                exit 1
+            fi
+            EMBEDDED_IMAGE_NAME="$1"
             ;;
         -h|--help)
             usage
@@ -64,6 +77,7 @@ fi
 
 set -e
 
+EMBEDDED_IMAGE_NAME_BUILD_ARG=
 DOCKER_ARGS=
 if [ $BUILD_DEFAULTS = 1 ]; then
     if [ ! -d "$BUILDDIR" ]; then
@@ -83,17 +97,24 @@ if [ $BUILD_DEFAULTS = 1 ]; then
         echo "Neither mender-image-uefi nor mender-image-sd are set! Don't know which image to use!" 1>&2
         exit 1
     fi
+    if [ "${EMBEDDED_IMAGE_NAME}" != "" ]; then
+        EMBEDDED_IMAGE_NAME_BUILD_ARG="--build-arg EMBEDDED_IMAGE=$(basename ${EMBEDDED_IMAGE_NAME})"
+        echo "using ${EMBEDDED_IMAGE_NAME} as embedded image."
+        ln -Lf "${EMBEDDED_IMAGE_NAME}" "$MACHINE/"
+    fi
     ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$MACHINE/"
     cat > "$MACHINE/env.txt" <<EOF
 export MACHINE=$MACHINE
 export DISK_IMG=/$DISK_IMG
+export EMBEDDED_IMAGE=/$(basename "${EMBEDDED_IMAGE_NAME}")
 EOF
 
     case "$MACHINE" in
         qemux86-64)
             ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.qcow2" "$MACHINE/"
             ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.vars.qcow2" "$MACHINE/"
-            DOCKER_ARGS="--build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=ovmf.qcow2 --build-arg BOOTLOADER_DATA=ovmf.vars.qcow2"
+            DOCKER_ARGS="${EMBEDDED_IMAGE_NAME_BUILD_ARG} --build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=ovmf.qcow2 --build-arg BOOTLOADER_DATA=ovmf.vars.qcow2"
+            echo "running with $DOCKER_ARGS"
             cat >> "$MACHINE/env.txt" <<EOF
 export BOOTLOADER=/ovmf.qcow2
 export BOOTLOADER_DATA=/ovmf.vars.qcow2
@@ -102,6 +123,7 @@ EOF
         vexpress-qemu)
             ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/u-boot.elf" "$MACHINE/"
             DOCKER_ARGS="--build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=u-boot.elf"
+            echo "running with $DOCKER_ARGS"
             cat >> "$MACHINE/env.txt" <<EOF
 export BOOTLOADER=/u-boot.elf
 EOF
