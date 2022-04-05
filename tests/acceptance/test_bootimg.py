@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2020 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -41,6 +41,6 @@ class TestBootImg:
         distro_features = bitbake_variables["MENDER_FEATURES"].split()
         if "mender-grub" in distro_features and "mender-image-uefi" in distro_features:
             output = subprocess.check_output(
-                ["mdir", "-i", built_img, "-b", "/EFI/BOOT"]
+                ["mdir", "-i", built_img, "-b", "/grub-mender-grubenv"]
             ).decode()
             assert "mender_grubenv1" in output.split("/")
