@@ -31,14 +31,14 @@ IMAGE_CMD:bootimg() {
                 $force_flag \
                 "${WORKDIR}/boot.${MENDER_BOOT_PART_FSTYPE_TO_GEN}" \
                 ${MENDER_BOOT_PART_FSOPTS} $label_flag "${MENDER_BOOT_PART_LABEL}"
-            for i in $(find ${WORKDIR}/bootfs.${BB_CURRENTTASK}/ -mindepth 1 -maxdepth 1); do
+            for i in $(find ${WORKDIR}/bootfs/ -mindepth 1 -maxdepth 1); do
                mcopy -i "${WORKDIR}/boot.vfat" -s "$i" ::/
             done
         else
             mkfs.${MENDER_BOOT_PART_FSTYPE_TO_GEN} \
                 $force_flag \
                 "${WORKDIR}/boot.${MENDER_BOOT_PART_FSTYPE_TO_GEN}" \
-                $root_dir_flag "${WORKDIR}/bootfs.${BB_CURRENTTASK}" \
+                $root_dir_flag "${WORKDIR}/bootfs" \
                 $label_flag "${MENDER_BOOT_PART_LABEL}" \
                 ${MENDER_BOOT_PART_FSOPTS}
         fi

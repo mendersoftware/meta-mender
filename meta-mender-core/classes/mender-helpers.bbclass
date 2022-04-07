@@ -272,7 +272,7 @@ def mender_get_extra_parts_offset_by_id(d, id = None):
 # from MENDER_BOOT_PART_MOUNT_LOCATION, and merge with the files from
 # IMAGE_BOOT_FILES, following the format from the official Yocto documentation.
 mender_merge_bootfs_and_image_boot_files() {
-    W="${WORKDIR}/bootfs.${BB_CURRENTTASK}"
+    W="${WORKDIR}/bootfs"
     rm -rf "$W"
 
     cp -a "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
