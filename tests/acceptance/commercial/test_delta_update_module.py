@@ -151,7 +151,7 @@ class TestDeltaUpdateModule:
         output = subprocess.check_output(
             "mender-artifact read %s" % image, shell=True
         ).decode()
-        match = re.search("checksum: *([0-9a-f]+)", output)
+        match = re.search(r"checksum: *([0-9a-f]+)", output)
         assert match is not None, (
             "Could not find checksum in mender-artifact output: %s" % output
         )

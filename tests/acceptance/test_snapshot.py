@@ -188,7 +188,7 @@ class TestSnapshot:
 
             # Ensure that the payload size of the produced artifact matches the
             # partition.
-            assert re.search("size: *%s" % partsize, output) is not None
+            assert re.search(r"size: *%s" % partsize, output) is not None
 
         finally:
             try:
@@ -260,7 +260,7 @@ class TestSnapshot:
 
             # Ensure that the payload size of the produced artifact matches the
             # partition.
-            assert re.search("size: *%s" % partsize, output) is not None
+            assert re.search(r"size: *%s" % partsize, output) is not None
 
         finally:
             try:

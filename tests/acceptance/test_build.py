@@ -40,7 +40,7 @@ def extract_partition(img, number):
         ["fdisk", "-l", "-o", "device,start,end", img], stdout=subprocess.PIPE
     )
     for line in output.stdout:
-        if re.search("img%d" % number, line.decode()) is None:
+        if re.search(r"img%d" % number, line.decode()) is None:
             continue
 
         match = re.match(r"\s*\S+\s+(\S+)\s+(\S+)", line.decode())
@@ -454,7 +454,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             with open(old_file) as old_fd, open(new_file, "w") as new_fd:
                 for line in old_fd.readlines():
                     if (
-                        re.match("^EXTERNALSRC_pn-%s(-native)? *=" % base_recipe, line)
+                        re.match(r"^EXTERNALSRC_pn-%s(-native)? *=" % base_recipe, line)
                         is not None
                     ):
                         continue

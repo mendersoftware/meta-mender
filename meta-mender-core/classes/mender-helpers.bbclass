@@ -68,11 +68,11 @@ def mender_get_partuuid_from_device(d, deviceName):
     import re
     if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', True, False, d) and deviceName:
         uuid=deviceName.replace('/dev/disk/by-partuuid/', '')
-        gptMatch = re.search('^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$', uuid)
+        gptMatch = re.search(r'^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$', uuid)
         if gptMatch:
             return gptMatch.group(0)
 
-        msdosMatch = re.search("^[0-9a-f]{8}\-[0-9]{2}$", uuid)
+        msdosMatch = re.search(r"^[0-9a-f]{8}\-[0-9]{2}$", uuid)
         if msdosMatch:
             return msdosMatch.group(0)
         bb.fatal("%s Does not contain a valid PARTUUID path" % deviceName )
@@ -121,7 +121,7 @@ def mender_make_mtdparts_shell_array(d):
         if remaining_encountered:
             return "bbfatal \"'-' entry was not last entry in mtdparts: '%s'\"" % mtdparts
 
-        match = re.match("^([0-9]+|-)([kmg]?)(?:@([0-9]+)([kmg]?))?\(([^)]+)\)(?:ro)?$", component)
+        match = re.match(r"^([0-9]+|-)([kmg]?)(?:@([0-9]+)([kmg]?))?\(([^)]+)\)(?:ro)?$", component)
         if match is None:
             return "bbfatal \"'%s' is not a valid mtdparts string. Please set MENDER_MTDPARTS to a valid value\"" % mtdparts
 

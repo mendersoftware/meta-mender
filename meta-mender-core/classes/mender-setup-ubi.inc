@@ -210,7 +210,7 @@ def mender_get_flash_type_from_mtdid(d):
     import re
 
     mtdid = d.getVar('MENDER_IS_ON_MTDID')
-    match = re.search("([^=]+)=%s" % re.escape(mtdid), d.getVar('MENDER_MTDIDS'))
+    match = re.search(r"([^=]+)=%s" % re.escape(mtdid), d.getVar('MENDER_MTDIDS'))
     if match is None:
         mender_warn_only_if_ubi(d, "Could not find MENDER_IS_ON_MTDID (%s) in MENDER_MTDIDS (%s)."
                                 % (mtdid, d.getVar('MENDER_MTDIDS')))
@@ -254,7 +254,7 @@ def mender_get_ubi_size(d):
     non_ubi_size = 0
     ubiname = d.getVar('MENDER_MTD_UBI_DEVICE_NAME')
     for part in mtdpart.split(":", 1)[1].split(","):
-        match = re.match("^([0-9]+|-)([kmg]?)(?:@([0-9]+)([kmg]?))?\(([^)]+)\)", part)
+        match = re.match(r"^([0-9]+|-)([kmg]?)(?:@([0-9]+)([kmg]?))?\(([^)]+)\)", part)
         if match is None:
             bb.fatal("Unable to parse mtdparts substring '%s'." % part)
         if match.group(3):
