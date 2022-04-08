@@ -5,7 +5,7 @@ SRC_URI:append:vexpress-qemu = " file://defconfig \
                                 file://vexpress-qemu-standard.scc \
                                 file://reduce-memory-to-256m.patch \
                                "
-COMPATIBLE_MACHINE_vexpress-qemu = "vexpress-qemu"
+COMPATIBLE_MACHINE:vexpress-qemu = "vexpress-qemu"
 
 # same config for vexpress-qemu-flash
 SRC_URI:append:vexpress-qemu-flash = " file://defconfig \
@@ -13,7 +13,7 @@ SRC_URI:append:vexpress-qemu-flash = " file://defconfig \
                                        file://reduce-memory-to-256m.patch \
                                        "
 
-COMPATIBLE_MACHINE_vexpress-qemu-flash = "vexpress-qemu-flash"
+COMPATIBLE_MACHINE:vexpress-qemu-flash = "vexpress-qemu-flash"
 
 # See commit 28a1f5cd95cfd in poky. This was added in order to support running
 # kernel tests. However it appears that this file is not present in the source
