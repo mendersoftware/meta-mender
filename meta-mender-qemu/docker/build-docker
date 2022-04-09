@@ -76,7 +76,7 @@ fi
 
 set -e
 
-EMBEDDED_IMAGE_NAME_BUILD_ARG=""
+EMBEDDED_IMAGE_NAME_BUILD_ARG=
 DOCKER_ARGS=
 if [ $BUILD_DEFAULTS = 1 ]; then
     if [ ! -d "$BUILDDIR" ]; then
@@ -97,7 +97,7 @@ if [ $BUILD_DEFAULTS = 1 ]; then
         exit 1
     fi
     if [ "${EMBEDDED_IMAGE_NAME}" != "" ]; then
-     EMBEDDED_IMAGE_NAME_BUILD_ARG="--build-arg EMBEDDED_IMAGE=$(basename \"${EMBEDDED_IMAGE_NAME}\")"
+     EMBEDDED_IMAGE_NAME_BUILD_ARG="--build-arg EMBEDDED_IMAGE=$(basename ${EMBEDDED_IMAGE_NAME})"
      echo "using ${EMBEDDED_IMAGE_NAME} as embedded image."
      ln -Lf "${EMBEDDED_IMAGE_NAME}" "$MACHINE/"
     fi
