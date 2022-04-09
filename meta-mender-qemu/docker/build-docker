@@ -76,6 +76,7 @@ fi
 
 set -e
 
+EMBEDDED_IMAGE_NAME_BUILD_ARG=""
 DOCKER_ARGS=
 if [ $BUILD_DEFAULTS = 1 ]; then
     if [ ! -d "$BUILDDIR" ]; then
@@ -96,22 +97,22 @@ if [ $BUILD_DEFAULTS = 1 ]; then
         exit 1
     fi
     if [ "${EMBEDDED_IMAGE_NAME}" != "" ]; then
-     DISK_IMG=$(basename "${EMBEDDED_IMAGE_NAME}")
+     EMBEDDED_IMAGE_NAME_BUILD_ARG="--build-arg EMBEDDED_IMAGE=$(basename \"${EMBEDDED_IMAGE_NAME}\")"
      echo "using ${EMBEDDED_IMAGE_NAME} as embedded image."
      ln -Lf "${EMBEDDED_IMAGE_NAME}" "$MACHINE/"
-    else
-     ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$MACHINE/"
     fi
+    ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$MACHINE/"
     cat > "$MACHINE/env.txt" <<EOF
 export MACHINE=$MACHINE
 export DISK_IMG=/$DISK_IMG
+export EMBEDDED_IMAGE=/$(basename "${EMBEDDED_IMAGE_NAME}")
 EOF
 
     case "$MACHINE" in
         qemux86-64)
             ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.qcow2" "$MACHINE/"
             ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.vars.qcow2" "$MACHINE/"
-            DOCKER_ARGS="--build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=ovmf.qcow2 --build-arg BOOTLOADER_DATA=ovmf.vars.qcow2"
+            DOCKER_ARGS="${EMBEDDED_IMAGE_NAME_BUILD_ARG} --build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=ovmf.qcow2 --build-arg BOOTLOADER_DATA=ovmf.vars.qcow2"
             cat >> "$MACHINE/env.txt" <<EOF
 export BOOTLOADER=/ovmf.qcow2
 export BOOTLOADER_DATA=/ovmf.vars.qcow2
