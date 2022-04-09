@@ -116,6 +116,7 @@ EOF
             ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.qcow2" "$MACHINE/"
             ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.vars.qcow2" "$MACHINE/"
             DOCKER_ARGS="${EMBEDDED_IMAGE_NAME_BUILD_ARG} --build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=ovmf.qcow2 --build-arg BOOTLOADER_DATA=ovmf.vars.qcow2"
+            echo "running with {{{ $DOCKER_ARGS }}}"
             cat >> "$MACHINE/env.txt" <<EOF
 export BOOTLOADER=/ovmf.qcow2
 export BOOTLOADER_DATA=/ovmf.vars.qcow2
