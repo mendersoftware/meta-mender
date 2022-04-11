@@ -1,0 +1,12 @@
+diff --git a/configs/vexpress_ca9x4_defconfig b/configs/vexpress_ca9x4_defconfig
+index 1e59d27fc4..e3098945c2 100644
+--- a/configs/vexpress_ca9x4_defconfig
++++ b/configs/vexpress_ca9x4_defconfig
+@@ -7,6 +7,7 @@ CONFIG_ENV_SECT_SIZE=0x40000
+ CONFIG_DM_GPIO=y
+ CONFIG_DEFAULT_DEVICE_TREE="vexpress-v2p-ca9"
+ CONFIG_DISTRO_DEFAULTS=y
++CONFIG_SYS_MALLOC_F_LEN=0x400
+ CONFIG_SYS_LOAD_ADDR=0x90000000
+ CONFIG_BOOTCOMMAND="run distro_bootcmd; run bootflash"
+ CONFIG_DEFAULT_FDT_FILE="vexpress-v2p-ca9.dtb"

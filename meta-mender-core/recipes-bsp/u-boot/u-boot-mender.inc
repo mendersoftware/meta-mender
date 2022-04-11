@@ -17,6 +17,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/patches:${THISDIR}/files:"
 SRC_URI_append_mender-uboot = " file://0001-Add-missing-header-which-fails-on-recent-GCC.patch"
 SRC_URI_append_mender-uboot = " file://0002-Generic-boot-code-for-Mender.patch"
 SRC_URI_append_mender-uboot = " file://0003-Integration-of-Mender-boot-code-into-U-Boot.patch"
+SRC_URI_append_mender-uboot = " file://test.patch"
 
 SRC_URI_append_mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
                                                     '1', \
