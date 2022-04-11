@@ -19,7 +19,8 @@ trap failure ERR
 trap cleanup EXIT
 
 DEV=$(losetup -f)
-IMG=$(ls /*img | head -n 1)
+IMG_PREFIX=${1}
+IMG=$(ls /${IMG_PREFIX}*img | head -n 1)
 OUTPUT=/output/$(sed -e 's/\.[^.]*img$/.ext4/' <<<$(basename $IMG))
 
 losetup $DEV $IMG
