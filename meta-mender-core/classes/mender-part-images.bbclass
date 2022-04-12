@@ -255,6 +255,7 @@ _MENDER_PART_IMAGE_DEPENDS = " \
     ${@' '.join([x + ':do_populate_sysroot' for x in d.getVar('WKS_FILE_DEPENDS').split()])} \
 "
 _MENDER_PART_IMAGE_DEPENDS += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE', 'btrfs','btrfs-tools-native:do_populate_sysroot','',d)}"
+_MENDER_PART_IMAGE_DEPENDS += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE', 'f2fs','f2fs-tools-native:do_populate_sysroot','',d)}"
 
 
 # This is needed because by default 'mender-grub' feature is used on ARM, but
