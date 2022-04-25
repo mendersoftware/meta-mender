@@ -31,11 +31,6 @@ in addition to `meta-mender` dependencies.
         # Having the serial terminal enabled is useful.
         ENABLE_UART = "1"
 
-        # The boot strategy is u-boot on an sd card. We therefore
-        # disable grub and UEFI image generation.
-        MENDER_FEATURES_ENABLE_append = " mender-uboot mender-image-sd"
-        MENDER_FEATURES_DISABLE_append = " mender-grub mender-image-uefi"
-
         # rpi-base.inc removes these as they are normally installed on to the
         # vfat boot partition. To be able to update the Linux kernel Mender
         # uses an image that resides on the root file system and below line
