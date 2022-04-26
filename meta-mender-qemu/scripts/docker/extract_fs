@@ -23,10 +23,16 @@ IMG_PREFIX=${1}
 IMG=$(ls /${IMG_PREFIX}*img* | head -n 1)
 [[ $IMG == *gz ]] && gzip -d "$IMG"
 IMG=$(ls /${IMG_PREFIX}*img | head -n 1)
-OUTPUT=/output/$(sed -e 's/\.[^.]*img$/.ext4/' <<<$(basename $IMG))
+
+# if we are given the prefix, we need to remove it.
+CLEAN_FLAGS="s/^${IMG_PREFIX}//"
+
+# if the prefix we did not get, we need to remove the default prefix
+[[ "${IMG_PREFIX}" == "" ]] && CLEAN_FLAGS="s/^clean-//"
+OUTPUT=/output/$(sed -e 's/\.[^.]*img$/.ext4/' -e "${CLEAN_FLAGS}" <<<$(basename $IMG))
 
 losetup $DEV $IMG
 kpartx -a $DEV
-echo "Copying filesystem image to $OUTPUT"
+echo "Copying filesystem image $IMG to $OUTPUT"
 dd if=/dev/mapper/$(basename $DEV)p2 of=$OUTPUT bs=8M status=none
 chown $(stat -c '%u:%g' /output) $OUTPUT
