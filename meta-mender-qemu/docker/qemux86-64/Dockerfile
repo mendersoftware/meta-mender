@@ -1,8 +1,6 @@
 # Usage of Docker image.
 #
 # While building:
-# --build-arg EMBEDDED_IMAGE_NAME=<uefiimg>
-#       image to add to the Docker image
 # --build-arg DISK_IMAGE=<uefiimg>
 #       image to add to the Docker image
 # --build-arg BOOTLOADER=<ovmf.qcow2>
@@ -39,12 +37,10 @@ RUN rm -rf /var/cache/apk/*
 RUN echo qemux86-64 > /machine.txt
 
 ARG DISK_IMAGE=scripts/docker/empty-file
-ARG EMBEDDED_IMAGE=scripts/docker/empty-file
 ARG BOOTLOADER=scripts/docker/empty-file
 ARG BOOTLOADER_DATA=scripts/docker/empty-file
 
 COPY $DISK_IMAGE .
-COPY $EMBEDDED_IMAGE .
 COPY $BOOTLOADER ./ovmf.qcow2
 COPY $BOOTLOADER_DATA ./ovmf.vars.qcow2
 
