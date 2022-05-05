@@ -346,13 +346,7 @@ do_install_append_class-target_mender-growfs-data_mender-systemd() {
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid -L ${MENDER_DATA_PART_LABEL})#g" \
             ${WORKDIR}/mender-client-resize-data-part.sh.in
-
-        sed -i "s#@MENDER_STORAGE_DEVICE@#/dev/\$(basename \$(readlink -f \"/sys/class/block/\$(basename \$MENDER_DATA_PART)/..\"))#g" \
-            ${WORKDIR}/mender-client-resize-data-part.sh.in
     else
-        sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
-            ${WORKDIR}/mender-client-resize-data-part.sh.in
-
         sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
             ${WORKDIR}/mender-client-resize-data-part.sh.in
     fi
