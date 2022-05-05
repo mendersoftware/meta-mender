@@ -4,6 +4,7 @@ This Yocto meta layer contains all the recipes needed to build the Mender client
 
 For instructions on using this meta layer as part of a Yocto build environment, please see [the Mender documentation](https://docs.mender.io/system-updates-yocto-project).
 
+
 ## Maintenance strategy
 
 The repository follows the release-named branch strategy.
