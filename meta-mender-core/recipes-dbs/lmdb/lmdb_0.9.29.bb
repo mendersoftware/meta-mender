@@ -12,7 +12,8 @@ SRC_URI = "git://github.com/LMDB/lmdb.git;protocol=https;nobranch=1 \
            file://run-ptest \
 "
 
-SRCREV = "LMDB_${PV}"
+# Tag: LMDB_0.9.29
+SRCREV = "c45a3a3b8e8db84574ccab7531938d0427ce4f25"
 
 inherit base ptest
 
