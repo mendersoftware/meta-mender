@@ -129,6 +129,23 @@ _MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
 EXTRA_OEMAKE_append = " TAGS='${_MENDER_TAGS}'"
 GOPTESTBUILDFLAGS_append = " -tags '${_MENDER_TAGS}'"
 
+do_configure_prepend () {
+    # Remove all the src present in build if it is not a symbolic link to ${S}
+    if [ -d ${B}src ]; then
+        rm -rf ${B}src
+    fi
+}
+
+do_configure_append () {
+    # Remove the symbolic link created by go.bbclass in do_configure. This is to
+    # make sure that the build environment ${B} does not touch ${S} in any way.
+    if [ -h ${B}src ]; then
+        rm ${B}src
+    fi
+    mkdir -p $(dirname ${B}src/${GO_IMPORT})
+    cp --archive ${S}/src/${GO_IMPORT} ${B}/src/${GO_IMPORT}
+}
+
 do_compile() {
     GOPATH="${B}:${S}"
     export GOPATH
