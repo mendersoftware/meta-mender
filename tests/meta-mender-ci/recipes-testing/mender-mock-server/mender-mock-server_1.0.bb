@@ -5,11 +5,11 @@ SRC_URI = " \
 "
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = " \
-    file://mender-mock-server.py;beginline=2;endline=14;md5=457f0d2d149c4d7f13339726a05c8b83 \
+    file://mender-mock-server.py;beginline=2;endline=14;md5=0022954814efed30323d08ab6de15a4e \
 "
 S = "${WORKDIR}"
 
-RDEPENDS:${PN} = "python3-core python3-netserver"
+RDEPENDS:${PN} = "python3-core python3-netserver python3-json"
 
 inherit systemd
 

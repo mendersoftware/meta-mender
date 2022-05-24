@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -1151,31 +1151,47 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             "mender-client",
-            ['PACKAGECONFIG:remove = "dbus"'],
+            target="-c clean mender-client",
         )
 
-        env = get_bitbake_variables(
-            request, "mender-client", prepared_test_build=prepared_test_build
-        )
+        try:
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                "mender-client",
+                ['PACKAGECONFIG:remove = "dbus"'],
+            )
 
-        # Get dynamic section info from binary.
-        output = subprocess.check_output(
-            [env["READELF"], "-d", os.path.join(env["D"], "usr/bin/mender")]
-        ).decode()
+            env = get_bitbake_variables(
+                request, "mender-client", prepared_test_build=prepared_test_build
+            )
 
-        # Verify the output is sane.
-        assert "libc" in output
+            # Get dynamic section info from binary.
+            output = subprocess.check_output(
+                [env["READELF"], "-d", os.path.join(env["D"], "usr/bin/mender")]
+            ).decode()
 
-        # Actual test.
-        assert "libglib" not in output
+            # Verify the output is sane.
+            assert "libc" in output
 
-        # Make sure busconfig files are also gone.
-        assert not os.path.exists(
-            os.path.join(env["D"], "usr/share/dbus-1/system.d/io.mender.conf")
-        )
-        assert not os.path.exists(
-            os.path.join(env["D"], "etc/dbus-1/system.d/io.mender.conf")
-        )
+            # Actual test.
+            assert "libglib" not in output
+
+            # Make sure busconfig files are also gone.
+            assert not os.path.exists(
+                os.path.join(env["D"], "usr/share/dbus-1/system.d/io.mender.conf")
+            )
+            assert not os.path.exists(
+                os.path.join(env["D"], "etc/dbus-1/system.d/io.mender.conf")
+            )
+
+        finally:
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                "mender-client",
+                target="-c clean mender-client",
+            )
 
     @pytest.mark.min_mender_version("2.5.0")
     @pytest.mark.only_with_image("ext4")
