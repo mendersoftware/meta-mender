@@ -1151,47 +1151,31 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             "mender-client",
-            target="-c clean mender-client",
+            ['PACKAGECONFIG_remove = "dbus"'],
         )
 
-        try:
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                "mender-client",
-                ['PACKAGECONFIG_remove = "dbus"'],
-            )
+        env = get_bitbake_variables(
+            request, "mender-client", prepared_test_build=prepared_test_build
+        )
 
-            env = get_bitbake_variables(
-                request, "mender-client", prepared_test_build=prepared_test_build
-            )
+        # Get dynamic section info from binary.
+        output = subprocess.check_output(
+            [env["READELF"], "-d", os.path.join(env["D"], "usr/bin/mender")]
+        ).decode()
 
-            # Get dynamic section info from binary.
-            output = subprocess.check_output(
-                [env["READELF"], "-d", os.path.join(env["D"], "usr/bin/mender")]
-            ).decode()
+        # Verify the output is sane.
+        assert "libc" in output
 
-            # Verify the output is sane.
-            assert "libc" in output
+        # Actual test.
+        assert "libglib" not in output
 
-            # Actual test.
-            assert "libglib" not in output
-
-            # Make sure busconfig files are also gone.
-            assert not os.path.exists(
-                os.path.join(env["D"], "usr/share/dbus-1/system.d/io.mender.conf")
-            )
-            assert not os.path.exists(
-                os.path.join(env["D"], "etc/dbus-1/system.d/io.mender.conf")
-            )
-
-        finally:
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                "mender-client",
-                target="-c clean mender-client",
-            )
+        # Make sure busconfig files are also gone.
+        assert not os.path.exists(
+            os.path.join(env["D"], "usr/share/dbus-1/system.d/io.mender.conf")
+        )
+        assert not os.path.exists(
+            os.path.join(env["D"], "etc/dbus-1/system.d/io.mender.conf")
+        )
 
     @pytest.mark.min_mender_version("2.5.0")
     @pytest.mark.only_with_image("ext4")
