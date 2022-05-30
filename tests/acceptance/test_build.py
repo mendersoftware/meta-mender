@@ -1255,7 +1255,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
     @pytest.mark.min_mender_version("2.7.0")
     def test_mender_dbus_interface_file(
-        self, request, prepared_test_build, bitbake_image
+        self, request, prepared_test_build, bitbake_image, bitbake_path
     ):
         """
         Test the D-Bus interface file is provided by the mender-client-dev package,
