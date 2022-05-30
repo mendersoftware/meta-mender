@@ -25,7 +25,7 @@
 #       Copy the configuration file for mender-gateway
 #       Note that the file needs to be mounted into the Docker container
 
-FROM alpine:3.15.0
+FROM alpine:3.16.0
 
 # Install packages
 RUN apk update && apk upgrade && \
