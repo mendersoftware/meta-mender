@@ -56,10 +56,10 @@ case "$MACHINE" in
     *x86*)
         case "$MACHINE" in
             *x86-64*)
-                QEMU_SYSTEM=${QEMU_SYSTEM:-"qemu-system-x86_64"}
+                QEMU_SYSTEM="${QEMU_SYSTEM:-"qemu-system-x86_64"} --cpu core2duo"
                 ;;
             *86*)
-                QEMU_SYSTEM=${QEMU_SYSTEM:-"qemu-system-i386"}
+                QEMU_SYSTEM="${QEMU_SYSTEM:-"qemu-system-i386"} --cpu core2duo"
                 ;;
         esac
         if echo "$MENDER_FEATURES" | grep -q mender-image-bios; then
