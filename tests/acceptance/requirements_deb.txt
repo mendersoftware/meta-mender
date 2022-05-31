@@ -32,7 +32,6 @@ liblzo2-dev
 libpixman-1-dev
 libsdl1.2-dev
 libssl-dev
-libvirt-bin
 libxml2-dev
 libxslt-dev
 libyaml-dev
@@ -43,7 +42,8 @@ nodejs
 pass
 pkg-config
 psmisc
-python-dev
+python3-dev
+python3-libvirt
 python3-pip
 qemu-kvm
 qemu-system-arm
