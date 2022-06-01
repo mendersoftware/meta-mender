@@ -42,6 +42,7 @@ nodejs
 pass
 pkg-config
 psmisc
+python2-dev
 python3-dev
 python3-libvirt
 python3-pip
