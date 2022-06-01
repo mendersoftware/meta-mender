@@ -177,10 +177,13 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
 def main():
     httpd = HTTPServer(("localhost", 8443), SimpleHTTPRequestHandler)
-    httpd.socket = ssl.wrap_socket(
-        httpd.socket,
+    sslcontext = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+    sslcontext.load_cert_chain(
         keyfile=os.path.join(BASE_PATH, "private.key"),
         certfile=DEMO_CRT_PATH,
+    )
+    httpd.socket = sslcontext.wrap_socket(
+        httpd.socket,
         server_side=True,
     )
     httpd.serve_forever()
