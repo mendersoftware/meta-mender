@@ -25,16 +25,11 @@
 #       Copy the configuration file for mender-gateway
 #       Note that the file needs to be mounted into the Docker container
 
-FROM alpine:3.15.0
+FROM python:3.10-alpine3.16
 
 # Install packages
-RUN apk update && apk upgrade && \
-    apk add util-linux multipath-tools \
-            bash e2fsprogs-extra python3
-
-RUN apk add qemu-system-x86_64
-
-RUN rm -rf /var/cache/apk/*
+RUN apk add --no-cache util-linux multipath-tools \
+        bash e2fsprogs-extra qemu-system-x86_64
 
 RUN echo qemux86-64 > /machine.txt
 
