@@ -18,7 +18,7 @@ GRUB_BUILDIN:append:mender-bios = " biosdisk"
 python do_setcorelocation () {
 }
 
-python do_setcorelocation_mender-bios () {
+python do_setcorelocation:mender-bios () {
     coreLoc = int(d.getVar('MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET'))
     # Location for the diskboot.img is held in boot.img as a LBA48 starting at
     # From boot.h GRUB_BOOT_MACHINE_KERNEL_SECTOR
@@ -52,7 +52,7 @@ do_mkimage() {
     :
 }
 
-do_mkimage_mender-bios() {
+do_mkimage:mender-bios() {
     set -x
 
     cd ${B}
@@ -75,7 +75,7 @@ do_deploy() {
     :
 }
 
-do_deploy_mender-bios() {
+do_deploy:mender-bios() {
     install -m 644 ${B}/grub-core.img ${DEPLOYDIR}/
     install -m 644 ${B}/grub-core/boot.img ${DEPLOYDIR}/
 }
