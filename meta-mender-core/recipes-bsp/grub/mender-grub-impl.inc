@@ -14,6 +14,7 @@ GRUB_BUILDIN ?= "boot linux ext2 fat serial part_msdos part_gpt normal \
                  iso9660 configfile search loadenv test"
 
 GRUB_BUILDIN:append:mender-bios = " biosdisk"
+DEPENDS:append:class-target:mender-bios = " grub-native"
 
 python do_setcorelocation () {
 }
@@ -52,7 +53,7 @@ do_mkimage() {
     :
 }
 
-do_mkimage:mender-bios() {
+do_mkimage:class-target:mender-bios() {
     set -x
 
     cd ${B}
@@ -75,7 +76,7 @@ do_deploy() {
     :
 }
 
-do_deploy:mender-bios() {
+do_deploy:class-target:mender-bios() {
     install -m 644 ${B}/grub-core.img ${DEPLOYDIR}/
     install -m 644 ${B}/grub-core/boot.img ${DEPLOYDIR}/
 }
