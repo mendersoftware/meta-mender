@@ -6,6 +6,7 @@ After=systemd-resolved.service
 Type=idle
 User=root
 Group=root
+Environment=PYTHONUNBUFFERED=1
 ExecStart=/usr/bin/python3 /usr/local/bin/mender-mock-server.py
 Restart=on-abort
 
