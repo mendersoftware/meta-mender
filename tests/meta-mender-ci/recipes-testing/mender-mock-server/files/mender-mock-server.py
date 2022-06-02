@@ -58,6 +58,8 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         self.read_body()
 
+        if self.path == "/api/devices/v2/deployments/device/deployments/next":
+            return self.do_GET_or_POST_deployments_next()
         if self.path == "/api/devices/v1/authentication/auth_requests":
             return self.do_POST_auth_requests()
         elif self.path == "/api/devices/v1/deployments/device/deployments/next":
