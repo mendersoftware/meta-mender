@@ -14,6 +14,7 @@
 #    limitations under the License.
 
 import json
+import logging
 import os
 import re
 import shutil
@@ -28,6 +29,9 @@ JWT_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkNjA2ZjYxNC03NWFkLT
 
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+
+    log = logging.getLogger(__name__)
+
     def do_GET(self):
         self.read_body()
 
@@ -61,6 +65,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self.send_empty_response(404)
         else:
+            self.log.critical(f"do_Get: no endpoint matched the request: {self.path}")
             self.send_empty_response(404)
 
     def do_POST(self):
@@ -70,6 +75,8 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             return self.do_POST_auth_requests()
         elif self.path == "/api/devices/v1/deployments/device/deployments/next":
             return self.do_GET_or_POST_deployments_next()
+
+        self.log.critical(f"do_POST: no endpoint matched the request: {self.path}")
         self.send_empty_response(404)
 
     def do_PATCH(self):
@@ -77,6 +84,8 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         if self.path == "/api/devices/v1/inventory/device/attributes":
             return self.do_PATCH_or_PUT_device_attributes()
+
+        self.log.critical(f"do_PATCH: no endpoint matched the request: {self.path}")
         self.send_empty_response(404)
 
     def do_PUT(self):
@@ -104,13 +113,14 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                         os.remove("/data/mender-mock-server-deployment-header.json")
                     self.send_empty_response(204)
                     return
-            except FileNotFoundError:
-                # Fall through to 404.
-                pass
+            except FileNotFoundError as e:
+                self.log.critical(f"do_PUT: exception caught: {self.path}")
+                self.send_empty_response(404)
         elif log is not None:
             self.send_empty_response(204)
             return
 
+        self.log.critical(f"do_PUT: no endpoint matched the request: {self.path}")
         self.send_empty_response(404)
 
     def do_POST_auth_requests(self):
