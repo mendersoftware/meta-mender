@@ -35,6 +35,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.read_body()
 
+        if re.match(
+            "/api/devices/v2/deployments/device/deployments/([a-f0-9-]*)/update_control_map$",
+            self.path,
+            flags=re.IGNORECASE,
+        ):
+            return self.do_GET_update_control_map()
         if self.path == "/api/devices/v1/deployments/device/deployments/next":
             return self.do_GET_or_POST_deployments_next()
         elif self.path.startswith("/data/"):
@@ -45,25 +51,6 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
 
                 shutil.copyfileobj(body, self.wfile)
-        elif re.match(
-            "/api/devices/v2/deployments/device/deployments/([a-f0-9-]*)/update_control_map$",
-            self.path,
-            flags=re.IGNORECASE,
-        ):
-            if os.path.exists("/data/mender-mock-server-deployment-header.json"):
-                with open("/data/mender-mock-server-deployment-header.json", "rb") as body:
-                    # Extract only the update-control-map
-                    update = json.load(body)
-                    resp = json.dumps({
-                        "update_control_map": update["update_control_map"],
-                    }).encode("utf-8")
-                    self.send_response(200)
-                    self.send_header("Content-Type", "application/json")
-                    self.send_header("Content-Length", len(resp))
-                    self.end_headers()
-                    self.wfile.write(resp)
-            else:
-                self.send_empty_response(404)
         else:
             self.log.critical(f"do_Get: no endpoint matched the request: {self.path}")
             self.send_empty_response(404)
@@ -148,6 +135,28 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         else:
             self.send_empty_response(204)
+
+    def do_GET_update_control_map(self):
+        if os.path.exists("/data/mender-mock-server-deployment-header.json"):
+            with open("/data/mender-mock-server-deployment-header.json", "rb") as body:
+                update_control_map = {
+                    "update_control_map": json.load(body).get("update_control_map")
+                }
+                if not update_control_map:
+                    self.log.critical(
+                        "do_GET_update_control_map: no update control map found in the '/data/mender-mock-server-deployment-header.json' file"
+                    )
+                    self.send_response(404)
+                um = json.dumps(update_control_map).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", len(um))
+                self.end_headers()
+
+                self.wfile.write(um)
+
+        else:
+            self.send_empty_response(404)
 
     def send_empty_response(self, status_code):
         self.send_response(status_code)
