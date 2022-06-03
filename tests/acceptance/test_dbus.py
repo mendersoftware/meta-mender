@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2020 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ class TestDBus:
 
             assert f'string "{self.JWT_TOKEN}' in output
             if version_is_minimum(bitbake_variables, "mender-client", "3.2.0"):
-                assert 'string "http://localhost:' in output
+                assert 'string "http://127.0.0.1:' in output
             else:
                 assert 'string "https://docker.mender.io' in output
 
@@ -179,7 +179,7 @@ class TestDBus:
                 output = result.stdout.strip()
                 assert f'string "{self.JWT_TOKEN}' in output
                 if version_is_minimum(bitbake_variables, "mender-client", "3.2.0"):
-                    assert 'string "http://localhost:' in output
+                    assert 'string "http://127.0.0.1:' in output
                 else:
                     assert 'string "https://docker.mender.io' in output
 
