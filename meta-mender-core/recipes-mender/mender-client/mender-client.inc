@@ -106,9 +106,9 @@ GO_IMPORT = "github.com/mendersoftware/mender"
 _MENDER_PACKAGECONFIG_DEFAULT = "${@mender_feature_is_enabled("mender-client-install", "dbus modules inventory-network-scripts", "", d)}"
 PACKAGECONFIG ?= "${_MENDER_PACKAGECONFIG_DEFAULT}"
 
-PACKAGECONFIG:append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
-PACKAGECONFIG:append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
-PACKAGECONFIG:append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-grub', ' grub', '', d)}"
+PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
+PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
+PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'mender-grub', ' grub', '', d)}"
 
 PACKAGECONFIG[mender-client-install] = ",,,mender-artifact-info ca-certificates"
 PACKAGECONFIG[u-boot] = ",,,libubootenv-bin"
@@ -128,6 +128,23 @@ PACKAGECONFIG:append = " split-mender-config"
 _MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
 EXTRA_OEMAKE:append = " TAGS='${_MENDER_TAGS}'"
 GOPTESTBUILDFLAGS:append = " -tags '${_MENDER_TAGS}'"
+
+do_configure:prepend () {
+    # Remove all the src present in build if it is not a symbolic link to ${S}
+    if [ -d ${B}src ]; then
+        rm -rf ${B}src
+    fi
+}
+
+do_configure:append () {
+    # Remove the symbolic link created by go.bbclass in do_configure. This is to
+    # make sure that the build environment ${B} does not touch ${S} in any way.
+    if [ -h ${B}src ]; then
+        rm ${B}src
+    fi
+    mkdir -p $(dirname ${B}src/${GO_IMPORT})
+    cp --archive ${S}/src/${GO_IMPORT} ${B}/src/${GO_IMPORT}
+}
 
 do_compile() {
     GOPATH="${B}:${S}"

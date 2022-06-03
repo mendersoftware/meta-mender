@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2020 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -188,7 +188,7 @@ class TestSnapshot:
 
             # Ensure that the payload size of the produced artifact matches the
             # partition.
-            assert re.search("size: *%s" % partsize, output) is not None
+            assert re.search(r"size: *%s" % partsize, output) is not None
 
         finally:
             try:
@@ -260,7 +260,7 @@ class TestSnapshot:
 
             # Ensure that the payload size of the produced artifact matches the
             # partition.
-            assert re.search("size: *%s" % partsize, output) is not None
+            assert re.search(r"size: *%s" % partsize, output) is not None
 
         finally:
             try:

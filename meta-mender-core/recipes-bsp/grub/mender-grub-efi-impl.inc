@@ -2,7 +2,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 do_check_config_efi_stub() {
 }
-do_check_config_efi_stub_mender-grub() {
+do_check_config_efi_stub:mender-grub() {
     # The first "if" is just to make sure "file" is working correctly.
     if file -Lk ${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE} | fgrep "Linux kernel"; then
         if ! file -Lk ${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE} | fgrep "EFI application"; then
@@ -10,7 +10,7 @@ do_check_config_efi_stub_mender-grub() {
         fi
     fi
 }
-do_check_config_efi_stub_mender-grub_mender-bios() {
+do_check_config_efi_stub:mender-grub:mender-bios() {
 }
 addtask do_check_config_efi_stub before do_configure
 do_check_config_efi_stub[depends] = "virtual/kernel:do_deploy"

@@ -91,10 +91,10 @@ def add_kconfig_option(option, already_added):
                         break
                     line = line.rstrip()
 
-                    if re.match("^config\s*%s(\s|$)" % kconfig_key, line):
+                    if re.match(r"^config\s*%s(\s|$)" % kconfig_key, line):
                         inside_option = True
                         continue
-                    elif re.match("^config ", line):
+                    elif re.match(r"^config ", line):
                         inside_option = False
                         continue
 
@@ -104,7 +104,7 @@ def add_kconfig_option(option, already_added):
                     while line.endswith("\\"):
                         line = line[:-1] + fd.readline().rstrip()
 
-                    match = re.match("^\s*depends\s*on\s*(.+)", line)
+                    match = re.match(r"^\s*depends\s*on\s*(.+)", line)
                     if not match:
                         continue
 

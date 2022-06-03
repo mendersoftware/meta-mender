@@ -57,7 +57,7 @@ EOF
 }
 
 # UBI specific version of the fw_env.config file.
-mender_create_fw_env_config_file_mender-ubi() {
+mender_create_fw_env_config_file:mender-ubi() {
     # Takes one argument, which is the file to put it in.
 
     set -x

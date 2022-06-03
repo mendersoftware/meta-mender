@@ -1,6 +1,8 @@
 # Usage of Docker image.
 #
 # While building:
+# --build-arg EMBEDDED_IMAGE_NAME=<uefiimg>
+#       image to add to the Docker image
 # --build-arg DISK_IMAGE=<uefiimg>
 #       image to add to the Docker image
 # --build-arg BOOTLOADER=<ovmf.qcow2>
@@ -15,8 +17,13 @@
 #       Use server.crt and/or artifact-verify-key.pem from config-dir, if it exists.
 # -e SERVER_URL=https://whatever.mender.io
 #       Use SERVER_URL as server address for client.
+# -e SERVER_IP=192.168.1.1
+#       Set a "<SERVER_IP> <SERVER_HOST>" entry in /etc/hosts
 # -e TENANT_TOKEN=<token>
 #       Use token as tenant token for client.
+# -e MENDER_GATEWAY_CONFFILE=<conffile>
+#       Copy the configuration file for mender-gateway
+#       Note that the file needs to be mounted into the Docker container
 
 FROM alpine:3.15.0
 
@@ -32,10 +39,12 @@ RUN rm -rf /var/cache/apk/*
 RUN echo qemux86-64 > /machine.txt
 
 ARG DISK_IMAGE=scripts/docker/empty-file
+ARG EMBEDDED_IMAGE=scripts/docker/empty-file
 ARG BOOTLOADER=scripts/docker/empty-file
 ARG BOOTLOADER_DATA=scripts/docker/empty-file
 
 COPY $DISK_IMAGE .
+COPY $EMBEDDED_IMAGE .
 COPY $BOOTLOADER ./ovmf.qcow2
 COPY $BOOTLOADER_DATA ./ovmf.vars.qcow2
 

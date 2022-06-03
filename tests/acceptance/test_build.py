@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ def extract_partition(img, number):
         ["fdisk", "-l", "-o", "device,start,end", img], stdout=subprocess.PIPE
     )
     for line in output.stdout:
-        if re.search("img%d" % number, line.decode()) is None:
+        if re.search(r"img%d" % number, line.decode()) is None:
             continue
 
         match = re.match(r"\s*\S+\s+(\S+)\s+(\S+)", line.decode())
@@ -454,7 +454,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             with open(old_file) as old_fd, open(new_file, "w") as new_fd:
                 for line in old_fd.readlines():
                     if (
-                        re.match("^EXTERNALSRC_pn-%s(-native)? *=" % base_recipe, line)
+                        re.match(r"^EXTERNALSRC_pn-%s(-native)? *=" % base_recipe, line)
                         is not None
                     ):
                         continue
@@ -1151,31 +1151,47 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             "mender-client",
-            ['PACKAGECONFIG:remove = "dbus"'],
+            target="-c clean mender-client",
         )
 
-        env = get_bitbake_variables(
-            request, "mender-client", prepared_test_build=prepared_test_build
-        )
+        try:
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                "mender-client",
+                ['PACKAGECONFIG:remove = "dbus"'],
+            )
 
-        # Get dynamic section info from binary.
-        output = subprocess.check_output(
-            [env["READELF"], "-d", os.path.join(env["D"], "usr/bin/mender")]
-        ).decode()
+            env = get_bitbake_variables(
+                request, "mender-client", prepared_test_build=prepared_test_build
+            )
 
-        # Verify the output is sane.
-        assert "libc" in output
+            # Get dynamic section info from binary.
+            output = subprocess.check_output(
+                [env["READELF"], "-d", os.path.join(env["D"], "usr/bin/mender")]
+            ).decode()
 
-        # Actual test.
-        assert "libglib" not in output
+            # Verify the output is sane.
+            assert "libc" in output
 
-        # Make sure busconfig files are also gone.
-        assert not os.path.exists(
-            os.path.join(env["D"], "usr/share/dbus-1/system.d/io.mender.conf")
-        )
-        assert not os.path.exists(
-            os.path.join(env["D"], "etc/dbus-1/system.d/io.mender.conf")
-        )
+            # Actual test.
+            assert "libglib" not in output
+
+            # Make sure busconfig files are also gone.
+            assert not os.path.exists(
+                os.path.join(env["D"], "usr/share/dbus-1/system.d/io.mender.conf")
+            )
+            assert not os.path.exists(
+                os.path.join(env["D"], "etc/dbus-1/system.d/io.mender.conf")
+            )
+
+        finally:
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                "mender-client",
+                target="-c clean mender-client",
+            )
 
     @pytest.mark.min_mender_version("2.5.0")
     @pytest.mark.only_with_image("ext4")
@@ -1239,7 +1255,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
     @pytest.mark.min_mender_version("2.7.0")
     def test_mender_dbus_interface_file(
-        self, request, prepared_test_build, bitbake_image
+        self, request, prepared_test_build, bitbake_image, bitbake_path
     ):
         """
         Test the D-Bus interface file is provided by the mender-client-dev package,

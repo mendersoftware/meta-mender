@@ -12,5 +12,8 @@ ALLOW_EMPTY:${PN} = "1"
 FILES:${PN}:x86-64 = "/lib64"
 
 do_install:x86-64() {
-    ln -sf lib ${D}/lib64
+    # Avoid issues with ./lib64/*.a on multilib systems
+    if ${@bb.utils.contains('MULTILIBS','multilib:lib32','false','true',d)}; then
+        ln -sf lib ${D}/lib64
+    fi
 }

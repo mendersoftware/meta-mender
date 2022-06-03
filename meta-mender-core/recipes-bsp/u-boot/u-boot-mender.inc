@@ -268,7 +268,7 @@ do_configure:prepend:mender-uboot() {
     unset IFS
 }
 
-do_compile:append:mender-uboot_mender-ubi() {
+do_compile:append:mender-uboot:mender-ubi() {
     # Doing this in do_compile instead of do_configure is actually a bit late,
     # but the U-Boot recipe doesn't separate between the stages.
 
