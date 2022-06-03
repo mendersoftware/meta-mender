@@ -1,8 +1,3 @@
-DEPENDS:append:mender-grub:arm = " u-boot"
-DEPENDS:append:mender-grub:aarch64 = " u-boot"
-RDEPENDS:${PN}:append:mender-grub:arm = " u-boot"
-RDEPENDS:${PN}:append:mender-grub:aarch64 = " u-boot"
-
 # MEN-2404: These older versions have broken EFI support. Unfortunately it does
 # not seem to be possible to specify a range of conflicting versions. If so, we
 # would have specified ">= 2018.11, <= 2019.07". If you are in the situation of

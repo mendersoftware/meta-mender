@@ -7,8 +7,14 @@ IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-gpt', ' 
 
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:x86 =     " kernel-image"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:x86-64 =  " kernel-image"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:arm =     " kernel-image kernel-devicetree"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:aarch64 = " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:arm =     " \
+    kernel-image \
+    ${@'kernel-devicetree' if d.getVar('MENDER_EFI_LOADER').startswith('u-boot') else ''} \
+"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:aarch64 =     " \
+    kernel-image \
+    ${@'kernel-devicetree' if d.getVar('MENDER_EFI_LOADER').startswith('u-boot') else ''} \
+"
 
 python() {
     features = d.getVar('MENDER_FEATURES').split()

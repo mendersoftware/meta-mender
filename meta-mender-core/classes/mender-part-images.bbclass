@@ -270,7 +270,12 @@ _MENDER_PART_IMAGE_DEPENDS += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE', '
 #
 # This assumes that U-boot is used on ARM, this could become problematic
 # if we add support for other bootloaders on ARM, e.g Barebox.
-_MENDER_PART_IMAGE_DEPENDS:append:mender-grub_arm =     " u-boot:do_deploy"
+_MENDER_PART_IMAGE_DEPENDS:append:mender-grub:arm =     " \
+    ${@'%s:do_deploy' % d.getVar('MENDER_EFI_LOADER') if d.getVar('MENDER_EFI_LOADER') else ''} \
+"
+_MENDER_PART_IMAGE_DEPENDS:append:mender-grub:aarch64 =     " \
+    ${@'%s:do_deploy' % d.getVar('MENDER_EFI_LOADER') if d.getVar('MENDER_EFI_LOADER') else ''} \
+"
 
 _MENDER_PART_IMAGE_DEPENDS:append:mender-uboot = " u-boot:do_deploy"
 _MENDER_PART_IMAGE_DEPENDS:append:mender-grub:mender-bios = " grub:do_deploy"

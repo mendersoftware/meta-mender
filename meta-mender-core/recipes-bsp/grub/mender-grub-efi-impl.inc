@@ -1,5 +1,9 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
+require ${@'uboot_version_logic.inc' if d.getVar('MENDER_EFI_LOADER').startswith('u-boot') else ''}
+
+DEPENDS:append = " ${MENDER_EFI_LOADER}"
+
 do_check_config_efi_stub() {
 }
 do_check_config_efi_stub:mender-grub() {
