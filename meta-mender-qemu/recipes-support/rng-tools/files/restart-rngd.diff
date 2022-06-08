@@ -1,0 +1,11 @@
+--- a/rngd.service	2020-05-26 10:42:14.575073761 +0200
++++ b/rngd.service	2020-05-26 10:42:34.110746120 +0200
+@@ -8,6 +8,8 @@
+ [Service]
+ EnvironmentFile=-@SYSCONFDIR@/default/rng-tools
+ ExecStart=@SBINDIR@/rngd -f $EXTRA_ARGS
++Restart=on-failure
++RestartSec=5
+ 
+ [Install]
+ WantedBy=multi-user.target
