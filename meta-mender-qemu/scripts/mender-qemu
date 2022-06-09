@@ -98,6 +98,11 @@ QEMU_DRIVE=${QEMU_DRIVE:-""}
 
 case $DISK_IMG in
     *.uefiimg|*.biosimg|*.sdimg|*.gptimg)
+        # With the new SD-card driver in qemu >= 6.x, the SD-card has to be a
+        # multiple of 2 larger than the image file.
+        if [ "${QEMU_SYSTEM}" = "qemu-system-arm" ]; then
+            qemu-img resize -f raw $DISK_IMG 1G
+        fi
         QEMU_ARGS="$QEMU_ARGS -drive file=$DISK_IMG,if=$STORAGE_TYPE,format=raw "
         ;;
     *.vexpress-nor)
