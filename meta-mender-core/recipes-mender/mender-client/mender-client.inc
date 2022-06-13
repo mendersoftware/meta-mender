@@ -9,6 +9,7 @@ PACKAGES:append = " mender-modules-gen"
 
 RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd = " parted util-linux-fdisk"
 RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd:mender-partlabel = " util-linux-blkid"
+RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd:mender-partuuid = " util-linux-blkid"
 RDEPENDS:mender-modules-gen = "bash"
 
 MENDER_CLIENT ?= "mender-client"
@@ -128,21 +129,24 @@ PACKAGECONFIG:append = " split-mender-config"
 _MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
 EXTRA_OEMAKE:append = " TAGS='${_MENDER_TAGS}'"
 GOPTESTBUILDFLAGS:append = " -tags '${_MENDER_TAGS}'"
+# Changes to tags are not automatically picked up by the Makefile, so repopulate
+# the build directory from scratch if changing this.
+do_unpack[vardeps] += "_MENDER_TAGS"
 
 do_configure:prepend () {
     # Remove all the src present in build if it is not a symbolic link to ${S}
-    if [ -d ${B}src ]; then
-        rm -rf ${B}src
+    if [ -d ${B}/src ]; then
+        rm -rf ${B}/src
     fi
 }
 
 do_configure:append () {
     # Remove the symbolic link created by go.bbclass in do_configure. This is to
     # make sure that the build environment ${B} does not touch ${S} in any way.
-    if [ -h ${B}src ]; then
-        rm ${B}src
+    if [ -h ${B}/src ]; then
+        rm ${B}/src
     fi
-    mkdir -p $(dirname ${B}src/${GO_IMPORT})
+    mkdir -p $(dirname ${B}/src/${GO_IMPORT})
     cp --archive ${S}/src/${GO_IMPORT} ${B}/src/${GO_IMPORT}
 }
 
@@ -343,13 +347,10 @@ do_install:append:class-target:mender-growfs-data:mender-systemd() {
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid -L ${MENDER_DATA_PART_LABEL})#g" \
             ${WORKDIR}/mender-client-resize-data-part.sh.in
-
-        sed -i "s#@MENDER_STORAGE_DEVICE@#/dev/\$(basename \$(readlink -f \"/sys/class/block/\$(basename \$MENDER_DATA_PART)/..\"))#g" \
+    elif ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+        sed -i "s#@MENDER_DATA_PART@#\$(blkid | grep 'PARTUUID=\"${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')}\"' | awk -F: '{ print \$1 }')#g" \
             ${WORKDIR}/mender-client-resize-data-part.sh.in
     else
-        sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
-            ${WORKDIR}/mender-client-resize-data-part.sh.in
-
         sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
             ${WORKDIR}/mender-client-resize-data-part.sh.in
     fi

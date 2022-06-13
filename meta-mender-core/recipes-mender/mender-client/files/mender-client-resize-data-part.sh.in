@@ -5,10 +5,10 @@ set -e
 # All sizes are in blocks of 512 bytes
 
 MENDER_DATA_PART=@MENDER_DATA_PART@
-MENDER_STORAGE_DEVICE=@MENDER_STORAGE_DEVICE@
 
-mender_storage_device_base=$(basename ${MENDER_STORAGE_DEVICE})
 mender_data_part_base=$(basename ${MENDER_DATA_PART})
+mender_storage_device_base=$(basename $(readlink -f /sys/class/block/${mender_data_part_base}/..))
+mender_storage_device=/dev/${mender_storage_device_base}
 
 total_disk_size=$(cat /sys/block/${mender_storage_device_base}/size)
 
@@ -39,6 +39,6 @@ fi
 # ensures that GPT backup headers are written to the end of the disk.
 # Note: On some MBR systems using BusyBox's fdisk this call will fail,
 # this is OK (MBR systems don't have a backup header), always return true. 
-echo "w" | fdisk ${MENDER_STORAGE_DEVICE} &> /dev/null || true
+echo "w" | fdisk ${mender_storage_device} &> /dev/null || true
 
-/usr/sbin/parted -s ${MENDER_STORAGE_DEVICE} resizepart @MENDER_DATA_PART_NUMBER@ 100%
+/usr/sbin/parted -s ${mender_storage_device} resizepart @MENDER_DATA_PART_NUMBER@ 100%
