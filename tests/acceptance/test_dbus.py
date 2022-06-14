@@ -56,7 +56,7 @@ class TestDBus:
             connection.run("systemctl start mender-client")
 
             # Wait one state machine cycle for the D-Bus API to be available
-            for _ in range(12):
+            for _ in range(60):
                 result = connection.run("journalctl --unit mender-client")
                 if (
                     "Authorize failed:" in result.stdout
@@ -97,7 +97,7 @@ class TestDBus:
 
             # get the JWT token via D-Bus
             output = ""
-            for i in range(12):
+            for i in range(60):
                 result = connection.run(
                     "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.GetJwtToken || true"
                 )
@@ -144,7 +144,7 @@ class TestDBus:
 
                 # fetch the JWT token
                 fetched = False
-                for i in range(12):
+                for i in range(60):
                     result = connection.run(
                         "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.FetchJwtToken || true"
                     )
@@ -159,7 +159,7 @@ class TestDBus:
                 # verify we received the D-Bus signal JwtTokenStateChange and that it contains the JWT token
                 found = False
                 output = ""
-                for i in range(12):
+                for i in range(60):
                     output = connection.run("cat /tmp/dbus-monitor.log").stdout.strip()
                     if (
                         "path=/io/mender/AuthenticationManager; interface=io.mender.Authentication1; member=JwtTokenStateChange"
