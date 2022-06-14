@@ -579,13 +579,13 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                     "vars": [
                         'MENDER_MTDIDS = "nor2=40000000.flash,nor3=50000000.flash"',
                         'MENDER_IS_ON_MTDID = "40000000.flash"',
-                        'MENDER_MTDPARTS = "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)"',
+                        'MENDER_MTDPARTS = "50000000.flash:128k(whatever);40000000.flash:1m(u-boot)ro,1m(u-boot-env),-(ubi)"',
                     ],
                     "success": True,
                     "expected": {
                         "MENDER_MTDIDS": "nor2=40000000.flash,nor3=50000000.flash",
                         "MENDER_IS_ON_MTDID": "40000000.flash",
-                        "MENDER_MTDPARTS": "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)",
+                        "MENDER_MTDPARTS": "50000000.flash:128k(whatever);40000000.flash:1m(u-boot)ro,1m(u-boot-env),-(ubi)",
                     },
                 },
             ),
