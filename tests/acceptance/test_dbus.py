@@ -107,8 +107,10 @@ class TestDBus:
                 time.sleep(5)
 
             assert f'string "{self.JWT_TOKEN}' in output
-            if version_is_minimum(bitbake_variables, "mender-client", "3.2.0"):
+            if version_is_minimum(bitbake_variables, "mender-client", "3.4.0"):
                 assert 'string "http://127.0.0.1:' in output
+            elif version_is_minimum(bitbake_variables, "mender-client", "3.2.0"):
+                assert 'string "http://localhost:' in output
             else:
                 assert 'string "https://docker.mender.io' in output
 
@@ -178,8 +180,10 @@ class TestDBus:
 
                 output = result.stdout.strip()
                 assert f'string "{self.JWT_TOKEN}' in output
-                if version_is_minimum(bitbake_variables, "mender-client", "3.2.0"):
+                if version_is_minimum(bitbake_variables, "mender-client", "3.4.0"):
                     assert 'string "http://127.0.0.1:' in output
+                elif version_is_minimum(bitbake_variables, "mender-client", "3.2.0"):
+                    assert 'string "http://localhost:' in output
                 else:
                     assert 'string "https://docker.mender.io' in output
 
