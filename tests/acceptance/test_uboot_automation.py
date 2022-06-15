@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -260,10 +260,6 @@ class TestUbootAutomation:
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
 
-        with bitbake_env_from(request, "u-boot"):
-            self.run_test_uboot_compile(request, bitbake_variables)
-
-    def run_test_uboot_compile(self, request, bitbake_variables):
         # No need to test this on non-vexpress-qemu. It is a very resource
         # consuming test, and it is identical on all boards, since it internally
         # tests all boards.
@@ -281,6 +277,10 @@ class TestUbootAutomation:
             )
         bitbake_variables = get_bitbake_variables(request, "u-boot")
 
+        with bitbake_env_from(request, "u-boot"):
+            self.do_board_compiles(machine, bitbake_variables)
+
+    def do_board_compiles(self, machine, bitbake_variables):
         shutil.rmtree("/dev/shm/test_uboot_compile", ignore_errors=True)
 
         env = copy.copy(os.environ)
