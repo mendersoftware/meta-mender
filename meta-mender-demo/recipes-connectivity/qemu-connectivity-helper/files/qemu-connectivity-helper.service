@@ -1,0 +1,12 @@
+[Unit]
+Description=Prolong the shutdown, so that Qemu SLiRP TCP connections have time to be brought down.
+After=network-online.target
+Before=mender-client.service mender-gateway.service
+
+[Service]
+ExecStart=/bin/true
+RemainAfterExit=yes
+ExecStop=/bin/sleep 10
+
+[Install]
+WantedBy=multi-user.target
