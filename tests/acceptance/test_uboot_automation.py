@@ -464,6 +464,13 @@ class TestUbootAutomation:
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
+            target="-c clean u-boot",
+        )
+
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
             target="-c save_mender_auto_configured_patch u-boot",
         )
 
