@@ -29,3 +29,14 @@ trigger:mender-qa:
     - ./gitlab_trigger_client_publish ${CI_COMMIT_REF_NAME} ${CI_PROJECT_NAME}
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
+
+test:order
+  image: alpine
+  stage: test
+  script:
+    - grep '"MENDER' meta-mender-core/conf/mender-vars.json > orig.list
+    - grep '"MENDER' meta-mender-core/conf/mender-vars.json | sort > sorted.list
+    - if ! diff orig.list sorted.list; then
+    -   echo "Please keep meta-mender-core/conf/mender-vars.json variables sorted!" 1>&2
+    -   exit 1
+    - fi
