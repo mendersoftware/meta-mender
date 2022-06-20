@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -195,6 +195,18 @@ class TestUbootAutomation:
         pytest.skip(msg)
 
     def board_is_arm(self, srcdir, config):
+        if config in [
+            "brppt1_mmc_defconfig",
+            "brppt1_nand_defconfig",
+            "brppt1_spi_defconfig",
+            "brppt2_defconfig",
+            "brsmarc1_defconfig",
+        ]:
+            # u-boot-v2022.01: These boards produce some garbled output which
+            # confuses the utf-8 parser. Just mark them as "not ARM", which will
+            # cause them to be skipped.
+            return False
+
         if config in ["xilinx_versal_virt_defconfig"]:
             # u-boot-v2019.01: There is some weird infinite loop in the conf
             # script of this particular board. Just mark it as "not ARM", which
