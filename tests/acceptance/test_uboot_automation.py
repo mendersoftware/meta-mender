@@ -355,8 +355,8 @@ class TestUbootAutomation:
 
             if machine == "vexpress-qemu":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2021.07-gitbb38d77ca779
-                measured_failed_ratio = 27.0 / 502.0
+                # From version: 2022.01-gitd637294e264a
+                measured_failed_ratio = 23.0 / 494.0
             elif machine == "vexpress-qemu-flash":
                 # PLEASE UPDATE the version you used to find this number if you update it.
                 # From version: 2022.01-gitd637294e264a
