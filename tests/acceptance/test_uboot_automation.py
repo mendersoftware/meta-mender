@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -195,6 +195,18 @@ class TestUbootAutomation:
         pytest.skip(msg)
 
     def board_is_arm(self, srcdir, config):
+        if config in [
+            "brppt1_mmc_defconfig",
+            "brppt1_nand_defconfig",
+            "brppt1_spi_defconfig",
+            "brppt2_defconfig",
+            "brsmarc1_defconfig",
+        ]:
+            # u-boot-v2022.01: These boards produce some garbled output which
+            # confuses the utf-8 parser. Just mark them as "not ARM", which will
+            # cause them to be skipped.
+            return False
+
         if config in ["xilinx_versal_virt_defconfig"]:
             # u-boot-v2019.01: There is some weird infinite loop in the conf
             # script of this particular board. Just mark it as "not ARM", which
@@ -260,10 +272,6 @@ class TestUbootAutomation:
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
 
-        with bitbake_env_from(request, "u-boot"):
-            self.run_test_uboot_compile(request, bitbake_variables)
-
-    def run_test_uboot_compile(self, request, bitbake_variables):
         # No need to test this on non-vexpress-qemu. It is a very resource
         # consuming test, and it is identical on all boards, since it internally
         # tests all boards.
@@ -281,6 +289,10 @@ class TestUbootAutomation:
             )
         bitbake_variables = get_bitbake_variables(request, "u-boot")
 
+        with bitbake_env_from(request, "u-boot"):
+            self.do_board_compiles(machine, bitbake_variables)
+
+    def do_board_compiles(self, machine, bitbake_variables):
         shutil.rmtree("/dev/shm/test_uboot_compile", ignore_errors=True)
 
         env = copy.copy(os.environ)
@@ -343,12 +355,12 @@ class TestUbootAutomation:
 
             if machine == "vexpress-qemu":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2021.07-gitbb38d77ca779
-                measured_failed_ratio = 27.0 / 502.0
+                # From version: 2022.01-gitd637294e264a
+                measured_failed_ratio = 23.0 / 494.0
             elif machine == "vexpress-qemu-flash":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2021.07-gitbb38d77ca779
-                measured_failed_ratio = 15.0 / 128.0
+                # From version: 2022.01-gitd637294e264a
+                measured_failed_ratio = 9.0 / 130.0
 
             # We tolerate a certain percentage discrepancy in either direction.
             tolerated_discrepancy = 0.1
@@ -459,6 +471,13 @@ class TestUbootAutomation:
             pytest.skip(
                 "Test is not applicable when MENDER_UBOOT_AUTO_CONFIGURE is off"
             )
+
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            target="-c clean u-boot",
+        )
 
         build_image(
             prepared_test_build["build_dir"],

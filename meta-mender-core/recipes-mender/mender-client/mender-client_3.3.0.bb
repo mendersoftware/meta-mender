@@ -8,10 +8,10 @@ require mender-client.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=3.2.x"
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=3.3.x"
 
-# Tag: 3.2.0
-SRCREV = "f6e9401329ff26e27955651a20f9025275c717bf"
+# Tag: 3.3.0
+SRCREV = "b3749e8d2627d6d1282899bbce0b487407698a2d"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
