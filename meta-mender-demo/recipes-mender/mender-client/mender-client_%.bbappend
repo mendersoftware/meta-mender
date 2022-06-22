@@ -1,9 +1,19 @@
-MENDER_UPDATE_POLL_INTERVAL_SECONDS:mender-client-install = "5"
-MENDER_INVENTORY_POLL_INTERVAL_SECONDS:mender-client-install = "5"
-MENDER_RETRY_POLL_INTERVAL_SECONDS:mender-client-install = "30"
+MENDER_CONF[ServerURL] ?= '{"ServerURL":"https://docker.mender.io"}'
+MENDER_CONF[UpdatePollIntervalSeconds] ?= '{"UpdatePollIntervalSeconds":5}'
+MENDER_CONF[InventoryPollIntervalSeconds] ?= '{"InventoryPollIntervalSeconds":5}'
+MENDER_CONF[RetryPollIntervalSeconds] ?= '{"RetryPollIntervalSeconds":30}'
 
-MENDER_UPDATE_CONTROL_MAP_EXPIRATION_TIME_SECONDS:mender-client-install = "90"
-MENDER_UPDATE_CONTROL_MAP_BOOT_EXPIRATION_TIME_SECONDS:mender-client-install = "45"
+MENDER_CONF[UpdateControlMapExpirationTimeSeconds] ?= '{"UpdateControlMapExpirationTimeSeconds":90}'
+MENDER_CONF[UpdateControlMapBootExpirationTimeSeconds] ?= '{"UpdateControlMapBootExpirationTimeSeconds":45}'
+
+MENDER_CONF:append:mender-client-install = " \
+    ServerURL \
+    UpdatePollIntervalSeconds \
+    InventoryPollIntervalSeconds \
+    RetryPollIntervalSeconds \
+    UpdateControlMapExpirationTimeSeconds \
+    UpdateControlMapBootExpirationTimeSeconds \
+"
 
 # Depend on mender-server-certificate, which on demo layer installs the demo cert
 DEPENDS:append:class-target = " mender-server-certificate"

@@ -30,7 +30,7 @@ do_compile() {
     # Get and filter the variables that the user wants to migrate to the persistent configuration.
     # This also ensures that our fields are split by a single space, which means that translate
     # below always functions properly.
-    PERSISTENT_CONFIGS="${@bb.utils.filter("MENDER_PERSISTENT_CONFIGURATION_VARS", d.getVar("MENDER_CONFIGURATION_VARS"), d)}"
+    PERSISTENT_CONFIGS="${MENDER_PERSISTENT_CONFIGURATION_VARS}"
 
     # [a b] -> [{a,b}]
     MENDER_JQ_PROGRAM="{$(echo $PERSISTENT_CONFIGS | tr ' ' ',')}"

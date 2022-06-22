@@ -30,7 +30,7 @@ trigger:mender-qa:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-test:order
+test:order:
   image: alpine
   stage: test
   script:

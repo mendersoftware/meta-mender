@@ -13,13 +13,8 @@ RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd:mender-partuuid = " util
 RDEPENDS:mender-modules-gen = "bash"
 
 MENDER_CLIENT ?= "mender-client"
-MENDER_SERVER_URL ?= "https://docker.mender.io"
-# Tenant token
-MENDER_TENANT_TOKEN ?= "dummy"
+
 SYSTEMD_AUTO_ENABLE ?= "enable"
-MENDER_UPDATE_POLL_INTERVAL_SECONDS ?= "1800"
-MENDER_INVENTORY_POLL_INTERVAL_SECONDS ?= "28800"
-MENDER_RETRY_POLL_INTERVAL_SECONDS ?= "300"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
@@ -172,7 +167,37 @@ do_compile() {
     echo "device_type=${MENDER_DEVICE_TYPE}" > ${B}/device_type
 }
 
+MENDER_CONF[RootfsParts] ?= '{ \
+    "RootfsPartA":"${MENDER_ROOTFS_PART_A}", \
+    "RootfsPartB":"${MENDER_ROOTFS_PART_B}" \
+}'
+MENDER_CONF[ArtifactVerifyKey] ?= '{"ArtifactVerifyKey":"/etc/mender/artifact-verify-key.pem"}'
+
+def mender_is_using_verify_key(d):
+    if "artifact-verify-key.pem" in d.getVar("SRC_URI"):
+        return True
+    if d.getVar("MENDER_ARTIFACT_VERIFY_KEY"):
+        return True
+    return False
+
+MENDER_CONF ?= " \
+    RootfsParts \
+    ${@"ArtifactVerifyKey" if mender_is_using_verify_key(d) else ""} \
+"
+
 python do_prepare_mender_conf() {
+    for var in [
+        "MENDER_INVENTORY_POLL_INTERVAL_SECONDS",
+        "MENDER_RETRY_POLL_INTERVAL_SECONDS",
+        "MENDER_SERVER_URL",
+        "MENDER_TENANT_TOKEN",
+        "MENDER_UPDATE_CONTROL_MAP_BOOT_EXPIRATION_TIME_SECONDS",
+        "MENDER_UPDATE_CONTROL_MAP_EXPIRATION_TIME_SECONDS",
+        "MENDER_UPDATE_POLL_INTERVAL_SECONDS",
+    ]:
+        if d.getVar(var):
+            bb.fatal(f"{var} is not supported anymore in kirkstone and onwards. Please put the corresponding configuration option in mender.conf instead and include it in SRC_URI.")
+
     import json
 
     # If a mender.conf has been provided in SRC_URI, merge this with the
@@ -186,56 +211,33 @@ python do_prepare_mender_conf() {
     else:
         bb.debug(1, "mender.conf not present in ${WORKDIR}, generating a new one.")
         transient_conf = {}
-    def conf_maybe_add(key, value, getvar, integer):
-        if getvar:
-            warn_str = "variable '%s'" % value
-            value = d.getVar(value)
-        else:
-            warn_str = "automatically provided settings"
-        if value is not None and value != "":
-            if transient_conf.get(key) is not None and transient_conf[key] != value:
-                bb.warn("Configuration key '%s', found in mender.conf, conflicts with %s. Choosing the latter." % (key, warn_str))
-            if integer:
-                transient_conf[key] = int(value)
-            else:
-                transient_conf[key] = value
 
-    key_in_src_uri = os.path.exists(os.path.join(d.getVar("WORKDIR"), "artifact-verify-key.pem"))
-    key_in_var = d.getVar("MENDER_ARTIFACT_VERIFY_KEY") not in [None, ""]
+    def conf_add(conf):
+        flag = d.getVarFlag("MENDER_CONF", conf)
+        if flag is None:
+            bb.fatal(f"MENDER_CONF[{conf}] is not defined")
+        parsed = json.loads(flag)
+        for key in parsed.keys():
+            if transient_conf.get(key) is not None:
+                bb.warn("Configuration key '%s', found in mender.conf, conflicts with MENDER_CONF[%s]. Choosing the latter." % (key, conf))
+            transient_conf[key] = parsed[key]
 
-    # Add new variable -> config assignments here.
-    if key_in_src_uri or key_in_var:
-        conf_maybe_add("ArtifactVerifyKey", "%s/mender/artifact-verify-key.pem" % d.getVar("sysconfdir"), getvar=False, integer=False)
-    conf_maybe_add("InventoryPollIntervalSeconds", "MENDER_INVENTORY_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
-    # Mandatory variables - will always exist
-    conf_maybe_add("RetryPollIntervalSeconds", "MENDER_RETRY_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
-    conf_maybe_add("RootfsPartA", "MENDER_ROOTFS_PART_A", getvar=True, integer=False)
-    conf_maybe_add("RootfsPartB", "MENDER_ROOTFS_PART_B", getvar=True, integer=False)
-    conf_maybe_add("ServerURL", "MENDER_SERVER_URL", getvar=True, integer=False)
-    conf_maybe_add("UpdatePollIntervalSeconds", "MENDER_UPDATE_POLL_INTERVAL_SECONDS", getvar=True, integer=True)
+    if d.getVar("MENDER_CONF") is None:
+        return
 
-    # Tenant-token is optional, but falls back to a default-value set in config.go
-    conf_maybe_add("TenantToken", "MENDER_TENANT_TOKEN", getvar=True, integer=False)
-
-    # Add the update control configurations if set
-    conf_maybe_add("UpdateControlMapExpirationTimeSeconds", "MENDER_UPDATE_CONTROL_MAP_EXPIRATION_TIME_SECONDS", getvar=True, integer=True)
-    conf_maybe_add("UpdateControlMapBootExpirationTimeSeconds", "MENDER_UPDATE_CONTROL_MAP_BOOT_EXPIRATION_TIME_SECONDS", getvar=True, integer=True)
-
-    # Filter returns the variables that are present in both instances.
-    # Thus no misspelled variables will ever enter the persistent configuration during migration.
-    persistent_configs = bb.utils.filter("MENDER_PERSISTENT_CONFIGURATION_VARS", d.getVar("MENDER_CONFIGURATION_VARS"), d)
-
-    persistent_conf = {}
+    for conf in d.getVar("MENDER_CONF").split():
+        conf_add(conf)
 
     # Extract the variables that are destined for the persistent mender-configuration.
     if bb.utils.contains('PACKAGECONFIG', 'split-mender-config', True, False, d):
-        for config_var in transient_conf:
-            if config_var in persistent_configs:
-                persistent_conf[config_var] = transient_conf[config_var]
-
-        # Remove the configurations from the transient conf that are already in the persistent configuration.
-        for config_var in persistent_conf:
-            del transient_conf[config_var]
+        persistent_configs = d.getVar("MENDER_PERSISTENT_CONFIGURATION_VARS")
+        persistent_conf = {}
+        if persistent_configs:
+            for key in persistent_configs.split():
+                if transient_conf.get(key) is None:
+                    continue
+                persistent_conf[key] = transient_conf[key]
+                del transient_conf[key]
 
         dst_conf = os.path.join(d.getVar("B"), "persistent_mender.conf")
         fd = open(dst_conf, "w")
@@ -246,18 +248,11 @@ python do_prepare_mender_conf() {
     fd = open(dst_conf, "w")
     json.dump(transient_conf, fd, indent=4, sort_keys=True)
     fd.close()
-
 }
 addtask do_prepare_mender_conf after do_compile before do_install
 do_prepare_mender_conf[vardeps] = " \
     MENDER_ARTIFACT_VERIFY_KEY \
-    MENDER_INVENTORY_POLL_INTERVAL_SECONDS \
-    MENDER_RETRY_POLL_INTERVAL_SECONDS \
-    MENDER_ROOTFS_PART_A \
-    MENDER_ROOTFS_PART_B \
-    MENDER_SERVER_URL \
-    MENDER_TENANT_TOKEN \
-    MENDER_UPDATE_POLL_INTERVAL_SECONDS \
+    MENDER_CONF \
     MENDER_PERSISTENT_CONFIGURATION_VARS \
 "
 
