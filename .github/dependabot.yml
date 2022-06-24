@@ -1,42 +1,48 @@
 version: 2
 updates:
   - commit-message:
-      prefix: "chore"
+      prefix: chore
     directory: /tests/acceptance
     package-ecosystem: pip
     schedule:
-      interval: weekly
+      interval: monthly
+      day: saturday
   - commit-message:
-      prefix: "chore"
+      prefix: chore
     directory: /meta-mender-qemu/docker/qemux86-64
     package-ecosystem: docker
     schedule:
-      interval: weekly
+      interval: monthly
+      day: saturday
   - commit-message:
-      prefix: "chore"
+      prefix: chore
     directory: /
     package-ecosystem: gitsubmodule
     schedule:
-      interval: weekly
-    target-branch: "master"
+      interval: monthly
+      day: saturday
+    target-branch: master
   - commit-message:
-      prefix: "chore"
+      prefix: chore
     directory: /
     package-ecosystem: gitsubmodule
     schedule:
-      interval: weekly
-    target-branch: "zeus"
+      interval: monthly
+      day: saturday
+    target-branch: zeus
   - commit-message:
-      prefix: "chore"
+      prefix: chore
     directory: /
     package-ecosystem: gitsubmodule
     schedule:
-      interval: weekly
-    target-branch: "dunfell"
+      interval: monthly
+      day: saturday
+    target-branch: dunfell
   - commit-message:
-      prefix: "chore"
+      prefix: chore
     directory: /
     package-ecosystem: gitsubmodule
     schedule:
-      interval: weekly
-    target-branch: "kirkstone"
+      interval: monthly
+      day: saturday
+    target-branch: kirkstone
