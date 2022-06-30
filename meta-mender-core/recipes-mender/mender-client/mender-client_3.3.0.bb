@@ -8,7 +8,9 @@ require mender-client.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=3.3.x"
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=3.3.x \
+    file://0001-fix-Upgrade-openssl-dependency-to-fix-cast-error-in-.patch;patchdir=src/github.com/mendersoftware/mender \
+"
 
 # Tag: 3.3.0
 SRCREV = "b3749e8d2627d6d1282899bbce0b487407698a2d"
