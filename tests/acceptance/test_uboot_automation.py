@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -333,8 +333,8 @@ class TestUbootAutomation:
                     continue
 
                 total += 1
-                with open(os.path.join(env["LOGS"], file)) as fd:
-                    if "AutoPatchFailed\n" in fd.readlines():
+                with open(os.path.join(env["LOGS"], file), "rb") as fd:
+                    if b"AutoPatchFailed\n" in fd.readlines():
                         failed += 1
 
             assert total == len(
