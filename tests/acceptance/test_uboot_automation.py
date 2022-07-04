@@ -345,8 +345,8 @@ class TestUbootAutomation:
                     continue
 
                 total += 1
-                with open(os.path.join(env["LOGS"], file)) as fd:
-                    if "AutoPatchFailed\n" in fd.readlines():
+                with open(os.path.join(env["LOGS"], file), "rb") as fd:
+                    if b"AutoPatchFailed\n" in fd.readlines():
                         failed += 1
 
             assert total == len(
@@ -378,9 +378,9 @@ class TestUbootAutomation:
                 )
             except AssertionError:
                 for file in os.listdir(env["LOGS"]):
-                    with open(os.path.join(env["LOGS"], file)) as fd:
+                    with open(os.path.join(env["LOGS"], file), "rb") as fd:
                         log = fd.readlines()
-                        if "AutoPatchFailed\n" in log:
+                        if b"AutoPatchFailed\n" in log:
                             print("Last 50 lines of output from failed board: " + file)
                             print("".join(log[-50:]))
                 raise
