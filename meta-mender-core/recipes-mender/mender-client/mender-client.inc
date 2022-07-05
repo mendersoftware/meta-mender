@@ -2,6 +2,7 @@ DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
 RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd = " parted util-linux-fdisk"
+RDEPENDS_${PN}_append_mender-growfs-data_mender-systemd_mender-partuuid = " util-linux-blkid"
 
 def cert_location_if_server_crt_in(src_uri, d):
     for src in src_uri.split():
@@ -386,11 +387,13 @@ do_install_append_mender-image_mender-systemd() {
 }
 
 do_install_append_mender-growfs-data_mender-systemd() {
-    sed -i "s#@MENDER_STORAGE_DEVICE@#${MENDER_STORAGE_DEVICE}#g" \
-        ${WORKDIR}/mender-client-resize-data-part.sh.in
-
-    sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
-        ${WORKDIR}/mender-client-resize-data-part.sh.in
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+        sed -i "s#@MENDER_DATA_PART@#\$(blkid | grep 'PARTUUID=\"${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')}\"' | awk -F: '{ print \$1 }')#g" \
+            ${WORKDIR}/mender-client-resize-data-part.sh.in
+    else
+        sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
+            ${WORKDIR}/mender-client-resize-data-part.sh.in
+    fi
 
     sed -i "s#@MENDER_DATA_PART_NUMBER@#${MENDER_DATA_PART_NUMBER}#g" \
         ${WORKDIR}/mender-client-resize-data-part.sh.in
