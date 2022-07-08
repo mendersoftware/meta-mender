@@ -195,18 +195,6 @@ class TestUbootAutomation:
         pytest.skip(msg)
 
     def board_is_arm(self, srcdir, config):
-        if config in [
-            "brppt1_mmc_defconfig",
-            "brppt1_nand_defconfig",
-            "brppt1_spi_defconfig",
-            "brppt2_defconfig",
-            "brsmarc1_defconfig",
-        ]:
-            # u-boot-v2022.01: These boards produce some garbled output which
-            # confuses the utf-8 parser. Just mark them as "not ARM", which will
-            # cause them to be skipped.
-            return False
-
         if config in ["xilinx_versal_virt_defconfig"]:
             # u-boot-v2019.01: There is some weird infinite loop in the conf
             # script of this particular board. Just mark it as "not ARM", which
@@ -345,7 +333,7 @@ class TestUbootAutomation:
                     continue
 
                 total += 1
-                with open(os.path.join(env["LOGS"], file)) as fd:
+                with open(os.path.join(env["LOGS"], file), encoding="latin_1") as fd:
                     if "AutoPatchFailed\n" in fd.readlines():
                         failed += 1
 
@@ -356,7 +344,7 @@ class TestUbootAutomation:
             if machine == "vexpress-qemu":
                 # PLEASE UPDATE the version you used to find this number if you update it.
                 # From version: 2022.01-gitd637294e264a
-                measured_failed_ratio = 23.0 / 494.0
+                measured_failed_ratio = 26.0 / 498.0
             elif machine == "vexpress-qemu-flash":
                 # PLEASE UPDATE the version you used to find this number if you update it.
                 # From version: 2022.01-gitd637294e264a
@@ -378,7 +366,9 @@ class TestUbootAutomation:
                 )
             except AssertionError:
                 for file in os.listdir(env["LOGS"]):
-                    with open(os.path.join(env["LOGS"], file)) as fd:
+                    with open(
+                        os.path.join(env["LOGS"], file), encoding="latin_1"
+                    ) as fd:
                         log = fd.readlines()
                         if "AutoPatchFailed\n" in log:
                             print("Last 50 lines of output from failed board: " + file)
