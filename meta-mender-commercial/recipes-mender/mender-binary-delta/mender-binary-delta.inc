@@ -5,10 +5,6 @@ SUB_FOLDER:arm = "arm"
 SUB_FOLDER:aarch64 = "aarch64"
 SUB_FOLDER:x86-64 = "x86_64"
 
-SRC_URI:arm = "file://${SUB_FOLDER}/mender-binary-delta"
-SRC_URI:aarch64 = "file://${SUB_FOLDER}/mender-binary-delta"
-SRC_URI:x86-64 = "file://${SUB_FOLDER}/mender-binary-delta"
-
 COMPATIBLE_HOSTS = "arm|aarch64|x86_64"
 
 # "lsb-ld" is needed because Yocto by default does not provide a cross platform
@@ -25,8 +21,8 @@ INSANE_SKIP:${PN} = "already-stripped"
 
 do_version_check() {
     if ! ${@'true' if d.getVar('MENDER_DEVMODE') else 'false'}; then
-        if ! strings ${WORKDIR}/${SUB_FOLDER}/mender-binary-delta | fgrep -q "${PN} ${PV}"; then
-            bbfatal "String '${PN} ${PV}' not found in binary. Is it the correct version? Check with --version. Possible candidates: $(strings ${WORKDIR}/${SUB_FOLDER}/mender-binary-delta | grep '${PN} [a-f0-9]')"
+        if ! strings ${S}/${SUB_FOLDER}/mender-binary-delta | fgrep -q "${PN} ${PV}"; then
+            bbfatal "String '${PN} ${PV}' not found in binary. Is it the correct version? Check with --version. Possible candidates: $(strings ${S}/${SUB_FOLDER}/mender-binary-delta | grep '${PN} [a-f0-9]')"
         fi
     fi
 }
@@ -45,7 +41,7 @@ EOF
 
 do_install() {
     install -d -m 755 ${D}${datadir}/mender/modules/v3
-    install -m 755 ${WORKDIR}/${SUB_FOLDER}/mender-binary-delta ${D}${datadir}/mender/modules/v3/mender-binary-delta
+    install -m 755 ${S}/${SUB_FOLDER}/mender-binary-delta ${D}${datadir}/mender/modules/v3/mender-binary-delta
 
     install -d -m 755 ${D}${sysconfdir}/mender
     install -m 644 ${WORKDIR}/mender-binary-delta.conf ${D}${sysconfdir}/mender/mender-binary-delta.conf
