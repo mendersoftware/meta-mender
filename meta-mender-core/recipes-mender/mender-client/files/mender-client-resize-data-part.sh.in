@@ -42,3 +42,11 @@ fi
 echo "w" | fdisk ${mender_storage_device} &> /dev/null || true
 
 /usr/sbin/parted -s ${mender_storage_device} resizepart @MENDER_DATA_PART_NUMBER@ 100%
+
+# Modifying the partition table in any way may trigger udev at some point.
+# We don't want to continue right while udev is recreating /dev/disk symlinks.
+# Instead, we want this to happen deterministically now and be done when the script is done.
+/usr/sbin/partprobe
+if [ -x /sbin/udevadm ]; then
+    /sbin/udevadm settle
+fi
