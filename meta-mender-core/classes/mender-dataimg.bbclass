@@ -2,6 +2,7 @@
 # filesystem.
 
 IMAGE_CMD_dataimg() {
+    generate_bootstrap_artifact
     if [ ${MENDER_DATA_PART_FSTYPE_TO_GEN} = "btrfs" ]; then
         force_flag="-f"
         root_dir_flag="-r ${IMAGE_ROOTFS}/data"
@@ -31,9 +32,84 @@ IMAGE_CMD_dataimg() {
     install -m 0644 "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }
 IMAGE_CMD_dataimg_mender-image-ubi() {
+    generate_bootstrap_artifact
     mkfs.ubifs -o "${WORKDIR}/data.ubifs" -r "${IMAGE_ROOTFS}/data" ${MKUBIFS_ARGS}
     install -m 0644 "${WORKDIR}/data.ubifs" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }
+
+generate_bootstrap_artifact() {
+
+    if [ -z "${MENDER_ARTIFACT_NAME}" ]; then
+        bberror "Need to define MENDER_ARTIFACT_NAME variable."
+        exit 1
+    fi
+
+    if [ -z "${MENDER_DEVICE_TYPES_COMPATIBLE}" ]; then
+        bbfatal "MENDER_DEVICE_TYPES_COMPATIBLE variable cannot be empty."
+    fi
+
+    extra_args=
+
+    for dev in ${MENDER_DEVICE_TYPES_COMPATIBLE}; do
+        extra_args="$extra_args -t $dev"
+    done
+
+    if [ -n "${MENDER_ARTIFACT_SIGNING_KEY}" ]; then
+        extra_args="$extra_args -k ${MENDER_ARTIFACT_SIGNING_KEY}"
+    fi
+
+    if [ -n "${MENDER_ARTIFACT_NAME_DEPENDS}" ]; then
+        cmd=""
+        apply_arguments "--artifact-name-depends" "${MENDER_ARTIFACT_NAME_DEPENDS}"
+        extra_args="$extra_args  $cmd"
+    fi
+
+    if [ -n "${MENDER_ARTIFACT_PROVIDES}" ]; then
+        cmd=""
+        apply_arguments "--provides" "${MENDER_ARTIFACT_PROVIDES}"
+        extra_args="$extra_args  $cmd"
+    fi
+
+    if [ -n "${MENDER_ARTIFACT_PROVIDES_GROUP}" ]; then
+        cmd=""
+        apply_arguments "--provides-group" "${MENDER_ARTIFACT_PROVIDES_GROUP}"
+        extra_args="$extra_args $cmd"
+    fi
+
+    if [ -n "${MENDER_ARTIFACT_DEPENDS}" ]; then
+        cmd=""
+        apply_arguments "--depends" "${MENDER_ARTIFACT_DEPENDS}"
+        extra_args="$extra_args $cmd"
+    fi
+
+    if [ -n "${MENDER_ARTIFACT_DEPENDS_GROUPS}" ]; then
+        cmd=""
+        apply_arguments "--depends-groups" "${MENDER_ARTIFACT_DEPENDS_GROUPS}"
+        extra_args="$extra_args $cmd"
+    fi
+
+    img_checksum="$(sha256sum --binary ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${ARTIFACTIMG_FSTYPE} | cut --delimiter=' ' --fields=1)"
+
+    if [ -z "${img_checksum}" ]; then
+        bberror "The image checksum cannot be empty"
+    fi
+
+    mender-artifact write bootstrap-artifact \
+        --artifact-name ${MENDER_ARTIFACT_NAME} \
+        --provides "rootfs-image.version:${MENDER_ARTIFACT_NAME}" \
+        --provides "rootfs-image.checksum:${img_checksum}" \
+        $extra_args \
+        ${MENDER_ARTIFACT_EXTRA_ARGS} \
+        --output-path "${IMAGE_ROOTFS}/data/mender/bootstrap.mender"
+
+}
+
+# In order to generate the bootstrap Artifact the rootfs image needs to be
+# generated up front.
+IMAGE_TYPEDEP_dataimg_append  = " ${ARTIFACTIMG_FSTYPE}"
+
+# The bootstrap Artifact generation requires the mender-artifact tool
+do_image_dataimg[depends] += "mender-artifact-native:do_populate_sysroot"
 
 # We need the data contents intact.
 do_image_dataimg[respect_exclude_path] = "0"
