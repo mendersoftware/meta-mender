@@ -88,6 +88,8 @@ mender_rootfsa_uuid=$mender_rootfsa_uuid
 mender_rootfsb_uuid=$mender_rootfsb_uuid
 EOF
     fi
+
+    oe_runmake -f ${S}/Makefile clean
 }
 
 do_compile() {
