@@ -21,6 +21,10 @@ FILES:${PN}:append:mender-systemd = " \
 S = "${WORKDIR}/mender-monitor"
 
 do_version_check() {
+    if [ ! -e ${S}/.version ]; then
+        bbfatal "No mender-monitor files found. Have you added the package to SRC_URI?"
+    fi
+
     if ! ${@'true' if d.getVar('MENDER_DEVMODE') else 'false'}; then
         tarball_version=$(cat ${S}/.version)
         if [ "${tarball_version}" != "${PV}" ]; then

@@ -24,6 +24,10 @@ FILES:${PN}:append:mender-client-install = " \
 S = "${WORKDIR}/mender-gateway-${PV}"
 
 do_version_check() {
+    if [ ! -e ${S}/${SUB_FOLDER}/mender-gateway ]; then
+        bbfatal "No mender-gateway binary found. Have you added the package to SRC_URI?"
+    fi
+
     if ! ${@'true' if d.getVar('MENDER_DEVMODE') else 'false'}; then
         if ! strings ${S}/${SUB_FOLDER}/mender-gateway | grep -q "^${PV}$"; then
             bbfatal "String '${PV}' not found in binary. Is it the correct version? Check with --version."
