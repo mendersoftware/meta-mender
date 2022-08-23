@@ -23,6 +23,10 @@ FILES_${PN} = " \
 INSANE_SKIP_${PN} = "already-stripped"
 
 do_version_check() {
+    if [ ! -e ${WORKDIR}/${SUB_FOLDER}/mender-binary-delta ]; then
+        bbfatal "No mender-binary-delta binary found. Have you added the package to SRC_URI?"
+    fi
+
     if ! ${@'true' if d.getVar('MENDER_DEVMODE') else 'false'}; then
         if ! strings ${WORKDIR}/${SUB_FOLDER}/mender-binary-delta | fgrep -q "${PN} ${PV}"; then
             bbfatal "String '${PN} ${PV}' not found in binary. Is it the correct version? Check with --version. Possible candidates: $(strings ${WORKDIR}/${SUB_FOLDER}/mender-binary-delta | grep '${PN} [a-f0-9]')"
