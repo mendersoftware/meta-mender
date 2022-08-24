@@ -1,5 +1,4 @@
-LICENSE = "CLOSED"
-LICENSE_FLAGS = "commercial"
+inherit mender-licensing
 
 inherit systemd
 
