@@ -1,5 +1,4 @@
-LICENSE = "CLOSED"
-LICENSE_FLAGS = "commercial"
+inherit mender-licensing
 
 SUB_FOLDER:arm = "arm"
 SUB_FOLDER:aarch64 = "aarch64"
