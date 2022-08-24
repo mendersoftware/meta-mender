@@ -15,9 +15,10 @@
 4. Change the `SRCREV` to point to the correct revision of the tag you're
    releasing. `git show 1.2.2` will show you the revision.
 
-5. Make sure that the md5 checksum of `LIC_FILES_CHKSUM.sha256` matches what is
-   listed in the recipe. If you change it, *make sure* that the listed licenses
-   indeed match the licenses we use.
+5. Update the license checksum in `LIC_FILES_CHKSUM` using
+   [`make_bitbake_license_list.sh`](https://github.com/mendersoftware/mendertesting/blob/master/utils/make_bitbake_license_list.sh).
+   If it results in a change, *make sure* that the listed licenses indeed match
+   the licenses listed in `LICENSE`.
 
 6. Set recipe version preference:
 

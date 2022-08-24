@@ -62,16 +62,19 @@ PV = "${@mender_connect_version_from_preferred_version(d, '${SRCPV}')}"
 SRC_URI = "git://github.com/mendersoftware/mender-connect.git;protocol=https;branch=${MENDER_CONNECT_BRANCH}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below. Note that for
-# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
-# file.
+# dependencies) are included in the LICENSE variable below.
 def mender_connect_license(branch):
     # Only one currently. If the sub licenses change we may introduce more.
     return {
                "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
     }
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-connect/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87"
+LIC_FILES_CHKSUM = " \
+    file://src/github.com/mendersoftware/mender-connect/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87 \
+"
 LICENSE = "${@mender_connect_license(d.getVar('MENDER_CONNECT_BRANCH'))['license']}"
+
+# Disables the need for every dependency to be checked, for easier development.
+_MENDER_DISABLE_STRICT_LICENSE_CHECKING = "1"
 
 # Downprioritize this recipe in version selections.
 DEFAULT_PREFERENCE = "-1"

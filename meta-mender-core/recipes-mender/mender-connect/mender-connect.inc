@@ -1,3 +1,5 @@
+inherit mender-licensing
+
 DESCRIPTION = "Mender add-on for remote terminal access."
 HOMEPAGE = "https://mender.io"
 

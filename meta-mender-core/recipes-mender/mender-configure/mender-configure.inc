@@ -1,3 +1,5 @@
+inherit mender-licensing
+
 DESCRIPTION = "Mender add-on for device configuration."
 HOMEPAGE = "https://mender.io"
 
