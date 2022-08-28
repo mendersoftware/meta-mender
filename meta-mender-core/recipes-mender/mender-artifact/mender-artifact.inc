@@ -3,6 +3,7 @@ GO_IMPORT = "github.com/mendersoftware/mender-artifact"
 
 inherit go
 inherit go-ptest
+inherit pkgconfig
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
