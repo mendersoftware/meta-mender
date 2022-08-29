@@ -1,5 +1,4 @@
-LICENSE = "CLOSED"
-LICENSE_FLAGS = "commercial"
+inherit mender-licensing
 
 SUB_FOLDER:arm = "arm"
 SUB_FOLDER:aarch64 = "aarch64"
@@ -20,6 +19,10 @@ FILES:${PN} = " \
 INSANE_SKIP:${PN} = "already-stripped"
 
 do_version_check() {
+    if [ ! -e ${S}/${SUB_FOLDER}/mender-binary-delta ]; then
+        bbfatal "No mender-binary-delta binary found. Have you added the package to SRC_URI?"
+    fi
+
     if ! ${@'true' if d.getVar('MENDER_DEVMODE') else 'false'}; then
         if ! strings ${S}/${SUB_FOLDER}/mender-binary-delta | fgrep -q "${PN} ${PV}"; then
             bbfatal "String '${PN} ${PV}' not found in binary. Is it the correct version? Check with --version. Possible candidates: $(strings ${S}/${SUB_FOLDER}/mender-binary-delta | grep '${PN} [a-f0-9]')"

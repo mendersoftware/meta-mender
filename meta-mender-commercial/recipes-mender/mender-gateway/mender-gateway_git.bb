@@ -2,6 +2,17 @@ require mender-gateway.inc
 
 inherit mender-closed-source-utils
 
+# DO NOT change the checksum here without make sure that ALL licenses (including
+# dependencies) are included in the LICENSE variable below.
+LICENSE = "Mender-Yocto-Layer-License.md & Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
+LICENSE_FLAGS = "commercial_mender-yocto-layer-license"
+LIC_FILES_CHKSUM = " \
+    file://licenses/LICENSE.md;md5=66a40d48ea33620d1bb8d9a4204cde36 \
+"
+
+# Disables the need for every dependency to be checked, for easier development.
+_MENDER_DISABLE_STRICT_LICENSE_CHECKING = "1"
+
 SRCREV = "${@mender_closed_source_srcrev_from_src_uri(d, '${SRC_URI}', 'mender-gateway')}"
 
 PV = "${@mender_closed_source_pv_from_preferred_version(d, '${SRCREV}')}"

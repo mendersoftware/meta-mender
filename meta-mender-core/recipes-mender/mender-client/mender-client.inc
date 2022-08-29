@@ -1,3 +1,5 @@
+inherit mender-licensing
+
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 

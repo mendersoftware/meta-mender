@@ -21,8 +21,8 @@ SRCREV = "7f091d3d414950011d98056ba4357dd26b5c1f53"
 ################################################################################
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below. Note that for
-# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
-# file.
-LIC_FILES_CHKSUM = "file://${S}/LIC_FILES_CHKSUM.sha256;md5=dbe7fef3ae7b158261d81f13228969e6"
+# dependencies) are included in the LICENSE variable below.
+LIC_FILES_CHKSUM = " \
+    file://LICENSE;md5=fbe9cd162201401ffbb442445efecfdc \
+"
 LICENSE = "Apache-2.0"
