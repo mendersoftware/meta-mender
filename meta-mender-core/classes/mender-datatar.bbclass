@@ -9,3 +9,5 @@ IMAGE_CMD_datatar() {
 
 # We need the data contents intact.
 do_image_datatar[respect_exclude_path] = "0"
+
+IMAGE_TYPEDEP_datatar_append = " ${ARTIFACTIMG_FSTYPE}"
