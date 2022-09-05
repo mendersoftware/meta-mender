@@ -1,6 +1,7 @@
 [Unit]
 Description=Mender persistent data dir
 After=data.mount
+Before=mender-client.service
 ConditionPathExists=!/data/mender
 
 [Service]
