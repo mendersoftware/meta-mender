@@ -1,10 +1,12 @@
 # Class to create the "dataimg" type, which contains the data partition as a raw
 # filesystem.
 
+inherit mender-bootstrap-artifact
+
 IMAGE_CMD:dataimg() {
     if [ ${MENDER_DATA_PART_FSTYPE_TO_GEN} = "btrfs" ]; then
         force_flag="-f"
-        root_dir_flag="-r ${IMAGE_ROOTFS}/data"
+        root_dir_flag="-r ${_MENDER_ROOTFS_COPY}"
         volume_label_flag="-L"
     elif [ ${MENDER_DATA_PART_FSTYPE_TO_GEN} = "f2fs" ]; then
         force_flag="-f"
@@ -12,7 +14,7 @@ IMAGE_CMD:dataimg() {
         volume_label_flag="-l"
     else #Assume ext3/4
         force_flag="-F"
-        root_dir_flag="-d ${IMAGE_ROOTFS}/data"
+        root_dir_flag="-d ${_MENDER_ROOTFS_COPY}"
         volume_label_flag="-L"
     fi
 
@@ -25,13 +27,13 @@ IMAGE_CMD:dataimg() {
         ${MENDER_DATA_PART_FSOPTS}
 
     if [ ${MENDER_DATA_PART_FSTYPE_TO_GEN} = "f2fs" ]; then
-        sload.f2fs -f "${IMAGE_ROOTFS}/data" "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}"
+        sload.f2fs -f "${_MENDER_ROOTFS_COPY}" "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}"
     fi
 
     install -m 0644 "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }
 IMAGE_CMD:dataimg:mender-image-ubi() {
-    mkfs.ubifs -o "${WORKDIR}/data.ubifs" -r "${IMAGE_ROOTFS}/data" ${MKUBIFS_ARGS}
+    mkfs.ubifs -o "${WORKDIR}/data.ubifs" -r "${_MENDER_ROOTFS_COPY}" ${MKUBIFS_ARGS}
     install -m 0644 "${WORKDIR}/data.ubifs" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }
 
@@ -42,3 +44,8 @@ do_image_dataimg[depends] += "${@bb.utils.contains('MENDER_FEATURES', 'mender-im
 do_image_dataimg[depends] += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE_TO_GEN', 'btrfs','btrfs-tools-native:do_populate_sysroot','',d)}"
 do_image_dataimg[depends] += "${@bb.utils.contains_any('MENDER_DATA_PART_FSTYPE_TO_GEN', 'ext2 ext3 ext4','e2fsprogs-native:do_populate_sysroot','',d)}"
 do_image_dataimg[depends] += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE_TO_GEN', 'f2fs','f2fs-tools-native:do_populate_sysroot','',d)}"
+
+do_image_dataimg[prefuncs] += " do_copy_rootfs do_install_bootstrap_artifact"
+do_image_dataimg[postfuncs] += " do_delete_copy_rootfs"
+
+IMAGE_TYPEDEP:dataimg:append = " bootstrap-artifact"
