@@ -104,7 +104,7 @@ python prepare_excluded_directories() {
         bb.debug(1, "'IMAGE_ROOTFS_EXCLUDE_PATH' is set but 'respect_exclude_path' variable flag is 0 for this image type, so ignoring it")
         return
 
-    import shutil
+    import subprocess
     from oe.path import copyhardlinktree
 
     exclude_list = exclude_var.split()
@@ -115,7 +115,7 @@ python prepare_excluded_directories() {
     new_rootfs = os.path.realpath(os.path.join(d.getVar("WORKDIR"), "rootfs.%s" % taskname))
 
     if os.path.lexists(new_rootfs):
-        shutil.rmtree(os.path.join(new_rootfs))
+        subprocess.check_call(["rm", "-rf", new_rootfs])
 
     copyhardlinktree(rootfs_orig, new_rootfs)
 
@@ -141,12 +141,12 @@ python prepare_excluded_directories() {
             for entry in os.listdir(full_path):
                 full_entry = os.path.join(full_path, entry)
                 if os.path.isdir(full_entry) and not os.path.islink(full_entry):
-                    shutil.rmtree(full_entry)
+                    subprocess.check_call(["rm", "-rf", full_entry])
                 else:
-                    os.remove(full_entry)
+                    subprocess.check_call(["rm", "-f", full_entry])
         else:
             # Delete whole directory.
-            shutil.rmtree(full_path)
+            subprocess.check_call(["rm", "-rf", full_path])
 
     # Save old value for cleanup later.
     d.setVar('IMAGE_ROOTFS_ORIG', rootfs_orig)
@@ -157,6 +157,8 @@ python cleanup_excluded_directories() {
     exclude_var = d.getVar('IMAGE_ROOTFS_EXCLUDE_PATH')
     if not exclude_var:
         return
+
+    import subprocess
 
     taskname = d.getVar("BB_CURRENTTASK")
 
@@ -171,7 +173,7 @@ python cleanup_excluded_directories() {
     # directory in the prepare function.
     assert rootfs_dirs_excluded != rootfs_orig
 
-    shutil.rmtree(rootfs_dirs_excluded)
+    subprocess.check_call(["rm", "-rf", rootfs_dirs_excluded])
     d.setVar('IMAGE_ROOTFS', rootfs_orig)
 }
 
