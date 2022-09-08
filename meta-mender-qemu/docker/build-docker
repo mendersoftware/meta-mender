@@ -24,6 +24,10 @@ All options after MACHINE are given to "docker build".
 	$IMAGE_NAME.
 -I, --embedded-image <IMAGE_NAME>
 	The image being put inside the generated image.
+
+The script assumes a Yocto environment (oe-init-build-env has been executed) from
+where to deduce DISK_IMG running bitbake. To avoid the execution of bitbake,
+manually define BUILDDIR and DISK_IMG variables.
 EOF
 }
 
@@ -85,17 +89,19 @@ if [ $BUILD_DEFAULTS = 1 ]; then
         exit 1
     fi
 
-    # Fish out some settings from Bitbake.
-    eval "$(bitbake -e $IMAGE_NAME | egrep '^MENDER_FEATURES=')"
-    eval "$(bitbake -e $IMAGE_NAME | egrep '^IMAGE_LINK_NAME=')"
+    if [ -z "$DISK_IMG" ]; then
+        # Fish out some settings from Bitbake.
+        eval "$(bitbake -e $IMAGE_NAME | egrep '^MENDER_FEATURES=')"
+        eval "$(bitbake -e $IMAGE_NAME | egrep '^IMAGE_LINK_NAME=')"
 
-    if egrep -q '\bmender-image-uefi\b' <<<"$MENDER_FEATURES"; then
-        DISK_IMG="$IMAGE_LINK_NAME.uefiimg"
-    elif egrep -q '\bmender-image-sd\b' <<<"$MENDER_FEATURES"; then
-        DISK_IMG="$IMAGE_LINK_NAME.sdimg"
-    else
-        echo "Neither mender-image-uefi nor mender-image-sd are set! Don't know which image to use!" 1>&2
-        exit 1
+        if egrep -q '\bmender-image-uefi\b' <<<"$MENDER_FEATURES"; then
+            DISK_IMG="$IMAGE_LINK_NAME.uefiimg"
+        elif egrep -q '\bmender-image-sd\b' <<<"$MENDER_FEATURES"; then
+            DISK_IMG="$IMAGE_LINK_NAME.sdimg"
+        else
+            echo "Neither mender-image-uefi nor mender-image-sd are set! Don't know which image to use!" 1>&2
+            exit 1
+        fi
     fi
     if [ "${EMBEDDED_IMAGE_NAME}" != "" ]; then
         EMBEDDED_IMAGE_NAME_BUILD_ARG="--build-arg EMBEDDED_IMAGE=$(basename ${EMBEDDED_IMAGE_NAME})"
