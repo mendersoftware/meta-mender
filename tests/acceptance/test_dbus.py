@@ -107,8 +107,16 @@ class TestDBus:
                 time.sleep(5)
 
             assert f'string "{self.JWT_TOKEN}' in output
-            if version_is_minimum(bitbake_variables, "mender-client", "3.4.0"):
+            if version_is_minimum(bitbake_variables, "mender-client", "3.3.1"):
                 assert 'string "http://127.0.0.1:' in output
+                # Check that this really is the only port we're listening on.
+                lines = connection.run("netstat -t -u -l -p -n").stdout.split("\n")
+                lines = [line for line in lines if line.strip().endswith("/mender")]
+                assert len(lines) == 1
+                address_and_port_index = 3
+                listen = lines[0].split()[address_and_port_index]
+                assert listen.startswith("127.0.0.1:")
+                assert f'string "http://{listen}"' in output
             elif version_is_minimum(bitbake_variables, "mender-client", "3.2.0"):
                 assert 'string "http://localhost:' in output
             else:
@@ -180,7 +188,7 @@ class TestDBus:
 
                 output = result.stdout.strip()
                 assert f'string "{self.JWT_TOKEN}' in output
-                if version_is_minimum(bitbake_variables, "mender-client", "3.4.0"):
+                if version_is_minimum(bitbake_variables, "mender-client", "3.3.1"):
                     assert 'string "http://127.0.0.1:' in output
                 elif version_is_minimum(bitbake_variables, "mender-client", "3.2.0"):
                     assert 'string "http://localhost:' in output

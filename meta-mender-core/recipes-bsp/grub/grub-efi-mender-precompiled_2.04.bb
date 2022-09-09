@@ -18,7 +18,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 LICENSE = "GPL-3.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-3.0;md5=c79ff39f19dfec6d293b95dea7b07891"
 
-URL_BASE ?= "https://d1b0l86ne08fsf.cloudfront.net/grub-mender-grubenv/grub-efi"
+URL_BASE ?= "https://downloads.mender.io/grub-mender-grubenv/grub-efi"
 
 SRC_URI = " \
     ${GRUB_MENDER_GRUBENV_SRC_URI} \
