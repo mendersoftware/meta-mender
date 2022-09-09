@@ -1,10 +1,28 @@
 # Class to create the "dataimg" type, which contains the data partition as a raw
 # filesystem.
 
+
+fakeroot python do_copy_rootfs() {
+    from oe.path import copyhardlinktree
+
+    _from = os.path.realpath(os.path.join(d.getVar("IMAGE_ROOTFS"), "data"))
+    _to = os.path.realpath(os.path.join(d.getVar("WORKDIR"), "data.copy"))
+
+    copyhardlinktree(_from, _to)
+}
+
+fakeroot python do_delete_copy_rootfs() {
+    import subprocess
+
+    copy_dir = os.path.realpath(os.path.join(d.getVar("WORKDIR"), "data.copy"))
+
+    subprocess.check_call(["rm", "-rf", copy_dir])
+}
+
 IMAGE_CMD_dataimg() {
     if [ ${MENDER_DATA_PART_FSTYPE_TO_GEN} = "btrfs" ]; then
         force_flag="-f"
-        root_dir_flag="-r ${IMAGE_ROOTFS}/data"
+        root_dir_flag="-r ${WORKDIR}/data.copy"
         volume_label_flag="-L"
     elif [ ${MENDER_DATA_PART_FSTYPE_TO_GEN} = "f2fs" ]; then
         force_flag="-f"
@@ -12,7 +30,7 @@ IMAGE_CMD_dataimg() {
         volume_label_flag="-l"
     else #Assume ext3/4
         force_flag="-F"
-        root_dir_flag="-d ${IMAGE_ROOTFS}/data"
+        root_dir_flag="-d ${WORKDIR}/data.copy"
         volume_label_flag="-L"
     fi
 
@@ -25,13 +43,13 @@ IMAGE_CMD_dataimg() {
         ${MENDER_DATA_PART_FSOPTS}
 
     if [ ${MENDER_DATA_PART_FSTYPE_TO_GEN} = "f2fs" ]; then
-        sload.f2fs -f "${IMAGE_ROOTFS}/data" "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}"
+        sload.f2fs -f "${WORKDIR}/data.copy" "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}"
     fi
 
     install -m 0644 "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }
 IMAGE_CMD_dataimg_mender-image-ubi() {
-    mkfs.ubifs -o "${WORKDIR}/data.ubifs" -r "${IMAGE_ROOTFS}/data" ${MKUBIFS_ARGS}
+    mkfs.ubifs -o "${WORKDIR}/data.ubifs" -r "${WORKDIR}/data.copy" ${MKUBIFS_ARGS}
     install -m 0644 "${WORKDIR}/data.ubifs" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }
 
@@ -113,7 +131,7 @@ do_install_bootstrap_artifact[respect_exclude_path] = "0"
 
 fakeroot do_install_bootstrap_artifact () {
     bbwarn "Installing the bootstrap Artifact into /data/mender..."
-    install -m 0400 "${WORKDIR}/bootstrap.mender" "${IMAGE_ROOTFS}/data/mender/bootstrap.mender"
+    install -m 0400 "${WORKDIR}/bootstrap.mender" "${WORKDIR}/data.copy/mender/bootstrap.mender"
     bbwarn "Installed the bootstrap Artifact into /data/mender..."
 }
 
@@ -126,7 +144,8 @@ do_image_dataimg[depends] += "${@bb.utils.contains_any('MENDER_DATA_PART_FSTYPE_
 do_image_dataimg[depends] += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE_TO_GEN', 'f2fs','f2fs-tools-native:do_populate_sysroot','',d)}"
 do_image_dataimg[depends] += " mender-artifact-native:do_populate_sysroot"
 
-do_image_dataimg[prefuncs] += " do_generate_bootstrap_artifact do_install_bootstrap_artifact"
+do_image_dataimg[prefuncs] += " do_copy_rootfs do_generate_bootstrap_artifact do_install_bootstrap_artifact"
+do_image_dataimg[postfuncs] += " do_delete_copy_rootfs"
 
 IMAGE_TYPEDEP_dataimg_append = " ${ARTIFACTIMG_FSTYPE}"
 
@@ -136,6 +155,9 @@ python() {
         bb.fatal("No 'ARTIFACTIMG_FSTYPE' set")
 
     image_job = "do_image_{}".format(image_type)
+
+    # TODO - will this work, to get the mender-artifact command prepared for use
+    d.appendVarFlag(image_job, "depends", " mender-artifact-native:do_populate_sysroot")
 
     d.appendVarFlag(image_job, "postfuncs", " shasum_rootfs_img ")
 }

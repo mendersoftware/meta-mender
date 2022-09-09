@@ -99,7 +99,7 @@ IMAGE_ROOTFS_EXCLUDE_PATH_append_mender-image = " data/ ${@d.getVar('MENDER_BOOT
 ################################################################################
 
 # TODO - Remove once the fix is in
-PSEUDO_IGNORE_PATHS .= "${WORKDIR}/"
+#PSEUDO_IGNORE_PATHS .= "${WORKDIR}/"
 
 python prepare_excluded_directories() {
     exclude_var = d.getVar('IMAGE_ROOTFS_EXCLUDE_PATH')
