@@ -12,13 +12,13 @@ MENDER_UBOOT_AUTO_CONFIGURE ??= "${@bb.utils.contains('MENDER_FEATURES', 'mender
 ################################################################################
 # Patches.
 ################################################################################
-FILESEXTRAPATHS_prepend := "${THISDIR}/patches:${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/patches:${THISDIR}/files:"
 
-SRC_URI_append_mender-uboot = " file://0001-Add-missing-header-which-fails-on-recent-GCC.patch"
-SRC_URI_append_mender-uboot = " file://0002-Generic-boot-code-for-Mender.patch"
-SRC_URI_append_mender-uboot = " file://0003-Integration-of-Mender-boot-code-into-U-Boot.patch"
+SRC_URI:append:mender-uboot = " file://0001-Add-missing-header-which-fails-on-recent-GCC.patch"
+SRC_URI:append:mender-uboot = " file://0002-Generic-boot-code-for-Mender.patch"
+SRC_URI:append:mender-uboot = " file://0003-Integration-of-Mender-boot-code-into-U-Boot.patch"
 
-SRC_URI_append_mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
+SRC_URI:append:mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
                                                     '1', \
                                                     ' file://0004-Disable-CONFIG_BOOTCOMMAND-and-enable-CONFIG_MENDER_.patch', \
                                                     '', \
@@ -197,8 +197,6 @@ CONFIG_MTDPARTS_DEFAULT="mtdparts=${MENDER_MTDPARTS}"
 CONFIG_ENV_UBI_PART="${MENDER_MTD_UBI_DEVICE_NAME}"
 CONFIG_ENV_UBI_VOLUME="u-boot-env-1"
 CONFIG_ENV_UBI_VOLUME_REDUND="u-boot-env-2"
-CONFIG_ENV_OFFSET=0x0
-CONFIG_ENV_OFFSET_REDUND=0x0
 EOF
     else
         cat >> ${S}/mender_Kconfig_fragment <<EOF
@@ -214,7 +212,7 @@ python() {
         bb.build.addtask('do_provide_mender_defines', 'do_configure', 'do_patch', d)
 }
 
-do_configure_prepend_mender-uboot() {
+do_configure:prepend:mender-uboot() {
     # Do a sanity check on some defines. The reason this is necessary, even
     # though they are defined by us, is that there are two ways the defines can
     # make it into the code, Kconfig and source code, and several things can
@@ -270,7 +268,7 @@ do_configure_prepend_mender-uboot() {
     unset IFS
 }
 
-do_compile_append_mender-uboot_mender-ubi() {
+do_compile:append:mender-uboot:mender-ubi() {
     # Doing this in do_compile instead of do_configure is actually a bit late,
     # but the U-Boot recipe doesn't separate between the stages.
 
@@ -285,7 +283,7 @@ do_compile_append_mender-uboot_mender-ubi() {
     fi
 }
 
-SRC_URI_append_mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
+SRC_URI:append:mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
                                                     '1', \
                                                     ' file://uboot_auto_configure.sh \
                                                       file://uboot_auto_patch.sh \
@@ -346,7 +344,7 @@ do_mender_uboot_auto_configure[depends] = "${PN}:do_prepare_recipe_sysroot"
 # This is for the externalsrc class: Make sure we don't try to edit a user
 # provided directory. Only temporary checkouts from source control should be
 # edited.
-SRCTREECOVEREDTASKS_append = " do_mender_uboot_auto_configure"
+SRCTREECOVEREDTASKS:append = " do_mender_uboot_auto_configure"
 
 do_save_mender_auto_configured_patch() {
     diff -r -u ${MENDER_UBOOT_OLD_SRC} ${S} > ${WORKDIR}/mender_auto_configured.patch || true
@@ -368,10 +366,10 @@ python() {
 }
 
 # Just to have a task if mender-uboot is not defined.
-do_deploy_append() {
+do_deploy:append() {
     :
 }
-do_deploy_append_mender-uboot() {
+do_deploy:append:mender-uboot() {
     # Copy script to the deploy area with u-boot, uImage, and rootfs
     if [ -e ${WORKDIR}/uEnv.txt ] ; then
         install -d ${DEPLOYDIR}

@@ -34,9 +34,9 @@ class TestMonitorAddon:
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['IMAGE_INSTALL_append = " mender-monitor"'],
+            ['IMAGE_INSTALL:append = " mender-monitor"'],
             [
-                'BBLAYERS_append = " %s/../meta-mender-commercial"'
+                'BBLAYERS:append = " %s/../meta-mender-commercial"'
                 % bitbake_variables["LAYERDIR_MENDER"]
             ],
         )

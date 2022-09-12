@@ -1,3 +1,5 @@
+inherit mender-licensing
+
 DESCRIPTION = "Mender image artifact library"
 GO_IMPORT = "github.com/mendersoftware/mender-artifact"
 

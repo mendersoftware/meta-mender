@@ -1,5 +1,5 @@
 
-FILES_${PN}-doc_append = " \
+FILES:${PN}-doc:append = " \
     ${docdir}/mender-gateway/examples \
     ${sysconfdir}/mender/mender-gateway.conf \
 "
@@ -9,6 +9,6 @@ def examples_dir_from_s_dir(d, s):
 
 EXAMPLES = "${@examples_dir_from_s_dir(d, '${S}')}"
 
-do_install_append() {
+do_install:append() {
     cp -R --no-dereference --preserve=mode,links -v ${EXAMPLES}/* ${D}
 }

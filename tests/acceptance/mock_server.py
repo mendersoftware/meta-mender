@@ -21,8 +21,8 @@ from utils.common import put_no_sftp
 import json
 
 # May appear excessive, but emulated QEMU is *really* slow to execute this.
-EXPIRATION_TIME = 90
-BOOT_EXPIRATION_TIME = 45
+EXPIRATION_TIME = 180
+BOOT_EXPIRATION_TIME = 90
 
 # Note that while waiting for a Control Map update from the server,
 # `UpdatePollIntervalSeconds` is used if it is shorter, so set it to the same

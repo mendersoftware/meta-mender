@@ -17,13 +17,21 @@ in addition to `meta-mender` dependencies.
 ## Build instructions
 
 - Read [the Mender documentation on Building a Mender Yocto image](https://docs.mender.io/Artifacts/Building-Mender-Yocto-image) for Mender specific configuration.
-- Set MACHINE to one of the following
+- Set MACHINE to one of the following (the list reflects the supported machines of
+  `meta-raspberrypi` for the `kirkstone` release branch)
     - raspberrypi
     - raspberrypi0
     - raspberrypi0-wifi
+	- raspberrypi0-2w
+	- raspberrypi0-2w-64
     - raspberrypi2
     - raspberrypi3
+	- raspberrypi3-64
     - raspberrypi-cm
+	- raspberrypi-cm3
+	- raspberrypi4
+	- raspberrypi4-64
+
 - Add following to your local.conf (including configuration required by meta-mender-core)
 
         RPI_USE_U_BOOT = "1"
@@ -35,14 +43,19 @@ in addition to `meta-mender` dependencies.
         # vfat boot partition. To be able to update the Linux kernel Mender
         # uses an image that resides on the root file system and below line
         # ensures that they are installed to /boot
-        IMAGE_INSTALL_append = " kernel-image kernel-devicetree"
+        IMAGE_INSTALL:append = " kernel-image kernel-devicetree"
 
         # Mender will build an image called `sdimg` which shall be used instead
         # of the `rpi-sdimg`.
-        IMAGE_FSTYPES_remove += " rpi-sdimg"
+        IMAGE_FSTYPES:remove = " rpi-sdimg"
 
         # Use the same type here as specified in ARTIFACTIMG_FSTYPE to avoid
         # building an unneeded image file.
         SDIMG_ROOTFS_TYPE = "ext4"
+
+		# Reserve more space than the Mender default for the boot partition,
+		# as the raspberrypi machines bring some additional things that need
+		# to be placed there too
+		MENDER_BOOT_PART_SIZE_MB = "64"
 
 - Run `bitbake <image name>`

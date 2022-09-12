@@ -6,7 +6,7 @@ inherit mender-helpers
 # For some reason 'bitbake -e' does not report the MACHINE value so
 # we use this as a proxy in case it is not available when needed.
 export MENDER_MACHINE = "${MACHINE}"
-BB_HASHBASE_WHITELIST += "MENDER_MACHINE"
+BB_BASEHASH_IGNORE_VARS += "MENDER_MACHINE"
 
 # The storage device that holds the device partitions.
 MENDER_STORAGE_DEVICE ??= "${MENDER_STORAGE_DEVICE_DEFAULT}"
@@ -17,7 +17,7 @@ MENDER_STORAGE_DEVICE_DEFAULT = "/dev/mmcblk0"
 MENDER_STORAGE_DEVICE_BASE ??= "${MENDER_STORAGE_DEVICE_BASE_DEFAULT}"
 def mender_linux_partition_base(dev):
     import re
-    if re.match("^/dev/[shv]d[a-z]", dev):
+    if re.match(r"^/dev/[shv]d[a-z]", dev):
         return dev
     else:
         return "%sp" % dev
@@ -105,7 +105,7 @@ MENDER_DEVICE_TYPE ??= "${MENDER_DEVICE_TYPE_DEFAULT}"
 MENDER_DEVICE_TYPE_DEFAULT = "${MACHINE}"
 
 # To tell the difference from a beaglebone-yocto image with only U-Boot.
-MENDER_DEVICE_TYPE_DEFAULT_beaglebone-yocto_mender-grub = "${MACHINE}-grub"
+MENDER_DEVICE_TYPE_DEFAULT:beaglebone-yocto:mender-grub = "${MACHINE}-grub"
 
 # Space separated list of device types compatible with the built update.
 MENDER_DEVICE_TYPES_COMPATIBLE ??= "${MENDER_DEVICE_TYPES_COMPATIBLE_DEFAULT}"
@@ -229,7 +229,7 @@ MENDER_DATA_PART_LABEL ??= "data"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
-IMAGE_INSTALL_append = " mender-client"
+IMAGE_INSTALL:append = " mender-client"
 IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg mender-bootimg mender-datatar"
 
 # Originally defined in bitbake.conf. We define them here so that images with
@@ -293,7 +293,7 @@ python mender_vars_handler() {
 
         for k in d.keys():
             if k.startswith("MENDER_"):
-                if re.search("_[-a-z0-9][-\w]*$", k) != None:
+                if re.search(r"[:_][-a-z0-9][-\w]*$", k) != None:
                     # skip variable overrides
                     continue;
 
@@ -331,7 +331,7 @@ python mender_vars_handler() {
         mender_vars = {}
         for k in d.keys():
             if k.startswith("MENDER_"):
-                if re.search("_[-a-z0-9][-\w]*$", k) == None:
+                if re.search(r"[:_][-a-z0-9][-\w]*$", k) == None:
                     mender_vars[k] = ""
                     #mender_vars[k] = d.getVar(k) might be useful for inspection
         with open (path, 'w') as f:

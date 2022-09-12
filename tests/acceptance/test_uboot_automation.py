@@ -260,10 +260,6 @@ class TestUbootAutomation:
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
 
-        with bitbake_env_from(request, "u-boot"):
-            self.run_test_uboot_compile(request, bitbake_variables)
-
-    def run_test_uboot_compile(self, request, bitbake_variables):
         # No need to test this on non-vexpress-qemu. It is a very resource
         # consuming test, and it is identical on all boards, since it internally
         # tests all boards.
@@ -281,6 +277,10 @@ class TestUbootAutomation:
             )
         bitbake_variables = get_bitbake_variables(request, "u-boot")
 
+        with bitbake_env_from(request, "u-boot"):
+            self.do_board_compiles(machine, bitbake_variables)
+
+    def do_board_compiles(self, machine, bitbake_variables):
         shutil.rmtree("/dev/shm/test_uboot_compile", ignore_errors=True)
 
         env = copy.copy(os.environ)
@@ -343,12 +343,12 @@ class TestUbootAutomation:
 
             if machine == "vexpress-qemu":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2021.07-gitbb38d77ca779
-                measured_failed_ratio = 27.0 / 502.0
+                # From version: 2022.01-gitd637294e264a
+                measured_failed_ratio = 26.0 / 498.0
             elif machine == "vexpress-qemu-flash":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2021.07-gitbb38d77ca779
-                measured_failed_ratio = 15.0 / 128.0
+                # From version: 2022.01-gitd637294e264a
+                measured_failed_ratio = 9.0 / 130.0
 
             # We tolerate a certain percentage discrepancy in either direction.
             tolerated_discrepancy = 0.1
@@ -431,7 +431,7 @@ class TestUbootAutomation:
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"'],
+                ['MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"'],
                 capture=True,
             )
 
@@ -466,6 +466,13 @@ class TestUbootAutomation:
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
+            target="-c clean u-boot",
+        )
+
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
             target="-c save_mender_auto_configured_patch u-boot",
         )
 
@@ -495,8 +502,8 @@ class TestUbootAutomation:
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
                 [
-                    'MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"',
-                    'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"'
+                    'MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"',
+                    'TEST_SRC_URI_APPEND:pn-u-boot = " file://%s"'
                     % os.path.basename(new_patch_name),
                 ],
                 target="-c clean u-boot",
@@ -579,8 +586,8 @@ class TestUbootAutomation:
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
                 [
-                    'MENDER_UBOOT_AUTO_CONFIGURE_pn-u-boot = "0"',
-                    'TEST_SRC_URI_APPEND_pn-u-boot = " file://%s"'
+                    'MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"',
+                    'TEST_SRC_URI_APPEND:pn-u-boot = " file://%s"'
                     % os.path.basename(new_patch_name),
                 ],
                 target="-c clean u-boot",

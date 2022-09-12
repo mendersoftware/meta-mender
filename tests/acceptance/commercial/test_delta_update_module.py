@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -46,9 +46,9 @@ class TestDeltaUpdateModule:
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['IMAGE_INSTALL_append = " mender-binary-delta"'],
+            ['IMAGE_INSTALL:append = " mender-binary-delta"'],
             [
-                'BBLAYERS_append = " %s/../meta-mender-commercial"'
+                'BBLAYERS:append = " %s/../meta-mender-commercial"'
                 % bitbake_variables["LAYERDIR_MENDER"]
             ],
         )
@@ -83,9 +83,9 @@ class TestDeltaUpdateModule:
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['IMAGE_INSTALL_append = " mender-binary-delta"'],
+            ['IMAGE_INSTALL:append = " mender-binary-delta"'],
             [
-                'BBLAYERS_append = " %s/../meta-mender-commercial"'
+                'BBLAYERS:append = " %s/../meta-mender-commercial"'
                 % bitbake_variables["LAYERDIR_MENDER"]
             ],
         )
@@ -151,7 +151,7 @@ class TestDeltaUpdateModule:
         output = subprocess.check_output(
             "mender-artifact read %s" % image, shell=True
         ).decode()
-        match = re.search("checksum: *([0-9a-f]+)", output)
+        match = re.search(r"checksum: *([0-9a-f]+)", output)
         assert match is not None, (
             "Could not find checksum in mender-artifact output: %s" % output
         )
@@ -220,7 +220,7 @@ class TestDeltaUpdateModule:
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['IMAGE_INSTALL_append = " nano"'],
+                ['IMAGE_INSTALL:append = " nano"'],
             )
             built_artifact = latest_build_artifact(
                 request, prepared_test_build["build_dir"], "core-image*.mender"

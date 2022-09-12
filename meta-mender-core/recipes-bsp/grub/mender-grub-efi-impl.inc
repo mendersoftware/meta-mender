@@ -1,12 +1,12 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI_append_cfg_file += " file://cfg"
+require ${@'uboot_version_logic.inc' if d.getVar('MENDER_EFI_LOADER').startswith('u-boot') else ''}
 
-require version_logic.inc
+DEPENDS:append = " ${MENDER_EFI_LOADER}"
 
 do_check_config_efi_stub() {
 }
-do_check_config_efi_stub_mender-grub() {
+do_check_config_efi_stub:mender-grub() {
     # The first "if" is just to make sure "file" is working correctly.
     if file -Lk ${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE} | fgrep "Linux kernel"; then
         if ! file -Lk ${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE} | fgrep "EFI application"; then
@@ -14,7 +14,7 @@ do_check_config_efi_stub_mender-grub() {
         fi
     fi
 }
-do_check_config_efi_stub_mender-grub_mender-bios() {
+do_check_config_efi_stub:mender-grub:mender-bios() {
 }
 addtask do_check_config_efi_stub before do_configure
 do_check_config_efi_stub[depends] = "virtual/kernel:do_deploy"
@@ -24,7 +24,7 @@ require grub-mender.inc
 EFI_BOOT_PATH ?= ""
 
 # When using mender and efi-secure-boot, these conf files will be provided by grub-mender-grubenv
-CONFFILES_${PN}_remove = " \
+CONFFILES:${PN}:remove = " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '${EFI_BOOT_PATH}/grub.cfg', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '${EFI_BOOT_PATH}/grubenv', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', '${EFI_BOOT_PATH}/boot-menu.inc', '', d)} \
@@ -33,7 +33,7 @@ CONFFILES_${PN}_remove = " \
 "
 
 # Allow the cfg and signature files to be installed by grub-mender-grubenv
-python do_cleanconfigs_class-target() {
+python do_cleanconfigs:class-target() {
     if bb.utils.contains('MENDER_FEATURES', 'mender-grub', True, False, d) and \
         bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', True, False, d):
             ext = d.getVar("SB_FILE_EXT")

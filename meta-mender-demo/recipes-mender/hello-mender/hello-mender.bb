@@ -1,7 +1,7 @@
 DESCRIPTION = "Mender test recipe for persistent data files"
 LICENSE = "Apache-2.0"
 
-FILES_${PN} += "/data/persistent.txt"
+FILES:${PN} += "/data/persistent.txt"
 
 do_compile() {
     echo 'Hello Mender config file' > hello-mender.cfg

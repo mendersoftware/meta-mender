@@ -40,7 +40,7 @@ def extract_partition(img, number):
         ["fdisk", "-l", "-o", "device,start,end", img], stdout=subprocess.PIPE
     )
     for line in output.stdout:
-        if re.search("img%d" % number, line.decode()) is None:
+        if re.search(r"img%d" % number, line.decode()) is None:
             continue
 
         match = re.match(r"\s*\S+\s+(\S+)\s+(\S+)", line.decode())
@@ -169,7 +169,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['IMAGE_ROOTFS_EXTRA_SPACE_append = " + 640 - 222 + 900"'],
+            ['IMAGE_ROOTFS_EXTRA_SPACE:append = " + 640 - 222 + 900"'],
         )
 
         built_rootfs = latest_build_artifact(
@@ -334,7 +334,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['IMAGE_INSTALL_append = " example-state-scripts"'],
+                ['IMAGE_INSTALL:append = " example-state-scripts"'],
             )
 
             found_rootfs_scripts = {
@@ -454,7 +454,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             with open(old_file) as old_fd, open(new_file, "w") as new_fd:
                 for line in old_fd.readlines():
                     if (
-                        re.match("^EXTERNALSRC_pn-%s(-native)? *=" % base_recipe, line)
+                        re.match(r"^EXTERNALSRC_pn-%s(-native)? *=" % base_recipe, line)
                         is not None
                     ):
                         continue
@@ -579,13 +579,13 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                     "vars": [
                         'MENDER_MTDIDS = "nor2=40000000.flash,nor3=50000000.flash"',
                         'MENDER_IS_ON_MTDID = "40000000.flash"',
-                        'MENDER_MTDPARTS = "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)"',
+                        'MENDER_MTDPARTS = "50000000.flash:128k(whatever);40000000.flash:1m(u-boot)ro,1m(u-boot-env),-(ubi)"',
                     ],
                     "success": True,
                     "expected": {
                         "MENDER_MTDIDS": "nor2=40000000.flash,nor3=50000000.flash",
                         "MENDER_IS_ON_MTDID": "40000000.flash",
-                        "MENDER_MTDPARTS": "50000000.flash:1m(whatever);40000000.flash:2m(u-boot)ro,3m(u-boot-env),-(ubi)",
+                        "MENDER_MTDPARTS": "50000000.flash:128k(whatever);40000000.flash:1m(u-boot)ro,1m(u-boot-env),-(ubi)",
                     },
                 },
             ),
@@ -629,9 +629,9 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             bitbake_image,
             [
                 """
-IMAGE_INSTALL_append = " test-boot-files"
+IMAGE_INSTALL:append = " test-boot-files"
 
-IMAGE_BOOT_FILES_append = " deployed-test1 deployed-test-dir2/deployed-test2 \
+IMAGE_BOOT_FILES:append = " deployed-test1 deployed-test-dir2/deployed-test2 \
     deployed-test3;renamed-deployed-test3 \
  deployed-test-dir4/deployed-test4;renamed-deployed-test4	deployed-test5;renamed-deployed-test-dir5/renamed-deployed-test5 \
 deployed-test-dir6/deployed-test6;renamed-deployed-test-dir6/renamed-deployed-test6 \
@@ -669,7 +669,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['IMAGE_BOOT_FILES_append = " conflict-test1"'],
+                ['IMAGE_BOOT_FILES:append = " conflict-test1"'],
             )
 
             # Conflicting file with different content should fail.
@@ -678,7 +678,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                     prepared_test_build["build_dir"],
                     prepared_test_build["bitbake_corebase"],
                     bitbake_image,
-                    ['IMAGE_BOOT_FILES_append = " conflict-test2"'],
+                    ['IMAGE_BOOT_FILES:append = " conflict-test2"'],
                 )
                 pytest.fail(
                     "Bitbake succeeded, but should have failed with a file conflict"
@@ -723,7 +723,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['PACKAGECONFIG_remove = "modules"'],
+                ['PACKAGECONFIG:remove = "modules"'],
             )
         else:
             assert not any([e in entries for e in default_update_modules])
@@ -731,7 +731,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
                 bitbake_image,
-                ['PACKAGECONFIG_append = " modules"'],
+                ['PACKAGECONFIG:append = " modules"'],
             )
 
         new_rootfs = latest_build_artifact(
@@ -1151,31 +1151,47 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             "mender-client",
-            ['PACKAGECONFIG_remove = "dbus"'],
+            target="-c clean mender-client",
         )
 
-        env = get_bitbake_variables(
-            request, "mender-client", prepared_test_build=prepared_test_build
-        )
+        try:
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                "mender-client",
+                ['PACKAGECONFIG:remove = "dbus"'],
+            )
 
-        # Get dynamic section info from binary.
-        output = subprocess.check_output(
-            [env["READELF"], "-d", os.path.join(env["D"], "usr/bin/mender")]
-        ).decode()
+            env = get_bitbake_variables(
+                request, "mender-client", prepared_test_build=prepared_test_build
+            )
 
-        # Verify the output is sane.
-        assert "libc" in output
+            # Get dynamic section info from binary.
+            output = subprocess.check_output(
+                [env["READELF"], "-d", os.path.join(env["D"], "usr/bin/mender")]
+            ).decode()
 
-        # Actual test.
-        assert "libglib" not in output
+            # Verify the output is sane.
+            assert "libc" in output
 
-        # Make sure busconfig files are also gone.
-        assert not os.path.exists(
-            os.path.join(env["D"], "usr/share/dbus-1/system.d/io.mender.conf")
-        )
-        assert not os.path.exists(
-            os.path.join(env["D"], "etc/dbus-1/system.d/io.mender.conf")
-        )
+            # Actual test.
+            assert "libglib" not in output
+
+            # Make sure busconfig files are also gone.
+            assert not os.path.exists(
+                os.path.join(env["D"], "usr/share/dbus-1/system.d/io.mender.conf")
+            )
+            assert not os.path.exists(
+                os.path.join(env["D"], "etc/dbus-1/system.d/io.mender.conf")
+            )
+
+        finally:
+            build_image(
+                prepared_test_build["build_dir"],
+                prepared_test_build["bitbake_corebase"],
+                "mender-client",
+                target="-c clean mender-client",
+            )
 
     @pytest.mark.min_mender_version("2.5.0")
     @pytest.mark.only_with_image("ext4")
@@ -1202,7 +1218,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['PACKAGECONFIG_append_pn-mender-client = " inventory-network-scripts"'],
+            ['PACKAGECONFIG:append:pn-mender-client = " inventory-network-scripts"'],
         )
         rootfs = latest_build_artifact(
             request, prepared_test_build["build_dir"], "core-image*.ext4"
@@ -1224,7 +1240,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['PACKAGECONFIG_remove_pn-mender-client = " inventory-network-scripts"'],
+            ['PACKAGECONFIG:remove:pn-mender-client = " inventory-network-scripts"'],
         )
         rootfs = latest_build_artifact(
             request, prepared_test_build["build_dir"], "core-image*.ext4"
@@ -1239,7 +1255,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
     @pytest.mark.min_mender_version("2.7.0")
     def test_mender_dbus_interface_file(
-        self, request, prepared_test_build, bitbake_image
+        self, request, prepared_test_build, bitbake_image, bitbake_path
     ):
         """
         Test the D-Bus interface file is provided by the mender-client-dev package,
@@ -1264,7 +1280,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             # build mender-client
             maybe_remove_dbus = []
             if not dbus_enabled:
-                maybe_remove_dbus.append('PACKAGECONFIG_remove = "dbus"')
+                maybe_remove_dbus.append('PACKAGECONFIG:remove = "dbus"')
             build_image(
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],

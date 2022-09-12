@@ -3,26 +3,26 @@ require conf/image-uefi.conf
 inherit ${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', 'user-key-store', '', d)}
 inherit grub-mender-grubenv
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 # Location of grub.cfg in the filesystem hierarchy.
 GRUB_CONF_LOCATION = "${EFI_FILES_PATH}"
-GRUB_CONF_LOCATION_mender-bios = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
+GRUB_CONF_LOCATION:mender-bios = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
 
 # Location of grub.cfg within the boot partition.
 GRUB_CONF_BARE_LOCATION = "${EFIDIR}"
-GRUB_CONF_BARE_LOCATION_mender-bios = "/"
+GRUB_CONF_BARE_LOCATION:mender-bios = "/"
 
 # Location of the boot partition. This is almost always equal to
 # MENDER_BOOT_PART_MOUNT_LOCATION (which EFI_PREFIX is also equal to),
 # but we allow it to be overridden here.
 BOOT_DIR_LOCATION = "${EFI_PREFIX}"
-BOOT_DIR_LOCATION_mender-bios = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
+BOOT_DIR_LOCATION:mender-bios = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
 
 # Location of the grub-mender-grubenv environment.
 GRUB_ENV_LOCATION = "${MENDER_BOOT_PART_MOUNT_LOCATION}/grub-mender-grubenv"
 
-FILES_${PN} += "/data/mender_grubenv.config \
+FILES:${PN} += "/data/mender_grubenv.config \
                 ${GRUB_CONF_LOCATION}/grub.cfg \
                 ${GRUB_ENV_LOCATION}/mender_grubenv1/env \
                 ${GRUB_ENV_LOCATION}/mender_grubenv1/lock \
@@ -36,19 +36,19 @@ FILES_${PN} += "/data/mender_grubenv.config \
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
-SRC_URI_append = "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', ' file://01_efi_secure_boot_grub.cfg;subdir=git', '', d)}"
+SRC_URI:append = "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', ' file://01_efi_secure_boot_grub.cfg;subdir=git', '', d)}"
 
 PACKAGECONFIG[debug-pause] = ",,,"
-SRC_URI_append = "${@bb.utils.contains('PACKAGECONFIG', 'debug-pause', ' file://06_mender_debug_pause_grub.cfg;subdir=git', '', d)}"
+SRC_URI:append = "${@bb.utils.contains('PACKAGECONFIG', 'debug-pause', ' file://06_mender_debug_pause_grub.cfg;subdir=git', '', d)}"
 PACKAGECONFIG[force-grub-prompt] = ",,,"
-SRC_URI_append = "${@bb.utils.contains('PACKAGECONFIG', 'force-grub-prompt', ' file://06_mender_debug_force_grub_prompt_grub.cfg;subdir=git', '', d)}"
+SRC_URI:append = "${@bb.utils.contains('PACKAGECONFIG', 'force-grub-prompt', ' file://06_mender_debug_force_grub_prompt_grub.cfg;subdir=git', '', d)}"
 PACKAGECONFIG[debug-log] = ",,,"
 
-RDEPENDS_${PN} = "grub-efi"
-RDEPENDS_${PN}_mender-bios = "grub"
+RDEPENDS:${PN} = "grub-efi"
+RDEPENDS:${PN}:mender-bios = "grub"
 
 PROVIDES = "${@mender_feature_is_enabled('mender-grub', "virtual/grub-bootconf", "", d)}"
-RPROVIDES_${PN} = "${@mender_feature_is_enabled('mender-grub', "virtual/grub-bootconf", "", d)}"
+RPROVIDES:${PN} = "${@mender_feature_is_enabled('mender-grub', "virtual-grub-bootconf", "", d)}"
 
 # See https://www.gnu.org/software/grub/manual/grub/grub.html#debug
 DEBUG_LOG_CATEGORY ?= "all"
@@ -104,7 +104,7 @@ do_install() {
     oe_runmake -f ${S}/Makefile srcdir=${S} BOOT_DIR=${BOOT_DIR_LOCATION} EFI_DIR=${GRUB_CONF_BARE_LOCATION} DESTDIR=${D} install-standalone
 }
 
-do_install_append_mender-bios() {
+do_install:append:mender-bios() {
     # For BIOS installations, the boot partition is normally found in a
     # nonstandard location like `/boot/grub`, so record that.
     install -m 755 -d ${D}${sysconfdir}
@@ -134,7 +134,7 @@ fakeroot do_chownboot() {
            "${D}${GRUB_ENV_LOCATION}/mender_grubenv1/lock.sha256sum${SB_FILE_EXT}" \
            "${D}${GRUB_ENV_LOCATION}/mender_grubenv2/lock.sha256sum${SB_FILE_EXT}"
 }
-FILES_${PN}_append = "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', \
+FILES:${PN}:append = "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', \
                                            ' \
                                              ${GRUB_CONF_LOCATION}/grub.cfg${SB_FILE_EXT} \
                                              ${GRUB_ENV_LOCATION}/mender_grubenv1/lock${SB_FILE_EXT} \

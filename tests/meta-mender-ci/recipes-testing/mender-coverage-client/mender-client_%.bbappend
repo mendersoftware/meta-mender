@@ -1,6 +1,6 @@
-SUMMARY_append_mender-testing-enabled = ": Build a Mender client which records coverage during its invocation"
+SUMMARY:append:mender-testing-enabled = ": Build a Mender client which records coverage during its invocation"
 
-DEPENDS_append_mender-testing-enabled = " gobinarycoverage-native"
+DEPENDS:append:mender-testing-enabled = " gobinarycoverage-native"
 
 do_instrument_client[dirs] =+ "${GOTMPDIR}"
 do_instrument_client[doc] = "Modifies the Mender client source to enable coverage analysis"
@@ -10,7 +10,7 @@ do_instrument_client () {
     oe_runmake instrument-binary
 }
 
-do_instrument_client_class-native() {
+do_instrument_client:class-native() {
     true
 }
 

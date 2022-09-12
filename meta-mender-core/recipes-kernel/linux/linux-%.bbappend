@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 # This works around a somewhat tricky situation: We want to apply the patches
 # below to the Linux kernel recipe. However, we don't know the name of the
@@ -16,5 +16,5 @@ def if_kernel_recipe(if_true, if_false, d):
     else:
         return if_false
 
-SRC_URI_append_mender-grub_arm = "${@if_kernel_recipe(' file://enable_efi_stub.cfg', '', d)}"
-SRC_URI_append_mender-grub_aarch64 = "${@if_kernel_recipe(' file://enable_efi_stub.cfg', '', d)}"
+SRC_URI:append:mender-grub:arm = "${@if_kernel_recipe(' file://enable_efi_stub.cfg', '', d)}"
+SRC_URI:append:mender-grub:aarch64 = "${@if_kernel_recipe(' file://enable_efi_stub.cfg', '', d)}"

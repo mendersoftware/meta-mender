@@ -1,0 +1,151 @@
+From 71a431984ea6de375f545dd3c3089019f00ebb9e Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@northern.tech>
+Date: Fri, 10 Jun 2022 15:12:49 +0200
+Subject: [PATCH] fix: Upgrade openssl dependency to fix cast error in recent
+ Go.
+
+Changelog: Title
+Ticket: None
+
+Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+(cherry picked from commit 34c75043e63f97cc2b1ae9a707507952eb6e6636)
+---
+ go.mod                                        |  2 +-
+ go.sum                                        |  4 +-
+ .../github.com/mendersoftware/openssl/fips.go | 39 -------------------
+ .../mendersoftware/openssl/hostname.go        | 12 ++----
+ vendor/modules.txt                            |  2 +-
+ 5 files changed, 7 insertions(+), 52 deletions(-)
+ delete mode 100644 vendor/github.com/mendersoftware/openssl/fips.go
+
+diff --git a/go.mod b/go.mod
+index 3a0a422..64ea0d6 100644
+--- a/go.mod
++++ b/go.mod
+@@ -8,7 +8,7 @@ require (
+ 	github.com/godbus/dbus v4.1.0+incompatible
+ 	github.com/gorilla/websocket v1.4.3-0.20220104015952-9111bb834a68
+ 	github.com/mendersoftware/mender-artifact v0.0.0-20211202103248-a143afebe434
+-	github.com/mendersoftware/openssl v1.1.0
++	github.com/mendersoftware/openssl v0.0.0-20220610125625-9fe59ddd6ba4
+ 	github.com/mendersoftware/progressbar v0.0.3
+ 	github.com/pkg/errors v0.9.1
+ 	github.com/sirupsen/logrus v1.8.1
+diff --git a/go.sum b/go.sum
+index dec3b6e..6982ca1 100644
+--- a/go.sum
++++ b/go.sum
+@@ -175,8 +175,8 @@ github.com/mendersoftware/cli/v2 v2.1.1-minimal h1:NWX83kF8Eobfb3oBWeUmw9Ef2H9Zq
+ github.com/mendersoftware/cli/v2 v2.1.1-minimal/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
+ github.com/mendersoftware/mender-artifact v0.0.0-20211202103248-a143afebe434 h1:Ph8jyF/XMLRNcZobiImeDzG+bkRhPlvQ3W63ECRHgTQ=
+ github.com/mendersoftware/mender-artifact v0.0.0-20211202103248-a143afebe434/go.mod h1:N70nOG3qjQALX4+NJmSeL++fZRsJ7mVF1WQhNgdfbCA=
+-github.com/mendersoftware/openssl v1.1.0 h1:eRiG3CwzkMIna1xrTE9SiX9lrsme9irlb6i5vvMfU9s=
+-github.com/mendersoftware/openssl v1.1.0/go.mod h1:tikEC94q+Y0TU6r19L6mHzwruoTNYPEkrQPvsHEcQyU=
++github.com/mendersoftware/openssl v0.0.0-20220610125625-9fe59ddd6ba4 h1:RNC/c9KxP541F5MdM8ejzSIIRyvF2l74mj6PvvwDdvE=
++github.com/mendersoftware/openssl v0.0.0-20220610125625-9fe59ddd6ba4/go.mod h1:tikEC94q+Y0TU6r19L6mHzwruoTNYPEkrQPvsHEcQyU=
+ github.com/mendersoftware/progressbar v0.0.3 h1:AUdBGPvXO0l9i39rmXKZbEAPet2FzBeiG8b30D5/2Vc=
+ github.com/mendersoftware/progressbar v0.0.3/go.mod h1:NYaLNLhy3UXkRweGjhR3We3Q1ngmUmOWjC3+m8EzwjE=
+ github.com/minio/sha256-simd v1.0.0 h1:v1ta+49hkWZyvaKwrQB8elexRqm6Y0aMLjCNsrYxo6g=
+diff --git a/vendor/github.com/mendersoftware/openssl/fips.go b/vendor/github.com/mendersoftware/openssl/fips.go
+deleted file mode 100644
+index f65e14d..0000000
+--- a/vendor/github.com/mendersoftware/openssl/fips.go
++++ /dev/null
+@@ -1,39 +0,0 @@
+-// Copyright (C) 2017. See AUTHORS.
+-//
+-// Licensed under the Apache License, Version 2.0 (the "License");
+-// you may not use this file except in compliance with the License.
+-// You may obtain a copy of the License at
+-//
+-//   http://www.apache.org/licenses/LICENSE-2.0
+-//
+-// Unless required by applicable law or agreed to in writing, software
+-// distributed under the License is distributed on an "AS IS" BASIS,
+-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-// See the License for the specific language governing permissions and
+-// limitations under the License.
+-
+-package openssl
+-
+-/*
+-#include <openssl/ssl.h>
+-*/
+-import "C"
+-import "runtime"
+-
+-// FIPSModeSet enables a FIPS 140-2 validated mode of operation.
+-// https://wiki.openssl.org/index.php/FIPS_mode_set()
+-func FIPSModeSet(mode bool) error {
+-	runtime.LockOSThread()
+-	defer runtime.UnlockOSThread()
+-
+-	var r C.int
+-	if mode {
+-		r = C.FIPS_mode_set(1)
+-	} else {
+-		r = C.FIPS_mode_set(0)
+-	}
+-	if r != 1 {
+-		return errorFromErrorQueue()
+-	}
+-	return nil
+-}
+diff --git a/vendor/github.com/mendersoftware/openssl/hostname.go b/vendor/github.com/mendersoftware/openssl/hostname.go
+index 2263875..fd7d45a 100644
+--- a/vendor/github.com/mendersoftware/openssl/hostname.go
++++ b/vendor/github.com/mendersoftware/openssl/hostname.go
+@@ -17,18 +17,12 @@ package openssl
+ /*
+ #include <openssl/ssl.h>
+ #include <openssl/conf.h>
+-#include <openssl/x509.h>
++#include <openssl/x509v3.h>
+ 
+ #ifndef X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT
+ #define X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT	0x1
+ #define X509_CHECK_FLAG_NO_WILDCARDS	0x2
+ 
+-extern int X509_check_host(X509 *x, const unsigned char *chk, size_t chklen,
+-    unsigned int flags, char **peername);
+-extern int X509_check_email(X509 *x, const unsigned char *chk, size_t chklen,
+-    unsigned int flags);
+-extern int X509_check_ip(X509 *x, const unsigned char *chk, size_t chklen,
+-		unsigned int flags);
+ #endif
+ */
+ import "C"
+@@ -60,7 +54,7 @@ func (c *Certificate) CheckHost(host string, flags CheckFlags) error {
+ 	chost := unsafe.Pointer(C.CString(host))
+ 	defer C.free(chost)
+ 
+-	rv := C.X509_check_host(c.x, (*C.uchar)(chost), C.size_t(len(host)),
++	rv := C.X509_check_host(c.x, (*C.char)(chost), C.size_t(len(host)),
+ 		C.uint(flags), nil)
+ 	runtime.KeepAlive(c)
+ 	if rv > 0 {
+@@ -80,7 +74,7 @@ func (c *Certificate) CheckHost(host string, flags CheckFlags) error {
+ func (c *Certificate) CheckEmail(email string, flags CheckFlags) error {
+ 	cemail := unsafe.Pointer(C.CString(email))
+ 	defer C.free(cemail)
+-	rv := C.X509_check_email(c.x, (*C.uchar)(cemail), C.size_t(len(email)),
++	rv := C.X509_check_email(c.x, (*C.char)(cemail), C.size_t(len(email)),
+ 		C.uint(flags))
+ 	runtime.KeepAlive(c)
+ 	if rv > 0 {
+diff --git a/vendor/modules.txt b/vendor/modules.txt
+index 89cb8c1..9eac854 100644
+--- a/vendor/modules.txt
++++ b/vendor/modules.txt
+@@ -27,7 +27,7 @@ github.com/mendersoftware/mender-artifact/artifact/stage
+ github.com/mendersoftware/mender-artifact/awriter
+ github.com/mendersoftware/mender-artifact/handlers
+ github.com/mendersoftware/mender-artifact/utils
+-# github.com/mendersoftware/openssl v1.1.0
++# github.com/mendersoftware/openssl v0.0.0-20220610125625-9fe59ddd6ba4
+ ## explicit
+ github.com/mendersoftware/openssl
+ github.com/mendersoftware/openssl/utils
+-- 
+2.25.1
+

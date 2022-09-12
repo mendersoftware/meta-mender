@@ -52,16 +52,19 @@ PV = "${@mender_configure_version_from_preferred_version(d, '${SRCPV}')}"
 SRC_URI = "git://github.com/mendersoftware/mender-configure-module.git;protocol=https;branch=${MENDER_CONFIGURE_BRANCH}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below. Note that for
-# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
-# file.
+# dependencies) are included in the LICENSE variable below.
 def mender_configure_license(branch):
     # Only one currently. If the sub licenses change we may introduce more.
     return {
                "license": "Apache-2.0",
     }
-LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=fbe9cd162201401ffbb442445efecfdc"
+LIC_FILES_CHKSUM = " \
+    file://LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87 \
+"
 LICENSE = "${@mender_configure_license(d.getVar('MENDER_CONFIGURE_BRANCH'))['license']}"
+
+# Disables the need for every dependency to be checked, for easier development.
+_MENDER_DISABLE_STRICT_LICENSE_CHECKING = "1"
 
 # Downprioritize this recipe in version selections.
 DEFAULT_PREFERENCE = "-1"

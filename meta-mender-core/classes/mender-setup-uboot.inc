@@ -1,4 +1,4 @@
-EXTRA_IMAGEDEPENDS_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
+EXTRA_IMAGEDEPENDS:append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
 
 
 def mender_get_env_total_aligned_size(bootenv_size, alignment_bytes):
@@ -16,7 +16,7 @@ MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET ??= "${MENDER_PARTITION_ALIGNMENT}"
 # real size in the U-Boot recipe later. Must be an *even* multiple of the
 # alignment. Most people should not need to set this, and if so, only because it
 # produces an error if left to the default.
-MENDER_RESERVED_SPACE_BOOTLOADER_DATA_DEFAULT_mender-uboot = \
+MENDER_RESERVED_SPACE_BOOTLOADER_DATA_DEFAULT:mender-uboot = \
     "${@mender_get_env_total_aligned_size(${MENDER_PARTITION_ALIGNMENT}, \
                                           ${MENDER_PARTITION_ALIGNMENT})}"
 

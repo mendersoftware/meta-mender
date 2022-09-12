@@ -1,7 +1,7 @@
 require mender-client.inc
 
 DEPENDS = "xz openssl"
-RDEPENDS_${PN} = "liblzma openssl"
+RDEPENDS:${PN} = "liblzma openssl"
 
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
@@ -58,25 +58,24 @@ def mender_version_from_preferred_version(d, srcpv):
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=${MENDER_BRANCH}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below. Note that for
-# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
-# file.
+# dependencies) are included in the LICENSE variable below.
 def mender_license(branch):
     import re
     if branch.startswith("1."):
         return {
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
-    elif re.match(r"2\.[0-3]\.x", branch) is not None:
+    else:
         return {
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
-    else:
-        return {
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL",
-        }
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87"
+LIC_FILES_CHKSUM = " \
+    file://src/github.com/mendersoftware/mender/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87 \
+"
 LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
+
+# Disables the need for every dependency to be checked, for easier development.
+_MENDER_DISABLE_STRICT_LICENSE_CHECKING = "1"
 
 # Downprioritize this recipe in version selections.
 DEFAULT_PREFERENCE = "-1"

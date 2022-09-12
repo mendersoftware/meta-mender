@@ -68,11 +68,11 @@ def mender_get_partuuid_from_device(d, deviceName):
     import re
     if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', True, False, d) and deviceName:
         uuid=deviceName.replace('/dev/disk/by-partuuid/', '')
-        gptMatch = re.search('^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$', uuid)
+        gptMatch = re.search(r'^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$', uuid)
         if gptMatch:
             return gptMatch.group(0)
 
-        msdosMatch = re.search("^[0-9a-f]{8}\-[0-9]{2}$", uuid)
+        msdosMatch = re.search(r"^[0-9a-f]{8}\-[0-9]{2}$", uuid)
         if msdosMatch:
             return msdosMatch.group(0)
         bb.fatal("%s Does not contain a valid PARTUUID path" % deviceName )
@@ -121,7 +121,7 @@ def mender_make_mtdparts_shell_array(d):
         if remaining_encountered:
             return "bbfatal \"'-' entry was not last entry in mtdparts: '%s'\"" % mtdparts
 
-        match = re.match("^([0-9]+|-)([kmg]?)(?:@([0-9]+)([kmg]?))?\(([^)]+)\)(?:ro)?$", component)
+        match = re.match(r"^([0-9]+|-)([kmg]?)(?:@([0-9]+)([kmg]?))?\(([^)]+)\)(?:ro)?$", component)
         if match is None:
             return "bbfatal \"'%s' is not a valid mtdparts string. Please set MENDER_MTDPARTS to a valid value\"" % mtdparts
 
@@ -272,7 +272,7 @@ def mender_get_extra_parts_offset_by_id(d, id = None):
 # from MENDER_BOOT_PART_MOUNT_LOCATION, and merge with the files from
 # IMAGE_BOOT_FILES, following the format from the official Yocto documentation.
 mender_merge_bootfs_and_image_boot_files() {
-    W="${WORKDIR}/bootfs.${BB_CURRENTTASK}"
+    W="${WORKDIR}/bootfs"
     rm -rf "$W"
 
     cp -a "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
@@ -306,7 +306,6 @@ mender_merge_bootfs_and_image_boot_files() {
                     bbfatal "$destfile already exists in boot partition. Please verify that packages do not put files in the boot partition that conflict with IMAGE_BOOT_FILES."
                 fi
             else
-                # create a hardlink if possible (prerequisite: the paths are below the same mount point), do a normal copy otherwise
                 cp "$file" "$destfile"
             fi
         done

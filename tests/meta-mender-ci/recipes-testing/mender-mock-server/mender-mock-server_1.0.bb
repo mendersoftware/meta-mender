@@ -9,13 +9,13 @@ LIC_FILES_CHKSUM = " \
 "
 S = "${WORKDIR}"
 
-RDEPENDS_${PN} = "python3-core python3-netserver python3-json"
+RDEPENDS:${PN} = "python3-core python3-netserver python3-json"
 
 inherit systemd
 
-SYSTEMD_SERVICE_${PN} = "mender-mock-server.service"
+SYSTEMD_SERVICE:${PN} = "mender-mock-server.service"
 
-FILES_${PN} += "\
+FILES:${PN} += "\
     ${prefix}/local/bin/mender-mock-server.py \
     /data/mender-mock-server.py \
     ${prefix}/local/bin/private.key \

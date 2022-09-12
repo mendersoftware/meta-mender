@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI = " \
           file://mender-client-migrate-configuration;subdir=${PN}-${PV} \
@@ -10,16 +10,16 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=e3fc50a88d0a364313df4b21ef20c29e"
 
 inherit mender-state-scripts
 
-ALLOW_EMPTY_${PN} = "1"
+ALLOW_EMPTY:${PN} = "1"
 
-RDEPENDS_${PN} += "jq"
+RDEPENDS:${PN} += "jq"
 
 DEPENDS += "mender-client"
 
 do_check_split_conf() {
     if [ -f ${STAGING_DIR_TARGET}/data/mender/mender.conf ]; then
         bbfatal "A persistent Mender configuration file was found on the /data partition. To migrate the configuration, \
-disable split-mender-config by adding PACKAGECONFIG_remove = \" split-mender-config\" to your local.conf"
+disable split-mender-config by adding PACKAGECONFIG:remove = \" split-mender-config\" to your local.conf"
     fi
 }
 addtask do_check_split_conf before do_compile

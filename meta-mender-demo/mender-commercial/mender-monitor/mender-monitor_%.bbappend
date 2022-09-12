@@ -1,5 +1,5 @@
 
-do_install_append() {
+do_install:append() {
     if echo ${PV} | egrep '^1.0.'; then
         # Nothing to append on 1.0.x recipes
         true

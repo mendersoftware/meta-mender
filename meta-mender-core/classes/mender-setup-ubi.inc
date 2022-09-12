@@ -2,20 +2,20 @@
 # Variables
 ################################################################################
 
-ARTIFACTIMG_FSTYPE_DEFAULT_mender-ubi = "ubifs"
+ARTIFACTIMG_FSTYPE_DEFAULT:mender-ubi = "ubifs"
 
-MENDER_STORAGE_DEVICE_DEFAULT_mender-ubi = "ubi0"
+MENDER_STORAGE_DEVICE_DEFAULT:mender-ubi = "ubi0"
 
 # The base name of the devices that hold individual volumes.
-MENDER_STORAGE_DEVICE_BASE_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE}_"
+MENDER_STORAGE_DEVICE_BASE_DEFAULT:mender-ubi = "${MENDER_STORAGE_DEVICE}_"
 
 # The numbers of the two rootfs partitions in the A/B partition layout.
-MENDER_ROOTFS_PART_A_NUMBER_DEFAULT_mender-ubi = "0"
-MENDER_ROOTFS_PART_B_NUMBER_DEFAULT_mender-ubi = "1"
+MENDER_ROOTFS_PART_A_NUMBER_DEFAULT:mender-ubi = "0"
+MENDER_ROOTFS_PART_B_NUMBER_DEFAULT:mender-ubi = "1"
 
 # The partition number holding the data partition.
-MENDER_DATA_PART_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE_BASE}2"
-MENDER_DATA_PART_FSTYPE_DEFAULT_mender-ubi = "ubifs"
+MENDER_DATA_PART_DEFAULT:mender-ubi = "${MENDER_STORAGE_DEVICE_BASE}2"
+MENDER_DATA_PART_FSTYPE_DEFAULT:mender-ubi = "ubifs"
 
 # u-boot command ubifsmount requires volume name as the only argument
 # and hence we need to keep track of that since we load kernel/dtb from
@@ -23,33 +23,33 @@ MENDER_DATA_PART_FSTYPE_DEFAULT_mender-ubi = "ubifs"
 #
 # It also needs the volume index e.g.
 # ubifsmount ubi0:rootfsa
-MENDER_ROOTFS_PART_A_NAME_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE}:rootfsa"
-MENDER_ROOTFS_PART_B_NAME_DEFAULT_mender-ubi = "${MENDER_STORAGE_DEVICE}:rootfsb"
+MENDER_ROOTFS_PART_A_NAME_DEFAULT:mender-ubi = "${MENDER_STORAGE_DEVICE}:rootfsa"
+MENDER_ROOTFS_PART_B_NAME_DEFAULT:mender-ubi = "${MENDER_STORAGE_DEVICE}:rootfsb"
 
 # The name of of the MTD part holding your UBI volumes.
-MENDER_MTD_UBI_DEVICE_NAME_DEFAULT_mender-ubi = "ubi"
+MENDER_MTD_UBI_DEVICE_NAME_DEFAULT:mender-ubi = "ubi"
 
 # Boot part is not used when building UBI image.
-MENDER_BOOT_PART_DEFAULT_mender-ubi = ""
-MENDER_BOOT_PART_NUMBER_DEFAULT_mender-ubi = ""
-MENDER_BOOT_PART_SIZE_MB_DEFAULT_mender-ubi = "0"
+MENDER_BOOT_PART_DEFAULT:mender-ubi = ""
+MENDER_BOOT_PART_NUMBER_DEFAULT:mender-ubi = ""
+MENDER_BOOT_PART_SIZE_MB_DEFAULT:mender-ubi = "0"
 
 # These are not applicable when building UBI image.
-MENDER_UBOOT_STORAGE_DEVICE_DEFAULT_mender-ubi = "dummy"
-MENDER_UBOOT_STORAGE_INTERFACE_DEFAULT_mender-ubi = "dummy"
+MENDER_UBOOT_STORAGE_DEVICE_DEFAULT:mender-ubi = "dummy"
+MENDER_UBOOT_STORAGE_INTERFACE_DEFAULT:mender-ubi = "dummy"
 
 # Align UBI partitions to the LEB block size instead of the PEB size, since
 # the bookeeping bytes used by UBI are basically lost as far as storage space
 # is concerned.
-MENDER_PARTITION_ALIGNMENT_DEFAULT_mender-ubi = "${MENDER_UBI_LEB_SIZE}"
+MENDER_PARTITION_ALIGNMENT_DEFAULT:mender-ubi = "${MENDER_UBI_LEB_SIZE}"
 
 # Will be relative to start of first MTD partition, so should be zero.
-MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT_mender-ubi = "0"
+MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET_DEFAULT:mender-ubi = "0"
 
 # since UBIFS employs compression, disable the max rootfs size checking.
-MENDER_IMAGE_ROOTFS_MAXSIZE_DEFAULT_mender-ubi = ""
+MENDER_IMAGE_ROOTFS_MAXSIZE_DEFAULT:mender-ubi = ""
 
-MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT_mender-ubi = "${@mender_get_partitioning_overhead_kb_ubi(d)}"
+MENDER_PARTITIONING_OVERHEAD_KB_DEFAULT:mender-ubi = "${@mender_get_partitioning_overhead_kb_ubi(d)}"
 
 # Definition of mtdids and mtdparts (taken from U-Boot's mtdparts.c):
 #
@@ -103,7 +103,7 @@ MENDER_IS_ON_MTDID ??= "${@mender_default_mender_mtdid(d)}"
 MENDER_MTDPARTS ??= "${@mender_make_mtdparts(d)}"
 
 # Usually included in first mtd partition.
-MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT_mender-ubi = "u-boot.${UBOOT_SUFFIX}"
+MENDER_IMAGE_BOOTLOADER_FILE_DEFAULT:mender-ubi = "u-boot.${UBOOT_SUFFIX}"
 
 ################################################################################
 # Most of the information about various Flash properties below has been grabbed
@@ -144,7 +144,7 @@ UBINIZE_ARGS ??= "-p ${MENDER_STORAGE_PEB_SIZE} -m ${MENDER_FLASH_MINIMUM_IO_UNI
 
 # The volume numbers containing the two environment copies. The volume numbers
 # are customizable because the kernel only accepts numbers, but U-boot only
-# accepts names, and these are not currently customizable (see IMAGE_CMD_ubimg).
+# accepts names, and these are not currently customizable (see IMAGE_CMD:ubimg).
 # Normally one does not need to set these unless there is a custom ubimg builder
 # involved.
 MENDER_UBOOT_ENV_UBIVOL_NUMBER_1 ??= "3"
@@ -210,7 +210,7 @@ def mender_get_flash_type_from_mtdid(d):
     import re
 
     mtdid = d.getVar('MENDER_IS_ON_MTDID')
-    match = re.search("([^=]+)=%s" % re.escape(mtdid), d.getVar('MENDER_MTDIDS'))
+    match = re.search(r"([^=]+)=%s" % re.escape(mtdid), d.getVar('MENDER_MTDIDS'))
     if match is None:
         mender_warn_only_if_ubi(d, "Could not find MENDER_IS_ON_MTDID (%s) in MENDER_MTDIDS (%s)."
                                 % (mtdid, d.getVar('MENDER_MTDIDS')))
@@ -254,7 +254,7 @@ def mender_get_ubi_size(d):
     non_ubi_size = 0
     ubiname = d.getVar('MENDER_MTD_UBI_DEVICE_NAME')
     for part in mtdpart.split(":", 1)[1].split(","):
-        match = re.match("^([0-9]+|-)([kmg]?)(?:@([0-9]+)([kmg]?))?\(([^)]+)\)", part)
+        match = re.match(r"^([0-9]+|-)([kmg]?)(?:@([0-9]+)([kmg]?))?\(([^)]+)\)", part)
         if match is None:
             bb.fatal("Unable to parse mtdparts substring '%s'." % part)
         if match.group(3):

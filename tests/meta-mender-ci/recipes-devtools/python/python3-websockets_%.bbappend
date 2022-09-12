@@ -13,7 +13,7 @@
 # Fix it here for our tests with a .bbappend
 #
 
-RDEPENDS_${PN} = "\
+RDEPENDS:${PN} = "\
     ${PYTHON_PN}-asyncio \
     ${PYTHON_PN}-threading \
 "

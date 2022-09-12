@@ -5,10 +5,16 @@ IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-uefi', '
 IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-bios', ' biosimg biosimg.bmap', '', d)}"
 IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-gpt', ' gptimg gptimg.bmap', '', d)}"
 
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_x86 =     " kernel-image"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_x86-64 =  " kernel-image"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_arm =     " kernel-image kernel-devicetree"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append_mender-image_aarch64 = " kernel-image kernel-devicetree"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:x86 =     " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:x86-64 =  " kernel-image"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:arm =     " \
+    kernel-image \
+    ${@'kernel-devicetree' if d.getVar('MENDER_EFI_LOADER').startswith('u-boot') else ''} \
+"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append:mender-image:aarch64 =     " \
+    kernel-image \
+    ${@'kernel-devicetree' if d.getVar('MENDER_EFI_LOADER').startswith('u-boot') else ''} \
+"
 
 python() {
     features = d.getVar('MENDER_FEATURES').split()
@@ -19,15 +25,15 @@ python() {
 }
 
 MENDER_BOOT_PART_MOUNT_LOCATION = "/boot/efi"
-MENDER_BOOT_PART_MOUNT_LOCATION_mender-uboot = "/uboot"
-MENDER_BOOT_PART_MOUNT_LOCATION_mender-systemd-boot = "/boot"
-MENDER_BOOT_PART_MOUNT_LOCATION_mender-grub_mender-bios = "/boot/grub"
+MENDER_BOOT_PART_MOUNT_LOCATION:mender-uboot = "/uboot"
+MENDER_BOOT_PART_MOUNT_LOCATION:mender-systemd-boot = "/boot"
+MENDER_BOOT_PART_MOUNT_LOCATION:mender-grub:mender-bios = "/boot/grub"
 
 # Set Yocto variable.
-EFI_PREFIX_mender-image = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
+EFI_PREFIX:mender-image = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
 
 # Update fstab for Mender
-ROOTFS_POSTPROCESS_COMMAND_append = " mender_update_fstab_file;"
+ROOTFS_POSTPROCESS_COMMAND:append = " mender_update_fstab_file;"
 mender_update_fstab_file() {
     local tmpBootPart="${MENDER_BOOT_PART}"
     local tmpDataPart="${MENDER_DATA_PART}"
@@ -76,7 +82,7 @@ mender_update_fstab_file() {
 }
 
 def mender_default_state_scripts_version(d):
-    pref_mender = d.getVar('PREFERRED_VERSION_pn-mender-client')
+    pref_mender = d.getVar('PREFERRED_VERSION:pn-mender-client')
     if pref_mender and pref_mender.startswith("1."):
         return "2"
     else:
@@ -84,14 +90,14 @@ def mender_default_state_scripts_version(d):
 
 # Setup state script version file.
 MENDER_STATE_SCRIPTS_VERSION = "${@mender_default_state_scripts_version(d)}"
-ROOTFS_POSTPROCESS_COMMAND_append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-image', ' mender_create_scripts_version_file;', '', d)}"
+ROOTFS_POSTPROCESS_COMMAND:append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-image', ' mender_create_scripts_version_file;', '', d)}"
 
 mender_create_scripts_version_file() {
     install -d -m 755 ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/
     echo -n "${MENDER_STATE_SCRIPTS_VERSION}" > ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/version
 }
 
-IMAGE_ROOTFS_EXCLUDE_PATH_append_mender-image = " data/ ${@d.getVar('MENDER_BOOT_PART_MOUNT_LOCATION')[1:]}/"
+IMAGE_ROOTFS_EXCLUDE_PATH:append:mender-image = " data/ ${@d.getVar('MENDER_BOOT_PART_MOUNT_LOCATION')[1:]}/"
 
 
 ################################################################################

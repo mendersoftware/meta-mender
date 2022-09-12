@@ -52,7 +52,7 @@ def start_and_ready_mender_client(connection, second_connection):
     try:
         connection.run("systemctl start mender-client")
 
-        timeout = 120
+        timeout = 300
         now = time.time()
         while time.time() - now < timeout:
             time.sleep(1)
