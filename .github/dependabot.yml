@@ -29,14 +29,6 @@ updates:
     schedule:
       interval: monthly
       day: saturday
-    target-branch: zeus
-  - commit-message:
-      prefix: chore
-    directory: /
-    package-ecosystem: gitsubmodule
-    schedule:
-      interval: monthly
-      day: saturday
     target-branch: dunfell
   - commit-message:
       prefix: chore
