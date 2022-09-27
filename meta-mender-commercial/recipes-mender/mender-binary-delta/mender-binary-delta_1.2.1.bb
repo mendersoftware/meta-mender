@@ -1,5 +1,9 @@
 require mender-binary-delta.inc
 
+SRC_URI_arm = "file://${SUB_FOLDER}/mender-binary-delta;subdir=${BP}"
+SRC_URI_aarch64 = "file://${SUB_FOLDER}/mender-binary-delta;subdir=${BP}"
+SRC_URI_x86-64 = "file://${SUB_FOLDER}/mender-binary-delta;subdir=${BP}"
+
 # REMOVE THIS patch when making a new recipe. All new versions should already
 # have licenses included in the package.
 FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
