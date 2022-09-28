@@ -18,8 +18,6 @@ import pytest
 import tempfile
 import time
 
-from multiprocessing import Process
-
 from mock_server import setup_mock_server
 
 from utils.common import (
@@ -128,7 +126,7 @@ class TestDBus:
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_fetch_jwt_token(
-        self, bitbake_variables, connection, second_connection, setup_mock_server
+        self, bitbake_variables, connection, setup_mock_server
     ):
         """Test the JWT token can be fetched using D-Bus."""
 
@@ -138,13 +136,10 @@ class TestDBus:
 
         try:
             # start monitoring the D-Bus
-            def dbus_monitor():
-                second_connection.run(
-                    "dbus-monitor --system \"type='signal',interface='io.mender.Authentication1'\" > /tmp/dbus-monitor.log"
-                )
-
-            p = Process(target=dbus_monitor, daemon=True)
-            p.start()
+            p = connection.run(
+                "dbus-monitor --system \"type='signal',interface='io.mender.Authentication1'\" > /tmp/dbus-monitor.log",
+                popen=True,
+            )
 
             # get the JWT token via D-Bus
             try:
