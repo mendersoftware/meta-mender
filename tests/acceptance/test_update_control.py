@@ -21,8 +21,6 @@ import sys
 import tempfile
 import time
 
-from multiprocessing import Process
-
 from mock_server import (
     cleanup_deployment_response,
     prepare_deployment_response,
@@ -40,14 +38,12 @@ BETWEEN_EXPIRATIONS = max(EXPIRATION_TIME, BOOT_EXPIRATION_TIME) - 5
 FAIL_TIME = EXPIRATION_TIME + BOOT_EXPIRATION_TIME
 
 
-def start_and_ready_mender_client(connection, second_connection):
-    def dbus_monitor():
-        second_connection.run(
-            "dbus-monitor --system \"type='signal',interface='io.mender.Authentication1'\" > /tmp/dbus-monitor.log"
-        )
+def start_and_ready_mender_client(connection):
+    p = connection.run(
+        "dbus-monitor --system \"type='signal',interface='io.mender.Authentication1'\" > /tmp/dbus-monitor.log",
+        popen=True,
+    )
 
-    p = Process(target=dbus_monitor, daemon=True)
-    p.start()
     time.sleep(0.5)
     try:
         connection.run("systemctl start mender-client")
@@ -473,13 +469,12 @@ class TestUpdateControl:
         case,
         setup_board,
         connection,
-        second_connection,
         setup_mock_server,
         bitbake_variables,
         bitbake_path,
     ):
         try:
-            start_and_ready_mender_client(connection, second_connection)
+            start_and_ready_mender_client(connection)
 
             for m in case["maps"]:
                 set_update_control_map(connection, m)
@@ -594,10 +589,10 @@ class TestUpdateControl:
 
     @pytest.mark.min_mender_version("2.7.0")
     def test_invalid_update_control_map(
-        self, setup_board, connection, second_connection, setup_mock_server
+        self, setup_board, connection, setup_mock_server
     ):
         try:
-            start_and_ready_mender_client(connection, second_connection)
+            start_and_ready_mender_client(connection)
 
             status = connection.run(
                 """dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'{"not-a":"valid-map"}'""",
@@ -663,13 +658,12 @@ class TestUpdateControl:
         case,
         setup_board,
         connection,
-        second_connection,
         setup_mock_server,
         bitbake_variables,
         bitbake_path,
     ):
         try:
-            start_and_ready_mender_client(connection, second_connection)
+            start_and_ready_mender_client(connection)
 
             # First deployment sends the "pause" control map via Server API with the
             # update; then once the client is paused, the map is overridden via DBus API.
@@ -719,7 +713,6 @@ class TestUpdateControl:
         self,
         setup_board,
         connection,
-        second_connection,
         setup_mock_server,
         bitbake_variables,
         bitbake_path,
@@ -728,7 +721,7 @@ class TestUpdateControl:
         triggering the "too many state transitions" error."""
 
         try:
-            start_and_ready_mender_client(connection, second_connection)
+            start_and_ready_mender_client(connection)
 
             ucm = (
                 """{
