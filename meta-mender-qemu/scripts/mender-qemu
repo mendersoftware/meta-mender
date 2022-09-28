@@ -123,8 +123,15 @@ $QEMU_SYSTEM --version || exit 1
 
 echo "--- starting qemu"
 
+USE_KVM=' -enable-kvm ""'
+if [ -n "${GITLAB_CI}" ]; then
+    # Enforce kvm in our CI
+    USE_KVM=' -enable-kvm'
+fi
+
+
 ret=0
-for maybe_kvm in -enable-kvm ""; do
+for maybe_kvm in ${USE_KVM}; do
     if QEMU_AUDIO_DRV=none \
             $QEMU_SYSTEM \
             -m 256M \
