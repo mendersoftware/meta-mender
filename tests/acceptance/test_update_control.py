@@ -757,7 +757,7 @@ done
 
             # Constantly reinsert map over and over in the background, to force
             # state transitions.
-            connection.run("systemd-run sh /data/map-insert.sh")
+            connection.run("systemd-run -p LogLevelMax=3 sh /data/map-insert.sh")
 
             now = time.time()
 
