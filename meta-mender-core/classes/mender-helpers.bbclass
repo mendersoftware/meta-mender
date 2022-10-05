@@ -421,7 +421,11 @@ def get_extra_parts_fstab(d):
     for part in get_extra_parts_flags(d):
        label = get_extra_parts_label(d, part)
        fstype_opts = get_extra_parts_fstab_opts(d, part)
-       out.append("{} {} {}".format(device + str(extra_parts_offset), "/mnt/{}".format(label), fstype_opts))
+       if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d):
+           uuid = get_extra_parts_uuid(d, part)
+           out.append("PARTUUID={} /mnt/{} {}".format(uuid, label, fstype_opts))
+       else:
+           out.append("{} /mnt/{} {}".format(device + str(extra_parts_offset), label, fstype_opts))
        extra_parts_offset += 1
 
     return '\n'.join(out)
