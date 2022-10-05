@@ -16,16 +16,19 @@
 import re
 import os
 import subprocess
+import tempfile
 
 import pytest
 
-from utils.common import determine_active_passive_part, get_ssh_common_args
+from utils.common import (
+    determine_active_passive_part,
+    get_ssh_common_args,
+    get_worker_index,
+)
 
 
 def get_ssh_args_mender_artifact(conn):
     common_args = get_ssh_common_args(conn)
-    # Remove force of SCP protocol present for QEMU calls
-    common_args = common_args.replace("-O ", "")
     # mender-artifact prefixes each ssh argument with "-S"
     common_args = common_args.replace(" ", " -S ")
     # Prefix the first argument too
@@ -161,21 +164,23 @@ class TestSnapshot:
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     # Make sure we run both with and without terminal. Many signal bugs lurk in
     # different corners of the console code.
-    @pytest.mark.parametrize(
-        "terminal", ["", "screen -D -m -L -Logfile screen.log.tmp"]
-    )
+    @pytest.mark.parametrize("terminal", ["", "screen -D -m -L -Logfile %%"])
     def test_snapshot_using_mender_artifact(
         self, terminal, bitbake_path, bitbake_variables, connection
     ):
-        try:
+        with tempfile.NamedTemporaryFile(
+            suffix=".mender"
+        ) as artifact, tempfile.NamedTemporaryFile() as screen_log:
+            terminal = terminal.replace("%%", screen_log.name)
             (active, _) = determine_active_passive_part(bitbake_variables, connection)
 
             try:
                 subprocess.check_call(
-                    "%s mender-artifact write rootfs-image %s -n test -t test -o test_snapshot_using_mender_artifact.mender -f ssh://%s@%s:%s"
+                    "%s mender-artifact write rootfs-image %s -n test -t test -o %s -f ssh://%s@%s:%s"
                     % (
                         terminal,
                         get_ssh_args_mender_artifact(connection),
+                        artifact.name,
                         connection.user,
                         connection.host,
                         connection.port,
@@ -183,11 +188,10 @@ class TestSnapshot:
                     shell=True,
                 )
             finally:
-                subprocess.call("cat screen.log.tmp ; rm -f screen.log.tmp", shell=True)
+                subprocess.call(f"cat {screen_log.name}", shell=True)
 
             output = subprocess.check_output(
-                "mender-artifact read test_snapshot_using_mender_artifact.mender",
-                shell=True,
+                f"mender-artifact read {artifact.name}", shell=True,
             ).decode()
 
             partsize = connection.run("blockdev --getsize64 %s" % active).stdout.strip()
@@ -196,23 +200,18 @@ class TestSnapshot:
             # partition.
             assert re.search(r"size: *%s" % partsize, output) is not None
 
-        finally:
-            try:
-                os.remove("test_snapshot_using_mender_artifact.mender")
-            except:
-                pass
-
     @pytest.mark.min_mender_version("2.5.0")
     @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     # Make sure we run both with and without terminal. Many signal bugs lurk in
     # different corners of the console code.
-    @pytest.mark.parametrize(
-        "terminal", ["", "screen -D -m -L -Logfile screen.log.tmp"]
-    )
+    @pytest.mark.parametrize("terminal", ["", "screen -D -m -L -Logfile %%"])
     def test_snapshot_using_mender_artifact_no_sudo(  # see MEN-3987
         self, terminal, bitbake_path, bitbake_variables, connection
     ):
-        try:
+        with tempfile.NamedTemporaryFile(
+            suffix=".mender"
+        ) as artifact, tempfile.NamedTemporaryFile() as screen_log:
+            terminal = terminal.replace("%%", screen_log.name)
             (active, passive) = determine_active_passive_part(
                 bitbake_variables, connection
             )
@@ -234,10 +233,11 @@ class TestSnapshot:
                 # mender-artifact as of mender-artifact/pull/305 does not use sudo
                 #  when user is root or when uid is 0
                 subprocess.check_call(
-                    "%s mender-artifact write rootfs-image %s -n test -t test -o test_snapshot_using_mender_artifact.mender -f ssh://%s@%s:%s"
+                    "%s mender-artifact write rootfs-image %s -n test -t test -o %s -f ssh://%s@%s:%s"
                     % (
                         terminal,
                         get_ssh_args_mender_artifact(connection),
+                        artifact.name,
                         connection.user,
                         connection.host,
                         connection.port,
@@ -245,7 +245,7 @@ class TestSnapshot:
                     shell=True,
                 )
             finally:
-                subprocess.call("cat screen.log.tmp ; rm -f screen.log.tmp", shell=True)
+                subprocess.call(f"cat {screen_log.name}", shell=True)
                 # let's put the sudo back in place and verify that it works
                 result = connection.run(
                     "mv %s-off %s" % (sudo_path, sudo_path), warn=True, echo=True
@@ -254,8 +254,7 @@ class TestSnapshot:
                 assert result.return_code == 0
 
             output = subprocess.check_output(
-                "mender-artifact read test_snapshot_using_mender_artifact.mender",
-                shell=True,
+                f"mender-artifact read {artifact.name}", shell=True,
             ).decode()
 
             partsize = connection.run("blockdev --getsize64 %s" % active).stdout.strip()
@@ -263,9 +262,3 @@ class TestSnapshot:
             # Ensure that the payload size of the produced artifact matches the
             # partition.
             assert re.search(r"size: *%s" % partsize, output) is not None
-
-        finally:
-            try:
-                os.remove("test_snapshot_using_mender_artifact.mender")
-            except:
-                pass
