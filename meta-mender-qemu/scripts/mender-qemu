@@ -31,6 +31,9 @@ if [ -z "$BUILDDIR" ]; then
     BUILDDIR="`dirname $0`"/../../build
 fi
 
+PORT_NUMBER=${PORT_NUMBER:-8822}
+VNC_NUMBER=${VNC_NUMBER:-23}
+
 IMAGE_NAME=$1
 # check if it's named like an image
 if [ -n "$IMAGE_NAME" ] && echo "$IMAGE_NAME" | grep "image" >/dev/null 2>&1; then
@@ -71,6 +74,9 @@ case "$MACHINE" in
         else
             BOOTLOADER="${BOOTLOADER:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.qcow2}"
             BOOTLOADER_DATA="${BOOTLOADER_DATA:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.vars.qcow2}"
+            TMPVARS="$(mktemp --tmpdir ovmf.vars.XXXXXX.qcow2)"
+            cp "$BOOTLOADER_DATA" "$TMPVARS"
+            BOOTLOADER_DATA="$TMPVARS"
             BOOTLOADER_ARG="${BOOTLOADER_ARG:--drive file=${BOOTLOADER},if=pflash,format=qcow2,unit=0,readonly=on -drive file=${BOOTLOADER_DATA},if=pflash,format=qcow2,unit=1}"
             DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MENDER_DEVICE_TYPE}.uefiimg"}
         fi
@@ -130,8 +136,8 @@ for maybe_kvm in -enable-kvm ""; do
             -m 256M \
             $BOOTLOADER_ARG \
             -net nic,macaddr="$RANDOM_MAC" \
-            -net user,hostfwd=tcp::8822-:22$QEMU_NET_HOSTFWD \
-            -display vnc=:23 \
+            -net user,hostfwd=tcp::${PORT_NUMBER}-:22$QEMU_NET_HOSTFWD \
+            -display vnc=:${VNC_NUMBER} \
             -nographic \
             $maybe_kvm \
             $QEMU_ARGS \
