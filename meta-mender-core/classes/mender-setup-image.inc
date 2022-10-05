@@ -67,17 +67,18 @@ mender_update_fstab_file() {
             mkdir -p ${IMAGE_ROOTFS}/mnt/${label}
         done
 
-        if [ ${partuuid} = "true" ]; then
-            bbfatal "MENDER_EXTRA_PARTS and DISTRO_FEATURE 'mender-partuuid' are both defined and incompatible"
-        fi
-
         parts="${extra_part_fstab}"
         printf "%-20s %-20s %-10s %-21s %-2s %s\n" $parts >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
     fi
 
     if [ "${MENDER_SWAP_PART_SIZE_MB}" -ne "0" ]; then
         local swap_part_num="${@mender_get_swap_part_num(d)}"
-        printf "%-20s %-20s %-10s %-21s %-2s %s\n"  ${MENDER_STORAGE_DEVICE_BASE}${swap_part_num} swap swap defaults 0  0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+	if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+	    swap_uuid="${@d.getVar('MENDER_SWAP_PART_UUID')}"
+            printf "%-20s %-20s %-10s %-21s %-2s %s\n"  "PARTUUID=${swap_uuid}" swap swap defaults 0  0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+	else
+            printf "%-20s %-20s %-10s %-21s %-2s %s\n"  ${MENDER_STORAGE_DEVICE_BASE}${swap_part_num} swap swap defaults 0  0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+	fi
     fi
 }
 
