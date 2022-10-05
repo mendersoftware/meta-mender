@@ -4,3 +4,5 @@
 .venv
 
 /coverage
+/exclusive.test.lock
+/bitbake.test.lock
