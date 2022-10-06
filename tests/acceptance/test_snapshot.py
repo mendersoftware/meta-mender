@@ -22,6 +22,16 @@ import pytest
 from utils.common import determine_active_passive_part, get_ssh_common_args
 
 
+def get_ssh_args_mender_artifact(conn):
+    common_args = get_ssh_common_args(conn)
+    # Remove force of SCP protocol present for QEMU calls
+    common_args = common_args.replace("-O ", "")
+    # mender-artifact prefixes each ssh argument with "-S"
+    common_args = common_args.replace(" ", " -S ")
+    # Prefix the first argument too
+    return "-S " + common_args
+
+
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
 class TestSnapshot:
     @pytest.mark.min_mender_version("2.2.0")
@@ -160,16 +170,12 @@ class TestSnapshot:
         try:
             (active, _) = determine_active_passive_part(bitbake_variables, connection)
 
-            common_args = get_ssh_common_args(connection)
-            # mender-artifact prefixes each ssh argument with "-S"
-            common_args = common_args.replace(" ", " -S ")
-
             try:
                 subprocess.check_call(
-                    "%s mender-artifact write rootfs-image -S %s -n test -t test -o test_snapshot_using_mender_artifact.mender -f ssh://%s@%s:%s"
+                    "%s mender-artifact write rootfs-image %s -n test -t test -o test_snapshot_using_mender_artifact.mender -f ssh://%s@%s:%s"
                     % (
                         terminal,
-                        common_args,
+                        get_ssh_args_mender_artifact(connection),
                         connection.user,
                         connection.host,
                         connection.port,
@@ -211,10 +217,6 @@ class TestSnapshot:
                 bitbake_variables, connection
             )
 
-            common_args = get_ssh_common_args(connection)
-            # mender-artifact prefixes each ssh argument with "-S"
-            common_args = common_args.replace(" ", " -S ")
-
             # /usr/bin/sudo is a link to /data/usr/bin/sudo see
             #  meta-mender-qemu/recipes-extended/sudo/sudo_%.bbappend
             sudo_path = "/data/usr/bin/sudo"
@@ -232,10 +234,10 @@ class TestSnapshot:
                 # mender-artifact as of mender-artifact/pull/305 does not use sudo
                 #  when user is root or when uid is 0
                 subprocess.check_call(
-                    "%s mender-artifact write rootfs-image -S %s -n test -t test -o test_snapshot_using_mender_artifact.mender -f ssh://%s@%s:%s"
+                    "%s mender-artifact write rootfs-image %s -n test -t test -o test_snapshot_using_mender_artifact.mender -f ssh://%s@%s:%s"
                     % (
                         terminal,
-                        common_args,
+                        get_ssh_args_mender_artifact(connection),
                         connection.user,
                         connection.host,
                         connection.port,
