@@ -4,7 +4,7 @@ certifi==2021.10.8
 cffi==1.15.0
 chardet==4.0.0
 cryptography==38.0.1
-fabric==2.6.0
+fabric==2.7.1
 filelock==3.8.0
 idna==3.4
 iniconfig==1.1.1
