@@ -1,7 +1,7 @@
 attrs==22.1.0
 bcrypt==3.2.2
 certifi==2021.10.8
-cffi==1.15.0
+cffi==1.15.1
 chardet==4.0.0
 cryptography==38.0.1
 filelock==3.8.0
