@@ -113,7 +113,7 @@ PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'me
 PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
 PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'mender-grub', ' grub', '', d)}"
 
-PACKAGECONFIG[mender-client-install] = ",,,mender-artifact-info ca-certificates"
+PACKAGECONFIG[mender-client-install] = ",,,ca-certificates"
 PACKAGECONFIG[u-boot] = ",,,libubootenv-bin"
 PACKAGECONFIG[grub] = ",,,grub-editenv grub-mender-grubenv"
 # The docker module depends on bash, and of course on docker. However, docker is
