@@ -78,8 +78,8 @@ python() {
         # Use PARTUUID to set fixed drive locations.
         'mender-partuuid',
 
-        # Use PARTLABEL to avoid hardcoded drive device path.
-        'mender-partlabel',
+        # Use LABEL to avoid hardcoded drive device path.
+        'mender-fslabel',
 
         # Setup the systemd machine ID to be persistent across OTA updates.
         'mender-persist-systemd-machine-id',

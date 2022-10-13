@@ -38,8 +38,8 @@ mender_update_fstab_file() {
     local tmpBootPart="${MENDER_BOOT_PART}"
     local tmpDataPart="${MENDER_DATA_PART}"
     local partuuid="${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}"
-    local partlabel="${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}"
-    if [ ${partlabel} = "true" ]; then
+    local fslabel="${@bb.utils.contains('MENDER_FEATURES', 'mender-fslabel', 'true', 'false', d)}"
+    if [ ${fslabel} = "true" ]; then
         tmpBootPart="LABEL=${MENDER_BOOT_PART_LABEL}"
         tmpDataPart="LABEL=${MENDER_DATA_PART_LABEL}"
     elif [ ${partuuid} = "true" ]; then

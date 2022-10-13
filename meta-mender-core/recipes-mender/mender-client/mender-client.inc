@@ -10,7 +10,7 @@ DEPENDS:class-native = ""
 PACKAGES:append = " mender-modules-gen"
 
 RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd = " parted util-linux-fdisk"
-RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd:mender-partlabel = " util-linux-blkid"
+RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd:mender-fslabel = " util-linux-blkid"
 RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd:mender-partuuid = " util-linux-blkid"
 RDEPENDS:mender-modules-gen = "bash"
 
@@ -346,7 +346,7 @@ do_install:append:class-target:mender-image:mender-systemd() {
 
 do_install:append:class-target:mender-growfs-data:mender-systemd() {
 
-    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}; then
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-fslabel', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid -L ${MENDER_DATA_PART_LABEL})#g" \
             ${WORKDIR}/mender-client-resize-data-part.sh.in
     elif ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
