@@ -95,6 +95,11 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         rootfs = get_bitbake_variables(request, bitbake_image, prepared_test_build)[
             "IMAGE_ROOTFS"
         ]
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+        )
         output = (
             subprocess.check_output(
                 "md5sum ./usr/local/share/ca-certificates/mender/*",
