@@ -3,6 +3,23 @@ require mender-client.inc
 DEPENDS = "xz openssl"
 RDEPENDS_${PN} = "liblzma openssl"
 
+# 3.4 and older mender-client versions need mender-artifact-info.
+RDEPENDS_${PN}_append = "${@mender_maybe_artifact_info(d)}"
+
+def mender_maybe_artifact_info(d):
+    import re
+    branch = d.getVar("MENDER_BRANCH")
+    match = re.match(r"([0-9]+)\.([0-9]+)\.", branch)
+    if match is None:
+        return ""
+
+    major = int(match.group(1))
+    minor = int(match.group(2))
+    if major < 3 or (major == 3 and minor < 5):
+        return " mender-artifact-info"
+    else:
+        return ""
+
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the
