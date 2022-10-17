@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -23,3 +23,22 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "image-tests", "tests"))
 pytest_plugins = "utils.parseropts.parseropts"
 
 from utils.fixtures import *
+
+
+def pytest_collection_modifyitems(session, config, items):
+    """Ugly hack to make sure the bootstrap Artifact test is always run first
+
+    This is needed, because the bootstrap Artifact test is the only test which
+    does not rely on the client running in qemu under the full session scope.
+
+    """
+
+    test_index = None
+
+    # Add the bootstrap Artifact test first
+    for index, test in enumerate(items):
+        if test.name == "test_bootstrap_artifact_install":
+            test_index = index
+            break
+    if test_index:
+        items.insert(0, items.pop(test_index))
