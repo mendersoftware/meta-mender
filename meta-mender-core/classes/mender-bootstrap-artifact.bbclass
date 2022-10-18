@@ -1,5 +1,16 @@
 IMAGE_CMD_bootstrap-artifact() {
 
+    # Write a simple hardcoded bootstrap-artifact first, which we use to detect
+    # whether this version of mender-artifact supports bootstrap artifacts.
+    if ! mender-artifact write bootstrap-artifact \
+            --artifact-name test \
+            --device-type test \
+            --output-path "${WORKDIR}/test-artifact.mender"
+    then
+        # Not supported, don't generate.
+        exit 0
+    fi
+
     if [ -z "${MENDER_ARTIFACT_NAME}" ]; then
             bberror "Need to define MENDER_ARTIFACT_NAME variable."
             exit 1
@@ -91,5 +102,7 @@ python do_delete_copy_rootfs() {
 }
 
 fakeroot do_install_bootstrap_artifact () {
-    install -m 0400 "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.bootstrap-artifact" "${_MENDER_ROOTFS_COPY}/mender/bootstrap.mender"
+    if [ -e "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.bootstrap-artifact" ]; then
+        install -m 0400 "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.bootstrap-artifact" "${_MENDER_ROOTFS_COPY}/mender/bootstrap.mender"
+    fi
 }

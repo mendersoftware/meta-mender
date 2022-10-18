@@ -92,3 +92,4 @@ do_install() {
     echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
 }
+RDEPENDS_${PN} += "mender-artifact-info"

@@ -29,3 +29,5 @@ LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & Op
 
 DEPENDS += "xz openssl"
 RDEPENDS_${PN} += "liblzma openssl"
+
+RDEPENDS_${PN} += "mender-artifact-info"
