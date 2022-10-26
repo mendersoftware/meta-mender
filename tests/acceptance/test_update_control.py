@@ -465,6 +465,7 @@ class TestUpdateControl:
     )
     def test_update_control_maps(
         self,
+        request,
         case_name,
         case,
         setup_board,
@@ -584,12 +585,12 @@ class TestUpdateControl:
             # Reset update control maps.
             clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
             connection.run("rm -f /data/logger-update-module.log")
 
     @pytest.mark.min_mender_version("2.7.0")
     def test_invalid_update_control_map(
-        self, setup_board, connection, setup_mock_server
+        self, request, setup_board, connection, setup_mock_server
     ):
         try:
             start_and_ready_mender_client(connection)
@@ -601,7 +602,7 @@ class TestUpdateControl:
             assert status.return_code != 0
         finally:
             connection.run("systemctl stop mender-client")
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
 
     test_update_control_maps_cleanup_cases = [
         {
@@ -654,6 +655,7 @@ class TestUpdateControl:
     )
     def test_update_control_map_cleanup(
         self,
+        request,
         case_name,
         case,
         setup_board,
@@ -705,12 +707,13 @@ class TestUpdateControl:
             cleanup_deployment_response(connection)
             clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
             connection.run("rm -f /data/logger-update-module.log")
 
     @pytest.mark.min_mender_version("2.7.0")
     def test_many_state_transitions_with_update_control(
         self,
+        request,
         setup_board,
         connection,
         setup_mock_server,
@@ -805,5 +808,5 @@ done
             # Reset update control maps.
             clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
             connection.run("rm -f /data/logger-update-module.log")

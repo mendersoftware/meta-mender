@@ -185,7 +185,7 @@ def wait_for_string_in_log(connection, since, timeout, search_string):
 class TestMenderConnect:
     @pytest.mark.min_mender_version("2.5.0")
     def test_mender_connect_auth_changes(
-        self, connection, with_mock_files, with_mock_servers,
+        self, request, connection, with_mock_files, with_mock_servers,
     ):
         """Test that mender-connect can re-establish the connection on D-Bus signals"""
 
@@ -265,11 +265,11 @@ class TestMenderConnect:
             connection.run(
                 "systemctl --job-mode=ignore-dependencies stop mender-connect || true"
             )
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_mender_connect_reconnect(
-        self, connection, with_mock_files, with_mock_servers,
+        self, request, connection, with_mock_files, with_mock_servers,
     ):
         """Test that mender-connect can re-establish the connection on remote errors"""
 
@@ -326,4 +326,4 @@ class TestMenderConnect:
             connection.run(
                 "systemctl --job-mode=ignore-dependencies stop mender-connect || true"
             )
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
