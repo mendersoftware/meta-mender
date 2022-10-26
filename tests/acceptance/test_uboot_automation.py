@@ -566,7 +566,7 @@ class TestUbootAutomation:
         )
 
         with open(patch_name) as patch, tempfile.NamedTemporaryFile(
-            suffix=".patch"
+            suffix=".patch", mode="w"
         ) as new_patch:
             try:
                 for line in patch.readlines():
