@@ -508,8 +508,7 @@ class TestUbootAutomation:
                     bitbake_image,
                     [
                         'MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"',
-                        'TEST_SRC_URI_APPEND:pn-u-boot = " file://%s"'
-                        % os.path.basename(new_patch.name),
+                        f'TEST_SRC_URI_APPEND:pn-u-boot = " file://{new_patch.name}"',
                     ],
                     target="-c clean u-boot",
                 )
