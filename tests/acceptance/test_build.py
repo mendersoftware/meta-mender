@@ -454,13 +454,13 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             with open(old_file) as old_fd, open(new_file, "w") as new_fd:
                 for line in old_fd.readlines():
                     if (
-                        re.match(r"^EXTERNALSRC_pn-%s(-native)? *=" % base_recipe, line)
+                        re.match(r"^EXTERNALSRC:pn-%s(-native)? *=" % base_recipe, line)
                         is not None
                     ):
                         continue
                     elif (
                         re.match(
-                            "^PREFERRED_VERSION_(pn-)?%s(-native)? *=" % base_recipe,
+                            "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe,
                             line,
                         )
                         is not None
@@ -470,11 +470,11 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                         new_fd.write(line)
                 if version is not None:
                     new_fd.write(
-                        'PREFERRED_VERSION_%s%s = "%s"\n'
+                        'PREFERRED_VERSION:%s%s = "%s"\n'
                         % (pn_style, base_recipe, version)
                     )
                     new_fd.write(
-                        'PREFERRED_VERSION_%s%s-native = "%s"\n'
+                        'PREFERRED_VERSION:%s%s-native = "%s"\n'
                         % (pn_style, base_recipe, version)
                     )
 
