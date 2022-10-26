@@ -17,6 +17,7 @@ set -e
 set -x
 
 TMPDIR=${TMPDIR:-$(mktemp -d /tmp/mender-qemu.XXXXXXXX)}
+export TMPDIR
 trap cleanup 1 15
 
 cleanup() {
