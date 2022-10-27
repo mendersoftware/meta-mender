@@ -75,7 +75,7 @@ case "$MACHINE" in
         else
             BOOTLOADER="${BOOTLOADER:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.qcow2}"
             BOOTLOADER_DATA="${BOOTLOADER_DATA:-${BUILDTMP}/deploy/images/${MACHINE}/ovmf.vars.qcow2}"
-            TMPVARS="$(mktemp --tmpdir ovmf.vars.XXXXXX.qcow2)"
+            TMPVARS="$(mktemp --tmpdir -d)/ovmf.vars.qcow2"
             cp "$BOOTLOADER_DATA" "$TMPVARS"
             BOOTLOADER_DATA="$TMPVARS"
             BOOTLOADER_ARG="${BOOTLOADER_ARG:--drive file=${BOOTLOADER},if=pflash,format=qcow2,unit=0,readonly=on -drive file=${BOOTLOADER_DATA},if=pflash,format=qcow2,unit=1}"
