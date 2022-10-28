@@ -421,7 +421,7 @@ def get_extra_parts_fstab(d):
     for part in get_extra_parts_flags(d):
        label = get_extra_parts_label(d, part)
        fstype_opts = get_extra_parts_fstab_opts(d, part)
-       if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d):
+       if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', True, False, d):
            uuid = get_extra_parts_uuid(d, part)
            out.append("PARTUUID={} /mnt/{} {}".format(uuid, label, fstype_opts))
        else:
@@ -438,6 +438,8 @@ def get_extra_parts_uuid(d, part=None):
 
 def get_extra_parts_partition_to_uuid(d):
     data = []
+    if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', True, False, d) != True:
+        return data
     # loop through all extra partitions
     for part in get_extra_parts_flags(d):
         uuid = get_extra_parts_uuid(d, part)
