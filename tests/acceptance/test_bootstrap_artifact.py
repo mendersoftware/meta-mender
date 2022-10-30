@@ -107,7 +107,7 @@ def boot_device_with_bootstrap_image(
     session_connection.run("rm -f image.dat")
 
 
-@pytest.mark.min_mender_version("3.4.0")
+@pytest.mark.min_mender_version("3.5.0")
 @pytest.mark.min_yocto_version("dunfell")
 @pytest.mark.only_with_image("ext4", "ext3", "ext2")
 def test_bootstrap_artifact_install(
