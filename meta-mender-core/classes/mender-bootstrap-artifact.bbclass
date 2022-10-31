@@ -66,6 +66,10 @@ IMAGE_CMD:bootstrap-artifact() {
             bberror "The image checksum cannot be empty"
         fi
 
+        cmd=""
+        artifact_provides_modules_arguments
+        extra_args="$extra_args $cmd"
+
         # NOTE: We don't allow extra arguments from MENDER_ARTIFACT_EXTRA_ARGS
         mender-artifact write bootstrap-artifact \
             --artifact-name ${MENDER_ARTIFACT_NAME} \

@@ -688,8 +688,12 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     @pytest.mark.only_with_image("sdimg", "uefiimg")
     @pytest.mark.min_mender_version("2.0.0")
     def test_module_install(
-        self, request, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image
+        self, request, prepared_test_build, bitbake_path, bitbake_image
     ):
+        """Test that with PACKAGECONFIG "modules" switch in mender-client recipe the modules
+        are installed in the root filesystem, and the built mender Artifact(s) contain them
+        as "provides" keys."""
+
         # List of expected update modules
         default_update_modules = [
             "deb",
@@ -709,15 +713,86 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         else:
             originally_on = False
 
-        output = subprocess.check_output(
-            ["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", latest_rootfs]
-        ).decode()
-        entries = [
-            elem.split("/")[5] for elem in output.split("\n") if elem.startswith("/")
-        ]
+        def _check_update_modules_present_in_filesystem(rootfs_image, expect_present):
+            output = subprocess.check_output(
+                ["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", rootfs_image]
+            ).decode()
+            files_entries = [
+                elem.split("/")[5]
+                for elem in output.split("\n")
+                if elem.startswith("/")
+            ]
+
+            if expect_present:
+                assert all([e in files_entries for e in default_update_modules])
+            else:
+                assert not any([e in files_entries for e in default_update_modules])
+
+        def _check_update_modules_provided_in_artifact(mender_artifact, expect_present):
+            output = subprocess.check_output(
+                ["mender-artifact", "read", mender_artifact]
+            ).decode()
+            provides_entries = [
+                elem.strip().split(":")[0]
+                for elem in output.split("\n")
+                if "rootfs-image.update-module." in elem
+            ]
+
+            if expect_present:
+                assert all(
+                    [
+                        "rootfs-image.update-module." + e + ".mender_update_module"
+                        in provides_entries
+                        for e in default_update_modules
+                    ]
+                )
+                assert all(
+                    [
+                        "rootfs-image.update-module." + e + ".version"
+                        in provides_entries
+                        for e in default_update_modules
+                    ]
+                )
+            else:
+                assert not any(
+                    [
+                        "rootfs-image.update-module." + e + ".mender_update_module"
+                        in provides_entries
+                        for e in default_update_modules
+                    ]
+                )
+                assert not any(
+                    [
+                        "rootfs-image.update-module." + e + ".version"
+                        in provides_entries
+                        for e in default_update_modules
+                    ]
+                )
+
+        original_rootfs = latest_build_artifact(
+            request, os.environ["BUILDDIR"], "core-image*.ext[234]"
+        )
+        original_artifact = latest_build_artifact(
+            request, os.environ["BUILDDIR"], "core-image*.mender"
+        )
+        original_bootstrap_artifact = latest_build_artifact(
+            request, os.environ["BUILDDIR"], "core-image*.bootstrap-artifact",
+        )
 
         if originally_on:
-            assert all([e in entries for e in default_update_modules])
+            _check_update_modules_present_in_filesystem(original_rootfs, True)
+            _check_update_modules_provided_in_artifact(original_artifact, True)
+            _check_update_modules_provided_in_artifact(
+                original_bootstrap_artifact, True
+            )
+        else:
+            _check_update_modules_present_in_filesystem(original_rootfs, False)
+            _check_update_modules_provided_in_artifact(original_artifact, False)
+            _check_update_modules_provided_in_artifact(
+                original_bootstrap_artifact, False
+            )
+
+        if originally_on:
             build_image(
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
@@ -725,7 +800,6 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 ['PACKAGECONFIG:remove = "modules"'],
             )
         else:
-            assert not any([e in entries for e in default_update_modules])
             build_image(
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
@@ -734,20 +808,23 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             )
 
         new_rootfs = latest_build_artifact(
-            request, prepared_test_build["build_dir"], "core-image*.ext4"
+            request, prepared_test_build["build_dir"], "core-image*.ext[234]"
+        )
+        new_artifact = latest_build_artifact(
+            request, prepared_test_build["build_dir"], "core-image*.mender",
+        )
+        new_bootstrap_artifact = latest_build_artifact(
+            request, prepared_test_build["build_dir"], "core-image*.bootstrap-artifact",
         )
 
-        output = subprocess.check_output(
-            ["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", new_rootfs]
-        ).decode()
-        entries = [
-            elem.split("/")[5] for elem in output.split("\n") if elem.startswith("/")
-        ]
-
         if originally_on:
-            assert not any([e in entries for e in default_update_modules])
+            _check_update_modules_present_in_filesystem(new_rootfs, False)
+            _check_update_modules_provided_in_artifact(new_artifact, False)
+            _check_update_modules_provided_in_artifact(new_bootstrap_artifact, False)
         else:
-            assert all([e in entries for e in default_update_modules])
+            _check_update_modules_present_in_filesystem(new_rootfs, True)
+            _check_update_modules_provided_in_artifact(new_artifact, True)
+            _check_update_modules_provided_in_artifact(new_bootstrap_artifact, True)
 
     @pytest.mark.only_with_image("sdimg", "uefiimg", "gptimg", "biosimg")
     @pytest.mark.min_mender_version("1.0.0")
@@ -939,7 +1016,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                         l = [s.strip() for s in lines[k].split(": ")]
                         assert len(l) == 2, "Line should only contain a key value pair"
                         key, val = l[0], l[1]
-                        tmp[key] = val
+                        # Ignore all "provides" added with the installed update modules
+                        if not key.startswith("rootfs-image.update-module"):
+                            tmp[key] = val
                         k += 1
                     d.provides = tmp
 
