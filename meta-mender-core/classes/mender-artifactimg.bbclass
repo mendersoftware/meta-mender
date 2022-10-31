@@ -40,6 +40,22 @@ apply_arguments () {
     cmd=$res
 }
 
+artifact_provides_modules_arguments () {
+    local modules_provides=""
+    for module in $(ls ${IMAGE_ROOTFS}/${datadir}/mender/modules/v3); do
+        if [ -x "${IMAGE_ROOTFS}/${datadir}/mender/modules/v3/${module}" ]; then
+            modules_provides="${modules_provides} \
+                rootfs-image.update-module.${module}.version:${MENDER_ARTIFACT_NAME} \
+                rootfs-image.update-module.${module}.mender_update_module:${module} \
+            "
+        else
+            bbwarn "File ${datadir}/mender/modules/v3/${module} has no execution permissions, is it an Update Module?"
+        fi
+    done
+    cmd=""
+    apply_arguments "--provides" "${modules_provides}"
+}
+
 IMAGE_CMD_mender () {
     set -x
 
@@ -106,6 +122,10 @@ IMAGE_CMD_mender () {
         apply_arguments "--depends-groups" "${MENDER_ARTIFACT_DEPENDS_GROUPS}"
         extra_args="$extra_args $cmd"
     fi
+
+    cmd=""
+    artifact_provides_modules_arguments
+    extra_args="$extra_args $cmd"
 
     mender-artifact write rootfs-image \
         -n ${MENDER_ARTIFACT_NAME} \
