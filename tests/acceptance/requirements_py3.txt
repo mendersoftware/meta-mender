@@ -1,5 +1,5 @@
 attrs==22.1.0
-bcrypt==4.0.0
+bcrypt==4.0.1
 certifi==2022.9.24
 cffi==1.15.1
 chardet==5.0.0
