@@ -255,6 +255,9 @@ class TestUbootAutomation:
 
             return configs_to_test
 
+    # This test is very expensive, and uses its own parallelism internally
+    # already.
+    @pytest.mark.exclusive
     @pytest.mark.min_mender_version("1.0.0")
     def test_uboot_compile(self, request, bitbake_variables):
         """Test that our automatic patching of U-Boot still successfully builds
@@ -275,9 +278,11 @@ class TestUbootAutomation:
                 "cd %s && bitbake -c %s u-boot" % (os.environ["BUILDDIR"], task),
                 shell=True,
             )
-        bitbake_variables = get_bitbake_variables(request, "u-boot")
+        bitbake_variables = get_bitbake_variables(
+            request, "u-boot", prepared_test_build=None
+        )
 
-        with bitbake_env_from(request, "u-boot"):
+        with bitbake_env_from(request, "u-boot", prepared_test_build=None):
             self.do_board_compiles(machine, bitbake_variables)
 
     def do_board_compiles(self, machine, bitbake_variables):
@@ -486,44 +491,42 @@ class TestUbootAutomation:
             assert "+++" in content
 
         # Now check if we can use the patch.
-        new_patch_name = "../../meta-mender-core/recipes-bsp/u-boot/patches/mender_auto_configured.patch"
-        shutil.copyfile(patch_name, new_patch_name)
+        with tempfile.NamedTemporaryFile(suffix=".patch") as new_patch:
+            shutil.copyfile(patch_name, new_patch.name)
 
-        try:
-            # We need to add the code using TEST_SRC_URI_APPEND make sure it is
-            # absolutely last, otherwise platform specific layers may add
-            # patches after us.
+            try:
+                # We need to add the code using TEST_SRC_URI_APPEND make sure it is
+                # absolutely last, otherwise platform specific layers may add
+                # patches after us.
 
-            # Normally changes to SRC_URI are picked up automatically, but since
-            # we are sneaking it in via the TEST_SRC_URI_APPEND and its
-            # associated python snippet, we need to clean the build manually.
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                bitbake_image,
-                [
-                    'MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"',
-                    'TEST_SRC_URI_APPEND:pn-u-boot = " file://%s"'
-                    % os.path.basename(new_patch_name),
-                ],
-                target="-c clean u-boot",
-            )
+                # Normally changes to SRC_URI are picked up automatically, but since
+                # we are sneaking it in via the TEST_SRC_URI_APPEND and its
+                # associated python snippet, we need to clean the build manually.
+                build_image(
+                    prepared_test_build["build_dir"],
+                    prepared_test_build["bitbake_corebase"],
+                    bitbake_image,
+                    [
+                        'MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"',
+                        f'TEST_SRC_URI_APPEND:pn-u-boot = " file://{new_patch.name}"',
+                    ],
+                    target="-c clean u-boot",
+                )
 
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                bitbake_image,
-                target="u-boot",
-            )
+                build_image(
+                    prepared_test_build["build_dir"],
+                    prepared_test_build["bitbake_corebase"],
+                    bitbake_image,
+                    target="u-boot",
+                )
 
-        finally:
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                bitbake_image,
-                target="-c clean u-boot",
-            )
-            os.unlink(new_patch_name)
+            finally:
+                build_image(
+                    prepared_test_build["build_dir"],
+                    prepared_test_build["bitbake_corebase"],
+                    bitbake_image,
+                    target="-c clean u-boot",
+                )
 
     # Would be nice to test this with non-UBI, but we don't currently have any
     # non-boolean values inside Kconfig that we can test for. Boolean settings
@@ -558,12 +561,14 @@ class TestUbootAutomation:
             target="-c save_mender_auto_configured_patch u-boot",
         )
 
-        try:
-            patch_name = os.path.join(
-                bitbake_variables["WORKDIR"], "mender_auto_configured.patch"
-            )
-            new_patch_name = "../../meta-mender-core/recipes-bsp/u-boot/patches/mender_broken_definition.patch"
-            with open(patch_name) as patch, open(new_patch_name, "w") as new_patch:
+        patch_name = os.path.join(
+            bitbake_variables["WORKDIR"], "mender_auto_configured.patch"
+        )
+
+        with open(patch_name) as patch, tempfile.NamedTemporaryFile(
+            suffix=".patch", mode="w"
+        ) as new_patch:
+            try:
                 for line in patch.readlines():
                     if line.startswith("+CONFIG_MTDIDS_DEFAULT="):
                         # Change to a wrong value:
@@ -572,52 +577,54 @@ class TestUbootAutomation:
                         )
                     else:
                         new_patch.write(line)
+                new_patch.flush()
 
-            # We need to add the code using TEST_SRC_URI_APPEND make sure it is
-            # absolutely last, otherwise platform specific layers may add
-            # patches after us.
+                # We need to add the code using TEST_SRC_URI_APPEND make sure it is
+                # absolutely last, otherwise platform specific layers may add
+                # patches after us.
 
-            # Normally changes to SRC_URI are picked up automatically, but since
-            # we are sneaking it in via the TEST_SRC_URI_APPEND and its
-            # associated python snippet, we need to clean the build manually.
+                # Normally changes to SRC_URI are picked up automatically, but since
+                # we are sneaking it in via the TEST_SRC_URI_APPEND and its
+                # associated python snippet, we need to clean the build manually.
 
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                bitbake_image,
-                [
-                    'MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"',
-                    'TEST_SRC_URI_APPEND:pn-u-boot = " file://%s"'
-                    % os.path.basename(new_patch_name),
-                ],
-                target="-c clean u-boot",
-            )
-
-            try:
                 build_image(
                     prepared_test_build["build_dir"],
                     prepared_test_build["bitbake_corebase"],
                     bitbake_image,
-                    target="-c compile u-boot",
+                    [
+                        'MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"',
+                        'TEST_SRC_URI_APPEND:pn-u-boot = " file://%s"'
+                        % os.path.basename(new_patch.name),
+                    ],
+                    target="-c clean u-boot",
                 )
 
-                # Should never get here.
-                pytest.fail(
-                    "Bitbake succeeded even though we intentionally broke the patch!"
+                try:
+                    build_image(
+                        prepared_test_build["build_dir"],
+                        prepared_test_build["bitbake_corebase"],
+                        bitbake_image,
+                        target="-c compile u-boot",
+                    )
+
+                    # Should never get here.
+                    pytest.fail(
+                        "Bitbake succeeded even though we intentionally broke the patch!"
+                    )
+
+                except subprocess.CalledProcessError as e:
+                    # A bit risky change after upgrading tests from python2.7 to python3.
+                    # It seems that underneath subprocess.check_output() call in not
+                    # capturing the output as `capture_output` flag is not set.
+                    if e.output:
+                        assert (
+                            e.output.find("Please fix U-Boot's configuration file") >= 0
+                        )
+
+            finally:
+                build_image(
+                    prepared_test_build["build_dir"],
+                    prepared_test_build["bitbake_corebase"],
+                    bitbake_image,
+                    target="-c clean u-boot",
                 )
-
-            except subprocess.CalledProcessError as e:
-                # A bit risky change after upgrading tests from python2.7 to python3.
-                # It seems that underneath subprocess.check_output() call in not
-                # capturing the output as `capture_output` flag is not set.
-                if e.output:
-                    assert e.output.find("Please fix U-Boot's configuration file") >= 0
-
-        finally:
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                bitbake_image,
-                target="-c clean u-boot",
-            )
-            os.unlink(new_patch_name)

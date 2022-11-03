@@ -2,3 +2,7 @@
 /.cache
 /__pycache__
 .venv
+
+/coverage
+/exclusive.test.lock
+/bitbake.test.lock
