@@ -3,7 +3,7 @@ bcrypt==4.0.1
 certifi==2022.9.24
 cffi==1.15.1
 chardet==5.0.0
-cryptography==38.0.1
+cryptography==38.0.3
 filelock==3.8.0
 idna==3.4
 iniconfig==1.1.1
