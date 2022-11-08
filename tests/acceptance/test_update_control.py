@@ -13,7 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import datetime
 import json
+import logging
 import os
 import pytest
 import subprocess
@@ -36,6 +38,10 @@ MUID2 = "3702f9f0-b318-11eb-a7b6-c7aece07181f"
 
 BETWEEN_EXPIRATIONS = max(EXPIRATION_TIME, BOOT_EXPIRATION_TIME) - 5
 FAIL_TIME = EXPIRATION_TIME + BOOT_EXPIRATION_TIME
+
+
+logger = logging.getLogger("test_update_control")
+logger.setLevel(logging.DEBUG)
 
 
 def start_and_ready_mender_client(connection):
@@ -487,9 +493,13 @@ class TestUpdateControl:
 
             now = time.time()
 
+            logger.debug("%s: Before first artifact deploy" % datetime.datetime.now())
+
             make_and_deploy_artifact(
                 connection, bitbake_variables["MENDER_DEVICE_TYPE"]
             )
+
+            logger.debug("%s: After first artifact deploy" % datetime.datetime.now())
 
             connection.run("mender check-update")
 
@@ -499,6 +509,8 @@ class TestUpdateControl:
             second_deployment_done = False
             PAUSE_STATE_OBSERVE_COUNT = 2
             while time.time() - now <= case.get("fail_after", FAIL_TIME):
+                logger.debug("%s: In loop" % datetime.datetime.now())
+
                 output = connection.run(
                     "cat /data/logger-update-module.log 2>/dev/null || true"
                 ).stdout.strip()
@@ -516,6 +528,10 @@ class TestUpdateControl:
                     pause_state_observed += 1
                     # Verify that it stays in paused mode.
                     if pause_state_observed >= PAUSE_STATE_OBSERVE_COUNT:
+                        logger.debug(
+                            "%s: Pause state observed" % datetime.datetime.now()
+                        )
+
                         if case.get("restart_during_pause"):
                             connection.run("systemctl restart mender-client")
                         # Now insert the map to unblock the pause.
@@ -530,13 +546,18 @@ class TestUpdateControl:
                                 attempts -= 1
                                 time.sleep(5)
                         else:
+                            logger.debug(
+                                "%s: Could not insert map" % datetime.datetime.now()
+                            )
                             raise Exception(
                                 "Could not insert map after restarting client."
                             )
+                        logger.debug("%s: Inserted map" % datetime.datetime.now())
                         continue_map_inserted = True
 
                 # Cleanup is the last state of a deployment
                 if "Cleanup" in log:
+                    logger.debug("%s: Found Cleanup" % datetime.datetime.now())
                     if case.get("second_deployment") and not second_deployment_done:
                         # When making two deployments, we assume the first one
                         # is successful.
