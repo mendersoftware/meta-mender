@@ -984,7 +984,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
                 if "Provides group:" in line:
                     s = line[line.index(":") + 1 :].strip()
-                    if s is not "":
+                    if s != "":
                         d.provides_group = s
 
                 if "Depends on one of artifact" in line:
