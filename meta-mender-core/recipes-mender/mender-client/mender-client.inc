@@ -49,7 +49,7 @@ FILES:${PN} += "\
     ${datadir}/mender/modules/v3/rpm \
     ${datadir}/mender/modules/v3/script \
     ${datadir}/mender/modules/v3/single-file \
-    ${sysconfdir}/udev/mount.blacklist.d/mender \
+    ${sysconfdir}/udev/mount.ignorelist.d/mender \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service \
     /data/mender/device_type \
     /data/mender/mender.conf \
@@ -333,9 +333,9 @@ do_install() {
     fi
 
     # Setup blacklist to ensure udev does not automatically mount Mender managed partitions
-    install -d ${D}${sysconfdir}/udev/mount.blacklist.d
-    echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
-    echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
+    install -d ${D}${sysconfdir}/udev/mount.ignorelist.d
+    echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
+    echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
 }
 
 do_install:append:class-target:mender-image:mender-systemd() {
