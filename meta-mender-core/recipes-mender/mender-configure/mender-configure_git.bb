@@ -31,8 +31,9 @@ def mender_configure_branch_from_preferred_version(d):
         return "master"
 MENDER_CONFIGURE_BRANCH = "${@mender_configure_branch_from_preferred_version(d)}"
 
-def mender_configure_version_from_preferred_version(d, srcpv):
+def mender_configure_version_from_preferred_version(d):
     pref_version = d.getVar("PREFERRED_VERSION")
+    srcpv = d.getVar("SRCPV")
     if pref_version is None:
         pref_version = d.getVar("PREFERRED_VERSION_%s" % d.getVar("PN"))
     if pref_version is not None and pref_version.find("-git") >= 0:
@@ -47,7 +48,7 @@ def mender_configure_version_from_preferred_version(d, srcpv):
     else:
         # Else return the default "master-git".
         return "master-git%s" % srcpv
-PV = "${@mender_configure_version_from_preferred_version(d, '${SRCPV}')}"
+PV = "${@mender_configure_version_from_preferred_version(d)}"
 
 SRC_URI = "git://github.com/mendersoftware/mender-configure-module.git;protocol=https;branch=${MENDER_CONFIGURE_BRANCH}"
 
