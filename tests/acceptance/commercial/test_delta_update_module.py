@@ -13,8 +13,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import distutils.spawn
-from distutils.version import LooseVersion
 import os
 import re
 import shutil
@@ -30,6 +28,7 @@ from utils.common import (
     run_after_connect,
     determine_active_passive_part,
     make_tempdir,
+    version_is_minimum,
 )
 from utils.helpers import Helpers
 
@@ -188,7 +187,7 @@ class TestDeltaUpdateModule:
         ):
             pytest.skip("Only works when using read-only-rootfs IMAGE_FEATURE")
 
-        if distutils.spawn.find_executable("mender-binary-delta-generator") is None:
+        if shutil.which("mender-binary-delta-generator") is None:
             pytest.fail("mender-binary-delta-generator not found in PATH")
 
         built_artifact = self.do_install_mender_binary_delta(
@@ -203,10 +202,7 @@ class TestDeltaUpdateModule:
             s3_address,
         )
 
-        binary_delta_vars = get_bitbake_variables(
-            request, "mender-binary-delta", prepared_test_build
-        )
-        if LooseVersion(binary_delta_vars["PV"]) < LooseVersion("1.3.0"):
+        if not version_is_minimum(bitbake_variables, "mender-binary-delta", "1.3.0"):
             pytest.skip(
                 "This version of mender-binary-delta does not support grub-mender-grubenv-print and friends."
             )
