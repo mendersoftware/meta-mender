@@ -431,7 +431,38 @@ def get_extra_parts_fstab(d):
     for part in get_extra_parts_flags(d):
        label = get_extra_parts_label(d, part)
        fstype_opts = get_extra_parts_fstab_opts(d, part)
-       out.append("{} {} {}".format(device + str(extra_parts_offset), "/mnt/{}".format(label), fstype_opts))
+       if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', True, False, d):
+           uuid = get_extra_parts_uuid(d, part)
+           out.append("PARTUUID={} /mnt/{} {}".format(uuid, label, fstype_opts))
+       else:
+           out.append("{} /mnt/{} {}".format(device + str(extra_parts_offset), label, fstype_opts))
        extra_parts_offset += 1
 
     return '\n'.join(out)
+
+def get_extra_parts_uuid(d, part=None):
+    uuidflags = d.getVarFlags("MENDER_EXTRA_PARTS_UUID") or {}
+    if part in uuidflags:
+        return str(d.expand(uuidflags[part]))
+    bb.fatal("Extra partition '%s' does not contain a valid MENDER_EXTRA_PARTS_UUID variable" % part)
+
+def get_extra_parts_partition_to_uuid(d):
+    data = []
+    if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', True, False, d) != True:
+        return data
+    # loop through all extra partitions
+    for part in get_extra_parts_flags(d):
+        uuid = get_extra_parts_uuid(d, part)
+        idx = mender_get_extra_parts_offset_by_id(d, part)
+        data.append("%d:%s" % (idx,uuid))
+
+    # handle swap partition separately
+    swap_part_size = d.getVar('MENDER_SWAP_PART_SIZE_MB')
+    if swap_part_size and swap_part_size != '0':
+        swap_uuid = d.getVar('MENDER_SWAP_PART_UUID')
+        if swap_uuid is None:
+             bb.fatal("Please define `MENDER_SWAP_PART_UUID` to have UUID swap support")
+        swap_idx = mender_get_swap_part_num(d)
+        data.append("%d:%s" % (swap_idx,swap_uuid))
+
+    return ' '.join(data)
