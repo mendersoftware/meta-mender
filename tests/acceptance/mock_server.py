@@ -123,5 +123,21 @@ def prepare_deployment_response(
         )
 
 
+def wait_for_finished_deployment(connection, ignore_error=False):
+    # Wait for this file to vanish, since a deployment status report will
+    # automatically remove it, which can cause race conditions if we remove it
+    # and start a new deployment before this has had time to happen.
+    connection.run(
+        f"""for i in $(seq 1 25)
+do
+    test ! -e /data/mender-mock-server-deployment-header.json && exit 0
+    sleep 0.2
+done
+exit 1""",
+        warn=ignore_error,
+    )
+
+
 def cleanup_deployment_response(connection):
+    wait_for_finished_deployment(connection, ignore_error=True)
     connection.run("rm -f /data/mender-mock-server-deployment-header.json")
