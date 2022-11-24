@@ -24,6 +24,7 @@ import tempfile
 import time
 
 from mock_server import (
+    wait_for_finished_deployment,
     cleanup_deployment_response,
     prepare_deployment_response,
     setup_mock_server,
@@ -564,6 +565,7 @@ class TestUpdateControl:
                         assert "ArtifactFailure" not in log
 
                         connection.run("rm -f /data/logger-update-module.log")
+                        wait_for_finished_deployment(connection)
                         make_and_deploy_artifact(
                             connection, bitbake_variables["MENDER_DEVICE_TYPE"]
                         )
