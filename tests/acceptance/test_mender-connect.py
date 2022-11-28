@@ -180,7 +180,7 @@ def wait_for_string_in_log(connection, since, timeout, search_string):
     return output
 
 
-@pytest.mark.skip(reason="See QA-483")
+#@pytest.mark.skip(reason="See QA-483")
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
 @pytest.mark.not_for_machine("vexpress-qemu-flash")
 class TestMenderConnect:
