@@ -22,6 +22,7 @@ import pytest
 from utils.common import (
     cleanup_mender_state,
     put_no_sftp,
+    qemu_system_time,
 )
 
 
@@ -165,7 +166,7 @@ def dbus_set_token_and_url_and_emit_signal(connection, token, server_url):
 
 def wait_for_string_in_log(connection, since, timeout, search_string):
     output = ""
-    while time.time() < since + timeout:
+    while qemu_system_time(connection) < since + timeout:
         print("Searching for '%s' in mender-connect's journal:" % search_string)
         output = connection.run(
             "journalctl --unit mender-connect --since '%s'"
@@ -193,7 +194,7 @@ class TestMenderConnect:
             dbus_set_token_and_url(connection, "token1", "http://localhost:5000")
 
             # start the mender-connect service
-            startup_time = time.time()
+            startup_time = qemu_system_time(connection)
             connection.run(
                 "systemctl --job-mode=ignore-dependencies start mender-connect"
             )
@@ -207,7 +208,7 @@ class TestMenderConnect:
             )
 
             # 1. Change token
-            signal_time = time.time()
+            signal_time = qemu_system_time(connection)
             dbus_set_token_and_url_and_emit_signal(
                 connection, "token2", "http://localhost:5000"
             )
@@ -219,7 +220,7 @@ class TestMenderConnect:
             )
 
             # 2. Change url
-            signal_time = time.time()
+            signal_time = qemu_system_time(connection)
             dbus_set_token_and_url_and_emit_signal(
                 connection, "token2", "http://localhost:6000"
             )
@@ -231,7 +232,7 @@ class TestMenderConnect:
             )
 
             # 3. Change token and url
-            signal_time = time.time()
+            signal_time = qemu_system_time(connection)
             dbus_set_token_and_url_and_emit_signal(
                 connection, "token3", "http://localhost:5000"
             )
@@ -243,7 +244,7 @@ class TestMenderConnect:
             )
 
             # 4. Unauthorize and re-authorize
-            signal_time = time.time()
+            signal_time = qemu_system_time(connection)
             dbus_set_token_and_url_and_emit_signal(connection, "", "")
             _ = wait_for_string_in_log(
                 connection,
@@ -277,7 +278,7 @@ class TestMenderConnect:
             dbus_set_token_and_url(connection, "badtoken", "http://localhost:12345")
 
             # start the mender-connect service
-            startup_time = time.time()
+            startup_time = qemu_system_time(connection)
             connection.run(
                 "systemctl --job-mode=ignore-dependencies start mender-connect"
             )
@@ -291,7 +292,7 @@ class TestMenderConnect:
             )
 
             # Set correct parameters
-            signal_time = time.time()
+            signal_time = qemu_system_time(connection)
             dbus_set_token_and_url_and_emit_signal(
                 connection, "goodtoken", "http://localhost:5000"
             )
@@ -303,7 +304,7 @@ class TestMenderConnect:
             )
 
             dbus_set_token_and_url(connection, "", "")
-            kill_time = time.time()
+            kill_time = qemu_system_time(connection)
             # kill the server and wait for error
             with_mock_servers[1].kill()
             _ = wait_for_string_in_log(
@@ -311,7 +312,7 @@ class TestMenderConnect:
             )
 
             # Signal the other server
-            signal_time = time.time()
+            signal_time = qemu_system_time(connection)
             dbus_set_token_and_url_and_emit_signal(
                 connection, "goodtoken", "http://localhost:6000"
             )
