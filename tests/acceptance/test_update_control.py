@@ -31,7 +31,7 @@ from mock_server import (
     EXPIRATION_TIME,
     BOOT_EXPIRATION_TIME,
 )
-from utils.common import put_no_sftp, cleanup_mender_state
+from utils.common import put_no_sftp, cleanup_mender_state, qemu_system_time
 
 # Map UIDs. Randomly chosen, but used throughout for consistency.
 MUID = "3702f9f0-b318-11eb-a7b6-c7aece07181e"
@@ -492,7 +492,7 @@ class TestUpdateControl:
                 # boot expiration mechanism.
                 connection.run("systemctl restart mender-client")
 
-            now = time.time()
+            now = qemu_system_time(connection)
 
             logger.debug("%s: Before first artifact deploy" % datetime.datetime.now())
 
@@ -509,7 +509,9 @@ class TestUpdateControl:
             continue_map_inserted = False
             second_deployment_done = False
             PAUSE_STATE_OBSERVE_COUNT = 2
-            while time.time() - now <= case.get("fail_after", FAIL_TIME):
+            while qemu_system_time(connection) - now <= case.get(
+                "fail_after", FAIL_TIME
+            ):
                 logger.debug("%s: In loop" % datetime.datetime.now())
 
                 output = connection.run(
@@ -580,7 +582,7 @@ class TestUpdateControl:
 
             if case.get("take_at_least"):
                 assert (
-                    time.time() - now >= case["take_at_least"]
+                    qemu_system_time(connection) - now >= case["take_at_least"]
                 ), "Deployment finished before it was supposed to!"
 
             if case["success"]:
