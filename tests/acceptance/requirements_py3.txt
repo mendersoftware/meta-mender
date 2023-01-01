@@ -2,7 +2,7 @@ attrs==22.2.0
 bcrypt==4.0.1
 certifi==2022.12.7
 cffi==1.15.1
-chardet==5.0.0
+chardet==5.1.0
 cryptography==38.0.4
 filelock==3.9.0
 idna==3.4
