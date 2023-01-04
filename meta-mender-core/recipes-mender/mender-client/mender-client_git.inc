@@ -88,7 +88,7 @@ def mender_license(branch):
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
 LIC_FILES_CHKSUM = " \
-    file://src/github.com/mendersoftware/mender/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87 \
+    file://src/github.com/mendersoftware/mender/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
 "
 LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
