@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2020 Northern.tech AS
+# Copyright 2023 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import time
 import pytest
 
 
+@pytest.mark.software_test
 class TestOsIntegration:
     @pytest.mark.min_mender_version("2.2.1")
     def test_syslogger(self, setup_board, connection):

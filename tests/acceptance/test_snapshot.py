@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2022 Northern.tech AS
+# Copyright 2023 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ def get_ssh_args_mender_artifact(conn):
     return "-S " + common_args
 
 
+@pytest.mark.software_test
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
 class TestSnapshot:
     @pytest.mark.min_mender_version("2.2.0")

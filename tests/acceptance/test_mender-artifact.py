@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2020 Northern.tech AS
+# Copyright 2023 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -88,9 +88,10 @@ def versioned_mender_image(
 
 @pytest.mark.only_with_image("mender")
 class TestMenderArtifact:
+    @pytest.mark.software_test
     @pytest.mark.min_mender_version("1.0.0")
     def test_order(self, versioned_mender_image):
-        """Test that order of components inside update is correct."""
+        """Test that order of components inside the Artifact is correct."""
 
         version = versioned_mender_image[0]
         mender_image = versioned_mender_image[1]
@@ -157,6 +158,7 @@ class TestMenderArtifact:
 
         assert meta_data_found
 
+    @pytest.mark.software_test
     @pytest.mark.min_mender_version("1.0.0")
     def test_files_list_integrity(self, versioned_mender_image):
         """Test that the list of files in the manifest is the same as the actual
@@ -189,6 +191,7 @@ class TestMenderArtifact:
 
         assert sorted(manifest_list) == sorted(tar_list)
 
+    @pytest.mark.software_test
     @pytest.mark.min_mender_version("1.0.0")
     def test_files_checksum_integrity(self, versioned_mender_image):
         """Test that the checksum of each file is correct."""
@@ -234,14 +237,16 @@ class TestMenderArtifact:
 
             assert hasher.hexdigest() == recorded_hash, "%s doesn't match" % file
 
+    @pytest.mark.software_test
     @pytest.mark.min_mender_version("1.0.0")
     def test_artifacts_validation(self, versioned_mender_image, bitbake_path):
-        """Test that the mender-artifact tool validates the update successfully."""
+        """Test that the mender-artifact tool validates the Artifact successfully."""
 
         mender_image = versioned_mender_image[1]
 
         subprocess.check_call(["mender-artifact", "validate", mender_image])
 
+    @pytest.mark.platform_test
     @pytest.mark.min_mender_version("1.0.0")
     def test_artifacts_rootfs_size(
         self, versioned_mender_image, bitbake_path, bitbake_variables

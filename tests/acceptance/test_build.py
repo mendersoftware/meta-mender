@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2022 Northern.tech AS
+# Copyright 2023 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ def extract_partition(img, number, dstdir):
     )
 
 
+@pytest.mark.platform_test
 class TestBuild:
     @pytest.mark.min_mender_version("1.0.0")
     def test_default_server_certificate(self):
@@ -204,7 +205,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             ],
         )
 
-        built_rootfs = latest_build_artifact(
+        built_dataimg = latest_build_artifact(
             request, prepared_test_build["build_dir"], "core-image*.dataimg"
         )
 
@@ -214,7 +215,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                     "debugfs",
                     "-R",
                     f"dump -p /etc/mender/mender.conf {mender_conf.name}",
-                    built_rootfs,
+                    built_dataimg,
                 ]
             )
 
@@ -232,7 +233,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         bitbake_image,
     ):
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
-        works correctly."""
+        work correctly."""
 
         build_image(
             prepared_test_build["build_dir"],
@@ -435,8 +436,8 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
     )
     def test_preferred_versions(self, prepared_test_build, recipe, version):
         """Most CI builds build with PREFERRED_VERSION set, because we want to
-        build from a specific SHA. This test tests that we can change that or
-        turn it off and the build still works."""
+        build from a specific SHA. TESt that we can change that or turn it off
+        and the build still works."""
 
         old_file = get_local_conf_orig_path(prepared_test_build["build_dir"])
         new_file = get_local_conf_path(prepared_test_build["build_dir"])
@@ -489,7 +490,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         bitbake_variables,
         bitbake_image,
     ):
-        """Tests that we can include multiple device_types in the artifact."""
+        """Test that we can include multiple device_types in the artifact."""
 
         build_image(
             prepared_test_build["build_dir"],
@@ -590,7 +591,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
     def test_various_mtd_combinations(
         self, request, test_case_name, test_case, prepared_test_build, bitbake_image
     ):
-        """Tests that we can build with various combinations of MTD variables,
+        """Test that we can build with various combinations of MTD variables,
         and that they receive the correct values."""
 
         try:
@@ -616,8 +617,8 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
     def test_boot_partition_population(
         self, request, prepared_test_build, bitbake_path, bitbake_image
     ):
-        # Notice in particular a mix of tabs, newlines and spaces. All there to
-        # check that whitespace it treated correctly.
+        """Test IMAGE_BOOT_FILES population in the boot partition. Notice in particular a mix of
+        tabs, newlines and spaces. All there to check that whitespace it treated correctly."""
 
         build_image(
             prepared_test_build["build_dir"],
@@ -1110,6 +1111,8 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     def test_extra_parts(
         self, request, latest_part_image, prepared_test_build, bitbake_image
     ):
+        """Test extra partitions setup with MENDER_EXTRA_PARTS and MENDER_EXTRA_PARTS_FSTAB."""
+
         sdimg = latest_part_image.endswith(".sdimg")
         uefiimg = latest_part_image.endswith(".uefiimg")
         gptimg = latest_part_image.endswith(".gptimg")
@@ -1337,7 +1340,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         self, request, prepared_test_build, bitbake_image, bitbake_path
     ):
         """
-        Test the D-Bus interface file is provided by the mender-client-dev package,
+        Test that the D-Bus interface files are provided by the mender-client-dev package,
         but not installed by default.
         """
 

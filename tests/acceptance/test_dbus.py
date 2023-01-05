@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2022 Northern.tech AS
+# Copyright 2023 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -26,9 +26,11 @@ from utils.common import (
 )
 
 
+@pytest.mark.software_test
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
 @pytest.mark.not_for_machine("vexpress-qemu-flash")
 class TestDBus:
+
     # this is a portion of the JWT token served by the Mender mock server:
     # see: meta-mender-ci/recipes-testing/mender-mock-server/mender-mock-server.py
     JWT_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9."
@@ -84,7 +86,7 @@ class TestDBus:
     def test_dbus_get_jwt_token(
         self, request, bitbake_variables, connection, setup_mock_server
     ):
-        """Test the JWT token can be retrieved using D-Bus."""
+        """Test that the JWT token can be retrieved using D-Bus."""
 
         try:
             # bootstrap the client
@@ -130,7 +132,7 @@ class TestDBus:
     def test_dbus_fetch_jwt_token(
         self, request, bitbake_variables, connection, setup_mock_server
     ):
-        """Test the JWT token can be fetched using D-Bus."""
+        """Test that the JWT token can be fetched using D-Bus."""
 
         # bootstrap the client
         result = connection.run("mender bootstrap --forcebootstrap")

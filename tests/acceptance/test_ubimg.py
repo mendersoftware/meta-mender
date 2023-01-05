@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2021 Northern.tech AS
+# Copyright 2023 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -192,6 +192,7 @@ def ubimg_without_uboot_env(request, latest_ubimg, prepared_test_build, bitbake_
     return tmpimg
 
 
+@pytest.mark.platform_test
 @pytest.mark.only_with_image("ubimg")
 @pytest.mark.min_mender_version("1.2.0")
 class TestUbimg:
