@@ -9,11 +9,6 @@ MENDER_BRANCH = "${@mender_branch_from_preferred_version(d)}"
 
 SRC_URI ?= "git://github.com/mendersoftware/mender;protocol=https;branch=${MENDER_BRANCH}"
 
-LIC_FILES_CHKSUM ?= " \
-    file://src/github.com/mendersoftware/mender/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87 \
-"
-LICENSE ?= "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
-
 # Disables the need for every dependency to be checked, for easier development.
 _MENDER_DISABLE_STRICT_LICENSE_CHECKING = "1"
 
@@ -80,6 +75,10 @@ def mender_license(branch):
         return {
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
         }
+LIC_FILES_CHKSUM = " \
+    file://src/github.com/mendersoftware/mender/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
+"
+LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
 def mender_maybe_artifact_info(d):
     import re
