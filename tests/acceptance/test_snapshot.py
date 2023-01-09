@@ -35,10 +35,10 @@ def get_ssh_args_mender_artifact(conn):
     return "-S " + common_args
 
 
+@pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
 class TestSnapshot:
     @pytest.mark.min_mender_version("2.2.0")
-    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     @pytest.mark.parametrize("compression", [("", ">"), ("-C gzip", "| gunzip -c >")])
     def test_basic_snapshot(self, compression, bitbake_variables, connection):
         try:
@@ -64,7 +64,6 @@ class TestSnapshot:
             connection.run("umount /mnt || true")
 
     @pytest.mark.min_mender_version("2.2.0")
-    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     def test_snapshot_device_file(self, bitbake_variables, connection):
         try:
             (active, passive) = determine_active_passive_part(
@@ -89,7 +88,6 @@ class TestSnapshot:
             connection.run("umount /mnt || true")
 
     @pytest.mark.min_mender_version("2.2.0")
-    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     def test_snapshot_inactive(self, bitbake_variables, connection):
         try:
             (_, passive) = determine_active_passive_part(bitbake_variables, connection)
@@ -114,7 +112,6 @@ class TestSnapshot:
             connection.run("rm -f /data/snapshot-test")
 
     @pytest.mark.min_mender_version("2.2.0")
-    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     def test_snapshot_avoid_deadlock(self, connection):
         loop = None
         try:
@@ -161,7 +158,6 @@ class TestSnapshot:
             connection.run("rm -f /data/tmp-file-system")
 
     @pytest.mark.min_mender_version("2.2.0")
-    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     # Make sure we run both with and without terminal. Many signal bugs lurk in
     # different corners of the console code.
     @pytest.mark.parametrize("terminal", ["", "screen -D -m -L -Logfile %%"])
@@ -201,7 +197,6 @@ class TestSnapshot:
             assert re.search(r"size: *%s" % partsize, output) is not None
 
     @pytest.mark.min_mender_version("2.5.0")
-    @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
     # Make sure we run both with and without terminal. Many signal bugs lurk in
     # different corners of the console code.
     @pytest.mark.parametrize("terminal", ["", "screen -D -m -L -Logfile %%"])
