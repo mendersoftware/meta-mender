@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2022 Northern.tech AS
+# Copyright 2023 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -181,6 +181,7 @@ def wait_for_string_in_log(connection, since, timeout, search_string):
     return output
 
 
+@pytest.mark.cross_platform
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
 @pytest.mark.not_for_machine("vexpress-qemu-flash")
 class TestMenderConnect:
