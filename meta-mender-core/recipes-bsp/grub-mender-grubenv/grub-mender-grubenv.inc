@@ -44,8 +44,8 @@ PACKAGECONFIG[force-grub-prompt] = ",,,"
 SRC_URI:append = "${@bb.utils.contains('PACKAGECONFIG', 'force-grub-prompt', ' file://06_mender_debug_force_grub_prompt_grub.cfg;subdir=git', '', d)}"
 PACKAGECONFIG[debug-log] = ",,,"
 
-RDEPENDS:${PN} = "grub-efi"
-RDEPENDS:${PN}:mender-bios = "grub"
+RDEPENDS:${PN} = "grub-efi util-linux-flock"
+RDEPENDS:${PN}:mender-bios = "grub util-linux-flock"
 
 PROVIDES = "${@mender_feature_is_enabled('mender-grub', "virtual/grub-bootconf", "", d)}"
 RPROVIDES:${PN} = "${@mender_feature_is_enabled('mender-grub', "virtual-grub-bootconf", "", d)}"
