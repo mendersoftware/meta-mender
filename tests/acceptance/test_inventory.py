@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2020 Northern.tech AS
+# Copyright 2022 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 #    limitations under the License.
 
 import os
+import tempfile
 
 import pytest
 
@@ -123,16 +124,15 @@ echo LSB OS""",
             for src in sources:
                 if src.get("name") is None:
                     continue
-                with open("tmpfile", "w") as fd:
+                with tempfile.NamedTemporaryFile("w") as fd:
                     fd.write(src["content"])
                     if src["content"][-1] != "\n":
                         # Write a final newline if there isn't one.
                         fd.write("\n")
-                try:
-                    put_no_sftp("tmpfile", connection, remote=src["name"])
+                    fd.flush()
+
+                    put_no_sftp(fd.name, connection, remote=src["name"])
                     connection.run("chmod 0%o %s" % (src["mode"], src["name"]))
-                finally:
-                    os.remove("tmpfile")
 
             for src in sources:
                 output = connection.run(

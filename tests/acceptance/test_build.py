@@ -15,6 +15,7 @@
 
 import os
 import subprocess
+import tempfile
 import re
 import json
 
@@ -35,7 +36,7 @@ from utils.common import (
 )
 
 
-def extract_partition(img, number):
+def extract_partition(img, number, dstdir):
     output = subprocess.Popen(
         ["fdisk", "-l", "-o", "device,start,end", img], stdout=subprocess.PIPE
     )
@@ -53,7 +54,7 @@ def extract_partition(img, number):
         [
             "dd",
             "if=" + img,
-            "of=img%d.fs" % number,
+            "of=%s/img%d.fs" % (dstdir, number),
             "skip=%d" % start,
             "count=%d" % (end - start),
         ]
@@ -81,7 +82,7 @@ class TestBuild:
         )
 
     @pytest.mark.min_mender_version("2.5.0")
-    def test_certificate_split(self, request, bitbake_image):
+    def test_certificate_split(self, request, bitbake_image, prepared_test_build):
         """Test that the certificate added in the mender-server-certificate
         recipe is split correctly."""
 
@@ -91,7 +92,14 @@ class TestBuild:
 b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/server-2.crt
 801a667c7a146b3252647b3440483d47  ./usr/local/share/ca-certificates/mender/server-3.crt"""
 
-        rootfs = get_bitbake_variables(request, bitbake_image)["IMAGE_ROOTFS"]
+        rootfs = get_bitbake_variables(request, bitbake_image, prepared_test_build)[
+            "IMAGE_ROOTFS"
+        ]
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+        )
         output = (
             subprocess.check_output(
                 "md5sum ./usr/local/share/ca-certificates/mender/*",
@@ -200,22 +208,18 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             request, prepared_test_build["build_dir"], "core-image*.dataimg"
         )
 
-        subprocess.check_call(
-            [
-                "debugfs",
-                "-R",
-                "dump -p /etc/mender/mender.conf mender.conf",
-                built_rootfs,
-            ]
-        )
+        with tempfile.NamedTemporaryFile() as mender_conf:
+            subprocess.check_call(
+                [
+                    "debugfs",
+                    "-R",
+                    f"dump -p /etc/mender/mender.conf {mender_conf.name}",
+                    built_rootfs,
+                ]
+            )
 
-        try:
-            with open("mender.conf") as fd:
-                data = json.load(fd)
+            data = json.load(mender_conf)
             assert data["TenantToken"] == "authtentoken"
-
-        finally:
-            os.remove("mender.conf")
 
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.1.0")
@@ -245,33 +249,25 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         built_rootfs = latest_build_artifact(
             request, prepared_test_build["build_dir"], "core-image*.ext[234]"
         )
-        # Copy out the key we just added from the image and use that to
-        # verify instead of the original, just to be sure.
-        subprocess.check_call(
-            [
-                "debugfs",
-                "-R",
-                "dump -p /etc/mender/artifact-verify-key.pem artifact-verify-key.pem",
-                built_rootfs,
-            ]
-        )
-        try:
+
+        with tempfile.NamedTemporaryFile(suffix=".pem") as verify_key:
+            # Copy out the key we just added from the image and use that to
+            # verify instead of the original, just to be sure.
+            subprocess.check_call(
+                [
+                    "debugfs",
+                    "-R",
+                    f"dump -p /etc/mender/artifact-verify-key.pem {verify_key.name}",
+                    built_rootfs,
+                ]
+            )
             built_artifact = latest_build_artifact(
                 request, prepared_test_build["build_dir"], "core-image*.mender"
             )
             output = subprocess.check_output(
-                [
-                    "mender-artifact",
-                    "read",
-                    "-k",
-                    os.path.join(os.getcwd(), "artifact-verify-key.pem"),
-                    built_artifact,
-                ]
+                ["mender-artifact", "read", "-k", verify_key.name, built_artifact,]
             ).decode()
             assert output.find("Signature: signed and verified correctly") >= 0
-
-        finally:
-            os.remove("artifact-verify-key.pem")
 
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.2.0")
@@ -646,10 +642,13 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         image = latest_build_artifact(
             request, prepared_test_build["build_dir"], "core-image*.*img"
         )
-        extract_partition(image, 1)
-        try:
+
+        with make_tempdir() as tmpdir:
+            extract_partition(image, 1, tmpdir)
             listing = (
-                run_verbose("mdir -i img1.fs -b -/", capture=True).decode().split()
+                run_verbose(f"mdir -i {tmpdir}/img1.fs -b -/", capture=True)
+                .decode()
+                .split()
             )
             expected = [
                 "::/deployed-test1",
@@ -685,14 +684,16 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 )
             except subprocess.CalledProcessError:
                 pass
-        finally:
-            os.remove("img1.fs")
 
     @pytest.mark.only_with_image("sdimg", "uefiimg")
     @pytest.mark.min_mender_version("2.0.0")
     def test_module_install(
-        self, request, prepared_test_build, bitbake_path, latest_rootfs, bitbake_image
+        self, request, prepared_test_build, bitbake_path, bitbake_image
     ):
+        """Test that with PACKAGECONFIG "modules" switch in mender-client recipe the modules
+        are installed in the root filesystem, and the built mender Artifact(s) contain them
+        as "provides" keys."""
+
         # List of expected update modules
         default_update_modules = [
             "deb",
@@ -704,21 +705,94 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             "single-file",
         ]
 
-        mender_vars = get_bitbake_variables(request, "mender-client")
+        mender_vars = get_bitbake_variables(
+            request, "mender-client", prepared_test_build
+        )
         if "modules" in mender_vars["PACKAGECONFIG"].split():
             originally_on = True
         else:
             originally_on = False
 
-        output = subprocess.check_output(
-            ["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", latest_rootfs]
-        ).decode()
-        entries = [
-            elem.split("/")[5] for elem in output.split("\n") if elem.startswith("/")
-        ]
+        def _check_update_modules_present_in_filesystem(rootfs_image, expect_present):
+            output = subprocess.check_output(
+                ["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", rootfs_image]
+            ).decode()
+            files_entries = [
+                elem.split("/")[5]
+                for elem in output.split("\n")
+                if elem.startswith("/")
+            ]
+
+            if expect_present:
+                assert all([e in files_entries for e in default_update_modules])
+            else:
+                assert not any([e in files_entries for e in default_update_modules])
+
+        def _check_update_modules_provided_in_artifact(mender_artifact, expect_present):
+            output = subprocess.check_output(
+                ["mender-artifact", "read", mender_artifact]
+            ).decode()
+            provides_entries = [
+                elem.strip().split(":")[0]
+                for elem in output.split("\n")
+                if "rootfs-image.update-module." in elem
+            ]
+
+            if expect_present:
+                assert all(
+                    [
+                        "rootfs-image.update-module." + e + ".mender_update_module"
+                        in provides_entries
+                        for e in default_update_modules
+                    ]
+                )
+                assert all(
+                    [
+                        "rootfs-image.update-module." + e + ".version"
+                        in provides_entries
+                        for e in default_update_modules
+                    ]
+                )
+            else:
+                assert not any(
+                    [
+                        "rootfs-image.update-module." + e + ".mender_update_module"
+                        in provides_entries
+                        for e in default_update_modules
+                    ]
+                )
+                assert not any(
+                    [
+                        "rootfs-image.update-module." + e + ".version"
+                        in provides_entries
+                        for e in default_update_modules
+                    ]
+                )
+
+        original_rootfs = latest_build_artifact(
+            request, os.environ["BUILDDIR"], "core-image*.ext[234]"
+        )
+        original_artifact = latest_build_artifact(
+            request, os.environ["BUILDDIR"], "core-image*.mender"
+        )
+        original_bootstrap_artifact = latest_build_artifact(
+            request, os.environ["BUILDDIR"], "core-image*.bootstrap-artifact",
+        )
 
         if originally_on:
-            assert all([e in entries for e in default_update_modules])
+            _check_update_modules_present_in_filesystem(original_rootfs, True)
+            _check_update_modules_provided_in_artifact(original_artifact, True)
+            _check_update_modules_provided_in_artifact(
+                original_bootstrap_artifact, True
+            )
+        else:
+            _check_update_modules_present_in_filesystem(original_rootfs, False)
+            _check_update_modules_provided_in_artifact(original_artifact, False)
+            _check_update_modules_provided_in_artifact(
+                original_bootstrap_artifact, False
+            )
+
+        if originally_on:
             build_image(
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
@@ -726,7 +800,6 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 ['PACKAGECONFIG:remove = "modules"'],
             )
         else:
-            assert not any([e in entries for e in default_update_modules])
             build_image(
                 prepared_test_build["build_dir"],
                 prepared_test_build["bitbake_corebase"],
@@ -735,20 +808,23 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             )
 
         new_rootfs = latest_build_artifact(
-            request, prepared_test_build["build_dir"], "core-image*.ext4"
+            request, prepared_test_build["build_dir"], "core-image*.ext[234]"
+        )
+        new_artifact = latest_build_artifact(
+            request, prepared_test_build["build_dir"], "core-image*.mender",
+        )
+        new_bootstrap_artifact = latest_build_artifact(
+            request, prepared_test_build["build_dir"], "core-image*.bootstrap-artifact",
         )
 
-        output = subprocess.check_output(
-            ["debugfs", "-R", "ls -p /usr/share/mender/modules/v3", new_rootfs]
-        ).decode()
-        entries = [
-            elem.split("/")[5] for elem in output.split("\n") if elem.startswith("/")
-        ]
-
         if originally_on:
-            assert not any([e in entries for e in default_update_modules])
+            _check_update_modules_present_in_filesystem(new_rootfs, False)
+            _check_update_modules_provided_in_artifact(new_artifact, False)
+            _check_update_modules_provided_in_artifact(new_bootstrap_artifact, False)
         else:
-            assert all([e in entries for e in default_update_modules])
+            _check_update_modules_present_in_filesystem(new_rootfs, True)
+            _check_update_modules_provided_in_artifact(new_artifact, True)
+            _check_update_modules_provided_in_artifact(new_bootstrap_artifact, True)
 
     @pytest.mark.only_with_image("sdimg", "uefiimg", "gptimg", "biosimg")
     @pytest.mark.min_mender_version("1.0.0")
@@ -940,7 +1016,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                         l = [s.strip() for s in lines[k].split(": ")]
                         assert len(l) == 2, "Line should only contain a key value pair"
                         key, val = l[0], l[1]
-                        tmp[key] = val
+                        # Ignore all "provides" added with the installed update modules
+                        if not key.startswith("rootfs-image.update-module"):
+                            tmp[key] = val
                         k += 1
                     d.provides = tmp
 
@@ -1160,6 +1238,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 prepared_test_build["bitbake_corebase"],
                 "mender-client",
                 ['PACKAGECONFIG:remove = "dbus"'],
+                target="-c install mender-client",
             )
 
             env = get_bitbake_variables(

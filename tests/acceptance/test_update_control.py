@@ -13,7 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import datetime
 import json
+import logging
 import os
 import pytest
 import subprocess
@@ -22,13 +24,14 @@ import tempfile
 import time
 
 from mock_server import (
+    wait_for_finished_deployment,
     cleanup_deployment_response,
     prepare_deployment_response,
     setup_mock_server,
     EXPIRATION_TIME,
     BOOT_EXPIRATION_TIME,
 )
-from utils.common import put_no_sftp, cleanup_mender_state
+from utils.common import put_no_sftp, cleanup_mender_state, qemu_system_time
 
 # Map UIDs. Randomly chosen, but used throughout for consistency.
 MUID = "3702f9f0-b318-11eb-a7b6-c7aece07181e"
@@ -36,6 +39,10 @@ MUID2 = "3702f9f0-b318-11eb-a7b6-c7aece07181f"
 
 BETWEEN_EXPIRATIONS = max(EXPIRATION_TIME, BOOT_EXPIRATION_TIME) - 5
 FAIL_TIME = EXPIRATION_TIME + BOOT_EXPIRATION_TIME
+
+
+logger = logging.getLogger("test_update_control")
+logger.setLevel(logging.DEBUG)
 
 
 def start_and_ready_mender_client(connection):
@@ -465,6 +472,7 @@ class TestUpdateControl:
     )
     def test_update_control_maps(
         self,
+        request,
         case_name,
         case,
         setup_board,
@@ -484,11 +492,15 @@ class TestUpdateControl:
                 # boot expiration mechanism.
                 connection.run("systemctl restart mender-client")
 
-            now = time.time()
+            test_start_time = qemu_system_time(connection)
+
+            logger.debug("%s: Before first artifact deploy" % datetime.datetime.now())
 
             make_and_deploy_artifact(
                 connection, bitbake_variables["MENDER_DEVICE_TYPE"]
             )
+
+            logger.debug("%s: After first artifact deploy" % datetime.datetime.now())
 
             connection.run("mender check-update")
 
@@ -497,7 +509,11 @@ class TestUpdateControl:
             continue_map_inserted = False
             second_deployment_done = False
             PAUSE_STATE_OBSERVE_COUNT = 2
-            while time.time() - now <= case.get("fail_after", FAIL_TIME):
+            while qemu_system_time(connection) - test_start_time <= case.get(
+                "fail_after", FAIL_TIME
+            ):
+                logger.debug("%s: In loop" % datetime.datetime.now())
+
                 output = connection.run(
                     "cat /data/logger-update-module.log 2>/dev/null || true"
                 ).stdout.strip()
@@ -515,6 +531,10 @@ class TestUpdateControl:
                     pause_state_observed += 1
                     # Verify that it stays in paused mode.
                     if pause_state_observed >= PAUSE_STATE_OBSERVE_COUNT:
+                        logger.debug(
+                            "%s: Pause state observed" % datetime.datetime.now()
+                        )
+
                         if case.get("restart_during_pause"):
                             connection.run("systemctl restart mender-client")
                         # Now insert the map to unblock the pause.
@@ -529,19 +549,25 @@ class TestUpdateControl:
                                 attempts -= 1
                                 time.sleep(5)
                         else:
+                            logger.debug(
+                                "%s: Could not insert map" % datetime.datetime.now()
+                            )
                             raise Exception(
                                 "Could not insert map after restarting client."
                             )
+                        logger.debug("%s: Inserted map" % datetime.datetime.now())
                         continue_map_inserted = True
 
                 # Cleanup is the last state of a deployment
                 if "Cleanup" in log:
+                    logger.debug("%s: Found Cleanup" % datetime.datetime.now())
                     if case.get("second_deployment") and not second_deployment_done:
                         # When making two deployments, we assume the first one
                         # is successful.
                         assert "ArtifactFailure" not in log
 
                         connection.run("rm -f /data/logger-update-module.log")
+                        wait_for_finished_deployment(connection)
                         make_and_deploy_artifact(
                             connection, bitbake_variables["MENDER_DEVICE_TYPE"]
                         )
@@ -556,7 +582,8 @@ class TestUpdateControl:
 
             if case.get("take_at_least"):
                 assert (
-                    time.time() - now >= case["take_at_least"]
+                    qemu_system_time(connection) - test_start_time
+                    >= case["take_at_least"]
                 ), "Deployment finished before it was supposed to!"
 
             if case["success"]:
@@ -584,12 +611,12 @@ class TestUpdateControl:
             # Reset update control maps.
             clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
             connection.run("rm -f /data/logger-update-module.log")
 
     @pytest.mark.min_mender_version("2.7.0")
     def test_invalid_update_control_map(
-        self, setup_board, connection, setup_mock_server
+        self, request, setup_board, connection, setup_mock_server
     ):
         try:
             start_and_ready_mender_client(connection)
@@ -601,7 +628,7 @@ class TestUpdateControl:
             assert status.return_code != 0
         finally:
             connection.run("systemctl stop mender-client")
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
 
     test_update_control_maps_cleanup_cases = [
         {
@@ -654,6 +681,7 @@ class TestUpdateControl:
     )
     def test_update_control_map_cleanup(
         self,
+        request,
         case_name,
         case,
         setup_board,
@@ -705,12 +733,13 @@ class TestUpdateControl:
             cleanup_deployment_response(connection)
             clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
             connection.run("rm -f /data/logger-update-module.log")
 
     @pytest.mark.min_mender_version("2.7.0")
     def test_many_state_transitions_with_update_control(
         self,
+        request,
         setup_board,
         connection,
         setup_mock_server,
@@ -805,5 +834,5 @@ done
             # Reset update control maps.
             clear_update_control_maps(connection)
             connection.run("systemctl stop mender-client")
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
             connection.run("rm -f /data/logger-update-module.log")

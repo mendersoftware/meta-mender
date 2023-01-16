@@ -43,7 +43,7 @@ class TestDBus:
         assert "io.mender.AuthenticationManager" in output
 
     @pytest.mark.min_mender_version("2.5.0")
-    def test_dbus_non_root_access(self, bitbake_variables, connection):
+    def test_dbus_non_root_access(self, request, bitbake_variables, connection):
         """Test that only root user can access Mender DBus API."""
 
         # This is the command that is expected to fail for non-root user
@@ -78,10 +78,12 @@ class TestDBus:
 
         finally:
             connection.run("systemctl stop mender-client")
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
 
     @pytest.mark.min_mender_version("2.5.0")
-    def test_dbus_get_jwt_token(self, bitbake_variables, connection, setup_mock_server):
+    def test_dbus_get_jwt_token(
+        self, request, bitbake_variables, connection, setup_mock_server
+    ):
         """Test the JWT token can be retrieved using D-Bus."""
 
         try:
@@ -122,11 +124,11 @@ class TestDBus:
 
         finally:
             connection.run("systemctl stop mender-client")
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_fetch_jwt_token(
-        self, bitbake_variables, connection, setup_mock_server
+        self, request, bitbake_variables, connection, setup_mock_server
     ):
         """Test the JWT token can be fetched using D-Bus."""
 
@@ -196,4 +198,4 @@ class TestDBus:
                 connection.run("rm -f /tmp/dbus-monitor.log")
 
         finally:
-            cleanup_mender_state(connection)
+            cleanup_mender_state(request, connection)
