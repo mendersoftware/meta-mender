@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2022 Northern.tech AS
+# Copyright 2023 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -107,6 +107,7 @@ def boot_device_with_bootstrap_image(
     session_connection.run("rm -f image.dat")
 
 
+@pytest.mark.cross_platform
 @pytest.mark.min_mender_version("3.5.0")
 @pytest.mark.min_yocto_version("dunfell")
 @pytest.mark.only_with_image("ext4", "ext3", "ext2")
