@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2022 Northern.tech AS
+# Copyright 2023 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -34,13 +34,15 @@ from utils.common import (
 from utils.helpers import Helpers
 
 
+@pytest.mark.cross_platform
 @pytest.mark.commercial
 @pytest.mark.min_mender_version("2.1.0")
 class TestDeltaUpdateModule:
     @pytest.mark.only_with_image("ext4")
-    def test_build_and_run_module(
+    def test_build_module(
         self, request, bitbake_variables, prepared_test_build, bitbake_image
     ):
+        """Test that the update module is installed in the rootfs image"""
 
         build_image(
             prepared_test_build["build_dir"],
@@ -122,9 +124,7 @@ class TestDeltaUpdateModule:
     ):
         """Check that the checksum of the running root filesystem is what we
         expect. This is important in order for it to match when applying a delta
-        update.
-
-        """
+        update."""
 
         if (
             "read-only-rootfs"
@@ -178,9 +178,7 @@ class TestDeltaUpdateModule:
         use_s3,
         s3_address,
     ):
-        """Perform a delta update.
-
-        """
+        """Perform a delta update."""
 
         if (
             "read-only-rootfs"
