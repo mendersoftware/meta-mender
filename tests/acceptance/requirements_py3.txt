@@ -8,7 +8,7 @@ filelock==3.9.0
 idna==3.4
 iniconfig==1.1.1
 invoke==2.0.0
-packaging==22.0
+packaging==23.0
 pathlib2==2.3.7.post1
 pluggy==1.0.0
 psutil==5.9.4
