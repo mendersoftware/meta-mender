@@ -3,6 +3,16 @@ require mender-artifact.inc
 DEPENDS += "xz openssl"
 RDEPENDS_${PN} = "openssl"
 
+# Patches to make mender-artifact compatible with golang 1.14 (dunfell)
+# Required for mender-artifact 3.10 and newer
+FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
+SRC_URI_append = " \
+    file://0001-golang-1.14-compat-Revert-net-http2-upstream-fix.patch;patchdir=src/${GO_IMPORT} \
+    file://0002-golang-1.14-compat-Revert-hashicorp-go-plugin-upstre.patch;patchdir=src/${GO_IMPORT} \
+    file://0003-golang-1.14-compat-patch-hashicorp-vault-package.patch;patchdir=src/${GO_IMPORT} \
+    file://0004-golang-1.14-compat-patch-hashicorp-go-secure-stdlib-.patch;patchdir=src/${GO_IMPORT} \
+"
+
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the

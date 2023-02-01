@@ -1,0 +1,37 @@
+From 8de8aa4499a22c5228a08270fd95306ff2f3ad39 Mon Sep 17 00:00:00 2001
+From: Lluis Campos <lluis.campos@northern.tech>
+Date: Wed, 1 Feb 2023 11:19:00 +0100
+Subject: [PATCH 2/4] golang 1.14 compat: Revert hashicorp/go-plugin upstream
+ fix
+
+The upstream fix introduced a dependency on `net.ErrClosed`, which is
+supported from golang 1.16 on.
+
+This commit reverts upstream fix:
+* https://github.com/hashicorp/go-plugin/commit/5c7aadc0edc247dacfd5716523c10b91dbec4e9c
+
+Signed-off-by: Lluis Campos <lluis.campos@northern.tech>
+---
+ vendor/github.com/hashicorp/go-plugin/rpc_server.go | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/vendor/github.com/hashicorp/go-plugin/rpc_server.go b/vendor/github.com/hashicorp/go-plugin/rpc_server.go
+index 449ba6c..5bb18dd 100644
+--- a/vendor/github.com/hashicorp/go-plugin/rpc_server.go
++++ b/vendor/github.com/hashicorp/go-plugin/rpc_server.go
+@@ -45,11 +45,7 @@ func (s *RPCServer) Serve(lis net.Listener) {
+ 	for {
+ 		conn, err := lis.Accept()
+ 		if err != nil {
+-			severity := "ERR"
+-			if errors.Is(err, net.ErrClosed) {
+-				severity = "DEBUG"
+-			}
+-			log.Printf("[%s] plugin: plugin server: %s", severity, err)
++			log.Printf("[ERR] plugin: plugin server: %s", err)
+ 			return
+ 		}
+ 
+-- 
+2.34.1
+
