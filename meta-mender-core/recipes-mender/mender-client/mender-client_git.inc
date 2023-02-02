@@ -6,6 +6,13 @@ RDEPENDS_${PN} = "liblzma openssl"
 # 3.4 and older mender-client versions need mender-artifact-info.
 RDEPENDS_${PN}_append = "${@mender_maybe_artifact_info(d)}"
 
+# Patches to make mender-client compatible with golang 1.14 (dunfell)
+# Required for mender-artifact 3.5 and newer
+FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
+SRC_URI_append = " \
+    file://0001-golang-1.14-compat-Amend-unit-tests-with-a-custom-te.patch;patchdir=src/${GO_IMPORT} \
+"
+
 def mender_maybe_artifact_info(d):
     import re
     branch = d.getVar("MENDER_BRANCH")
