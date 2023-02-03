@@ -1,0 +1,77 @@
+From 5ec939532117ceb7d19dceb885f71185751bd6ed Mon Sep 17 00:00:00 2001
+From: Lluis Campos <lluis.campos@northern.tech>
+Date: Wed, 1 Feb 2023 09:34:25 +0100
+Subject: [PATCH 4/4] golang 1.14 compat: patch hashicorp/go-secure-stdlib
+ package
+
+Patch upstream code to define locally `MinInt` and `MaxInt`, which are
+supported from golang 1.17 on.
+
+Signed-off-by: Lluis Campos <lluis.campos@northern.tech>
+---
+ .../go-secure-stdlib/parseutil/parseutil.go   | 28 +++++++++++++++++--
+ 1 file changed, 25 insertions(+), 3 deletions(-)
+
+diff --git a/vendor/github.com/hashicorp/go-secure-stdlib/parseutil/parseutil.go b/vendor/github.com/hashicorp/go-secure-stdlib/parseutil/parseutil.go
+index e469499..cd8e90d 100644
+--- a/vendor/github.com/hashicorp/go-secure-stdlib/parseutil/parseutil.go
++++ b/vendor/github.com/hashicorp/go-secure-stdlib/parseutil/parseutil.go
+@@ -4,7 +4,6 @@ import (
+ 	"encoding/json"
+ 	"errors"
+ 	"fmt"
+-	"math"
+ 	"regexp"
+ 	"strconv"
+ 	"strings"
+@@ -17,6 +16,29 @@ import (
+ 
+ var validCapacityString = regexp.MustCompile("^[\t ]*([0-9]+)[\t ]?([kmgtKMGT][iI]?[bB])?[\t ]*$")
+ 
++// Constants copied from math standard library. See:
++// https://cs.opensource.google/go/go/+/refs/tags/go1.19.5:src/math/const.go;l=38
++// Integer limit values.
++const (
++	intSize = 32 << (^uint(0) >> 63) // 32 or 64
++
++	MaxInt    = 1<<(intSize-1) - 1
++	MinInt    = -1 << (intSize - 1)
++	MaxInt8   = 1<<7 - 1
++	MinInt8   = -1 << 7
++	MaxInt16  = 1<<15 - 1
++	MinInt16  = -1 << 15
++	MaxInt32  = 1<<31 - 1
++	MinInt32  = -1 << 31
++	MaxInt64  = 1<<63 - 1
++	MinInt64  = -1 << 63
++	MaxUint   = 1<<intSize - 1
++	MaxUint8  = 1<<8 - 1
++	MaxUint16 = 1<<16 - 1
++	MaxUint32 = 1<<32 - 1
++	MaxUint64 = 1<<64 - 1
++)
++
+ // ParseCapacityString parses a capacity string and returns the number of bytes it represents.
+ // Capacity strings are things like 5gib or 10MB. Supported prefixes are kb, kib, mb, mib, gb,
+ // gib, tb, tib, which are not case sensitive. If no prefix is present, the number is assumed
+@@ -450,7 +472,7 @@ func SafeParseIntRange(in interface{}, min int64, max int64) (int64, error) {
+ // resulting value is within the range for an int value. If no error occurred,
+ // the caller knows no overflow occurred.
+ func SafeParseInt(in interface{}) (int, error) {
+-	raw, err := SafeParseIntRange(in, math.MinInt, math.MaxInt)
++	raw, err := SafeParseIntRange(in, MinInt, MaxInt)
+ 	return int(raw), err
+ }
+ 
+@@ -488,7 +510,7 @@ func SafeParseIntSliceRange(in interface{}, minValue int64, maxValue int64, elem
+ // If elements is positive, it is used to ensure the resulting slice is
+ // bounded above by that many number of elements (inclusive).
+ func SafeParseIntSlice(in interface{}, elements int) ([]int, error) {
+-	raw, err := SafeParseIntSliceRange(in, math.MinInt, math.MaxInt, elements)
++	raw, err := SafeParseIntSliceRange(in, MinInt, MaxInt, elements)
+ 	if err != nil || raw == nil {
+ 		return nil, err
+ 	}
+-- 
+2.34.1
+

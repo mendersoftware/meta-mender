@@ -6,6 +6,13 @@ RDEPENDS_${PN} = "liblzma openssl"
 # 3.4 and older mender-client versions need mender-artifact-info.
 RDEPENDS_${PN}_append = "${@mender_maybe_artifact_info(d)}"
 
+# Patches to make mender-client compatible with golang 1.14 (dunfell)
+# Required for mender-artifact 3.5 and newer
+FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
+SRC_URI_append = " \
+    file://0001-golang-1.14-compat-Amend-unit-tests-with-a-custom-te.patch;patchdir=src/${GO_IMPORT} \
+"
+
 def mender_maybe_artifact_info(d):
     import re
     branch = d.getVar("MENDER_BRANCH")
@@ -91,7 +98,7 @@ def mender_license(branch):
         return {
                    "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8 & OpenSSL",
         }
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081"
 LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.

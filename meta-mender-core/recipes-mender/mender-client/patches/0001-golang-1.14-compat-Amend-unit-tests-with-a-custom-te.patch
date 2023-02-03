@@ -1,0 +1,110 @@
+From 3169c640ee5222fc1ff277d109f44c8b46c56e51 Mon Sep 17 00:00:00 2001
+From: Lluis Campos <lluis.campos@northern.tech>
+Date: Thu, 2 Feb 2023 13:10:11 +0100
+Subject: [PATCH] golang 1.14 compat: Amend unit tests with a custom
+ `tests.Setenv`
+
+Mimic `testing` functionality that was added in golang 1.17.
+
+Signed-off-by: Lluis Campos <lluis.campos@northern.tech>
+---
+ app/mender_test.go         |  3 ++-
+ app/proxy/proxy_ws_test.go |  7 +++++--
+ tests/testing_utils.go     | 39 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 46 insertions(+), 3 deletions(-)
+ create mode 100644 tests/testing_utils.go
+
+diff --git a/app/mender_test.go b/app/mender_test.go
+index c743404e..00e4e8a4 100644
+--- a/app/mender_test.go
++++ b/app/mender_test.go
+@@ -1150,7 +1150,8 @@ func TestMutualTLSClientConnectionWithReverseProxy(t *testing.T) {
+ 		err := httpProxy.Stop()
+ 		require.NoError(t, err)
+ 	}()
+-	t.Setenv("HTTPS_PROXY", httpProxy.GetUrl())
++	cleanup := tests.Setenv(t, "HTTPS_PROXY", httpProxy.GetUrl())
++	defer cleanup()
+ 
+ 	TestMutualTLSClientConnection(t)
+ }
+diff --git a/app/proxy/proxy_ws_test.go b/app/proxy/proxy_ws_test.go
+index cbf5f4a4..2d743616 100644
+--- a/app/proxy/proxy_ws_test.go
++++ b/app/proxy/proxy_ws_test.go
+@@ -32,6 +32,7 @@ import (
+ 	"github.com/mendersoftware/mender/client"
+ 	cltest "github.com/mendersoftware/mender/client/test"
+ 	"github.com/mendersoftware/mender/conf"
++	"github.com/mendersoftware/mender/tests"
+ )
+ 
+ func prepareProxyWsTest(t *testing.T, srv *cltest.ClientTestWsServer) *ProxyController {
+@@ -442,7 +443,8 @@ func TestProxyWsConnectCustomCertWithReverseProxy(t *testing.T) {
+ 		err := httpProxy.Stop()
+ 		require.NoError(t, err)
+ 	}()
+-	t.Setenv("HTTPS_PROXY", httpProxy.GetUrl())
++	cleanup := tests.Setenv(t, "HTTPS_PROXY", httpProxy.GetUrl())
++	defer cleanup()
+ 
+ 	TestProxyWsConnectCustomCert(t)
+ }
+@@ -454,7 +456,8 @@ func TestProxyWsConnectMutualTLSWithReverseProxy(t *testing.T) {
+ 		err := httpProxy.Stop()
+ 		require.NoError(t, err)
+ 	}()
+-	t.Setenv("HTTPS_PROXY", httpProxy.GetUrl())
++	cleanup := tests.Setenv(t, "HTTPS_PROXY", httpProxy.GetUrl())
++	defer cleanup()
+ 
+ 	TestProxyWsConnectMutualTLS(t)
+ }
+diff --git a/tests/testing_utils.go b/tests/testing_utils.go
+new file mode 100644
+index 00000000..cf9ba7e1
+--- /dev/null
++++ b/tests/testing_utils.go
+@@ -0,0 +1,39 @@
++// Copyright 2023 Northern.tech AS
++//
++//	Licensed under the Apache License, Version 2.0 (the "License");
++//	you may not use this file except in compliance with the License.
++//	You may obtain a copy of the License at
++//
++//	    http://www.apache.org/licenses/LICENSE-2.0
++//
++//	Unless required by applicable law or agreed to in writing, software
++//	distributed under the License is distributed on an "AS IS" BASIS,
++//	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++//	See the License for the specific language governing permissions and
++//	limitations under the License.
++package tests
++
++import (
++	"os"
++	"testing"
++)
++
++// Setenv calls os.Setenv(key, value) returns a function to
++// restore the environment variable to its original value
++//
++// Original source:
++// https://cs.opensource.google/go/go/+/refs/tags/go1.20:src/testing/testing.go;l=1265
++func Setenv(t *testing.T, key, value string) func() {
++	prevValue, found := os.LookupEnv(key)
++
++	if err := os.Setenv(key, value); err != nil {
++		t.Fatalf("cannot set environment variable: %v", err)
++	}
++
++	cleanup := func() {
++		if found {
++			os.Setenv(key, prevValue)
++		}
++	}
++	return cleanup
++}
+-- 
+2.34.1
+

@@ -1,0 +1,32 @@
+From efe8dc799668dfbebad4d164ddd4315db2f1136a Mon Sep 17 00:00:00 2001
+From: Lluis Campos <lluis.campos@northern.tech>
+Date: Wed, 1 Feb 2023 09:29:41 +0100
+Subject: [PATCH 3/4] golang 1.14 compat: patch hashicorp/vault package
+
+Patch upstream code to avoid using `PublicKey.Equal` which is supported
+from golang 1.15 on.
+
+Signed-off-by: Lluis Campos <lluis.campos@northern.tech>
+---
+ .../hashicorp/vault/sdk/helper/certutil/helpers.go           | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/vendor/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go b/vendor/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go
+index eace1aa..065b645 100644
+--- a/vendor/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go
++++ b/vendor/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go
+@@ -455,7 +455,10 @@ func ComparePublicKeys(key1Iface, key2Iface crypto.PublicKey) (bool, error) {
+ 		if !ok {
+ 			return false, fmt.Errorf("key types do not match: %T and %T", key1Iface, key2Iface)
+ 		}
+-		if !key1.Equal(key2) {
++		// Comparing directly on bytes, the check for the key type match is already done above.
++		// See source code at:
++		// https://cs.opensource.google/go/go/+/refs/tags/go1.19.5:src/crypto/ed25519/ed25519.go;l=44
++		if !bytes.Equal(key1, key2) {
+ 			return false, nil
+ 		}
+ 		return true, nil
+-- 
+2.34.1
+

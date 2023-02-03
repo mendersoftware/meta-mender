@@ -60,7 +60,7 @@ def mender_configure_license(branch):
     return {
                "license": "Apache-2.0",
     }
-LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=fbe9cd162201401ffbb442445efecfdc"
+LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081"
 LICENSE = "${@mender_configure_license(d.getVar('MENDER_CONFIGURE_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.

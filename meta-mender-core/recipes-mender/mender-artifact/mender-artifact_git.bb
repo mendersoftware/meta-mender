@@ -3,6 +3,16 @@ require mender-artifact.inc
 DEPENDS += "xz openssl"
 RDEPENDS_${PN} = "openssl"
 
+# Patches to make mender-artifact compatible with golang 1.14 (dunfell)
+# Required for mender-artifact 3.10 and newer
+FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
+SRC_URI_append = " \
+    file://0001-golang-1.14-compat-Revert-net-http2-upstream-fix.patch;patchdir=src/${GO_IMPORT} \
+    file://0002-golang-1.14-compat-Revert-hashicorp-go-plugin-upstre.patch;patchdir=src/${GO_IMPORT} \
+    file://0003-golang-1.14-compat-patch-hashicorp-vault-package.patch;patchdir=src/${GO_IMPORT} \
+    file://0004-golang-1.14-compat-patch-hashicorp-go-secure-stdlib-.patch;patchdir=src/${GO_IMPORT} \
+"
+
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the
@@ -63,7 +73,7 @@ def mender_license(branch):
     return {
                "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
     }
-LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87"
+LIC_FILES_CHKSUM = "file://src/github.com/mendersoftware/mender-artifact/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081"
 LICENSE = "${@mender_license(d.getVar('MENDER_ARTIFACT_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.
