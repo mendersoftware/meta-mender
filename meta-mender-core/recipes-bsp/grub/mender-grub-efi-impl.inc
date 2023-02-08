@@ -33,7 +33,7 @@ CONFFILES_${PN}_remove = " \
 "
 
 # Allow the cfg and signature files to be installed by grub-mender-grubenv
-python do_cleanconfigs_class-target() {
+fakeroot python do_cleanconfigs_class-target() {
     if bb.utils.contains('DISTRO_FEATURES', 'mender-grub', True, False, d) and \
         bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', True, False, d):
             ext = d.getVar("SB_FILE_EXT")
@@ -44,6 +44,7 @@ python do_cleanconfigs_class-target() {
                 if os.path.exists(filebase + ext):
                     os.remove(filebase + ext)
 }
-python do_cleanconfigs() {
+fakeroot python do_cleanconfigs() {
 }
 addtask cleanconfigs after do_sign do_chownboot before deploy do_package
+do_cleanconfigs[depends] += "virtual/fakeroot-native:do_populate_sysroot"
