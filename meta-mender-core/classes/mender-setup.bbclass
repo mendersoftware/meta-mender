@@ -230,7 +230,13 @@ MENDER_DATA_PART_LABEL ??= "data"
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 IMAGE_INSTALL:append = " mender-client"
-IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg mender-bootimg mender-datatar"
+IMAGE_CLASSES += "mender-artifactimg \
+                  mender-artifact-uefi-capsule \
+                  mender-bootimg \
+                  mender-dataimg \
+                  mender-datatar
+                  mender-part-images \
+                  mender-ubimg"
 
 # Originally defined in bitbake.conf. We define them here so that images with
 # the same MACHINE name, but different MENDER_DEVICE_TYPE, will not result in
