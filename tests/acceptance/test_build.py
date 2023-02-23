@@ -766,6 +766,12 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                     ]
                 )
 
+        def _maybe_check_bootstrap_artifact(mender_artifact, expect_present):
+            if version_is_minimum(mender_vars, "mender-client", "3.5.0"):
+                _check_update_modules_provided_in_artifact(
+                    mender_artifact, expect_present
+                )
+
         original_rootfs = latest_build_artifact(
             request, os.environ["BUILDDIR"], "core-image*.ext[234]"
         )
@@ -779,15 +785,11 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         if originally_on:
             _check_update_modules_present_in_filesystem(original_rootfs, True)
             _check_update_modules_provided_in_artifact(original_artifact, True)
-            _check_update_modules_provided_in_artifact(
-                original_bootstrap_artifact, True
-            )
+            _maybe_check_bootstrap_artifact(original_bootstrap_artifact, True)
         else:
             _check_update_modules_present_in_filesystem(original_rootfs, False)
             _check_update_modules_provided_in_artifact(original_artifact, False)
-            _check_update_modules_provided_in_artifact(
-                original_bootstrap_artifact, False
-            )
+            _maybe_check_bootstrap_artifact(original_bootstrap_artifact, False)
 
         if originally_on:
             build_image(
@@ -817,11 +819,11 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         if originally_on:
             _check_update_modules_present_in_filesystem(new_rootfs, False)
             _check_update_modules_provided_in_artifact(new_artifact, False)
-            _check_update_modules_provided_in_artifact(new_bootstrap_artifact, False)
+            _maybe_check_bootstrap_artifact(new_bootstrap_artifact, False)
         else:
             _check_update_modules_present_in_filesystem(new_rootfs, True)
             _check_update_modules_provided_in_artifact(new_artifact, True)
-            _check_update_modules_provided_in_artifact(new_bootstrap_artifact, True)
+            _maybe_check_bootstrap_artifact(new_bootstrap_artifact, True)
 
     @pytest.mark.only_with_image("sdimg", "uefiimg", "gptimg", "biosimg")
     @pytest.mark.min_mender_version("1.0.0")
