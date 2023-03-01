@@ -23,7 +23,7 @@ pytest-xdist==3.1.0
 python-lzo==1.14
 PyYAML==6.0
 redo==2.0.4
-requests==2.28.1
+requests==2.28.2
 six==1.16.0
 toml==0.10.2
 ubi-reader==0.8.5
