@@ -108,7 +108,7 @@ EOF
 
     # Used for all Linux filesystem partitions.
     if [ "$ptable_type" = "gpt" ]; then
-        part_type_params="--part-type 8300"
+        part_type_params="--part-type 0FC63DAF-8483-4772-8E79-3D69D8477DE4"
     else
         part_type_params=
     fi
