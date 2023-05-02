@@ -10,5 +10,5 @@ def examples_dir_from_s_dir(d, s):
 EXAMPLES = "${@examples_dir_from_s_dir(d, '${S}')}"
 
 do_install_append() {
-    cp -R --no-dereference --preserve=mode,links -v ${EXAMPLES}/* ${D}
+    cp -R --no-dereference --preserve=mode,links -v ${EXAMPLES}/* ${D} || bbwarn "No gateway examples present. Continuing without them."
 }
