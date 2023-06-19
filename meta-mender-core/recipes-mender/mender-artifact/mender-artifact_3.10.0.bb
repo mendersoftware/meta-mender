@@ -8,10 +8,10 @@ require mender-artifact.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=3.9.x"
+SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=3.10.x"
 
-# Tag: 3.9.0
-SRCREV = "fde2173c2e6969f516f33868a898700662d08746"
+# Tag: 3.10.0
+SRCREV = "080582777c68516c92b8705381dec1f44ccf406a"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
@@ -27,13 +27,12 @@ SRCREV = "fde2173c2e6969f516f33868a898700662d08746"
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
 
 LIC_FILES_CHKSUM = " \
-    file://src/github.com/mendersoftware/mender-artifact/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87 \
+    file://src/github.com/mendersoftware/mender-artifact/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/minio/sha256-simd/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/mendersoftware/progressbar/LICENSE;md5=dcac2e5bf81a6fe99b034aaaaf1b2019 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/google.golang.org/genproto/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/google.golang.org/grpc/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/google.golang.org/appengine/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
-    file://src/github.com/mendersoftware/mender-artifact/vendor/cloud.google.com/go/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/cloud.google.com/go/kms/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/cloud.google.com/go/iam/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/cloud.google.com/go/compute/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
@@ -42,6 +41,7 @@ LIC_FILES_CHKSUM = " \
     file://src/github.com/mendersoftware/mender-artifact/vendor/gopkg.in/square/go-jose.v2/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/oklog/run/LICENSE;md5=86d3f3a95c324c9479bd8986968f4327 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/mendersoftware/openssl/LICENSE;md5=19cbd64715b51267a47bf3750cc6a8a5 \
+    file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/googleapis/enterprise-certificate-proxy/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/pkg/errors/LICENSE;md5=6fe682a02df52c6653f33bd0f7126b5a \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/pmezard/go-difflib/LICENSE;md5=e9a2ebb8de779a07500ddecca806145e \
     file://src/github.com/mendersoftware/mender-artifact/vendor/golang.org/x/sys/LICENSE;md5=5d4950ecb7b26d2c5e4e7b4e0dd74707 \
@@ -64,13 +64,13 @@ LIC_FILES_CHKSUM = " \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/golang/snappy/LICENSE;md5=b8b79c7d4cda128290b98c6a21f9aac6 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/gopkg.in/square/go-jose.v2/json/LICENSE;md5=591778525c869cdde0ab5a1bf283cd81 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/pierrec/lz4/LICENSE;md5=09ece85f3c312a63b522bfc6ebd44943 \
+    file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/klauspost/compress/internal/snapref/LICENSE;md5=b8b79c7d4cda128290b98c6a21f9aac6 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/davecgh/go-spew/LICENSE;md5=c06795ed54b2a35ebeeb543cd3a73e56 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/stretchr/testify/LICENSE;md5=188f01994659f3c0d310612333d2a26f \
-    file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/urfave/cli/LICENSE;md5=c542707ca9fc0b7802407ba62310bd8f \
+    file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/urfave/cli/LICENSE;md5=75d9e324acacf92aca82397b81c225b0 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/sirupsen/logrus/LICENSE;md5=8dadfef729c08ec4e631c4f6fc5d43a0 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/klauspost/pgzip/LICENSE;md5=a6862811c790a468c5d82d68e717c154 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/cpuguy83/go-md2man/v2/LICENSE.md;md5=80794f9009df723bbc6fe19234c9f517 \
-    file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/shurcooL/sanitized_anchor_name/LICENSE;md5=c670c44b8d826e9b7b99077e5c7ba283 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/gopkg.in/yaml.v3/LICENSE;md5=3c91c17266710e16afdbb2b6d15c761c \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/mattn/go-isatty/LICENSE;md5=f509beadd5a11227c27b5d2ad6c9f2c6 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/klauspost/cpuid/v2/LICENSE;md5=00d6f962401947482d082858f7ba2ff3 \
@@ -87,6 +87,7 @@ LIC_FILES_CHKSUM = " \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/armon/go-metrics/LICENSE;md5=d2d77030c0183e3d1e66d26dc1f243be \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/cenkalti/backoff/v3/LICENSE;md5=1571d94433e3f3aa05267efd4dbea68b \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/go-hclog/LICENSE;md5=ec7f605b74b9ad03347d0a93a5cc7eb8 \
+    file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/klauspost/compress/zstd/internal/xxhash/LICENSE.txt;md5=802da049c92a99b4387d3f3d91b00fa9 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/go-secure-stdlib/strutil/LICENSE;md5=65d26fcc2f35ea6a181ac777e42db1ea \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/go-secure-stdlib/parseutil/LICENSE;md5=65d26fcc2f35ea6a181ac777e42db1ea \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/errwrap/LICENSE;md5=b278a92d2c1509760384428817710378 \
@@ -98,12 +99,13 @@ LIC_FILES_CHKSUM = " \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/go-uuid/LICENSE;md5=65d26fcc2f35ea6a181ac777e42db1ea \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/go-plugin/LICENSE;md5=d44fdeb607e2d2614db9464dbedd4094 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/go-sockaddr/LICENSE;md5=9741c346eef56131163e13b9db1241b3 \
-    file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/vault/sdk/LICENSE;md5=65d26fcc2f35ea6a181ac777e42db1ea \
-    file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/vault/api/LICENSE;md5=65d26fcc2f35ea6a181ac777e42db1ea \
+    file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/vault/sdk/LICENSE;md5=bffc21c92b5f3adcbbb06f8e0067e786 \
+    file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/vault/api/LICENSE;md5=bffc21c92b5f3adcbbb06f8e0067e786 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/yamux/LICENSE;md5=2dd1a9ecf92cd5617f128808f9b85b44 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/go-immutable-radix/LICENSE;md5=65d26fcc2f35ea6a181ac777e42db1ea \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/go-multierror/LICENSE;md5=d44fdeb607e2d2614db9464dbedd4094 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/golang-lru/LICENSE;md5=f27a50d2e878867827842f2c60e30bfc \
+    file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/hashicorp/go-secure-stdlib/mlock/LICENSE;md5=65d26fcc2f35ea6a181ac777e42db1ea \
 "
 
 DEPENDS += "xz openssl"

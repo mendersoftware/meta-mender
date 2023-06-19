@@ -8,10 +8,10 @@ require mender-client-go.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=3.4.x"
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=3.3.x"
 
-# Tag: 3.4.0
-SRCREV = "669c0ffe0efa4695c27f2ca118ba38a7113d5ad9"
+# Tag: 3.3.2
+SRCREV = "1229807bea60d08aafeea476329e0fa26f30e923"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
@@ -21,12 +21,10 @@ SRCREV = "669c0ffe0efa4695c27f2ca118ba38a7113d5ad9"
 ################################################################################
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below. Note that for
-# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
-# file.
+# dependencies) are included in the LICENSE variable below.
 LIC_FILES_CHKSUM = " \
-    file://src/github.com/mendersoftware/mender/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87 \
-    file://src/github.com/mendersoftware/mender/vendor/github.com/mendersoftware/mender-artifact/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87 \
+    file://src/github.com/mendersoftware/mender/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
+    file://src/github.com/mendersoftware/mender/vendor/github.com/mendersoftware/mender-artifact/LICENSE;md5=fbe9cd162201401ffbb442445efecfdc \
     file://src/github.com/mendersoftware/mender/vendor/github.com/mendersoftware/openssl/LICENSE;md5=19cbd64715b51267a47bf3750cc6a8a5 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/minio/sha256-simd/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/mendersoftware/progressbar/LICENSE;md5=dcac2e5bf81a6fe99b034aaaaf1b2019 \
@@ -53,7 +51,7 @@ LIC_FILES_CHKSUM = " \
 "
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
 
-DEPENDS = "xz openssl"
-RDEPENDS:${PN} = "liblzma openssl"
+DEPENDS += "xz openssl"
+RDEPENDS:${PN} += "liblzma openssl"
 
 RDEPENDS:${PN} += "mender-artifact-info"
