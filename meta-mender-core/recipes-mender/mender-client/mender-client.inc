@@ -63,12 +63,6 @@ PACKAGECONFIG[inventory-network-scripts] = ",,,"
 PACKAGECONFIG[split-mender-config] = ",,,"
 PACKAGECONFIG:append = " split-mender-config"
 
-_MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
-EXTRA_OEMAKE:append = " TAGS='${_MENDER_TAGS}'"
-# Changes to tags are not automatically picked up by the Makefile, so repopulate
-# the build directory from scratch if changing this.
-do_unpack[vardeps] += "_MENDER_TAGS"
-
 python do_prepare_mender_conf() {
     import json
 

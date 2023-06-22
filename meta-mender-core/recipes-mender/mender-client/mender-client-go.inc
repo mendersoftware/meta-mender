@@ -92,6 +92,12 @@ GO_IMPORT = "github.com/mendersoftware/mender"
 
 GOPTESTBUILDFLAGS:append = " -tags '${_MENDER_TAGS}'"
 
+_MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
+EXTRA_OEMAKE:append = " TAGS='${_MENDER_TAGS}'"
+# Changes to tags are not automatically picked up by the Makefile, so repopulate
+# the build directory from scratch if changing this.
+do_unpack[vardeps] += "_MENDER_TAGS"
+
 do_configure:prepend () {
     # Remove all the src present in build if it is not a symbolic link to ${S}
     if [ -d ${B}/src ]; then
