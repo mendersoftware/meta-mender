@@ -155,6 +155,48 @@ do_prepare_mender_conf[vardeps] = " \
     MENDER_PERSISTENT_CONFIGURATION_VARS \
 "
 
+do_compile:append() {
+    echo "device_type=${MENDER_DEVICE_TYPE}" > ${B}/device_type
+}
+
+do_install:append() {
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-image', 'true', 'false', d)}; then
+        # symlink /var/lib/mender to /data/mender
+        install -m 755 -d ${D}/${localstatedir}/lib
+        ln -s /data/mender ${D}/${localstatedir}/lib/mender
+
+        install -m 755 -d ${D}/data/mender
+    else
+        install -d ${D}/${localstatedir}/lib/mender
+    fi
+
+    install -m 444 ${B}/device_type ${D}${_MENDER_PERSISTENT_DIR}/
+
+    #install our prepared configuration
+    install -d ${D}/${sysconfdir}/mender
+    if [ -f ${B}/transient_mender.conf ]; then
+        install -m 0600 ${B}/transient_mender.conf ${D}/${sysconfdir}/mender/mender.conf
+    fi
+    if [ -f ${B}/persistent_mender.conf ]; then
+        install -m 0600 ${B}/persistent_mender.conf ${D}${_MENDER_PERSISTENT_DIR}/mender.conf
+    fi
+
+    # install artifact verification key, if any.
+    if [ -e ${WORKDIR}/artifact-verify-key.pem ]; then
+        if [ -n "${MENDER_ARTIFACT_VERIFY_KEY}" ]; then
+            bbfatal "You can not specify both MENDER_ARTIFACT_VERIFY_KEY and have artifact-verify-key.pem in SRC_URI."
+        fi
+        install -m 0444 ${WORKDIR}/artifact-verify-key.pem ${D}${sysconfdir}/mender
+    elif [ -n "${MENDER_ARTIFACT_VERIFY_KEY}" ]; then
+        install -m 0444 "${MENDER_ARTIFACT_VERIFY_KEY}" ${D}${sysconfdir}/mender/artifact-verify-key.pem
+    fi
+
+    # Setup blacklist to ensure udev does not automatically mount Mender managed partitions
+    install -d ${D}${sysconfdir}/udev/mount.blacklist.d
+    echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
+    echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
+}
+
 do_install:append:class-target:mender-image:mender-systemd() {
     install -d ${D}${systemd_unitdir}/system/
     install -m 644 ${WORKDIR}/mender-data-dir.service ${D}${systemd_unitdir}/system/mender-data-dir.service

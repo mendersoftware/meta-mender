@@ -109,6 +109,31 @@ do_compile:class-native() {
     true
 }
 
+do_install() {
+    DESTDIR='${D}' cmake_runcmake_build --target install-bin
+    DESTDIR='${D}' cmake_runcmake_build --target install-identity-scripts
+    DESTDIR='${D}' cmake_runcmake_build --target install-systemd
+    if ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'true', 'false', d)}; then
+        DESTDIR='${D}' cmake_runcmake_build --target install-modules
+    fi
+
+    # install inventory scripts
+    DESTDIR='${D}' cmake_runcmake_build --target install-inventory-scripts
+    if ${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', 'true', 'false', d)}; then
+        DESTDIR='${D}' cmake_runcmake_build --target install-inventory-network-scripts
+    fi
+
+    # install dbus files
+    if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
+        # install the D-Bus policy file
+        DESTDIR='${D}' cmake_runcmake_build --target install-dbus
+
+        # install the D-Bus interface file(s)
+        install -d ${D}${datadir}/dbus-1/interface
+        install -m 0644 ${S}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+    fi
+}
+
 do_install:class-native() {
     true
 }
