@@ -56,8 +56,8 @@ FILES:${PN} += "\
     ${datadir}/mender/modules/v3/script \
     ${datadir}/mender/modules/v3/single-file \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
-    /data/mender/device_type \
-    /data/mender/mender.conf \
+    ${_MENDER_PERSISTENT_DIR}/device_type \
+    ${_MENDER_PERSISTENT_DIR}/mender.conf \
 "
 
 FILES:${PN} += "\

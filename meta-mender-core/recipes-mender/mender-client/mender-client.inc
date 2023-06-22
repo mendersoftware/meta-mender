@@ -63,6 +63,9 @@ PACKAGECONFIG[inventory-network-scripts] = ",,,"
 PACKAGECONFIG[split-mender-config] = ",,,"
 PACKAGECONFIG:append = " split-mender-config"
 
+_MENDER_PERSISTENT_DIR = "${localstatedir}/lib/mender"
+_MENDER_PERSISTENT_DIR:mender-image = "/data/mender"
+
 python do_prepare_mender_conf() {
     import json
 
