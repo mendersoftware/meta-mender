@@ -56,8 +56,8 @@ FILES:${PN} += "\
     ${datadir}/mender/modules/v3/script \
     ${datadir}/mender/modules/v3/single-file \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
-    /data/mender/device_type \
-    /data/mender/mender.conf \
+    ${_MENDER_PERSISTENT_DIR}/device_type \
+    ${_MENDER_PERSISTENT_DIR}/mender.conf \
 "
 
 FILES:${PN} += "\
@@ -91,6 +91,12 @@ INSANE_SKIP:${PN}-ptest = "ldflags textrel"
 GO_IMPORT = "github.com/mendersoftware/mender"
 
 GOPTESTBUILDFLAGS:append = " -tags '${_MENDER_TAGS}'"
+
+_MENDER_TAGS = "${@bb.utils.contains('PACKAGECONFIG', 'dbus', '', 'nodbus', d)}"
+EXTRA_OEMAKE:append = " TAGS='${_MENDER_TAGS}'"
+# Changes to tags are not automatically picked up by the Makefile, so repopulate
+# the build directory from scratch if changing this.
+do_unpack[vardeps] += "_MENDER_TAGS"
 
 do_configure:prepend () {
     # Remove all the src present in build if it is not a symbolic link to ${S}
@@ -168,42 +174,6 @@ do_install() {
         install -d ${D}${datadir}/dbus-1/interface
         install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
     fi
-
-    #install our prepared configuration
-    install -d ${D}/${sysconfdir}/mender
-    install -d ${D}/data/mender
-    if [ -f ${B}/transient_mender.conf ]; then
-        install -m 0600 ${B}/transient_mender.conf ${D}/${sysconfdir}/mender/mender.conf
-    fi
-    if [ -f ${B}/persistent_mender.conf ]; then
-        install -m 0600 ${B}/persistent_mender.conf ${D}/data/mender/mender.conf
-    fi
-
-    install -d ${D}/${localstatedir}/lib/mender
-
-    # install artifact verification key, if any.
-    if [ -e ${WORKDIR}/artifact-verify-key.pem ]; then
-        if [ -n "${MENDER_ARTIFACT_VERIFY_KEY}" ]; then
-            bbfatal "You can not specify both MENDER_ARTIFACT_VERIFY_KEY and have artifact-verify-key.pem in SRC_URI."
-        fi
-        install -m 0444 ${WORKDIR}/artifact-verify-key.pem ${D}${sysconfdir}/mender
-    elif [ -n "${MENDER_ARTIFACT_VERIFY_KEY}" ]; then
-        install -m 0444 "${MENDER_ARTIFACT_VERIFY_KEY}" ${D}${sysconfdir}/mender/artifact-verify-key.pem
-    fi
-
-    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-image', 'true', 'false', d)}; then
-        # symlink /var/lib/mender to /data/mender
-        rm -rf ${D}/${localstatedir}/lib/mender
-        ln -s /data/mender ${D}/${localstatedir}/lib/mender
-
-        install -m 755 -d ${D}/data/mender
-        install -m 444 ${B}/device_type ${D}/data/mender/
-    fi
-
-    # Setup blacklist to ensure udev does not automatically mount Mender managed partitions
-    install -d ${D}${sysconfdir}/udev/mount.blacklist.d
-    echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
-    echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
 }
 
 # Native overrides, installing scripts for package mender-modules-gen

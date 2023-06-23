@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2022 Northern.tech AS
+# Copyright 2023 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -150,7 +150,9 @@ def wait_for_state(connection, state_to_wait_for):
     return log
 
 
+@pytest.mark.cross_platform
 class TestUpdateControl:
+
     test_update_control_maps_cases = [
         {
             "name": "Empty map",

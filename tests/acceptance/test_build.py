@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2022 Northern.tech AS
+# Copyright 2023 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ def extract_partition(img, number, dstdir):
 
 
 class TestBuild:
+    @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("1.0.0")
     def test_default_server_certificate(self):
         """Test that the md5sum we have on record matches the server certificate.
@@ -81,6 +82,7 @@ class TestBuild:
             shell=True,
         )
 
+    @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("2.5.0")
     def test_certificate_split(self, request, bitbake_image, prepared_test_build):
         """Test that the certificate added in the mender-server-certificate
@@ -165,6 +167,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         os.close(original)
         os.close(embedded)
 
+    @pytest.mark.cross_platform
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.0.0")
     def test_image_rootfs_extra_space(
@@ -189,6 +192,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             == int(bitbake_variables["MENDER_CALC_ROOTFS_SIZE"]) * 1024
         )
 
+    @pytest.mark.cross_platform
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.0.0")
     def test_tenant_token(self, request, prepared_test_build, bitbake_image):
@@ -204,7 +208,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             ],
         )
 
-        built_rootfs = latest_build_artifact(
+        built_dataimg = latest_build_artifact(
             request, prepared_test_build["build_dir"], "core-image*.dataimg"
         )
 
@@ -214,13 +218,14 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                     "debugfs",
                     "-R",
                     f"dump -p /etc/mender/mender.conf {mender_conf.name}",
-                    built_rootfs,
+                    built_dataimg,
                 ]
             )
 
             data = json.load(mender_conf)
             assert data["TenantToken"] == "authtentoken"
 
+    @pytest.mark.cross_platform
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.1.0")
     def test_artifact_signing_keys(
@@ -232,7 +237,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         bitbake_image,
     ):
         """Test that MENDER_ARTIFACT_SIGNING_KEY and MENDER_ARTIFACT_VERIFY_KEY
-        works correctly."""
+        work correctly."""
 
         build_image(
             prepared_test_build["build_dir"],
@@ -269,6 +274,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             ).decode()
             assert output.find("Signature: signed and verified correctly") >= 0
 
+    @pytest.mark.cross_platform
     @pytest.mark.only_with_image("ext4", "ext3", "ext2")
     @pytest.mark.min_mender_version("1.2.0")
     def test_state_scripts(
@@ -405,6 +411,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                 target="-c clean example-state-scripts",
             )
 
+    @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("1.0.0")
     # The extra None elements are to check for no preferred version,
     # e.g. latest.
@@ -435,8 +442,8 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
     )
     def test_preferred_versions(self, prepared_test_build, recipe, version):
         """Most CI builds build with PREFERRED_VERSION set, because we want to
-        build from a specific SHA. This test tests that we can change that or
-        turn it off and the build still works."""
+        build from a specific SHA. Test that we can change that or turn it off
+        and the build still works."""
 
         old_file = get_local_conf_orig_path(prepared_test_build["build_dir"])
         new_file = get_local_conf_path(prepared_test_build["build_dir"])
@@ -480,6 +487,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             )
             run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
 
+    @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("1.1.0")
     def test_multiple_device_types_compatible(
         self,
@@ -489,7 +497,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         bitbake_variables,
         bitbake_image,
     ):
-        """Tests that we can include multiple device_types in the artifact."""
+        """Test that we can include multiple device_types in the artifact."""
 
         build_image(
             prepared_test_build["build_dir"],
@@ -590,7 +598,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
     def test_various_mtd_combinations(
         self, request, test_case_name, test_case, prepared_test_build, bitbake_image
     ):
-        """Tests that we can build with various combinations of MTD variables,
+        """Test that we can build with various combinations of MTD variables,
         and that they receive the correct values."""
 
         try:
@@ -616,8 +624,8 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
     def test_boot_partition_population(
         self, request, prepared_test_build, bitbake_path, bitbake_image
     ):
-        # Notice in particular a mix of tabs, newlines and spaces. All there to
-        # check that whitespace it treated correctly.
+        """Test IMAGE_BOOT_FILES population in the boot partition. Notice in particular a mix of
+        tabs, newlines and spaces. All there to check that whitespace it treated correctly."""
 
         build_image(
             prepared_test_build["build_dir"],
@@ -685,6 +693,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             except subprocess.CalledProcessError:
                 pass
 
+    @pytest.mark.cross_platform
     @pytest.mark.only_with_image("sdimg", "uefiimg")
     @pytest.mark.min_mender_version("2.0.0")
     def test_module_install(
@@ -769,6 +778,12 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                     ]
                 )
 
+        def _maybe_check_bootstrap_artifact(mender_artifact, expect_present):
+            if version_is_minimum(mender_vars, "mender-client", "3.5.0"):
+                _check_update_modules_provided_in_artifact(
+                    mender_artifact, expect_present
+                )
+
         original_rootfs = latest_build_artifact(
             request, os.environ["BUILDDIR"], "core-image*.ext[234]"
         )
@@ -782,15 +797,11 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         if originally_on:
             _check_update_modules_present_in_filesystem(original_rootfs, True)
             _check_update_modules_provided_in_artifact(original_artifact, True)
-            _check_update_modules_provided_in_artifact(
-                original_bootstrap_artifact, True
-            )
+            _maybe_check_bootstrap_artifact(original_bootstrap_artifact, True)
         else:
             _check_update_modules_present_in_filesystem(original_rootfs, False)
             _check_update_modules_provided_in_artifact(original_artifact, False)
-            _check_update_modules_provided_in_artifact(
-                original_bootstrap_artifact, False
-            )
+            _maybe_check_bootstrap_artifact(original_bootstrap_artifact, False)
 
         if originally_on:
             build_image(
@@ -820,11 +831,11 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         if originally_on:
             _check_update_modules_present_in_filesystem(new_rootfs, False)
             _check_update_modules_provided_in_artifact(new_artifact, False)
-            _check_update_modules_provided_in_artifact(new_bootstrap_artifact, False)
+            _maybe_check_bootstrap_artifact(new_bootstrap_artifact, False)
         else:
             _check_update_modules_present_in_filesystem(new_rootfs, True)
             _check_update_modules_provided_in_artifact(new_artifact, True)
-            _check_update_modules_provided_in_artifact(new_bootstrap_artifact, True)
+            _maybe_check_bootstrap_artifact(new_bootstrap_artifact, True)
 
     @pytest.mark.only_with_image("sdimg", "uefiimg", "gptimg", "biosimg")
     @pytest.mark.min_mender_version("1.0.0")
@@ -1064,6 +1075,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         ),
     ]
 
+    @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("2.3.0")
     @pytest.mark.parametrize("dependsprovides", test_cases)
     def test_build_artifact_depends_and_provides(
@@ -1110,6 +1122,8 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     def test_extra_parts(
         self, request, latest_part_image, prepared_test_build, bitbake_image
     ):
+        """Test extra partitions setup with MENDER_EXTRA_PARTS and MENDER_EXTRA_PARTS_FSTAB."""
+
         sdimg = latest_part_image.endswith(".sdimg")
         uefiimg = latest_part_image.endswith(".uefiimg")
         gptimg = latest_part_image.endswith(".gptimg")
@@ -1218,6 +1232,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         assert re.search(test3_re, fstab, flags=re.MULTILINE) is not None
         assert re.search(test4_re, fstab, flags=re.MULTILINE) is not None
 
+    @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("1.0.0")
     def test_build_nodbus(self, request, prepared_test_build, bitbake_path):
         """Test that we can remove dbus from PACKAGECONFIG, and that this causes the
@@ -1272,6 +1287,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 target="-c clean mender-client",
             )
 
+    @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("2.5.0")
     @pytest.mark.only_with_image("ext4")
     def test_mender_inventory_network_scripts(
@@ -1332,12 +1348,13 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             b"mender-inventory-geo" not in output
         ), "mender-inventory-network-scripts unexpectedly a part of the image"
 
+    @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("2.7.0")
     def test_mender_dbus_interface_file(
         self, request, prepared_test_build, bitbake_image, bitbake_path
     ):
         """
-        Test the D-Bus interface file is provided by the mender-client-dev package,
+        Test that the D-Bus interface files are provided by the mender-client-dev package,
         but not installed by default.
         """
 
