@@ -1,0 +1,6 @@
+pytest==7.2.1
+pytest-html==3.2.0
+pytest-metadata==2.0.4
+pytest-xdist==3.1.0
+redo==2.0.4
+requests==2.28.1
