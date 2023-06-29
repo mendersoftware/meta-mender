@@ -1,6 +1,9 @@
+filelock==3.9.0
 pytest==7.4.0
 pytest-html==3.2.0
 pytest-metadata==2.0.4
 pytest-xdist==3.1.0
+python-lzo==1.14
 redo==2.0.4
 requests==2.28.1
+ubi-reader==0.8.5
