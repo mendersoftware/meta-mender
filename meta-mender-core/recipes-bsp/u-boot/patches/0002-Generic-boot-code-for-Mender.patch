@@ -1,9 +1,11 @@
-From 1776a242f977c9137e555f32396b6a4bdb7411fd Mon Sep 17 00:00:00 2001
+From bd2470924874a0453893713f19fbab06e92d26f6 Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@northern.tech>
 Date: Tue, 21 Apr 2020 12:54:15 +0200
-Subject: [PATCH 2/4] Generic boot code for Mender.
+Subject: [PATCH] Generic boot code for Mender.
 
+Upstream-Status: Inappropriate
 Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+
 ---
  include/config_mender.h |  98 +++++++++++++++++++++++++
  include/env_mender.h    | 156 ++++++++++++++++++++++++++++++++++++++++
@@ -277,6 +279,3 @@ index 0000000000..261775afd5
 +#endif /* !MENDER_AUTO_PROBING */
 +
 +#endif /* HEADER_ENV_MENDER_H */
--- 
-2.17.1
-

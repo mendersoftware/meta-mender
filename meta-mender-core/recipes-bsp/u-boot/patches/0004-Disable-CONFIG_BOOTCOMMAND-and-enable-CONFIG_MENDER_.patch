@@ -4,6 +4,7 @@ Date: Mon, 28 Aug 2017 18:12:37 +0200
 Subject: [PATCH 4/4] Disable CONFIG_BOOTCOMMAND and enable
  CONFIG_MENDER_BOOTCOMMAND.
 
+Upstream-Status: Inappropriate
 Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
 ---
  include/env_default.h | 4 ++--
