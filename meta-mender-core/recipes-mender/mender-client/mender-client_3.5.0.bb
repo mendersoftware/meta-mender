@@ -8,10 +8,10 @@ require mender-client.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=3.4.x"
+SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=3.5.x"
 
-# Tag: 3.4.0
-SRCREV = "669c0ffe0efa4695c27f2ca118ba38a7113d5ad9"
+# Tag: 3.5.0
+SRCREV = "405cac1ff1b9d9f6cfe99218c0b58f6958ecc971"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
@@ -25,8 +25,8 @@ SRCREV = "669c0ffe0efa4695c27f2ca118ba38a7113d5ad9"
 # releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
 # file.
 LIC_FILES_CHKSUM = " \
-    file://src/github.com/mendersoftware/mender/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87 \
-    file://src/github.com/mendersoftware/mender/vendor/github.com/mendersoftware/mender-artifact/LICENSE;md5=4cd0c347af5bce5ccf3b3d5439a2ea87 \
+    file://src/github.com/mendersoftware/mender/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
+    file://src/github.com/mendersoftware/mender/vendor/github.com/mendersoftware/mender-artifact/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/mendersoftware/openssl/LICENSE;md5=19cbd64715b51267a47bf3750cc6a8a5 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/minio/sha256-simd/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/mendersoftware/progressbar/LICENSE;md5=dcac2e5bf81a6fe99b034aaaaf1b2019 \
@@ -41,6 +41,8 @@ LIC_FILES_CHKSUM = " \
     file://src/github.com/mendersoftware/mender/vendor/golang.org/x/term/LICENSE;md5=5d4950ecb7b26d2c5e4e7b4e0dd74707 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/davecgh/go-spew/LICENSE;md5=c06795ed54b2a35ebeeb543cd3a73e56 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/klauspost/pgzip/LICENSE;md5=a6862811c790a468c5d82d68e717c154 \
+    file://src/github.com/mendersoftware/mender/vendor/github.com/klauspost/compress/internal/snapref/LICENSE;md5=b8b79c7d4cda128290b98c6a21f9aac6 \
+    file://src/github.com/mendersoftware/mender/vendor/github.com/klauspost/compress/zstd/internal/xxhash/LICENSE.txt;md5=802da049c92a99b4387d3f3d91b00fa9 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/klauspost/cpuid/v2/LICENSE;md5=00d6f962401947482d082858f7ba2ff3 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/sirupsen/logrus/LICENSE;md5=8dadfef729c08ec4e631c4f6fc5d43a0 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/stretchr/testify/LICENSE;md5=188f01994659f3c0d310612333d2a26f \
@@ -55,5 +57,3 @@ LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8"
 
 DEPENDS = "xz openssl"
 RDEPENDS:${PN} = "liblzma openssl"
-
-RDEPENDS:${PN} += "mender-artifact-info"
