@@ -1,6 +1,6 @@
-From 8833262deabd64bbc85cbfd0bf2d7a0cfa2af471 Mon Sep 17 00:00:00 2001
-From: Mirza Krak <mirza.krak@gmail.com>
-Date: Tue, 26 Sep 2017 06:23:52 -0400
+From b56f5c0681c876735be24b5cda6f719187903eb3 Mon Sep 17 00:00:00 2001
+From: Josef Holzmayr <jester@theyoctojester.info>
+Date: Wed, 26 Jul 2023 10:53:51 +0200
 Subject: [PATCH] configs: rpi: enable mender requirements
 
 Which are CONFIG_BOOTCOUNT_ENV and CONFIG_BOOTCOUNT_LIMIT.
@@ -8,11 +8,18 @@ Which are CONFIG_BOOTCOUNT_ENV and CONFIG_BOOTCOUNT_LIMIT.
 Mender also requires that the environment is on MMC
 (CONFIG_ENV_IS_IN_MMC)
 
+Upstream-Status: Inappropriate
 Signed-off-by: Mirza Krak <mirza.krak@gmail.com>
 Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
+Signed-off-by: Josef Holzmayr <jester@theyoctojester.info>
+
+This patch is a refresh.
+
+Signed-off-by: Josef Holzmayr <jester@theyoctojester.info>
+
 ---
  configs/rpi_0_w_defconfig      | 6 +++++-
- configs/rpi_2_defconfig        | 6 +++++-
+ configs/rpi_2_defconfig        | 2 +-
  configs/rpi_3_32b_defconfig    | 6 +++++-
  configs/rpi_3_b_plus_defconfig | 6 +++++-
  configs/rpi_3_defconfig        | 6 +++++-
@@ -22,13 +29,15 @@ Signed-off-by: Drew Moseley <drew.moseley@northern.tech>
  configs/rpi_defconfig          | 6 +++++-
  env/Kconfig                    | 1 -
  include/configs/rpi.h          | 3 +++
- 11 files changed, 45 insertions(+), 10 deletions(-)
+ mender_Kconfig_fragment        | 5 +++++
+ 12 files changed, 46 insertions(+), 10 deletions(-)
+ create mode 100644 mender_Kconfig_fragment
 
 diff --git a/configs/rpi_0_w_defconfig b/configs/rpi_0_w_defconfig
-index b9ac5fbbce..f49cd45943 100644
+index 5da334a8bc..3215f79b38 100644
 --- a/configs/rpi_0_w_defconfig
 +++ b/configs/rpi_0_w_defconfig
-@@ -18,7 +18,7 @@ CONFIG_CMD_MMC=y
+@@ -25,7 +25,7 @@ CONFIG_CMD_MMC=y
  CONFIG_CMD_USB=y
  CONFIG_CMD_FS_UUID=y
  CONFIG_OF_EMBED=y
@@ -36,20 +45,31 @@ index b9ac5fbbce..f49cd45943 100644
 +CONFIG_DEFAULT_DEVICE_TREE="bcm2835-rpi-zero-w"
  CONFIG_SYS_RELOC_GD_ENV_ADDR=y
  CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
- CONFIG_MMC_SDHCI=y
-@@ -41,3 +41,7 @@ CONFIG_CONSOLE_SCROLL_LINES=10
+ CONFIG_TFTP_TSIZE=y
+@@ -50,3 +50,7 @@ CONFIG_VIDEO_BCM2835=y
+ CONFIG_CONSOLE_SCROLL_LINES=10
  CONFIG_PHYS_TO_BUS=y
- CONFIG_OF_LIBFDT_OVERLAY=y
  CONFIG_EFI_LOADER=y
 +CONFIG_ENV_IS_IN_MMC=y
 +CONFIG_ENV_OFFSET=0x800000
 +CONFIG_ENV_OFFSET_REDUND=0x1000000
 +CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
 diff --git a/configs/rpi_2_defconfig b/configs/rpi_2_defconfig
-index 2b73619383..6857ee7d8b 100644
+index 9908621607..c7b9939762 100644
 --- a/configs/rpi_2_defconfig
 +++ b/configs/rpi_2_defconfig
-@@ -18,7 +18,7 @@ CONFIG_CMD_MMC=y
+@@ -12,6 +12,10 @@ CONFIG_ENV_SIZE=0x4000
+ CONFIG_DEFAULT_DEVICE_TREE="bcm2836-rpi-2-b"
+ CONFIG_SYS_PROMPT="U-Boot> "
+ CONFIG_OF_LIBFDT_OVERLAY=y
++CONFIG_ENV_IS_IN_MMC=y
++CONFIG_ENV_OFFSET=0x800000
++CONFIG_ENV_OFFSET_REDUND=0x1000000
++CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
+ CONFIG_SYS_LOAD_ADDR=0x1000000
+ CONFIG_OF_BOARD_SETUP=y
+ CONFIG_DISTRO_DEFAULTS=y
+@@ -26,7 +26,7 @@ CONFIG_CMD_MMC=y
  CONFIG_CMD_USB=y
  CONFIG_CMD_FS_UUID=y
  CONFIG_OF_EMBED=y
@@ -57,20 +77,23 @@ index 2b73619383..6857ee7d8b 100644
 +CONFIG_DEFAULT_DEVICE_TREE="bcm2836-rpi-2-b"
  CONFIG_SYS_RELOC_GD_ENV_ADDR=y
  CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
- CONFIG_MMC_SDHCI=y
-@@ -40,3 +40,7 @@ CONFIG_SYS_WHITE_ON_BLACK=y
- CONFIG_CONSOLE_SCROLL_LINES=10
- CONFIG_PHYS_TO_BUS=y
+ CONFIG_TFTP_TSIZE=y
+diff --git a/configs/rpi_3_32b_defconfig b/configs/rpi_3_32b_defconfig
+index 80885aa948..ad84577bf1 100644
+--- a/configs/rpi_3_32b_defconfig
++++ b/configs/rpi_3_32b_defconfig
+@@ -11,6 +11,10 @@ CONFIG_ENV_SIZE=0x4000
+ CONFIG_DEFAULT_DEVICE_TREE="bcm2837-rpi-3-b"
+ CONFIG_SYS_PROMPT="U-Boot> "
  CONFIG_OF_LIBFDT_OVERLAY=y
 +CONFIG_ENV_IS_IN_MMC=y
 +CONFIG_ENV_OFFSET=0x800000
 +CONFIG_ENV_OFFSET_REDUND=0x1000000
 +CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
-diff --git a/configs/rpi_3_32b_defconfig b/configs/rpi_3_32b_defconfig
-index f4fdb455f4..0aec385bf7 100644
---- a/configs/rpi_3_32b_defconfig
-+++ b/configs/rpi_3_32b_defconfig
-@@ -19,7 +19,7 @@ CONFIG_CMD_MMC=y
+ CONFIG_SYS_LOAD_ADDR=0x1000000
+ CONFIG_OF_BOARD_SETUP=y
+ CONFIG_DISTRO_DEFAULTS=y
+@@ -25,7 +29,7 @@ CONFIG_CMD_MMC=y
  CONFIG_CMD_USB=y
  CONFIG_CMD_FS_UUID=y
  CONFIG_OF_EMBED=y
@@ -78,20 +101,23 @@ index f4fdb455f4..0aec385bf7 100644
 +CONFIG_DEFAULT_DEVICE_TREE="bcm2837-rpi-3-b"
  CONFIG_SYS_RELOC_GD_ENV_ADDR=y
  CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
- CONFIG_MMC_SDHCI=y
-@@ -43,3 +43,7 @@ CONFIG_SYS_WHITE_ON_BLACK=y
- CONFIG_CONSOLE_SCROLL_LINES=10
- CONFIG_PHYS_TO_BUS=y
+ CONFIG_TFTP_TSIZE=y
+diff --git a/configs/rpi_3_b_plus_defconfig b/configs/rpi_3_b_plus_defconfig
+index 0acce8b883..6a242e3c03 100644
+--- a/configs/rpi_3_b_plus_defconfig
++++ b/configs/rpi_3_b_plus_defconfig
+@@ -10,6 +10,10 @@ CONFIG_ENV_SIZE=0x4000
+ CONFIG_DEFAULT_DEVICE_TREE="bcm2837-rpi-3-b-plus"
+ CONFIG_SYS_PROMPT="U-Boot> "
  CONFIG_OF_LIBFDT_OVERLAY=y
 +CONFIG_ENV_IS_IN_MMC=y
 +CONFIG_ENV_OFFSET=0x800000
 +CONFIG_ENV_OFFSET_REDUND=0x1000000
 +CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
-diff --git a/configs/rpi_3_b_plus_defconfig b/configs/rpi_3_b_plus_defconfig
-index ccdabcb9ee..6d654fc00b 100644
---- a/configs/rpi_3_b_plus_defconfig
-+++ b/configs/rpi_3_b_plus_defconfig
-@@ -19,7 +19,7 @@ CONFIG_CMD_MMC=y
+ CONFIG_SYS_LOAD_ADDR=0x1000000
+ CONFIG_OF_BOARD_SETUP=y
+ CONFIG_DISTRO_DEFAULTS=y
+@@ -24,7 +28,7 @@ CONFIG_CMD_MMC=y
  CONFIG_CMD_USB=y
  CONFIG_CMD_FS_UUID=y
  CONFIG_OF_EMBED=y
@@ -99,20 +125,23 @@ index ccdabcb9ee..6d654fc00b 100644
 +CONFIG_DEFAULT_DEVICE_TREE="bcm2837-rpi-3-b-plus"
  CONFIG_SYS_RELOC_GD_ENV_ADDR=y
  CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
- CONFIG_MMC_SDHCI=y
-@@ -43,3 +43,7 @@ CONFIG_SYS_WHITE_ON_BLACK=y
- CONFIG_CONSOLE_SCROLL_LINES=10
- CONFIG_PHYS_TO_BUS=y
+ CONFIG_TFTP_TSIZE=y
+diff --git a/configs/rpi_3_defconfig b/configs/rpi_3_defconfig
+index bb6fe12806..9a483bc9c5 100644
+--- a/configs/rpi_3_defconfig
++++ b/configs/rpi_3_defconfig
+@@ -10,6 +10,10 @@ CONFIG_ENV_SIZE=0x4000
+ CONFIG_DEFAULT_DEVICE_TREE="bcm2837-rpi-3-b"
+ CONFIG_SYS_PROMPT="U-Boot> "
  CONFIG_OF_LIBFDT_OVERLAY=y
 +CONFIG_ENV_IS_IN_MMC=y
 +CONFIG_ENV_OFFSET=0x800000
 +CONFIG_ENV_OFFSET_REDUND=0x1000000
 +CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
-diff --git a/configs/rpi_3_defconfig b/configs/rpi_3_defconfig
-index 3a8ca5f2e5..681d575eb4 100644
---- a/configs/rpi_3_defconfig
-+++ b/configs/rpi_3_defconfig
-@@ -19,7 +19,7 @@ CONFIG_CMD_MMC=y
+ CONFIG_SYS_LOAD_ADDR=0x1000000
+ CONFIG_OF_BOARD_SETUP=y
+ CONFIG_DISTRO_DEFAULTS=y
+@@ -24,7 +28,7 @@ CONFIG_CMD_MMC=y
  CONFIG_CMD_USB=y
  CONFIG_CMD_FS_UUID=y
  CONFIG_OF_EMBED=y
@@ -120,80 +149,81 @@ index 3a8ca5f2e5..681d575eb4 100644
 +CONFIG_DEFAULT_DEVICE_TREE="bcm2837-rpi-3-b"
  CONFIG_SYS_RELOC_GD_ENV_ADDR=y
  CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
- CONFIG_MMC_SDHCI=y
-@@ -43,3 +43,7 @@ CONFIG_SYS_WHITE_ON_BLACK=y
- CONFIG_CONSOLE_SCROLL_LINES=10
- CONFIG_PHYS_TO_BUS=y
- CONFIG_OF_LIBFDT_OVERLAY=y
-+CONFIG_ENV_IS_IN_MMC=y
-+CONFIG_ENV_OFFSET=0x800000
-+CONFIG_ENV_OFFSET_REDUND=0x1000000
-+CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
+ CONFIG_TFTP_TSIZE=y
 diff --git a/configs/rpi_4_32b_defconfig b/configs/rpi_4_32b_defconfig
-index 47ea466454..5cf272a140 100644
+index f621334097..ce96867b79 100644
 --- a/configs/rpi_4_32b_defconfig
 +++ b/configs/rpi_4_32b_defconfig
-@@ -19,7 +19,6 @@ CONFIG_CMD_PCI=y
- CONFIG_CMD_USB=y
- CONFIG_CMD_FS_UUID=y
- CONFIG_OF_BOARD=y
--CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
- CONFIG_SYS_RELOC_GD_ENV_ADDR=y
- CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
- CONFIG_DM_DMA=y
-@@ -59,3 +58,7 @@ CONFIG_PHYS_TO_BUS=y
- CONFIG_ADDR_MAP=y
- CONFIG_SYS_NUM_ADDR_MAP=2
+@@ -8,6 +8,10 @@ CONFIG_ENV_SIZE=0x4000
+ CONFIG_DEFAULT_DEVICE_TREE="bcm2711-rpi-4-b"
+ CONFIG_SYS_PROMPT="U-Boot> "
  CONFIG_OF_LIBFDT_OVERLAY=y
 +CONFIG_ENV_IS_IN_MMC=y
 +CONFIG_ENV_OFFSET=0x800000
 +CONFIG_ENV_OFFSET_REDUND=0x1000000
 +CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
+ CONFIG_DM_RESET=y
+ CONFIG_SYS_LOAD_ADDR=0x1000000
+ CONFIG_PCI=y
+@@ -26,7 +30,6 @@ CONFIG_CMD_MMC=y
+ CONFIG_CMD_PCI=y
+ CONFIG_CMD_USB=y
+ CONFIG_CMD_FS_UUID=y
+-CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
+ CONFIG_SYS_RELOC_GD_ENV_ADDR=y
+ CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
+ CONFIG_TFTP_TSIZE=y
 diff --git a/configs/rpi_4_defconfig b/configs/rpi_4_defconfig
-index 9cd1477107..697ccefe8d 100644
+index bbc0fd6c64..ec6574403a 100644
 --- a/configs/rpi_4_defconfig
 +++ b/configs/rpi_4_defconfig
-@@ -19,7 +19,6 @@ CONFIG_CMD_PCI=y
+@@ -8,6 +8,10 @@ CONFIG_ENV_SIZE=0x4000
+ CONFIG_DEFAULT_DEVICE_TREE="bcm2711-rpi-4-b"
+ CONFIG_SYS_PROMPT="U-Boot> "
+ CONFIG_OF_LIBFDT_OVERLAY=y
++CONFIG_ENV_IS_IN_MMC=y
++CONFIG_ENV_OFFSET=0x800000
++CONFIG_ENV_OFFSET_REDUND=0x1000000
++CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
+ CONFIG_DM_RESET=y
+ CONFIG_SYS_LOAD_ADDR=0x1000000
+ CONFIG_PCI=y
+@@ -26,7 +30,6 @@ CONFIG_CMD_MMC=y
+ CONFIG_CMD_PCI=y
  CONFIG_CMD_USB=y
  CONFIG_CMD_FS_UUID=y
- CONFIG_OF_BOARD=y
 -CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
  CONFIG_SYS_RELOC_GD_ENV_ADDR=y
  CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
- CONFIG_DM_DMA=y
-@@ -57,3 +56,7 @@ CONFIG_SYS_WHITE_ON_BLACK=y
- CONFIG_CONSOLE_SCROLL_LINES=10
- CONFIG_PHYS_TO_BUS=y
- CONFIG_OF_LIBFDT_OVERLAY=y
-+CONFIG_ENV_IS_IN_MMC=y
-+CONFIG_ENV_OFFSET=0x800000
-+CONFIG_ENV_OFFSET_REDUND=0x1000000
-+CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
+ CONFIG_TFTP_TSIZE=y
 diff --git a/configs/rpi_arm64_defconfig b/configs/rpi_arm64_defconfig
-index aeef34c4de..a8d18698fa 100644
+index 5d9a273cb9..4f9f765926 100644
 --- a/configs/rpi_arm64_defconfig
 +++ b/configs/rpi_arm64_defconfig
-@@ -18,7 +18,6 @@ CONFIG_CMD_PCI=y
- CONFIG_CMD_USB=y
- CONFIG_CMD_FS_UUID=y
- CONFIG_OF_BOARD=y
--CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
- CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
- CONFIG_DM_DMA=y
- CONFIG_MMC_SDHCI=y
-@@ -51,3 +50,7 @@ CONFIG_SYS_WHITE_ON_BLACK=y
- CONFIG_CONSOLE_SCROLL_LINES=10
- CONFIG_PHYS_TO_BUS=y
+@@ -8,6 +8,10 @@ CONFIG_ENV_SIZE=0x4000
+ CONFIG_DEFAULT_DEVICE_TREE="bcm2711-rpi-4-b"
+ CONFIG_SYS_PROMPT="U-Boot> "
  CONFIG_OF_LIBFDT_OVERLAY=y
 +CONFIG_ENV_IS_IN_MMC=y
 +CONFIG_ENV_OFFSET=0x800000
 +CONFIG_ENV_OFFSET_REDUND=0x1000000
 +CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
+ CONFIG_DM_RESET=y
+ CONFIG_SYS_LOAD_ADDR=0x1000000
+ CONFIG_PCI=y
+@@ -25,7 +29,6 @@ CONFIG_CMD_MMC=y
+ CONFIG_CMD_PCI=y
+ CONFIG_CMD_USB=y
+ CONFIG_CMD_FS_UUID=y
+-CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
+ CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
+ CONFIG_TFTP_TSIZE=y
+ CONFIG_DM_DMA=y
 diff --git a/configs/rpi_defconfig b/configs/rpi_defconfig
-index 5bfb81e02e..00b7a5ecd6 100644
+index 550b8dcb95..f6620582ef 100644
 --- a/configs/rpi_defconfig
 +++ b/configs/rpi_defconfig
-@@ -18,7 +18,7 @@ CONFIG_CMD_MMC=y
+@@ -25,7 +25,7 @@ CONFIG_CMD_MMC=y
  CONFIG_CMD_USB=y
  CONFIG_CMD_FS_UUID=y
  CONFIG_OF_EMBED=y
@@ -201,20 +231,20 @@ index 5bfb81e02e..00b7a5ecd6 100644
 +CONFIG_DEFAULT_DEVICE_TREE="bcm2835-rpi-b"
  CONFIG_SYS_RELOC_GD_ENV_ADDR=y
  CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
- CONFIG_MMC_SDHCI=y
-@@ -41,3 +41,7 @@ CONFIG_CONSOLE_SCROLL_LINES=10
+ CONFIG_TFTP_TSIZE=y
+@@ -50,3 +50,7 @@ CONFIG_VIDEO_BCM2835=y
+ CONFIG_CONSOLE_SCROLL_LINES=10
  CONFIG_PHYS_TO_BUS=y
- CONFIG_OF_LIBFDT_OVERLAY=y
  CONFIG_EFI_LOADER=y
 +CONFIG_ENV_IS_IN_MMC=y
 +CONFIG_ENV_OFFSET=0x800000
 +CONFIG_ENV_OFFSET_REDUND=0x1000000
 +CONFIG_SYS_REDUNDAND_ENVIRONMENT=y
 diff --git a/env/Kconfig b/env/Kconfig
-index 1411f9e815..43e87329d8 100644
+index 2bbe4c466a..f8c0ac20a1 100644
 --- a/env/Kconfig
 +++ b/env/Kconfig
-@@ -61,7 +61,6 @@ config ENV_IS_IN_EEPROM
+@@ -93,7 +93,6 @@ config ENV_IS_IN_EEPROM
  config ENV_IS_IN_FAT
  	bool "Environment is in a FAT filesystem"
  	depends on !CHAIN_OF_TRUST
@@ -223,19 +253,16 @@ index 1411f9e815..43e87329d8 100644
  	default y if MMC_OMAP_HS && TI_COMMON_CMD_OPTIONS
  	select FS_FAT
 diff --git a/include/configs/rpi.h b/include/configs/rpi.h
-index 834f1cd236..9265cc28c5 100644
+index 4da982f735..79c1a15fa4 100644
 --- a/include/configs/rpi.h
 +++ b/include/configs/rpi.h
-@@ -97,6 +97,9 @@
+@@ -56,6 +56,9 @@
+ 
  /* Environment */
- #define CONFIG_SYS_LOAD_ADDR		0x1000000
  
 +#define CONFIG_BOOTCOUNT_ENV
 +#define CONFIG_BOOTCOUNT_LIMIT
 +
  /* Shell */
  
- /* ATAGs support for bootm/bootz */
--- 
-2.35.1
-
+ /* Environment */
