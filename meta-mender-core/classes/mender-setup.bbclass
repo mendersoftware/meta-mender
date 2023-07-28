@@ -234,7 +234,7 @@ IMAGE_CLASSES += "mender-artifactimg \
                   mender-artifact-uefi-capsule \
                   mender-bootimg \
                   mender-dataimg \
-                  mender-datatar
+                  mender-datatar \
                   mender-part-images \
                   mender-ubimg"
 
