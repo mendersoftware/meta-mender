@@ -14,13 +14,12 @@ MENDER_UBOOT_AUTO_CONFIGURE ??= "${@bb.utils.contains('MENDER_FEATURES', 'mender
 ################################################################################
 FILESEXTRAPATHS:prepend := "${THISDIR}/patches:${THISDIR}/files:"
 
-SRC_URI:append:mender-uboot = " file://0001-Add-missing-header-which-fails-on-recent-GCC.patch"
-SRC_URI:append:mender-uboot = " file://0002-Generic-boot-code-for-Mender.patch"
-SRC_URI:append:mender-uboot = " file://0003-Integration-of-Mender-boot-code-into-U-Boot.patch"
+SRC_URI:append:mender-uboot = " file://0001-Generic-boot-code-for-Mender.patch"
+SRC_URI:append:mender-uboot = " file://0002-Integration-of-Mender-boot-code-into-U-Boot.patch"
 
 SRC_URI:append:mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
                                                     '1', \
-                                                    ' file://0004-Disable-CONFIG_BOOTCOMMAND-and-enable-CONFIG_MENDER_.patch', \
+                                                    ' file://0003-Disable-CONFIG_BOOTCOMMAND-and-enable-CONFIG_MENDER_.patch', \
                                                     '', \
                                                     d)}"
 
