@@ -1,4 +1,4 @@
-filelock==3.9.0
+filelock==3.12.2
 pytest==7.4.0
 pytest-html==3.2.0
 pytest-metadata==2.0.4
