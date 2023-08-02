@@ -16,6 +16,8 @@ idna==3.4
     # via requests
 iniconfig==2.0.0
     # via pytest
+lzallright==0.2.3
+    # via ubi-reader
 packaging==23.1
     # via pytest
 pluggy==1.2.0
@@ -42,7 +44,7 @@ redo==2.0.4
     # via -r requirements_py3.in
 requests==2.31.0
     # via -r requirements_py3.in
-ubi-reader==0.8.5
+ubi-reader==0.8.9
     # via -r requirements_py3.in
 urllib3==1.26.16
     # via requests
