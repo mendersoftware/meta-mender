@@ -3,23 +3,21 @@
 set -e
 
 failure() {
-    echo "Failed! Make sure you are using a privileged container." 1>&2
+    echo "Failed!" 1>&2
     cleanup
     exit 1
 }
 
-cleanup() {
-    # Ignore errors in cleanup.
-    set +e
-    kpartx -d $DEV
-    losetup -d $DEV
+trap failure ERR
+
+# Helpers from mender-convert
+disk_get_part_value() {
+    echo "$(partx -o ${3} -g -r --nr ${2} ${1})"
+}
+disk_extract_part() {
+    dd if=$1 of=$4 skip=${2}b bs=1M count=${3}b status=none iflag=count_bytes,skip_bytes
 }
 
-trap failure ERR
-trap cleanup EXIT
-
-DEV=$(losetup -f)
-IMG_PREFIX=${1}
 IMG=$(ls /${IMG_PREFIX}*img* | head -n 1)
 [[ $IMG == *gz ]] && gzip -d "$IMG"
 IMG=$(ls /${IMG_PREFIX}*img | head -n 1)
@@ -31,8 +29,9 @@ CLEAN_FLAGS="s/^${IMG_PREFIX}//"
 [[ "${IMG_PREFIX}" == "" ]] && CLEAN_FLAGS="s/^clean-//"
 OUTPUT=/output/$(sed -e 's/\.[^.]*img$/.ext4/' -e "${CLEAN_FLAGS}" <<<$(basename $IMG))
 
-losetup $DEV $IMG
-kpartx -a $DEV
-echo "Copying filesystem image $IMG to $OUTPUT"
-dd if=/dev/mapper/$(basename $DEV)p2 of=$OUTPUT bs=8M status=none
+echo "Extracting partition 2, size: $(disk_get_part_value ${IMG} 2 SIZE)"
+echo "Extracting to ${OUTPUT}"
+disk_extract_part "${IMG}" $(disk_get_part_value ${IMG} 2 START) \
+    $(disk_get_part_value ${IMG} 2 SECTORS) ${OUTPUT}
+
 chown $(stat -c '%u:%g' /output) $OUTPUT

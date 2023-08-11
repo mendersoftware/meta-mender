@@ -4,18 +4,20 @@
 #
 #    pip-compile requirements_py3.in
 #
-certifi==2023.5.7
+certifi==2023.7.22
     # via requests
 charset-normalizer==2.1.1
     # via requests
 execnet==1.9.0
     # via pytest-xdist
-filelock==3.9.0
+filelock==3.12.2
     # via -r requirements_py3.in
 idna==3.4
     # via requests
 iniconfig==2.0.0
     # via pytest
+lzallright==0.2.3
+    # via ubi-reader
 packaging==23.1
     # via pytest
 pluggy==1.2.0
@@ -30,19 +32,19 @@ pytest==7.4.0
     #   pytest-xdist
 pytest-html==3.2.0
     # via -r requirements_py3.in
-pytest-metadata==2.0.4
+pytest-metadata==3.0.0
     # via
     #   -r requirements_py3.in
     #   pytest-html
 pytest-xdist==3.3.1
     # via -r requirements_py3.in
-python-lzo==1.14
+python-lzo==1.15
     # via -r requirements_py3.in
 redo==2.0.4
     # via -r requirements_py3.in
 requests==2.31.0
     # via -r requirements_py3.in
-ubi-reader==0.8.5
+ubi-reader==0.8.9
     # via -r requirements_py3.in
 urllib3==1.26.16
     # via requests
