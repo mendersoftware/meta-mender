@@ -22,13 +22,17 @@ FILES_${PN}_append_mender-systemd = " \
 
 SYSTEMD_SERVICE_${PN}_mender-systemd = "mender-configure-apply-device-config.service"
 
+# Note: Do not use ${libdir} below. It can be set to lib64, but the mender-configure sources are
+# hardcoded to /usr/lib. Ideally this should be organized better, but changing it may have some side
+# effects, so let's hardcode it for now.
 FILES_${PN}-demo = " \
-    ${libdir}/mender-configure/apply-device-config.d/mender-demo-raspberrypi-led \
+    /usr/lib/mender-configure/apply-device-config.d/mender-demo-raspberrypi-led \
     /data/mender-configure/device-config.json \
 "
 
+# Note: Do not use ${libdir} below. See above comment.
 FILES_${PN}-scripts = " \
-    ${libdir}/mender-configure/apply-device-config.d/timezone \
+    /usr/lib/mender-configure/apply-device-config.d/timezone \
 "
 
 S = "${WORKDIR}/git"
