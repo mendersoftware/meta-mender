@@ -133,8 +133,6 @@ do_compile() {
 
     # run verbose build, we should see which dependencies are pulled in
     oe_runmake V=1
-
-    echo "device_type=${MENDER_DEVICE_TYPE}" > ${B}/device_type
 }
 
 do_install() {
