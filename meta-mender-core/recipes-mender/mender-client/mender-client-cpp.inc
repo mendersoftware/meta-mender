@@ -18,6 +18,7 @@ PROVIDES += "mender-auth mender-update"
 
 SYSTEMD_SERVICE:mender-update = "mender-updated.service"
 SYSTEMD_SERVICE:mender-auth = "mender-authd.service"
+SYSTEMD_PACKAGES = "mender-update mender-auth"
 
 MENDER_CLIENT ?= "mender-updated"
 
