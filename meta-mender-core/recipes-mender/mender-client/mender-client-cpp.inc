@@ -97,9 +97,9 @@ FILES:mender-auth += "\
     ${systemd_unitdir}/system/mender-authd.service \
 "
 
-DEPENDS += "lmdb googletest boost libarchive"
-RDEPENDS:mender-auth:append = " boost-filesystem"
-RDEPENDS:mender-update:append = " boost-filesystem libarchive lmdb"
+DEPENDS += "lmdb googletest boost libarchive dbus"
+RDEPENDS:mender-auth:append = " boost-filesystem dbus"
+RDEPENDS:mender-update:append = " boost-filesystem libarchive lmdb dbus"
 
 # Native overrides, installing scripts for package mender-modules-gen
 do_configure:class-native() {
