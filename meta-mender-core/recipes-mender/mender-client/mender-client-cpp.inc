@@ -18,6 +18,7 @@ PROVIDES += "mender-auth mender-update"
 
 SYSTEMD_SERVICE:mender-update = "mender-updated.service"
 SYSTEMD_SERVICE:mender-auth = "mender-authd.service"
+SYSTEMD_PACKAGES = "mender-update mender-auth"
 
 MENDER_CLIENT ?= "mender-updated"
 
@@ -96,9 +97,17 @@ FILES:mender-auth += "\
     ${systemd_unitdir}/system/mender-authd.service \
 "
 
-DEPENDS += "lmdb googletest boost libarchive"
-RDEPENDS:mender-auth:append = " boost-filesystem"
-RDEPENDS:mender-update:append = " boost-filesystem libarchive lmdb"
+FILES:mender-auth-dbg += "\
+/usr/bin/.debug/mender-auth \
+"
+
+FILES:mender-update-dbg += "\
+/usr/bin/.debug/mender-update \
+"
+
+DEPENDS += "lmdb googletest boost libarchive dbus"
+RDEPENDS:mender-auth:append = " boost-filesystem dbus"
+RDEPENDS:mender-update:append = " boost-filesystem libarchive lmdb dbus"
 
 # Native overrides, installing scripts for package mender-modules-gen
 do_configure:class-native() {
