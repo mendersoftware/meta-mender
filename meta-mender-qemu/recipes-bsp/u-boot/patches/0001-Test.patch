@@ -1,0 +1,22 @@
+From ae5950c36256c342702b87a149e02adf1ed62062 Mon Sep 17 00:00:00 2001
+From: Kristian Amlie <kristian.amlie@northern.tech>
+Date: Thu, 21 Sep 2023 08:23:52 +0200
+Subject: [PATCH 1/1] Test
+
+Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+---
+ configs/vexpress_ca9x4_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configs/vexpress_ca9x4_defconfig b/configs/vexpress_ca9x4_defconfig
+index 1e59d27fc4..4b8537dc95 100644
+--- a/configs/vexpress_ca9x4_defconfig
++++ b/configs/vexpress_ca9x4_defconfig
+@@ -44,3 +44,4 @@ CONFIG_SMC911X=y
+ CONFIG_SMC911X_32_BIT=y
+ CONFIG_BAUDRATE=38400
+ CONFIG_CONS_INDEX=0
++CONFIG_SYS_FLASH_CFI_WIDTH_32BIT=y
+-- 
+2.34.1
+
