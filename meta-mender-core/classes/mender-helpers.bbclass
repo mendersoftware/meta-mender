@@ -422,7 +422,7 @@ def get_extra_parts_fstab_opts(d, id = None):
             else:
                 return parts_fstab_flags[id]
 
-    return "auto default 0 2"
+    return "auto defaults 0 2"
 
 def get_extra_parts_fstab(d):
     out = []
