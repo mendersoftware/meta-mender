@@ -135,6 +135,6 @@ IMAGE_CMD:mender () {
         -o ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.mender
 }
 
-IMAGE_CMD:mender[vardepsexclude] += "IMAGE_ID"
+IMAGE_CMD:mender[vardepsexclude] += "MENDER_ARTIFACT_NAME"
 # We need to have the filesystem image generated already.
 IMAGE_TYPEDEP:mender:append = " ${ARTIFACTIMG_FSTYPE}"
