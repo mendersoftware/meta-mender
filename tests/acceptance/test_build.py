@@ -438,7 +438,9 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             ("mender-configure", version)
             for version in versions_of_recipe("mender-configure")
         ]
-        + [("mender-configure", None)],
+        + [("mender-configure", None)]
+        + [("mender-flash", version) for version in versions_of_recipe("mender-flash")]
+        + [("mender-flash", None)],
     )
     def test_preferred_versions(self, prepared_test_build, recipe, version):
         """Most CI builds build with PREFERRED_VERSION set, because we want to
