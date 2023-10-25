@@ -3,7 +3,7 @@ require mender-client.inc
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
-PACKAGES =+ "mender-auth mender-update mender-config"
+PACKAGES =+ "mender-auth mender-update mender-config mender-auth-dev"
 
 RDEPENDS:mender-auth = "mender-config"
 
@@ -14,6 +14,8 @@ RRECOMMENDS:mender-update = "mender-flash"
 # rootfs-image module uses jq to parse the config file, but it is able to fall
 # back to line based parsing, which is less resilient.
 RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' jq', '', d)}"
+
+RDEPENDS:${PN}-dev:append = " mender-auth-dev"
 
 PROVIDES += "mender-auth mender-update"
 
@@ -72,22 +74,17 @@ FILES:mender-update += "\
     ${datadir}/mender/modules/v3/script \
     ${datadir}/mender/modules/v3/single-file \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
-    ${datadir}/dbus-1/interface \
-    ${datadir}/dbus-1/system.d/io.mender.UpdateManager.conf \
-    ${datadir}/dbus-1/interface/io.mender.Update1.xml \
 "
 
 FILES:mender-auth += "\
     ${bindir}/mender-auth \
     ${datadir}/mender/identity \
     ${datadir}/mender/identity/mender-device-identity \
-    ${datadir}/dbus-1/interface \
-    ${datadir}/dbus-1/interface/io.mender.Authentication1.xml \
     ${datadir}/dbus-1/system.d/io.mender.AuthenticationManager.conf \
 "
 
 FILES:mender-auth-dev += " \
-    ${datadir}/dbus-1/interface \
+    ${datadir}/dbus-1/interface/io.mender.Authentication1.xml \
 "
 
 FILES:mender-update += "\
