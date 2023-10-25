@@ -98,14 +98,6 @@ FILES:mender-auth += "\
     ${systemd_unitdir}/system/mender-authd.service \
 "
 
-FILES:mender-auth-dbg += "\
-/usr/bin/.debug/mender-auth \
-"
-
-FILES:mender-update-dbg += "\
-/usr/bin/.debug/mender-update \
-"
-
 DEPENDS += "lmdb googletest boost libarchive dbus"
 RDEPENDS:mender-auth:append = " boost-filesystem dbus"
 RDEPENDS:mender-update:append = " boost-filesystem libarchive lmdb dbus"
