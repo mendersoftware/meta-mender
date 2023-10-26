@@ -42,7 +42,8 @@ IMAGE_CMD:bootimg() {
                 $label_flag "${MENDER_BOOT_PART_LABEL}" \
                 ${MENDER_BOOT_PART_FSOPTS}
         fi
-        install -m 0644 "${WORKDIR}/boot.${MENDER_BOOT_PART_FSTYPE_TO_GEN}" "${IMGDEPLOYDIR}/${IMAGE_NAME}.bootimg"
+        chmod 0644 "${WORKDIR}/boot.${MENDER_BOOT_PART_FSTYPE_TO_GEN}"
+        mv "${WORKDIR}/boot.${MENDER_BOOT_PART_FSTYPE_TO_GEN}" "${IMGDEPLOYDIR}/${IMAGE_NAME}.bootimg"
     fi
 }
 
