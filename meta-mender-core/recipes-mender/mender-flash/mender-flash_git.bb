@@ -50,7 +50,7 @@ def mender_flash_version_from_preferred_version(d):
         return "master-git%s" % srcpv
 PV = "${@mender_flash_version_from_preferred_version(d)}"
 
-SRC_URI = "gitsm://github.com/mendersoftware/mender-flash.git;protocol=https;branch=${MENDER_FLASH_BRANCH}"
+SRC_URI = "gitsm://github.com/lluiscampos/mender-flash.git;protocol=https;branch=${MENDER_FLASH_BRANCH}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
