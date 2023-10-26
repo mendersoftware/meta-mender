@@ -13,6 +13,8 @@ IMAGE_CMD_bootimg() {
            mcopy -i "${WORKDIR}/boot.vfat" -s "$i" ::/
         done
         install -m 0644 "${WORKDIR}/boot.vfat" "${IMGDEPLOYDIR}/${IMAGE_NAME}.bootimg"
+        chmod 0644 "${WORKDIR}/boot.vfat"
+        mv "${WORKDIR}/boot.vfat" "${IMGDEPLOYDIR}/${IMAGE_NAME}.bootimg"
     fi
 }
 
