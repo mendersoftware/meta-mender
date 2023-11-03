@@ -7,8 +7,7 @@ PACKAGES =+ "mender-auth mender-update mender-config mender-auth-dev"
 
 RDEPENDS:mender-auth = "mender-config"
 
-RPROVIDES:mender-update = "mender-client"
-RDEPENDS:mender-update = "mender mender-auth mender-config"
+RDEPENDS:mender-update = "mender-auth mender-config"
 RRECOMMENDS:mender-update = "mender-flash"
 
 # rootfs-image module uses jq to parse the config file, but it is able to fall

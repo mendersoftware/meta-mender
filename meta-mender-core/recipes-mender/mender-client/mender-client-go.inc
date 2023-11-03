@@ -1,9 +1,10 @@
 require mender-client.inc
 
-RCONFLICTS:${PN} = "mender-auth"
-
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
+
+PROVIDES += "mender"
+RPROVIDES:${PN} += "mender-auth mender-update"
 
 RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd = " parted util-linux-fdisk"
 RDEPENDS:${PN}:append:mender-growfs-data:mender-systemd:mender-partlabel = " util-linux-blkid"

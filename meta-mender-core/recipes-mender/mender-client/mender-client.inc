@@ -7,8 +7,6 @@ DEPENDS:class-native = ""
 DESCRIPTION = "Mender tool for doing OTA software updates."
 HOMEPAGE = "https://mender.io"
 
-PROVIDES += "virtual/mender-client"
-
 MENDER_SERVER_URL ?= "https://docker.mender.io"
 # Tenant token
 MENDER_TENANT_TOKEN ?= "dummy"

@@ -34,7 +34,7 @@ def build_image_with_signed_bootstrap_artifact(
     """
 
     Simple override of the global build_image_fn fixture with signatures added,
-    and the mender-client systemd service enabled.
+    and the mender-update systemd service enabled.
 
     Due to the serial nature of the other tests, and the fact that they share
     the same QEMU instance, and we access the instance on `localhost`, this
@@ -62,6 +62,7 @@ def build_image_with_signed_bootstrap_artifact(
                 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
                 % os.path.join(os.getcwd(), signing_key("RSA").public),
                 'SYSTEMD_AUTO_ENABLE:pn-mender-client = "enable"',
+                'SYSTEMD_AUTO_ENABLE:pn-mender-update = "enable"',
             ],
         )
         return prepared_test_build_base["build_dir"]
