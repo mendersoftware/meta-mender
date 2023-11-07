@@ -5,10 +5,10 @@ HOMEPAGE = "https://mender.io"
 
 PACKAGES =+ "mender-auth mender-update mender-config mender-auth-dev"
 
-RDEPENDS:mender-auth = "mender-config"
+RDEPENDS:mender-auth += "mender-config"
 
-RDEPENDS:mender-update = "mender-auth mender-config"
-RRECOMMENDS:mender-update = "mender-flash"
+RDEPENDS:mender-update += "mender-auth mender-config"
+RRECOMMENDS:mender-update += "mender-flash"
 
 # rootfs-image module uses jq to parse the config file, but it is able to fall
 # back to line based parsing, which is less resilient.
