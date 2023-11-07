@@ -120,6 +120,8 @@ FILES:mender-update:append:mender-persist-systemd-machine-id = " \
 "
 
 FILES:mender-config += "\
+    ${localstatedir}/lib/mender \
+    ${sysconfdir}/mender/mender.conf \
     ${_MENDER_PERSISTENT_DIR}/device_type \
     ${_MENDER_PERSISTENT_DIR}/mender.conf \
 "
