@@ -26,6 +26,8 @@ def mender_connect_branch_from_preferred_version(d):
         # If the preferred version is some kind of version, use the branch name
         # for that one (1.0.x style).
         return match.group(0) + "x"
+    elif version.endswith("-git%"):
+        return version[0:-len("-git%")]
     else:
         # Else return master as branch.
         return "master"
