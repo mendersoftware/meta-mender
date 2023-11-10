@@ -52,12 +52,10 @@ RDEPENDS:mender-update:append:mender-growfs-data:mender-systemd:mender-partuuid 
 _MENDER_PACKAGECONFIG_DEFAULT = "modules inventory-network-scripts"
 PACKAGECONFIG ?= "${_MENDER_PACKAGECONFIG_DEFAULT}"
 
-PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
 PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
 PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'mender-grub', ' grub', '', d)}"
 
-PACKAGECONFIG[mender-client-install] = ",,,"
-RDEPENDS:mender-auth:append = "${@bb.utils.contains('PACKAGECONFIG', 'mender-client-install', ' ca-certificates', '', d)}"
+RRECOMMENDS:mender-auth:append = " ca-certificates"
 
 PACKAGECONFIG[u-boot] = ",,,"
 RDEPENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'u-boot', ' libubootenv-bin', '', d)}"
