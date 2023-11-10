@@ -26,7 +26,7 @@ RDEPENDS:mender-modules-gen = "bash"
 
 PACKAGES:append = " mender-modules-gen"
 
-_MENDER_PACKAGECONFIG_DEFAULT = "${@mender_feature_is_enabled("mender-client-install", "dbus modules inventory-network-scripts", "", d)}"
+_MENDER_PACKAGECONFIG_DEFAULT = "dbus modules inventory-network-scripts"
 PACKAGECONFIG ?= "${_MENDER_PACKAGECONFIG_DEFAULT}"
 
 PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'mender-client-install', ' mender-client-install', '', d)}"
