@@ -81,9 +81,6 @@ FILES:mender-auth += "\
     ${datadir}/mender/identity \
     ${datadir}/mender/identity/mender-device-identity \
     ${datadir}/dbus-1/system.d/io.mender.AuthenticationManager.conf \
-"
-
-FILES:mender-auth-dev += " \
     ${datadir}/dbus-1/interface/io.mender.Authentication1.xml \
 "
 
@@ -123,14 +120,7 @@ do_install() {
     fi
 
     # install dbus files
-    if ${@bb.utils.contains('PACKAGECONFIG', 'dbus', 'true', 'false', d)}; then
-        # install the D-Bus policy file
-        DESTDIR='${D}' cmake_runcmake_build --target install-dbus
-
-        # install the D-Bus interface file(s)
-        install -d ${D}${datadir}/dbus-1/interface
-        install -m 0644 ${S}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
-    fi
+    DESTDIR='${D}' cmake_runcmake_build --target install-dbus
 }
 
 do_install:class-native() {
