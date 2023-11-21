@@ -132,14 +132,9 @@ FILES:mender-update += "\
     ${datadir}/mender/inventory/mender-inventory-network \
     ${datadir}/mender/inventory/mender-inventory-os \
     ${datadir}/mender/inventory/mender-inventory-rootfs-type \
-    ${datadir}/mender/modules/v3/deb \
-    ${datadir}/mender/modules/v3/directory \
-    ${datadir}/mender/modules/v3/docker \
-    ${datadir}/mender/modules/v3/rpm \
-    ${datadir}/mender/modules/v3/script \
-    ${datadir}/mender/modules/v3/single-file \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
 "
+FILES:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' ${datadir}/mender/modules', '', d)}"
 
 FILES:mender-auth += "\
     ${bindir}/mender-auth \
