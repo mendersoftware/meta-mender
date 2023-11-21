@@ -30,11 +30,13 @@ IMAGE_CMD:dataimg() {
         sload.f2fs -f "${_MENDER_ROOTFS_COPY}" "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}"
     fi
 
-    install -m 0644 "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
+    chmod 0644 "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}"
+    mv "${WORKDIR}/data.${MENDER_DATA_PART_FSTYPE_TO_GEN}" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }
 IMAGE_CMD:dataimg:mender-image-ubi() {
     mkfs.ubifs -o "${WORKDIR}/data.ubifs" -r "${_MENDER_ROOTFS_COPY}" ${MKUBIFS_ARGS}
-    install -m 0644 "${WORKDIR}/data.ubifs" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
+    chmod 0644 "${WORKDIR}/data.ubifs"
+    mv "${WORKDIR}/data.ubifs" "${IMGDEPLOYDIR}/${IMAGE_NAME}.dataimg"
 }
 
 # We need the data contents intact.

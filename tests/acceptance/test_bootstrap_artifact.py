@@ -34,7 +34,7 @@ def build_image_with_signed_bootstrap_artifact(
     """
 
     Simple override of the global build_image_fn fixture with signatures added,
-    and the mender-client systemd service enabled.
+    and the mender-update systemd service enabled.
 
     Due to the serial nature of the other tests, and the fact that they share
     the same QEMU instance, and we access the instance on `localhost`, this
@@ -62,6 +62,7 @@ def build_image_with_signed_bootstrap_artifact(
                 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
                 % os.path.join(os.getcwd(), signing_key("RSA").public),
                 'SYSTEMD_AUTO_ENABLE:pn-mender-client = "enable"',
+                'SYSTEMD_AUTO_ENABLE:pn-mender-update = "enable"',
             ],
         )
         return prepared_test_build_base["build_dir"]
@@ -112,7 +113,7 @@ def boot_device_with_bootstrap_image(
 @pytest.mark.min_yocto_version("dunfell")
 @pytest.mark.only_with_image("ext4", "ext3", "ext2")
 def test_bootstrap_artifact_install(
-    request, boot_device_with_bootstrap_image, connection,
+    request, boot_device_with_bootstrap_image, connection, mender_update_binary
 ):
     """Test that the Mender Bootstrap Artifact works correctly
 
@@ -142,7 +143,9 @@ def test_bootstrap_artifact_install(
     assert "rootfs-image.version" in device_provides
 
     # Verify that no errors occured during the install (in which case the artifact-name would be uknown)
-    show_artifact = connection.run("mender show-artifact").stdout.strip()
+    show_artifact = connection.run(
+        f"{mender_update_binary} show-artifact"
+    ).stdout.strip()
     assert (
         show_artifact != "unknown"
     ), "There were errors installing the Bootstrap Artifact"

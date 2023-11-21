@@ -229,8 +229,7 @@ MENDER_DATA_PART_LABEL ??= "data"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
-IMAGE_INSTALL:append = " mender-client"
-PREFERRED_PROVIDER_virtual/mender-client ?= "mender"
+IMAGE_INSTALL:append = " mender-update"
 IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg mender-bootimg mender-datatar"
 
 # Originally defined in bitbake.conf. We define them here so that images with
