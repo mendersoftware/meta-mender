@@ -699,7 +699,12 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     @pytest.mark.only_with_image("sdimg", "uefiimg")
     @pytest.mark.min_mender_version("2.0.0")
     def test_module_install(
-        self, request, prepared_test_build, bitbake_path, bitbake_image
+        self,
+        request,
+        prepared_test_build,
+        bitbake_path,
+        bitbake_image,
+        mender_update_binary,
     ):
         """Test that with PACKAGECONFIG "modules" switch in mender-client recipe the modules
         are installed in the root filesystem, and the built mender Artifact(s) contain them
@@ -710,11 +715,16 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             "deb",
             "directory",
             "docker",
-            "rootfs-image-v2",
             "rpm",
             "script",
             "single-file",
         ]
+
+        if mender_update_binary == "mender":
+            default_update_modules.append("rootfs-image-v2")
+        else:
+            # After Mender client < v4.0 goes EOL, we can keep only this path.
+            default_update_modules.append("rootfs-image")
 
         mender_vars = get_bitbake_variables(
             request, "mender-client", prepared_test_build
