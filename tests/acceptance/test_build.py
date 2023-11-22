@@ -1298,7 +1298,12 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("2.7.0")
     def test_mender_dbus_interface_file(
-        self, request, prepared_test_build, bitbake_image, bitbake_path
+        self,
+        request,
+        prepared_test_build,
+        bitbake_image,
+        bitbake_path,
+        mender_update_binary,
     ):
         """
         Test that the D-Bus interface files are provided by the mender-client-dev package,
@@ -1307,43 +1312,32 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
         EXPECTED_FILES = [
             "io.mender.Authentication1.xml",
-            "io.mender.Update1.xml",
         ]
+        mender_recipe = "mender"
+        mender_pkg = "mender-auth"
 
-        for dbus_enabled in [True, False]:
+        # Can be removed after mender-client < v4.0 goes EOL. Update Control is not available
+        # anymore in v4.0 and later.
+        if mender_update_binary == "mender":
+            EXPECTED_FILES.append("io.mender.Update1.xml")
+            mender_recipe = "mender-client"
+            mender_pkg = "mender-client"
 
-            # clean up the mender-client
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                bitbake_image,
-                target="-c clean mender-client",
-            )
+        # build mender-client
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            mender_recipe,
+        )
 
-            # build mender-client
-            maybe_remove_dbus = []
-            if not dbus_enabled:
-                maybe_remove_dbus.append('PACKAGECONFIG:remove = "dbus"')
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                "mender-client",
-                extra_conf_params=maybe_remove_dbus,
-            )
-
-            # verify the files
-            deploy_dir_rpm = os.path.join(
-                prepared_test_build["build_dir"], "tmp", "deploy", "rpm"
-            )
-            output = subprocess.check_output(
-                ["rpm", "-qlp", f"{deploy_dir_rpm}/*/mender-client-dev-*.rpm"],
-            )
-            for file in EXPECTED_FILES:
-                if dbus_enabled:
-                    assert (
-                        bytes(file, "utf-8") in output
-                    ), f"{file} seems not to be a part of the mender-client-dev package, like it should"
-                else:
-                    assert (
-                        bytes(file, "utf-8") not in output
-                    ), f"{file} seems to be a part of the mender-client-dev package, but it should not"
+        # verify the files
+        deploy_dir_rpm = os.path.join(
+            prepared_test_build["build_dir"], "tmp", "deploy", "rpm"
+        )
+        output = subprocess.check_output(
+            ["rpm", "-qlp", f"{deploy_dir_rpm}/*/{mender_pkg}-dev-*.rpm"],
+        )
+        for file in EXPECTED_FILES:
+            assert (
+                bytes(file, "utf-8") in output
+            ), f"{file} seems not to be a part of the {mender_pkg}-dev package, like it should"
