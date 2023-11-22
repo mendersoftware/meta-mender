@@ -1270,7 +1270,10 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['PACKAGECONFIG:append:pn-mender-client = " inventory-network-scripts"'],
+            [
+                'PACKAGECONFIG:append:pn-mender-client = " inventory-network-scripts"',
+                'PACKAGECONFIG:append:pn-mender = " inventory-network-scripts"',
+            ],
         )
         rootfs = latest_build_artifact(
             request, prepared_test_build["build_dir"], "core-image*.ext4"
@@ -1292,7 +1295,10 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['PACKAGECONFIG:remove:pn-mender-client = " inventory-network-scripts"'],
+            [
+                'PACKAGECONFIG:remove:pn-mender-client = " inventory-network-scripts"',
+                'PACKAGECONFIG:remove:pn-mender = " inventory-network-scripts"',
+            ],
         )
         rootfs = latest_build_artifact(
             request, prepared_test_build["build_dir"], "core-image*.ext4"
