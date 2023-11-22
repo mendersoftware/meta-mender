@@ -7,8 +7,9 @@
 #           for the OpenSSL to load the lib and access the key from the HSM
 # * opensc: pkcs11-tool for initialization of token
 # * gnutls-bin: provides p11tool for getting the contents of the token
+# * pkcs11-provider is a third-party implementation of a PKCS#11 provider for OpenSSLv3
 DEPENDS:append:mender-image:qemuall = " softhsm opensc gnutls p11-kit libp11"
-RDEPENDS:${PN}:append:mender-image:qemuall = " softhsm opensc gnutls p11-kit libp11 gnutls-bin"
+RDEPENDS:${PN}:append:mender-image:qemuall = " softhsm opensc gnutls p11-kit libp11 gnutls-bin pkcs11-provider"
 
 # Needed for the TestFaultTolerance tests in the integration repository.
 RDEPENDS:${PN}:append:mender-image:qemuall = " \
