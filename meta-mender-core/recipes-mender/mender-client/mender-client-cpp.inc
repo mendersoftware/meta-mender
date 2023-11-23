@@ -203,10 +203,6 @@ python do_prepare_mender_conf() {
     # Tenant-token is optional, but falls back to a default-value set in source code
     conf_maybe_add("TenantToken", "MENDER_TENANT_TOKEN", getvar=True, integer=False)
 
-    # Add the update control configurations if set
-    conf_maybe_add("UpdateControlMapExpirationTimeSeconds", "MENDER_UPDATE_CONTROL_MAP_EXPIRATION_TIME_SECONDS", getvar=True, integer=True)
-    conf_maybe_add("UpdateControlMapBootExpirationTimeSeconds", "MENDER_UPDATE_CONTROL_MAP_BOOT_EXPIRATION_TIME_SECONDS", getvar=True, integer=True)
-
     # Filter returns the variables that are present in both instances.
     # Thus no misspelled variables will ever enter the persistent configuration during migration.
     persistent_configs = bb.utils.filter("MENDER_PERSISTENT_CONFIGURATION_VARS", d.getVar("MENDER_CONFIGURATION_VARS"), d)
