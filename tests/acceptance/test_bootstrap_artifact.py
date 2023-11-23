@@ -62,7 +62,7 @@ def build_image_with_signed_bootstrap_artifact(
                 'MENDER_ARTIFACT_VERIFY_KEY = "%s"'
                 % os.path.join(os.getcwd(), signing_key("RSA").public),
                 'SYSTEMD_AUTO_ENABLE:pn-mender-client = "enable"',
-                'SYSTEMD_AUTO_ENABLE:pn-mender-update = "enable"',
+                'SYSTEMD_AUTO_ENABLE:pn-mender = "enable"',
             ],
         )
         return prepared_test_build_base["build_dir"]
@@ -138,7 +138,9 @@ def test_bootstrap_artifact_install(
         )
 
     # Check that the database of the client has been populated
-    device_provides = connection.run("mender show-provides").stdout.strip()
+    device_provides = connection.run(
+        f"{mender_update_binary} show-provides"
+    ).stdout.strip()
     assert "rootfs-image.checksum" in device_provides
     assert "rootfs-image.version" in device_provides
 

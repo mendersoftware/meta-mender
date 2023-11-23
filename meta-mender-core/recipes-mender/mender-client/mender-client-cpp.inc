@@ -141,6 +141,9 @@ FILES:mender-auth += "\
     ${datadir}/mender/identity \
     ${datadir}/mender/identity/mender-device-identity \
     ${datadir}/dbus-1/system.d/io.mender.AuthenticationManager.conf \
+"
+
+FILES:mender-auth-dev += "\
     ${datadir}/dbus-1/interface/io.mender.Authentication1.xml \
 "
 
@@ -332,15 +335,6 @@ do_install:append:class-target:mender-persist-systemd-machine-id() {
     install -m 755 ${WORKDIR}/mender-set-systemd-machine-id.sh ${D}${bindir}/
 }
 
-# Native overrides, installing scripts for package mender-modules-gen
-do_configure:class-native() {
-    true
-}
-
-do_compile:class-native() {
-    true
-}
-
 do_install() {
     DESTDIR='${D}' cmake_runcmake_build --target install-bin
     DESTDIR='${D}' cmake_runcmake_build --target install-identity-scripts
@@ -359,6 +353,9 @@ do_install() {
     DESTDIR='${D}' cmake_runcmake_build --target install-dbus
 }
 
+# Native overrides, installing scripts for package mender-modules-gen
+EXTRA_OECMAKE:append:class-native = " -DMENDER_NO_BUILD=1"
+
 do_install:class-native() {
-    true
+    DESTDIR='${D}' cmake_runcmake_build --target install-modules-gen
 }

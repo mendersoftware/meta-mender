@@ -68,7 +68,8 @@ class TestDBus:
                 if (
                     "Authorize failed:" in result.stdout
                     or "Failed to authorize" in result.stdout
-                    or "Ready for authentication requests" in result.stdout
+                    or "The authentication daemon is now ready to accept incoming authentication request"
+                    in result.stdout
                 ):
                     break
                 time.sleep(5)
