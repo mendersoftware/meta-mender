@@ -34,7 +34,7 @@ pytest==7.4.3
     #   pytest-html
     #   pytest-metadata
     #   pytest-xdist
-pytest-html==4.0.2
+pytest-html==4.1.1
     # via -r requirements_py3.in
 pytest-metadata==3.0.0
     # via
