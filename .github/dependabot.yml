@@ -7,6 +7,10 @@ updates:
     schedule:
       interval: monthly
       day: saturday
+    groups:
+      python-test-dependencies:
+        patterns:
+          - "*"
   - commit-message:
       prefix: chore
     directory: /meta-mender-qemu/docker/qemux86-64
