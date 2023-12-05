@@ -35,9 +35,6 @@ def get_ssh_args_mender_artifact(conn):
     return "-S " + common_args
 
 
-@pytest.mark.skipif(
-    not (os.environ.get("NIGHTLY_BUILD", "false") == "true"), reason="MEN-6861",
-)
 @pytest.mark.cross_platform
 @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
