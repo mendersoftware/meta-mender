@@ -107,6 +107,7 @@ python do_delete_copy_rootfs() {
 
 fakeroot do_install_bootstrap_artifact () {
     if [ -e "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.bootstrap-artifact" ]; then
+        install -d "${_MENDER_ROOTFS_COPY}/mender/"
         install -m 0400 "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.bootstrap-artifact" "${_MENDER_ROOTFS_COPY}/mender/bootstrap.mender"
     fi
 }

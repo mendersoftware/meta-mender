@@ -41,8 +41,16 @@ python() {
         'mender-efi-boot',
 
         # Install of Mender, with the minimum components. This includes no
-        # references to specific partition layouts.
+        # references to specific partition layouts. Enabling this automatically
+        # enables `mender-auth-install` and `mender-update-install`.
         'mender-client-install',
+
+        # Install of mender-auth, with the minimum components.
+        'mender-auth-install',
+
+        # Install of mender-update, with the minimum components. This includes
+        # no references to specific partition layouts.
+        'mender-update-install',
 
         # Include components for Mender-partitioned images. This will create
         # files that rely on the Mender partition layout.

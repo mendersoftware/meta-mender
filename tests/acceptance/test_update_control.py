@@ -31,7 +31,12 @@ from mock_server import (
     EXPIRATION_TIME,
     BOOT_EXPIRATION_TIME,
 )
-from utils.common import put_no_sftp, cleanup_mender_state, qemu_system_time
+from utils.common import (
+    put_no_sftp,
+    cleanup_mender_state,
+    qemu_system_time,
+    version_is_minimum,
+)
 
 # Map UIDs. Randomly chosen, but used throughout for consistency.
 MUID = "3702f9f0-b318-11eb-a7b6-c7aece07181e"
@@ -483,6 +488,9 @@ class TestUpdateControl:
         bitbake_variables,
         bitbake_path,
     ):
+        if version_is_minimum(bitbake_variables, "mender-client", "4.0.0"):
+            pytest.skip("Update Control support been removed in 4.0.0 and later.")
+
         try:
             start_and_ready_mender_client(connection)
 
@@ -618,8 +626,11 @@ class TestUpdateControl:
 
     @pytest.mark.min_mender_version("2.7.0")
     def test_invalid_update_control_map(
-        self, request, setup_board, connection, setup_mock_server
+        self, request, bitbake_variables, setup_board, connection, setup_mock_server
     ):
+        if version_is_minimum(bitbake_variables, "mender-client", "4.0.0"):
+            pytest.skip("Update Control support been removed in 4.0.0 and later.")
+
         try:
             start_and_ready_mender_client(connection)
 
@@ -692,6 +703,9 @@ class TestUpdateControl:
         bitbake_variables,
         bitbake_path,
     ):
+        if version_is_minimum(bitbake_variables, "mender-client", "4.0.0"):
+            pytest.skip("Update Control support been removed in 4.0.0 and later.")
+
         try:
             start_and_ready_mender_client(connection)
 
@@ -750,6 +764,9 @@ class TestUpdateControl:
     ):
         """Test whether we can make many state transitions with update control without
         triggering the "too many state transitions" error."""
+
+        if version_is_minimum(bitbake_variables, "mender-client", "4.0.0"):
+            pytest.skip("Update Control support been removed in 4.0.0 and later.")
 
         try:
             start_and_ready_mender_client(connection)

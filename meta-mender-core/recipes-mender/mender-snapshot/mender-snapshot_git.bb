@@ -1,20 +1,20 @@
-require mender-connect.inc
+require mender-snapshot.inc
 
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the
 # SHA.
-def mender_connect_autorev_if_git_version(d):
+def mender_snapshot_autorev_if_git_version(d):
     version = d.getVar("PREFERRED_VERSION")
-    if version is None or version == "":
+    if not version:
         version = d.getVar("PREFERRED_VERSION_%s" % d.getVar('PN'))
     if not d.getVar("EXTERNALSRC") and version is not None and "git" in version:
         return d.getVar("AUTOREV")
     else:
-        return "ba20f26b20cffb72ca14ddb3f3e2347186689ace"
-SRCREV ?= '${@mender_connect_autorev_if_git_version(d)}'
+        return "c0df5df2be6a6acba4b7a55c3e64f74e0695a6f6"
+SRCREV ?= '${@mender_snapshot_autorev_if_git_version(d)}'
 
-def mender_connect_branch_from_preferred_version(d):
+def mender_snapshot_branch_from_preferred_version(d):
     import re
     version = d.getVar("PREFERRED_VERSION")
     if version is None or version == "":
@@ -29,11 +29,10 @@ def mender_connect_branch_from_preferred_version(d):
     else:
         # Else return master as branch.
         return "master"
-MENDER_CONNECT_BRANCH = "${@mender_connect_branch_from_preferred_version(d)}"
+MENDER_SNAPSHOT_BRANCH = "${@mender_snapshot_branch_from_preferred_version(d)}"
 
-def mender_connect_version_from_preferred_version(d):
+def mender_snapshot_version_from_preferred_version(d, srcpv):
     pref_version = d.getVar("PREFERRED_VERSION")
-    srcpv = d.getVar("SRCPV")
     if pref_version is None:
         pref_version = d.getVar("PREFERRED_VERSION_%s" % d.getVar("PN"))
     if pref_version is not None and pref_version.find("-git") >= 0:
@@ -48,24 +47,21 @@ def mender_connect_version_from_preferred_version(d):
     else:
         # Else return the default "master-git".
         return "master-git%s" % srcpv
-PV = "${@mender_connect_version_from_preferred_version(d)}"
+PV = "${@mender_snapshot_version_from_preferred_version(d, '${SRCPV}')}"
 
-SRC_URI = "git://github.com/mendersoftware/mender-connect.git;protocol=https;branch=${MENDER_CONNECT_BRANCH}"
+SRC_URI = "git://${GO_IMPORT};protocol=https;branch=${MENDER_SNAPSHOT_BRANCH}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
-# dependencies) are included in the LICENSE variable below.
-def mender_connect_license(branch):
+# dependencies) are included in the LICENSE variable below. Note that for
+# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
+# file.
+def mender_snapshot_license(branch):
     # Only one currently. If the sub licenses change we may introduce more.
     return {
-               "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
+               "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & MIT",
     }
-LIC_FILES_CHKSUM = " \
-    file://src/github.com/mendersoftware/mender-connect/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
-"
-LICENSE = "${@mender_connect_license(d.getVar('MENDER_CONNECT_BRANCH'))['license']}"
-
-# Disables the need for every dependency to be checked, for easier development.
-_MENDER_DISABLE_STRICT_LICENSE_CHECKING = "1"
+LIC_FILES_CHKSUM = "file://src/${GO_IMPORT}/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081"
+LICENSE = "${@mender_snapshot_license(d.getVar('MENDER_SNAPSHOT_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.
 DEFAULT_PREFERENCE = "-1"
