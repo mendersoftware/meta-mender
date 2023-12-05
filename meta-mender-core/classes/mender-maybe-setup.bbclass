@@ -20,6 +20,12 @@ def mender_features(d, separator=" "):
     else:
         disabled = disabled.split()
 
+    if "mender-client-install" in enabled and "mender-client-install" not in disabled:
+        if "mender-auth-install" not in enabled:
+            enabled.append("mender-auth-install")
+        if "mender-update-install" not in enabled:
+            enabled.append("mender-update-install")
+
     return separator.join([feature for feature in enabled if feature not in disabled])
 
 MENDER_FEATURES = "${@mender_features(d)}"
