@@ -229,6 +229,10 @@ MENDER_DATA_PART_LABEL ??= "data"
 
 # --------------------------- END OF CONFIGURATION -----------------------------
 
+PREFERRED_PROVIDER_mender-native ??= "mender-client-native"
+PREFERRED_RPROVIDER_mender-auth ??= "mender-client"
+PREFERRED_RPROVIDER_mender-update ??= "mender-client"
+
 IMAGE_INSTALL:append = " mender-update"
 IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg mender-bootimg mender-datatar"
 

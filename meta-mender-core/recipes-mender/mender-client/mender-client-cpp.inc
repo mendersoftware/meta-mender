@@ -28,8 +28,6 @@ RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modul
 
 RDEPENDS:${PN}-dev:append = " mender-auth-dev"
 
-PROVIDES += "mender-auth mender-update"
-
 SYSTEMD_SERVICE:mender-update = "mender-updated.service"
 SYSTEMD_SERVICE:mender-auth = "mender-authd.service"
 SYSTEMD_PACKAGES = "mender-update mender-auth"
