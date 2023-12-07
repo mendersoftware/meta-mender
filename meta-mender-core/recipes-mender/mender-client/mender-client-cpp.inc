@@ -1,7 +1,6 @@
 inherit mender-licensing
 
 BBCLASSEXTEND = "native"
-RDEPENDS:${PN}:class-native = ""
 DEPENDS:class-native = ""
 
 DESCRIPTION = "Mender tool for doing OTA software updates."
@@ -25,8 +24,6 @@ RRECOMMENDS:mender-update += "mender-flash"
 # rootfs-image module uses jq to parse the config file, but it is able to fall
 # back to line based parsing, which is less resilient.
 RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' jq', '', d)}"
-
-RDEPENDS:${PN}-dev:append = " mender-auth-dev"
 
 SYSTEMD_SERVICE:mender-update = "mender-updated.service"
 SYSTEMD_SERVICE:mender-auth = "mender-authd.service"
