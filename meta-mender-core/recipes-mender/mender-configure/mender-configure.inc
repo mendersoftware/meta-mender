@@ -7,7 +7,7 @@ inherit systemd
 
 PACKAGES:append = " ${PN}-demo ${PN}-scripts"
 
-RDEPENDS:${PN} = "dbus curl mender-client (>= 2.5)"
+RDEPENDS:${PN} = "dbus curl mender-update"
 RDEPENDS:${PN}-demo = "${PN} jq"
 RDEPENDS:${PN}-scripts = "${PN} jq"
 

@@ -4,7 +4,7 @@ DESCRIPTION = "Mender add-on for remote terminal access."
 HOMEPAGE = "https://mender.io"
 
 DEPENDS:append = " glib-2.0"
-RDEPENDS:${PN} = "glib-2.0 mender-client (>= 3.2)"
+RDEPENDS:${PN} = "glib-2.0 mender-auth"
 
 MENDER_CONNECT_SHELL ??= "/bin/sh"
 MENDER_CONNECT_USER ??= "nobody"

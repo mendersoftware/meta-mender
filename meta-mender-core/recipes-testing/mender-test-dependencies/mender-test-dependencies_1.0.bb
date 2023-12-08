@@ -3,7 +3,7 @@
 
 DEPENDS = "\
     mender-artifact-native \
-    mender-client-native \
+    mender-native \
     e2fsprogs-native \
     util-linux-native \
     mtools-native \

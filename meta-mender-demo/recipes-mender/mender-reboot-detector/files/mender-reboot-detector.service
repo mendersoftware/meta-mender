@@ -3,7 +3,7 @@
 ConditionPathExists=/data/mender/test.mender-reboot-detector.txt
 Requires=data.mount network-online.target sshd.socket
 After=data.mount network-online.target sshd.socket
-Before=mender-client.service
+Before=mender-client.service mender-authd.service mender-updated.service
 
 [Service]
 Type=oneshot

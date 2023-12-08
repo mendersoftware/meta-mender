@@ -45,22 +45,31 @@ class TestDBus:
         assert "io.mender.AuthenticationManager" in output
 
     @pytest.mark.min_mender_version("2.5.0")
-    def test_dbus_non_root_access(self, request, bitbake_variables, connection):
+    def test_dbus_non_root_access(
+        self,
+        request,
+        bitbake_variables,
+        connection,
+        mender_auth_binary,
+        mender_auth_service,
+    ):
         """Test that only root user can access Mender DBus API."""
 
         # This is the command that is expected to fail for non-root user
         dbus_send_command = "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.GetJwtToken"
 
         try:
-            connection.run("mender bootstrap", warn=True)
-            connection.run("systemctl start mender-client")
+            connection.run(f"{mender_auth_binary} bootstrap", warn=True)
+            connection.run(f"systemctl start {mender_auth_service}")
 
             # Wait one state machine cycle for the D-Bus API to be available
             for _ in range(60):
-                result = connection.run("journalctl --unit mender-client")
+                result = connection.run(f"journalctl --unit {mender_auth_service}")
                 if (
                     "Authorize failed:" in result.stdout
                     or "Failed to authorize" in result.stdout
+                    or "The authentication daemon is now ready to accept incoming authentication request"
+                    in result.stdout
                 ):
                     break
                 time.sleep(5)
@@ -79,7 +88,7 @@ class TestDBus:
             ), result.stderr
 
         finally:
-            connection.run("systemctl stop mender-client")
+            connection.run(f"systemctl stop {mender_auth_service}")
             cleanup_mender_state(request, connection)
 
     @pytest.mark.min_mender_version("2.5.0")
@@ -87,6 +96,11 @@ class TestDBus:
         self, request, bitbake_variables, connection, setup_mock_server
     ):
         """Test that the JWT token can be retrieved using D-Bus."""
+
+        if version_is_minimum(bitbake_variables, "mender-client", "4.0.0"):
+            pytest.skip(
+                "In Mender client 4.0.0 you cannot get use GetJwtToken without using FetchJwtToken first."
+            )
 
         try:
             # bootstrap the client
@@ -130,12 +144,18 @@ class TestDBus:
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_dbus_fetch_jwt_token(
-        self, request, bitbake_variables, connection, setup_mock_server
+        self,
+        request,
+        bitbake_variables,
+        connection,
+        setup_mock_server,
+        mender_auth_binary,
+        mender_auth_service,
     ):
         """Test that the JWT token can be fetched using D-Bus."""
 
-        # bootstrap the client
-        result = connection.run("mender bootstrap --forcebootstrap")
+        # bootstrap the auth service
+        result = connection.run(f"{mender_auth_binary} bootstrap --forcebootstrap")
         assert result.exited == 0
 
         try:
@@ -147,8 +167,8 @@ class TestDBus:
 
             # get the JWT token via D-Bus
             try:
-                # start the mender-client service
-                result = connection.run("systemctl start mender-client")
+                # start the mender-auth service
+                result = connection.run(f"systemctl start {mender_auth_service}")
                 assert result.exited == 0
 
                 # fetch the JWT token
@@ -189,14 +209,12 @@ class TestDBus:
                 assert f'string "{self.JWT_TOKEN}' in output
                 if version_is_minimum(bitbake_variables, "mender-client", "3.3.1"):
                     assert 'string "http://127.0.0.1:' in output
-                elif version_is_minimum(bitbake_variables, "mender-client", "3.2.0"):
-                    assert 'string "http://localhost:' in output
                 else:
-                    assert 'string "https://docker.mender.io' in output
+                    assert 'string "http://localhost:' in output
 
             finally:
                 p.terminate()
-                connection.run("systemctl stop mender-client")
+                connection.run(f"systemctl stop {mender_auth_service}")
                 connection.run("rm -f /tmp/dbus-monitor.log")
 
         finally:
