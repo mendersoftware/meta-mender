@@ -24,6 +24,7 @@ from utils.common import (
     determine_active_passive_part,
     get_ssh_common_args,
     get_worker_index,
+    version_is_minimum,
 )
 
 
@@ -33,6 +34,12 @@ def get_ssh_args_mender_artifact(conn):
     common_args = common_args.replace(" ", " -S ")
     # Prefix the first argument too
     return "-S " + common_args
+
+
+def get_mender_snapshot_bin(bitbake_variables):
+    if version_is_minimum(bitbake_variables, "mender-client", "4.0.0"):
+        return "mender-snapshot"
+    return "mender snapshot"
 
 
 @pytest.mark.cross_platform
@@ -50,8 +57,8 @@ class TestSnapshot:
 
             # Dump what we currently have to the inactive partition.
             connection.run(
-                "mender snapshot dump %s %s %s"
-                % (compression[0], compression[1], passive)
+                f"{get_mender_snapshot_bin(bitbake_variables)} dump "
+                + f"{compression[0]} {compression[1]} {passive}"
             )
 
             # Make sure this looks like a sane filesystem.
@@ -76,7 +83,10 @@ class TestSnapshot:
 
             # Dump what we currently have to the inactive partition, using
             # device file reference.
-            connection.run("mender snapshot dump --source %s > %s" % (active, passive))
+            connection.run(
+                f"{get_mender_snapshot_bin(bitbake_variables)} dump "
+                + f"--source {active} > {passive}"
+            )
 
             # Make sure this looks like a sane filesystem.
             connection.run("fsck.ext4 -p %s" % passive)
@@ -101,8 +111,9 @@ class TestSnapshot:
             # Try to snapshot inactive partition, keeping the initial part, and
             # dumping the rest.
             connection.run(
-                "mender snapshot dump --source %s | ( dd of=/data/snapshot-test bs=%d count=1; cat > /dev/null )"
-                % (passive, len(test_str))
+                f"{get_mender_snapshot_bin(bitbake_variables)} dump "
+                + f"--source {passive} | "
+                + f"( dd of=/data/snapshot-test bs={len(test_str)} count=1; cat > /dev/null )"
             )
 
             output = connection.run("cat /data/snapshot-test").stdout.strip()
@@ -113,7 +124,7 @@ class TestSnapshot:
             connection.run("rm -f /data/snapshot-test")
 
     @pytest.mark.min_mender_version("2.2.0")
-    def test_snapshot_avoid_deadlock(self, connection):
+    def test_snapshot_avoid_deadlock(self, bitbake_variables, connection):
         loop = None
         try:
             # We need to create a temporary writable filesystem, because the
@@ -137,7 +148,8 @@ class TestSnapshot:
 
             # Try to snapshot to same partition we are freezing.
             result = connection.run(
-                "mender snapshot dump --source /data/mnt > /data/mnt/snapshot-test",
+                f"{get_mender_snapshot_bin(bitbake_variables)} dump "
+                + f"--source /data/mnt > /data/mnt/snapshot-test",
                 warn=True,
             )
             assert result.return_code != 0
@@ -145,7 +157,8 @@ class TestSnapshot:
 
             # Do it again, but this time indirectly.
             result = connection.run(
-                "bash -c 'set -o pipefail; mender snapshot dump --source /data/mnt | gzip -c > /data/mnt/snapshot-test'",
+                f"bash -c 'set -o pipefail; {get_mender_snapshot_bin(bitbake_variables)} dump "
+                + f"--source /data/mnt | gzip -c > /data/mnt/snapshot-test'",
                 warn=True,
             )
             assert result.return_code != 0
