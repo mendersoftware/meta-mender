@@ -120,14 +120,11 @@ FILES:${PN} += "\
     ${_MENDER_PERSISTENT_DIR}/mender.conf \
 "
 
-FILES:${PN} += "\
-    /usr/share/dbus-1/interface \
+
+FILES:${PN}-dev:append = " \
+    ${datadir}/dbus-1/interface \
     /usr/share/dbus-1/interface/io.mender.Update1.xml \
     /usr/share/dbus-1/interface/io.mender.Authentication1.xml \
-"
-
-FILES:${PN}-dev += " \
-    ${datadir}/dbus-1/interface \
 "
 
 MENDER_CLIENT ?= "mender-client"
