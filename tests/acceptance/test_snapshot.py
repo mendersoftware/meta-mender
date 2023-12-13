@@ -14,7 +14,6 @@
 #    limitations under the License.
 
 import re
-import os
 import subprocess
 import tempfile
 
@@ -23,7 +22,7 @@ import pytest
 from utils.common import (
     determine_active_passive_part,
     get_ssh_common_args,
-    get_worker_index,
+    version_is_minimum,
 )
 
 
@@ -35,9 +34,12 @@ def get_ssh_args_mender_artifact(conn):
     return "-S " + common_args
 
 
-@pytest.mark.skipif(
-    not (os.environ.get("NIGHTLY_BUILD", "false") == "true"), reason="MEN-6861",
-)
+def get_mender_snapshot_bin(bitbake_variables):
+    if version_is_minimum(bitbake_variables, "mender-client", "4.0.0"):
+        return "mender-snapshot"
+    return "mender snapshot"
+
+
 @pytest.mark.cross_platform
 @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
@@ -49,19 +51,19 @@ class TestSnapshot:
             (_, passive) = determine_active_passive_part(bitbake_variables, connection)
 
             # Wipe the inactive partition first.
-            connection.run("dd if=/dev/zero of=%s bs=1M count=100" % passive)
+            connection.run(f"dd if=/dev/zero of={passive} bs=1M count=100")
 
             # Dump what we currently have to the inactive partition.
             connection.run(
-                "mender snapshot dump %s %s %s"
-                % (compression[0], compression[1], passive)
+                f"{get_mender_snapshot_bin(bitbake_variables)} dump "
+                + f"{compression[0]} {compression[1]} {passive}"
             )
 
             # Make sure this looks like a sane filesystem.
-            connection.run("fsck.ext4 -p %s" % passive)
+            connection.run(f"fsck.ext4 -p {passive}")
 
             # And that it can be mounted with actual content.
-            connection.run("mount %s /mnt" % passive)
+            connection.run(f"mount {passive} /mnt")
             connection.run("test -f /mnt/etc/passwd")
 
         finally:
@@ -75,17 +77,20 @@ class TestSnapshot:
             )
 
             # Wipe the inactive partition first.
-            connection.run("dd if=/dev/zero of=%s bs=1M count=100" % passive)
+            connection.run(f"dd if=/dev/zero of={passive} bs=1M count=100")
 
             # Dump what we currently have to the inactive partition, using
             # device file reference.
-            connection.run("mender snapshot dump --source %s > %s" % (active, passive))
+            connection.run(
+                f"{get_mender_snapshot_bin(bitbake_variables)} dump "
+                + f"--source {active} > {passive}"
+            )
 
             # Make sure this looks like a sane filesystem.
-            connection.run("fsck.ext4 -p %s" % passive)
+            connection.run(f"fsck.ext4 -p {passive}")
 
             # And that it can be mounted with actual content.
-            connection.run("mount %s /mnt" % passive)
+            connection.run(f"mount {passive} /mnt")
             connection.run("test -f /mnt/etc/passwd")
 
         finally:
@@ -99,13 +104,14 @@ class TestSnapshot:
             test_str = "TeSt StrIng!#"
 
             # Seed the initial part of the inactive partition with a test string
-            connection.run("echo '%s' | dd of=%s" % (test_str, passive))
+            connection.run(f"echo '{test_str}' | dd of={passive}")
 
             # Try to snapshot inactive partition, keeping the initial part, and
             # dumping the rest.
             connection.run(
-                "mender snapshot dump --source %s | ( dd of=/data/snapshot-test bs=%d count=1; cat > /dev/null )"
-                % (passive, len(test_str))
+                f"{get_mender_snapshot_bin(bitbake_variables)} dump "
+                + f"--source {passive} | "
+                + f"( dd of=/data/snapshot-test bs={len(test_str)} count=1; cat > /dev/null )"
             )
 
             output = connection.run("cat /data/snapshot-test").stdout.strip()
@@ -116,31 +122,32 @@ class TestSnapshot:
             connection.run("rm -f /data/snapshot-test")
 
     @pytest.mark.min_mender_version("2.2.0")
-    def test_snapshot_avoid_deadlock(self, connection):
+    def test_snapshot_avoid_deadlock(self, bitbake_variables, connection):
         loop = None
         try:
             # We need to create a temporary writable filesystem, because the
             # rootfs filesystem is by default tested with a read-only rootfs,
             # and we need to write a file to the filesystem we dump.
             connection.run(
-                "dd if=/dev/zero of=/data/tmp-file-system count=%d"
-                % (50 * 2048)  # 50 * 2048 * 512 = 50 MiB
+                f"dd if=/dev/zero of=/data/tmp-file-system count={50 * 2048}",
+                # 50 * 2048 * 512 = 50 MiB
             )
             connection.run("mkfs.ext4 /data/tmp-file-system")
             loop = connection.run(
                 "losetup --show -f /data/tmp-file-system"
             ).stdout.strip()
             connection.run("mkdir /data/mnt")
-            connection.run("mount %s /data/mnt -t ext4" % loop)
+            connection.run(f"mount {loop} /data/mnt -t ext4")
             # Fill with some garbage so that we get a bad compression rate and
             # enough data to trigger buffering.
             connection.run(
-                "dd if=/dev/urandom of=/data/mnt/random-data count=%d" % (10 * 2048)
+                f"dd if=/dev/urandom of=/data/mnt/random-data count={10 * 2048}"
             )
 
             # Try to snapshot to same partition we are freezing.
             result = connection.run(
-                "mender snapshot dump --source /data/mnt > /data/mnt/snapshot-test",
+                f"{get_mender_snapshot_bin(bitbake_variables)} dump "
+                + f"--source /data/mnt > /data/mnt/snapshot-test",
                 warn=True,
             )
             assert result.return_code != 0
@@ -148,7 +155,8 @@ class TestSnapshot:
 
             # Do it again, but this time indirectly.
             result = connection.run(
-                "bash -c 'set -o pipefail; mender snapshot dump --source /data/mnt | gzip -c > /data/mnt/snapshot-test'",
+                f"bash -c 'set -o pipefail; {get_mender_snapshot_bin(bitbake_variables)} dump "
+                + f"--source /data/mnt | gzip -c > /data/mnt/snapshot-test'",
                 warn=True,
             )
             assert result.return_code != 0
@@ -158,7 +166,7 @@ class TestSnapshot:
             connection.run("umount /data/mnt || true")
             connection.run("rmdir /data/mnt || true")
             if loop is not None:
-                connection.run("losetup -d %s" % loop)
+                connection.run(f"losetup -d {loop}")
             connection.run("rm -f /data/tmp-file-system")
 
     @pytest.mark.min_mender_version("2.2.0")
@@ -176,15 +184,10 @@ class TestSnapshot:
 
             try:
                 subprocess.check_call(
-                    "%s mender-artifact write rootfs-image %s -n test -t test -o %s -f ssh://%s@%s:%s"
-                    % (
-                        terminal,
-                        get_ssh_args_mender_artifact(connection),
-                        artifact.name,
-                        connection.user,
-                        connection.host,
-                        connection.port,
-                    ),
+                    f"{terminal} mender-artifact write rootfs-image "
+                    + f"{get_ssh_args_mender_artifact(connection)} -n test -t test "
+                    + f"-o {artifact.name} "
+                    + f"-f ssh://{connection.user}@{connection.host}:{connection.port}",
                     shell=True,
                 )
             finally:
@@ -194,11 +197,11 @@ class TestSnapshot:
                 f"mender-artifact read {artifact.name}", shell=True,
             ).decode()
 
-            partsize = connection.run("blockdev --getsize64 %s" % active).stdout.strip()
+            partsize = connection.run(f"blockdev --getsize64 {active}").stdout.strip()
 
             # Ensure that the payload size of the produced artifact matches the
             # partition.
-            assert re.search(r"size: *%s" % partsize, output) is not None
+            assert re.search(fr"size: *{partsize}", output) is not None
 
     @pytest.mark.min_mender_version("2.5.0")
     # Make sure we run both with and without terminal. Many signal bugs lurk in
@@ -211,16 +214,14 @@ class TestSnapshot:
             suffix=".mender"
         ) as artifact, tempfile.NamedTemporaryFile() as screen_log:
             terminal = terminal.replace("%%", screen_log.name)
-            (active, passive) = determine_active_passive_part(
-                bitbake_variables, connection
-            )
+            (active, _) = determine_active_passive_part(bitbake_variables, connection)
 
             # /usr/bin/sudo is a link to /data/usr/bin/sudo see
             #  meta-mender-qemu/recipes-extended/sudo/sudo_%.bbappend
             sudo_path = "/data/usr/bin/sudo"
             # let's move the sudo away
             result = connection.run(
-                "mv %s %s-off" % (sudo_path, sudo_path), warn=True, echo=True
+                f"mv {sudo_path} {sudo_path}-off", warn=True, echo=True
             )
             assert result.return_code == 0
 
@@ -232,22 +233,17 @@ class TestSnapshot:
                 # mender-artifact as of mender-artifact/pull/305 does not use sudo
                 #  when user is root or when uid is 0
                 subprocess.check_call(
-                    "%s mender-artifact write rootfs-image %s -n test -t test -o %s -f ssh://%s@%s:%s"
-                    % (
-                        terminal,
-                        get_ssh_args_mender_artifact(connection),
-                        artifact.name,
-                        connection.user,
-                        connection.host,
-                        connection.port,
-                    ),
+                    f"{terminal} mender-artifact write rootfs-image "
+                    + f"{get_ssh_args_mender_artifact(connection)} -n test -t test "
+                    + f"-o {artifact.name} "
+                    + f"-f ssh://{connection.user}@{connection.host}:{connection.port}",
                     shell=True,
                 )
             finally:
                 subprocess.call(f"cat {screen_log.name}", shell=True)
                 # let's put the sudo back in place and verify that it works
                 result = connection.run(
-                    "mv %s-off %s" % (sudo_path, sudo_path), warn=True, echo=True
+                    f"mv {sudo_path}-off {sudo_path}", warn=True, echo=True
                 )
                 result = connection.run("sudo --help", echo=True, warn=True)
                 assert result.return_code == 0
@@ -256,8 +252,8 @@ class TestSnapshot:
                 f"mender-artifact read {artifact.name}", shell=True,
             ).decode()
 
-            partsize = connection.run("blockdev --getsize64 %s" % active).stdout.strip()
+            partsize = connection.run(f"blockdev --getsize64 {active}").stdout.strip()
 
             # Ensure that the payload size of the produced artifact matches the
             # partition.
-            assert re.search(r"size: *%s" % partsize, output) is not None
+            assert re.search(fr"size: *{partsize}", output) is not None
