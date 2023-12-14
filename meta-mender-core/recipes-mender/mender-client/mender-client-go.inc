@@ -404,8 +404,8 @@ do_install() {
             install-dbus
 
         # install the D-Bus interface file(s)
-        install -d ${D}${datadir}/dbus-1/interface
-        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+        install -d ${D}${datadir}/dbus-1/interfaces
+        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interfaces
     fi
 }
 
