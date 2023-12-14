@@ -55,7 +55,7 @@ FILES:${PN} += "\
     /data/mender/mender.conf \
 "
 FILES:${PN}-dev += " \
-    ${datadir}/dbus-1/interface \
+    ${datadir}/dbus-1/interfaces \
 "
 FILES:mender-modules-gen = " \
     ${bindir}/directory-artifact-gen \
@@ -297,8 +297,8 @@ do_install() {
             install-dbus
 
         # install the D-Bus interface file(s)
-        install -d ${D}${datadir}/dbus-1/interface
-        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+        install -d ${D}${datadir}/dbus-1/interfaces
+        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interfaces
     fi
 
     #install our prepared configuration
