@@ -122,9 +122,9 @@ FILES:${PN} += "\
 
 
 FILES:${PN}-dev:append = " \
-    ${datadir}/dbus-1/interface \
-    /usr/share/dbus-1/interface/io.mender.Update1.xml \
-    /usr/share/dbus-1/interface/io.mender.Authentication1.xml \
+    ${datadir}/dbus-1/interfaces \
+    ${datadir}/dbus-1/interfaces/io.mender.Update1.xml \
+    ${datadir}/dbus-1/interfaces/io.mender.Authentication1.xml \
 "
 
 MENDER_CLIENT ?= "mender-client"
