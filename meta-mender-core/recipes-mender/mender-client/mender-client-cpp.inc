@@ -139,7 +139,7 @@ FILES:mender-auth += "\
 "
 
 FILES:mender-auth-dev += "\
-    ${datadir}/dbus-1/interface/io.mender.Authentication1.xml \
+    ${datadir}/dbus-1/interfaces/io.mender.Authentication1.xml \
 "
 
 FILES:mender-update += "\
