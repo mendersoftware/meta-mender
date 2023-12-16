@@ -1,15 +1,5 @@
 require mender-connect.inc
 
-RDEPENDS:${PN} = "glib-2.0 mender-client (>= ${@mender_client_minimum_required_version(d)})"
-
-def mender_client_minimum_required_version(d):
-    version = mender_connect_branch_from_preferred_version(d)
-    if version.endswith("x"):
-        major, minor, *_ = version.split(".")
-        if int(major) == 1 and int(minor) <= 2:
-            return "2.5"
-    return "3.2"
-
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the
@@ -36,6 +26,8 @@ def mender_connect_branch_from_preferred_version(d):
         # If the preferred version is some kind of version, use the branch name
         # for that one (1.0.x style).
         return match.group(0) + "x"
+    elif version.endswith("-git%"):
+        return version[0:-len("-git%")]
     else:
         # Else return master as branch.
         return "master"

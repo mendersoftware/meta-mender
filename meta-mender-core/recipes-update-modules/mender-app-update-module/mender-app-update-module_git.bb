@@ -10,7 +10,7 @@ SRCREV = "15025d9f1e21eafcbf1325b2a5034b2606e1d719"
 
 S = "${WORKDIR}/git"
 
-RDEPENDS:${PN} = "jq mender-client xdelta3"
+RDEPENDS:${PN} = "jq mender-update xdelta3"
 
 PACKAGECONFIG ?= ""
 PACKAGECONFIG[docker-compose] = ",,,docker-compose"

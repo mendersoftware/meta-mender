@@ -1,24 +1,19 @@
-require mender-client.inc
 
-DEPENDS = "xz openssl"
-RDEPENDS:${PN} = "liblzma openssl"
+SRCREV ?= '${@mender_autorev_if_git_version(d)}'
 
-# 3.4 and older mender-client versions need mender-artifact-info.
-RDEPENDS:${PN}:append = "${@mender_maybe_artifact_info(d)}"
+# Force the version of master and feature-branch packages to compare very highly
+# to other versions.
+PKGV = "${@'999+${PV}' if any(['${PV}'.startswith(p) for p in ['master', 'feature-']]) else '${PV}'}"
 
-def mender_maybe_artifact_info(d):
-    import re
-    branch = d.getVar("MENDER_BRANCH")
-    match = re.match(r"([0-9]+)\.([0-9]+)\.", branch)
-    if match is None:
-        return ""
+MENDER_BRANCH = "${@mender_branch_from_preferred_version(d)}"
 
-    major = int(match.group(1))
-    minor = int(match.group(2))
-    if major < 3 or (major == 3 and minor < 5):
-        return " mender-artifact-info"
-    else:
-        return ""
+SRC_URI = "gitsm://github.com/mendersoftware/mender;protocol=https;branch=${MENDER_BRANCH}"
+
+# Disables the need for every dependency to be checked, for easier development.
+_MENDER_DISABLE_STRICT_LICENSE_CHECKING = "1"
+
+# Downprioritize this recipe in version selections.
+DEFAULT_PREFERENCE = "-1"
 
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
@@ -32,11 +27,6 @@ def mender_autorev_if_git_version(d):
         return d.getVar("AUTOREV")
     else:
         return "f6ffa190892202263fdb75975059fbb201adab6a"
-SRCREV ?= '${@mender_autorev_if_git_version(d)}'
-
-# Force the version of master and feature-branch packages to compare very highly
-# to other versions.
-PKGV = "${@'999+${PV}' if any(['${PV}'.startswith(p) for p in ['master', 'feature-']]) else '${PV}'}"
 
 def mender_branch_from_preferred_version(d):
     import re
@@ -50,10 +40,11 @@ def mender_branch_from_preferred_version(d):
         # If the preferred version is some kind of version, use the branch name
         # for that one (1.0.x style).
         return match.group(0) + "x"
+    elif version.endswith("-git%"):
+        return version[0:-len("-git%")]
     else:
         # Else return master as branch.
         return "master"
-MENDER_BRANCH = "${@mender_branch_from_preferred_version(d)}"
 
 def mender_version_from_preferred_version(d):
     pref_version = d.getVar("PREFERRED_VERSION")
@@ -73,7 +64,6 @@ def mender_version_from_preferred_version(d):
         # Else return the default "master-git".
         return "master-git%s" % srcpv
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=${MENDER_BRANCH}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
@@ -92,8 +82,17 @@ LIC_FILES_CHKSUM = " \
 "
 LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
-# Disables the need for every dependency to be checked, for easier development.
-_MENDER_DISABLE_STRICT_LICENSE_CHECKING = "1"
+def mender_maybe_artifact_info(d):
+    import re
+    branch = d.getVar("MENDER_BRANCH")
+    match = re.match(r"([0-9]+)\.([0-9]+)\.", branch)
+    if match is None:
+        return ""
 
-# Downprioritize this recipe in version selections.
-DEFAULT_PREFERENCE = "-1"
+    major = int(match.group(1))
+    minor = int(match.group(2))
+    if major < 3 or (major == 3 and minor < 5):
+        return " mender-artifact-info"
+    else:
+        return ""
+

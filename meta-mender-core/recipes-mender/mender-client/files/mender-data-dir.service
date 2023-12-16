@@ -1,7 +1,7 @@
 [Unit]
 Description=Mender persistent data dir
 After=data.mount
-Before=mender-client.service
+Before=mender-client.service mender-authd.service mender-updated.service
 ConditionPathExists=!/data/mender
 
 [Service]
@@ -11,4 +11,4 @@ Group=root
 ExecStart=/bin/mkdir -p -m 0700 /data/mender
 
 [Install]
-WantedBy=mender-client.service
+WantedBy=mender-client.service mender-authd.service mender-updated.service

@@ -1,7 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI = " \
-          file://mender-client-migrate-configuration;subdir=${PN}-${PV} \
+          file://mender-migrate-configuration;subdir=${PN}-${PV} \
           file://LICENSE;subdir=${PN}-${PV} \
           "
 
@@ -14,7 +14,7 @@ ALLOW_EMPTY:${PN} = "1"
 
 RDEPENDS:${PN} += "jq"
 
-DEPENDS += "mender-client"
+DEPENDS += "mender"
 
 do_check_split_conf() {
     if [ -f ${STAGING_DIR_TARGET}/data/mender/mender.conf ]; then
@@ -39,9 +39,9 @@ do_compile() {
     MENDER_JQ_DELETE=".$(echo $PERSISTENT_CONFIGS | awk -F ' ' -v OFS=', .' '$1=$1')"
 
     # Replace the program markers in the script with the jq programs generated above.
-    sed -i "s/%jq-program-marker%/${MENDER_JQ_PROGRAM}/" mender-client-migrate-configuration
-    sed -i "s/%jq-delete-fields-marker%/${MENDER_JQ_DELETE}/" mender-client-migrate-configuration
+    sed -i "s/%jq-program-marker%/${MENDER_JQ_PROGRAM}/" mender-migrate-configuration
+    sed -i "s/%jq-delete-fields-marker%/${MENDER_JQ_DELETE}/" mender-migrate-configuration
 
     # Deploy script as a State Script
-    cp mender-client-migrate-configuration ${MENDER_STATE_SCRIPTS_DIR}/ArtifactCommit_Enter_10_migrate-configuration
+    cp mender-migrate-configuration ${MENDER_STATE_SCRIPTS_DIR}/ArtifactCommit_Enter_10_migrate-configuration
 }
