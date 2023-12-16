@@ -122,9 +122,9 @@ FILES:${PN} += "\
 
 
 FILES:${PN}-dev:append = " \
-    ${datadir}/dbus-1/interface \
-    /usr/share/dbus-1/interface/io.mender.Update1.xml \
-    /usr/share/dbus-1/interface/io.mender.Authentication1.xml \
+    ${datadir}/dbus-1/interfaces \
+    ${datadir}/dbus-1/interfaces/io.mender.Update1.xml \
+    ${datadir}/dbus-1/interfaces/io.mender.Authentication1.xml \
 "
 
 MENDER_CLIENT ?= "mender-client"
@@ -404,8 +404,8 @@ do_install() {
             install-dbus
 
         # install the D-Bus interface file(s)
-        install -d ${D}${datadir}/dbus-1/interface
-        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+        install -d ${D}${datadir}/dbus-1/interfaces
+        install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interfaces
     fi
 }
 
