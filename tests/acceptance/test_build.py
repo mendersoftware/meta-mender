@@ -1166,9 +1166,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                     'MENDER_EXTRA_PARTS[test4] = "--fixed-size 50M --fstype=ext4 --source rootfs --rootfs-dir %s --label=test4"'
                     % tmpdir4,
                     'MENDER_EXTRA_PARTS_FSTAB[test1] = "auto nouser"',
-                    'MENDER_EXTRA_PARTS_FSTAB[test2] = "ext4 default,ro"',
-                    'MENDER_EXTRA_PARTS_FSTAB[test3] = "ext4 default,ro 1"',
-                    'MENDER_EXTRA_PARTS_FSTAB[test4] = "ext4 default,ro 1 0"',
+                    'MENDER_EXTRA_PARTS_FSTAB[test2] = "ext4 defaults,ro"',
+                    'MENDER_EXTRA_PARTS_FSTAB[test3] = "ext4 defaults,ro 1"',
+                    'MENDER_EXTRA_PARTS_FSTAB[test4] = "ext4 defaults,ro 1 0"',
                 ],
             )
 
@@ -1223,21 +1223,24 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 
         # Example:
         # /dev/mmcblk0p5       /mnt/test1           auto       nouser                0  2
-        # /dev/mmcblk0p6       /mnt/test2           auto       default,ro            0  2
-        # /dev/mmcblk0p7       /mnt/test3           auto       default,ro            1  2
-        # /dev/mmcblk0p8       /mnt/test4           auto       default,ro            1  0
+        # /dev/mmcblk0p6       /mnt/test2           auto       defaults,ro            0  2
+        # /dev/mmcblk0p7       /mnt/test3           auto       defaults,ro            1  2
+        # /dev/mmcblk0p8       /mnt/test4           auto       defaults,ro            1  0
 
         test1_re = (
             r"^/dev/[a-z0-9]+%d\s+/mnt/test1\s+auto\s+nouser\s+0\s+2\s*$" % extra_start
         )
-        test2_re = r"^/dev/[a-z0-9]+%d\s+/mnt/test2\s+ext4\s+default,ro\s+0\s+2\s*$" % (
-            extra_start + 1
+        test2_re = (
+            r"^/dev/[a-z0-9]+%d\s+/mnt/test2\s+ext4\s+defaults,ro\s+0\s+2\s*$"
+            % (extra_start + 1)
         )
-        test3_re = r"^/dev/[a-z0-9]+%d\s+/mnt/test3\s+ext4\s+default,ro\s+1\s+2\s*$" % (
-            extra_start + 2
+        test3_re = (
+            r"^/dev/[a-z0-9]+%d\s+/mnt/test3\s+ext4\s+defaults,ro\s+1\s+2\s*$"
+            % (extra_start + 2)
         )
-        test4_re = r"^/dev/[a-z0-9]+%d\s+/mnt/test4\s+ext4\s+default,ro\s+1\s+0\s*$" % (
-            extra_start + 3
+        test4_re = (
+            r"^/dev/[a-z0-9]+%d\s+/mnt/test4\s+ext4\s+defaults,ro\s+1\s+0\s*$"
+            % (extra_start + 3)
         )
         assert re.search(test1_re, fstab, flags=re.MULTILINE) is not None
         assert re.search(test2_re, fstab, flags=re.MULTILINE) is not None
