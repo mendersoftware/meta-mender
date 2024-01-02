@@ -60,7 +60,7 @@ def mender_snapshot_license(branch):
     return {
                "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & MIT",
     }
-LIC_FILES_CHKSUM = "file://src/${GO_IMPORT}/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081"
+LIC_FILES_CHKSUM = "file://src/${GO_IMPORT}/LICENSE;md5=30b4554c64108561c0cb1c57e8a044f0"
 LICENSE = "${@mender_snapshot_license(d.getVar('MENDER_SNAPSHOT_BRANCH'))['license']}"
 
 # Downprioritize this recipe in version selections.
