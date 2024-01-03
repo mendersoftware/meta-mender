@@ -62,7 +62,7 @@ def mender_flash_license(branch):
                "license": "Apache-2.0",
     }
 LIC_FILES_CHKSUM = " \
-    file://LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
+    file://LICENSE;md5=30b4554c64108561c0cb1c57e8a044f0 \
 "
 LICENSE = "${@mender_flash_license(d.getVar('MENDER_FLASH_BRANCH'))['license']}"
 
