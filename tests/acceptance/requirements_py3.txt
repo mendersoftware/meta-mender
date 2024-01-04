@@ -28,7 +28,7 @@ packaging==23.1
     # via pytest
 pluggy==1.2.0
     # via pytest
-pytest==7.4.3
+pytest==7.4.4
     # via
     #   -r requirements_py3.in
     #   pytest-html
