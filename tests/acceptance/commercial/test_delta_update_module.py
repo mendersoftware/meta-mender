@@ -13,8 +13,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import distutils.spawn
-from distutils.version import LooseVersion
 import os
 import re
 import shutil
@@ -30,6 +28,7 @@ from utils.common import (
     run_after_connect,
     determine_active_passive_part,
     make_tempdir,
+    version_is_minimum,
 )
 from utils.helpers import Helpers
 
@@ -76,6 +75,7 @@ class TestDeltaUpdateModule:
         bitbake_variables,
         bitbake_image,
         connection,
+        mender_update_binary,
         http_server,
         board_type,
         use_s3,
@@ -97,13 +97,19 @@ class TestDeltaUpdateModule:
         )
 
         Helpers.install_update(
-            image, connection, http_server, board_type, use_s3, s3_address
+            image,
+            connection,
+            mender_update_binary,
+            http_server,
+            board_type,
+            use_s3,
+            s3_address,
         )
 
         reboot(connection)
 
         run_after_connect("true", connection)
-        connection.run("mender commit")
+        connection.run(f"{mender_update_binary} commit")
 
         return image
 
@@ -117,6 +123,7 @@ class TestDeltaUpdateModule:
         bitbake_image,
         bitbake_path,
         connection,
+        mender_update_binary,
         http_server,
         board_type,
         use_s3,
@@ -138,6 +145,7 @@ class TestDeltaUpdateModule:
             bitbake_variables,
             bitbake_image,
             connection,
+            mender_update_binary,
             http_server,
             board_type,
             use_s3,
@@ -173,6 +181,7 @@ class TestDeltaUpdateModule:
         bitbake_image,
         bitbake_path,
         connection,
+        mender_update_binary,
         http_server,
         board_type,
         use_s3,
@@ -186,7 +195,7 @@ class TestDeltaUpdateModule:
         ):
             pytest.skip("Only works when using read-only-rootfs IMAGE_FEATURE")
 
-        if distutils.spawn.find_executable("mender-binary-delta-generator") is None:
+        if shutil.which("mender-binary-delta-generator") is None:
             pytest.fail("mender-binary-delta-generator not found in PATH")
 
         built_artifact = self.do_install_mender_binary_delta(
@@ -195,16 +204,14 @@ class TestDeltaUpdateModule:
             bitbake_variables,
             bitbake_image,
             connection,
+            mender_update_binary,
             http_server,
             board_type,
             use_s3,
             s3_address,
         )
 
-        binary_delta_vars = get_bitbake_variables(
-            request, "mender-binary-delta", prepared_test_build
-        )
-        if LooseVersion(binary_delta_vars["PV"]) < LooseVersion("1.3.0"):
+        if not version_is_minimum(bitbake_variables, "mender-binary-delta", "1.3.0"):
             pytest.skip(
                 "This version of mender-binary-delta does not support grub-mender-grubenv-print and friends."
             )
@@ -235,7 +242,7 @@ class TestDeltaUpdateModule:
             )
 
             # Verbose provides/depends of the different Artifacts and the client (when supported)
-            connection.run("mender show-provides", warn=True)
+            connection.run(f"{mender_update_binary} show-provides", warn=True)
             subprocess.check_call(
                 "mender-artifact read %s" % artifact_from, shell=True,
             )
@@ -251,7 +258,13 @@ class TestDeltaUpdateModule:
                 bitbake_variables, connection
             )
             Helpers.install_update(
-                artifact_delta, connection, http_server, board_type, use_s3, s3_address
+                artifact_delta,
+                connection,
+                mender_update_binary,
+                http_server,
+                board_type,
+                use_s3,
+                s3_address,
             )
             reboot(connection)
             run_after_connect("true", connection)
@@ -260,4 +273,4 @@ class TestDeltaUpdateModule:
             )
             assert new_active == passive
             assert new_passive == active
-            connection.run("mender commit")
+            connection.run(f"{mender_update_binary} commit")

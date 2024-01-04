@@ -17,11 +17,18 @@ import time
 
 import pytest
 
+from utils.common import version_is_minimum
+
 
 class TestOsIntegration:
     @pytest.mark.min_mender_version("2.2.1")
-    def test_syslogger(self, setup_board, connection):
+    def test_syslogger(self, bitbake_variables, setup_board, connection):
         """Test that we log to syslog, and that we don't if we specify --no-syslog."""
+
+        if version_is_minimum(bitbake_variables, "mender-client", "4.0.0"):
+            pytest.skip(
+                "Syslog support has been removed in 4.0.0 and later (handled by systemd instead)."
+            )
 
         def is_mender_in_syslog_messages():
             now = time.time()
