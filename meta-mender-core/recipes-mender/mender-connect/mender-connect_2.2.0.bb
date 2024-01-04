@@ -27,8 +27,8 @@ SRCREV = "31f3ae7da75319f69315877e7a273fd8e80a0305"
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
 LIC_FILES_CHKSUM = " \
     file://src/github.com/mendersoftware/mender-connect/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
-    file://src/github.com/mendersoftware/mender-connect/vendor/github.com/mendersoftware/go-lib-micro/LICENSE;md5=3edc376d2e5952a15bcf912ddae86816 \
-    file://src/github.com/mendersoftware/mender-connect/vendor/github.com/gorilla/websocket/LICENSE;md5=c007b54a1743d596f46b2748d9f8c044 \
+    file://src/github.com/mendersoftware/mender-connect/vendor/github.com/mendersoftware/go-lib-micro/LICENSE;md5=e33ec9ac79630c915f82b11a3d4545e9 \
+    file://src/github.com/mendersoftware/mender-connect/vendor/github.com/gorilla/websocket/LICENSE;md5=c30eee78985cf2584cded5f89ba3d787 \
     file://src/github.com/mendersoftware/mender-connect/vendor/github.com/pkg/errors/LICENSE;md5=6fe682a02df52c6653f33bd0f7126b5a \
     file://src/github.com/mendersoftware/mender-connect/vendor/github.com/vmihailenco/msgpack/v5/LICENSE;md5=5de50b60705d666cd9542dd48d5e4b56 \
     file://src/github.com/mendersoftware/mender-connect/vendor/github.com/vmihailenco/tagparser/v2/LICENSE;md5=e9f573ea1e3d968278166de82cd36301 \
@@ -43,4 +43,5 @@ LIC_FILES_CHKSUM = " \
     file://src/github.com/mendersoftware/mender-connect/vendor/github.com/stretchr/testify/LICENSE;md5=188f01994659f3c0d310612333d2a26f \
     file://src/github.com/mendersoftware/mender-connect/vendor/github.com/urfave/cli/v2/LICENSE;md5=c542707ca9fc0b7802407ba62310bd8f \
     file://src/github.com/mendersoftware/mender-connect/vendor/gopkg.in/yaml.v3/LICENSE;md5=3c91c17266710e16afdbb2b6d15c761c \
+    file://src/github.com/mendersoftware/mender-connect/vendor/golang.org/x/net/LICENSE;md5=5d4950ecb7b26d2c5e4e7b4e0dd74707 \
 "
