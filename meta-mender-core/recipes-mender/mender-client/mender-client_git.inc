@@ -70,15 +70,25 @@ def mender_version_from_preferred_version(d):
 def mender_license(branch):
     import re
     if branch.startswith("1."):
+        # Golang client
         return {
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+            "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+            "license_file": "file://src/github.com/mendersoftware/mender/LICENSE",
+        }
+    elif branch.startswith("2.") or branch.startswith("3."):
+        # Golang client
+        return {
+            "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+            "license_file": "file://src/github.com/mendersoftware/mender/LICENSE",
         }
     else:
+        # C++ client
         return {
-                   "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT & OLDAP-2.8",
+            "license": "Apache-2.0 & MIT & Unlicense",
+            "license_file": "file://LICENSE",
         }
 LIC_FILES_CHKSUM = " \
-    file://src/github.com/mendersoftware/mender/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
+    ${@mender_license(d.getVar('MENDER_BRANCH'))['license_file']};md5=30b4554c64108561c0cb1c57e8a044f0 \
 "
 LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
 
