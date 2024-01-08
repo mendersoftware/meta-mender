@@ -42,6 +42,7 @@ do_install() {
     oe_runmake \
         -C ${S} \
         DESTDIR=${D} \
+        prefix=${D} \
         install-bin \
         install-demo \
         install-scripts
@@ -64,5 +65,7 @@ do_install_append_mender-systemd() {
     oe_runmake \
         -C ${S} \
         DESTDIR=${D} \
+        prefix=${D} \
+        systemd_unitdir=${systemd_unitdir} \
         install-systemd
 }
