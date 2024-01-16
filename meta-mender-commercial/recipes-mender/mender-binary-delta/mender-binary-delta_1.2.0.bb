@@ -19,3 +19,6 @@ LIC_FILES_CHKSUM = " \
 # default.
 # Downprioritize this recipe in version selections.
 #DEFAULT_PREFERENCE = "-1"
+
+# Not used in this version.
+_MENDER_FLASH_TOOL_DEFAULT = ""
