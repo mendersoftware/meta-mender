@@ -99,7 +99,7 @@ FILES:mender-update:append:mender-image:mender-systemd = " \
 "
 
 FILES:mender-update:append:mender-growfs-data:mender-systemd = " \
-    ${bindir}/mender-resize-data-part \
+    ${bindir}/mender-client-resize-data-part \
     ${systemd_unitdir}/system/mender-grow-data.service \
     ${systemd_unitdir}/system/mender-systemd-growfs-data.service \
     ${systemd_unitdir}/system/data.mount.wants/mender-grow-data.service \
@@ -307,7 +307,7 @@ do_install:append:class-target:mender-growfs-data:mender-systemd() {
     install -d ${D}/${bindir}/
 
     install -m 0755 ${WORKDIR}/mender-client-resize-data-part.sh.in \
-        ${D}/${bindir}/mender-resize-data-part
+        ${D}/${bindir}/mender-client-resize-data-part
 
     install -d ${D}/${systemd_unitdir}/system
     install -m 644 ${WORKDIR}/mender-grow-data.service ${D}/${systemd_unitdir}/system/
