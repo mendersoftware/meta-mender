@@ -7,7 +7,7 @@ Before=mender-systemd-growfs-data.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/mender-client-resize-data-part
+ExecStart=/usr/bin/mender-resize-data-part
 
 [Install]
 WantedBy=data.mount
