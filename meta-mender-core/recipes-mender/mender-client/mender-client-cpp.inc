@@ -14,6 +14,9 @@ MENDER_UPDATE_POLL_INTERVAL_SECONDS ?= "1800"
 MENDER_INVENTORY_POLL_INTERVAL_SECONDS ?= "28800"
 MENDER_RETRY_POLL_INTERVAL_SECONDS ?= "300"
 
+_MENDER_WATCHDOG_DEFAULT_TIMEOUT_SEC ?= "86400"
+MENDER_WATCHDOG_SEC ?= "${@max(d.getVar('MENDER_UPDATE_POLL_INTERVAL_SECONDS'), d.getVar('_MENDER_WATCHDOG_DEFAULT_TIMEOUT_SEC'))}"
+
 PACKAGES =+ "mender-auth mender-update mender-config mender-auth-dev"
 
 RDEPENDS:mender-auth += "mender-config"
@@ -342,6 +345,10 @@ do_install() {
 
     # install dbus files
     DESTDIR='${D}' cmake_runcmake_build --target install-dbus
+}
+
+do_install:append:class-target:mender-systemd() {
+    sed -i "s/WatchdogSec=86400/WatchdogSec=${MENDER_WATCHDOG_SEC}/" ${D}${systemd_unitdir}/system/mender-updated.service
 }
 
 # Native overrides, installing scripts for package mender-modules-gen
