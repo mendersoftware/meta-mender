@@ -27,7 +27,7 @@ from utils.common import put_no_sftp
 
 @pytest.mark.cross_platform
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
-@pytest.mark.min_mender_version("4.0.0")
+@pytest.mark.min_mender_version("4.1.0")
 class TestWatchdog:
     mender_updated_systemd_service_path = (
         "/data/etc/systemd/system/mender-updated.service.d/override.conf"
