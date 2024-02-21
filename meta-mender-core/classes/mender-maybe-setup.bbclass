@@ -1,13 +1,7 @@
 def mender_feature_is_enabled(feature, if_true, if_false, d):
-    in_enable = bb.utils.contains('MENDER_FEATURES_ENABLE', feature, True, False, d)
-    in_disable = bb.utils.contains('MENDER_FEATURES_DISABLE', feature, True, False, d)
+    return if_true if feature in mender_features_list(d) else if_false
 
-    if in_enable and not in_disable:
-        return if_true
-    else:
-        return if_false
-
-def mender_features(d, separator=" "):
+def mender_features_list(d):
     enabled = d.getVar('MENDER_FEATURES_ENABLE')
     if enabled is None:
         return ""
@@ -26,7 +20,10 @@ def mender_features(d, separator=" "):
         if "mender-update-install" not in enabled:
             enabled.append("mender-update-install")
 
-    return separator.join([feature for feature in enabled if feature not in disabled])
+    return [feature for feature in enabled if feature not in disabled]
+
+def mender_features(d, separator=" "):
+    return separator.join(mender_features_list(d))
 
 MENDER_FEATURES = "${@mender_features(d)}"
 DISTROOVERRIDES:append = ":${@mender_features(d, separator=':')}"
