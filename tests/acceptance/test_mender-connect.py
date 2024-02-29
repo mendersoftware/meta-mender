@@ -23,6 +23,7 @@ from utils.common import (
     cleanup_mender_state,
     put_no_sftp,
     qemu_system_time,
+    version_is_minimum,
 )
 
 
@@ -271,7 +272,7 @@ class TestMenderConnect:
 
     @pytest.mark.min_mender_version("2.5.0")
     def test_mender_connect_reconnect(
-        self, request, connection, with_mock_files, with_mock_servers,
+        self, request, connection, with_mock_files, with_mock_servers, bitbake_variables
     ):
         """Test that mender-connect can re-establish the connection on remote errors"""
 
@@ -285,12 +286,11 @@ class TestMenderConnect:
             )
 
             # wait for error
-            _ = wait_for_string_in_log(
-                connection,
-                startup_time,
-                300,
-                "eventLoop: error reconnecting: failed to connect after max number of retries",
-            )
+            if version_is_minimum(bitbake_variables, "mender-connect", "2.3.0"):
+                error_message = "connection manager failed to connect"
+            else:
+                error_message = "eventLoop: error reconnecting: failed to connect after max number of retries"
+            _ = wait_for_string_in_log(connection, startup_time, 300, error_message)
 
             # Set correct parameters
             signal_time = qemu_system_time(connection)
