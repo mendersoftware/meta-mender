@@ -28,7 +28,7 @@ packaging==23.1
     # via pytest
 pluggy==1.4.0
     # via pytest
-pytest==8.0.0
+pytest==8.0.2
     # via
     #   -r requirements_py3.in
     #   pytest-html
@@ -36,7 +36,7 @@ pytest==8.0.0
     #   pytest-xdist
 pytest-html==4.1.1
     # via -r requirements_py3.in
-pytest-metadata==3.1.0
+pytest-metadata==3.1.1
     # via
     #   -r requirements_py3.in
     #   pytest-html
