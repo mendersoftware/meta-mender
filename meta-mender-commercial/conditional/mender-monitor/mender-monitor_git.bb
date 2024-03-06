@@ -7,7 +7,7 @@ inherit mender-closed-source-utils
 LICENSE = "Mender-Yocto-Layer-License.md"
 LICENSE_FLAGS = "commercial_mender-yocto-layer-license"
 LIC_FILES_CHKSUM = " \
-    file://licenses/LICENSE.md;md5=bb7f3e9e79da87e010a807ecaa14f89c \
+    file://licenses/LICENSE.md;md5=ddb0c461e9cc224aa6aff51b108f26b8 \
 "
 
 # Disables the need for every dependency to be checked, for easier development.
