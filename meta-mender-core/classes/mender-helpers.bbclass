@@ -355,6 +355,32 @@ def get_extra_parts_label(d, id = None):
 
     return ""
 
+def get_extra_parts_relative_offset_by_id(d, id):
+    idx = mender_get_extra_parts_offset_by_id(d, id)
+    offset = mender_get_extra_parts_offset(d)
+    return idx - offset + 1
+
+def get_extra_parts_mount_location(d, id = None):
+    mounts_flags = d.getVarFlags("MENDER_EXTRA_PARTS_MOUNT_LOCATIONS") or {}
+    if id and mounts_flags:
+        if id in mounts_flags:
+            return mounts_flags[id]
+        else:
+            label = get_extra_parts_label(d, id)
+            if not label:
+                label = "extra{}".format(get_extra_parts_relative_offset_by_id(d, id))
+            return "/mnt/{}".format(label)
+    return ""
+
+def get_extra_parts_mount_locations(d):
+    mounts = []
+    ids = get_extra_parts_flags(d)
+    if ids:
+        for id in ids:
+            mounts.append(get_extra_parts_mount_location(d, id))
+    return ' '.join(mounts)
+
+
 def get_extra_parts_sizes(d):
     final_sizes = []
     sizesflags = d.getVarFlags("MENDER_EXTRA_PARTS_SIZES_MB") or {}
@@ -419,14 +445,14 @@ def get_extra_parts_fstab(d):
     extra_parts_offset = mender_get_extra_parts_offset(d)
     device = d.getVar('MENDER_STORAGE_DEVICE_BASE')
     for part in get_extra_parts_flags(d):
-       label = get_extra_parts_label(d, part)
-       fstype_opts = get_extra_parts_fstab_opts(d, part)
-       if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', True, False, d):
-           uuid = get_extra_parts_uuid(d, part)
-           out.append("PARTUUID={} /mnt/{} {}".format(uuid, label, fstype_opts))
-       else:
-           out.append("{} /mnt/{} {}".format(device + str(extra_parts_offset), label, fstype_opts))
-       extra_parts_offset += 1
+        mount = get_extra_parts_mount_location(d, part)
+        fstype_opts = get_extra_parts_fstab_opts(d, part)
+        if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', True, False, d):
+            uuid = get_extra_parts_uuid(d, part)
+            out.append("PARTUUID={} {} {}".format(uuid, mount, fstype_opts))
+        else:
+            out.append("{} {} {}".format(device + str(extra_parts_offset), mount, fstype_opts))
+        extra_parts_offset += 1
 
     return '\n'.join(out)
 

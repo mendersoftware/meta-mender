@@ -1134,7 +1134,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
     def test_extra_parts(
         self, request, latest_part_image, prepared_test_build, bitbake_image
     ):
-        """Test extra partitions setup with MENDER_EXTRA_PARTS and MENDER_EXTRA_PARTS_FSTAB."""
+        """Test extra partitions setup with MENDER_EXTRA_PARTS, MENDER_EXTRA_PARTS_FSTAB, and MENDER_EXTRA_PARTS_MOUNT_LOCATIONS."""
 
         sdimg = latest_part_image.endswith(".sdimg")
         uefiimg = latest_part_image.endswith(".uefiimg")
@@ -1163,12 +1163,14 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                     % tmpdir2,
                     'MENDER_EXTRA_PARTS[test3] = "--fixed-size 50M --fstype=ext4 --source rootfs --rootfs-dir %s --label=test3"'
                     % tmpdir3,
-                    'MENDER_EXTRA_PARTS[test4] = "--fixed-size 50M --fstype=ext4 --source rootfs --rootfs-dir %s --label=test4"'
+                    'MENDER_EXTRA_PARTS[test4] = "--fixed-size 50M --fstype=ext4 --source rootfs --rootfs-dir %s"'
                     % tmpdir4,
                     'MENDER_EXTRA_PARTS_FSTAB[test1] = "auto nouser"',
                     'MENDER_EXTRA_PARTS_FSTAB[test2] = "ext4 defaults,ro"',
                     'MENDER_EXTRA_PARTS_FSTAB[test3] = "ext4 defaults,ro 1"',
                     'MENDER_EXTRA_PARTS_FSTAB[test4] = "ext4 defaults,ro 1 0"',
+                    'MENDER_EXTRA_PARTS_MOUNT_LOCATIONS[test1] = "/opt/test1"',
+                    'MENDER_EXTRA_PARTS_MOUNT_LOCATIONS[test2] = "/opt/test2"',
                 ],
             )
 
@@ -1222,16 +1224,16 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         ).decode()
 
         # Example:
-        # /dev/mmcblk0p5       /mnt/test1           auto       nouser                0  2
-        # /dev/mmcblk0p6       /mnt/test2           auto       defaults,ro            0  2
+        # /dev/mmcblk0p5       /opt/test1           auto       nouser                0  2
+        # /dev/mmcblk0p6       /opt/test2           auto       defaults,ro            0  2
         # /dev/mmcblk0p7       /mnt/test3           auto       defaults,ro            1  2
-        # /dev/mmcblk0p8       /mnt/test4           auto       defaults,ro            1  0
+        # /dev/mmcblk0p8       /mnt/extra4          auto       defaults,ro            1  0
 
         test1_re = (
-            r"^/dev/[a-z0-9]+%d\s+/mnt/test1\s+auto\s+nouser\s+0\s+2\s*$" % extra_start
+            r"^/dev/[a-z0-9]+%d\s+/opt/test1\s+auto\s+nouser\s+0\s+2\s*$" % extra_start
         )
         test2_re = (
-            r"^/dev/[a-z0-9]+%d\s+/mnt/test2\s+ext4\s+defaults,ro\s+0\s+2\s*$"
+            r"^/dev/[a-z0-9]+%d\s+/opt/test2\s+ext4\s+defaults,ro\s+0\s+2\s*$"
             % (extra_start + 1)
         )
         test3_re = (
@@ -1239,7 +1241,7 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             % (extra_start + 2)
         )
         test4_re = (
-            r"^/dev/[a-z0-9]+%d\s+/mnt/test4\s+ext4\s+defaults,ro\s+1\s+0\s*$"
+            r"^/dev/[a-z0-9]+%d\s+/mnt/extra4\s+ext4\s+defaults,ro\s+1\s+0\s*$"
             % (extra_start + 3)
         )
         assert re.search(test1_re, fstab, flags=re.MULTILINE) is not None

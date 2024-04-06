@@ -62,9 +62,9 @@ mender_update_fstab_file() {
 
     if [ -n "${MENDER_EXTRA_PARTS}" ]; then
         local extra_part_fstab="${@get_extra_parts_fstab(d)}"
-        local labels="${@get_extra_parts_labels(d)}"
-        for label in $labels; do
-            mkdir -p ${IMAGE_ROOTFS}/mnt/${label}
+        local mounts="${@get_extra_parts_mount_locations(d)}"
+        for mount in ${mounts}; do
+            mkdir -p ${IMAGE_ROOTFS}/${mount}
         done
 
         parts="${extra_part_fstab}"
