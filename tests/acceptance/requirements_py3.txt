@@ -14,7 +14,7 @@ execnet==1.9.0
     # via pytest-xdist
 filelock==3.13.3
     # via -r requirements_py3.in
-idna==3.4
+idna==3.7
     # via requests
 iniconfig==2.0.0
     # via pytest
