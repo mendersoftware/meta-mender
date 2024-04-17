@@ -4,6 +4,8 @@ Date: Tue, 30 Jan 2018 08:31:21 +0100
 Subject: [PATCH] Revert "usb: Only get 64 bytes device descriptor for full
  speed devices"
 
+Upstream-Status: Inappropriate [Mender specific]
+
 This reverts commit c008faa77358bb5b313696dd1d5bb8afa03a6ca2.
 ---
  common/usb.c | 29 ++++++++++++++---------------

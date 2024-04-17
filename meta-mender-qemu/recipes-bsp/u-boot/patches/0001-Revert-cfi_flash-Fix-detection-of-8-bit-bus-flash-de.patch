@@ -14,6 +14,8 @@ hence this full revert.
 
 This reverts commit 53879b17382fa4108c57128aefd9a04305607e0a.
 
+Upstream-Status: Inappropriate [Mender specific]
+
 Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
 
 ---

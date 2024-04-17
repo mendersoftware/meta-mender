@@ -1,3 +1,7 @@
+Upstream-Status: Inappropriate [Mender specific]
+
+---
+
 diff --git a/include/env_mender.h b/include/env_mender.h
 index d6bc34e..15b2158 100644
 --- a/include/env_mender.h
