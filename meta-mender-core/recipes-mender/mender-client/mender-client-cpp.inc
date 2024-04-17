@@ -96,6 +96,10 @@ SRC_URI:append:mender-growfs-data:mender-systemd = " \
     file://mender-systemd-growfs-data.service \
 "
 
+SRC_URI:append = " \
+     file://0001-CMakeLists.txt-fix-SYSTEMD_UNIT_DIR.patch \
+"
+
 FILES:mender-update:append:mender-image:mender-systemd = " \
     ${systemd_unitdir}/system/mender-data-dir.service \
     ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/mender-data-dir.service \
