@@ -12,6 +12,8 @@ versions used for native compile. As we are interested in grub-editenv,
 and not compiling grub itself, it should be safe to assume tha the
 headers are present in the sysroot for the toolchain.
 
+Upstream-Status: Inappropriate [Mender specific]
+
 Signed-off-by: Lluis Campos <lluis.campos@northern.tech>
 ---
  grub-core/gnulib/wchar.in.h     | 5 +++--

@@ -1,11 +1,11 @@
-From ea602f88bc39b7708f702c050d8608160e1c0e85 Mon Sep 17 00:00:00 2001
+From 7bc27a7201d19a5e39fe6f7f9017c1b272f759f6 Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@northern.tech>
 Date: Tue, 21 Apr 2020 12:54:15 +0200
 Subject: [PATCH] Generic boot code for Mender.
 
-Upstream-Status: Inappropriate
-Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+Upstream-Status: Inappropriate [Mender specific]
 
+Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
 ---
  include/config_mender.h |  98 +++++++++++++++++++++++++
  include/env_mender.h    | 156 ++++++++++++++++++++++++++++++++++++++++

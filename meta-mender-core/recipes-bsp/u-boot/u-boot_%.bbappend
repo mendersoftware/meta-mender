@@ -2,3 +2,4 @@
 # overridden from another layer.
 
 include ${@mender_feature_is_enabled("mender-uboot","u-boot-mender.inc","",d)}
+

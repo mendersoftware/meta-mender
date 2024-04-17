@@ -1,5 +1,9 @@
---- a/arch/arm/boot/dts/vexpress-v2p-ca9.dts
-+++ b/arch/arm/boot/dts/vexpress-v2p-ca9.dts
+Upstream-Status: Inappropriate [Mender specific]
+
+---
+
+--- a/arch/arm/boot/dts/arm/vexpress-v2p-ca9.dts
++++ b/arch/arm/boot/dts/arm/vexpress-v2p-ca9.dts
 @@ -20,7 +20,7 @@
  
  	memory@60000000 {
