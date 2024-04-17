@@ -6,6 +6,8 @@ Subject: [PATCH] vexpress-qemu specific fixes for Flash.
 These are only needed because vexpress-qemu is not originally a Flash
 based board.
 
+Upstream-Status: Inappropriate [Mender specific]
+
 Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
 
 ---
