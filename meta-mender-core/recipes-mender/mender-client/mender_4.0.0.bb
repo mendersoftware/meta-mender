@@ -10,6 +10,11 @@ require mender-client-cpp.inc
 
 SRC_URI = "gitsm://github.com/mendersoftware/mender;protocol=https;branch=4.0.x"
 
+# required for scarthgap, as it defaults to the usrmerge DISTRO_FEATURE
+SRC_URI:append = " \
+     file://0001-CMakeLists.txt-fix-SYSTEMD_UNIT_DIR.patch \
+"
+
 # Tag: 4.0.0
 SRCREV = "146951aa650064af0c28b1e42eb729bcd7aa9155"
 

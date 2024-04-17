@@ -37,6 +37,9 @@ MENDER_CLIENT ?= "mender-updated"
 # Don't download the googletest source in Mender CMakefiles.txt
 EXTRA_OECMAKE:append = " -DMENDER_DOWNLOAD_GTEST=NO"
 
+# make sure the distro policy for systemd units is followed
+EXTRA_OECMAKE:append = " -D SYSTEMD_UNIT_DIR=${systemd_system_unitdir}"
+
 inherit cmake
 
 DEPENDS += "lmdb googletest boost libarchive dbus"
