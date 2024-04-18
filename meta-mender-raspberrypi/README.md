@@ -53,9 +53,14 @@ in addition to `meta-mender` dependencies.
         # building an unneeded image file.
         SDIMG_ROOTFS_TYPE = "ext4"
 
-		# Reserve more space than the Mender default for the boot partition,
-		# as the raspberrypi machines bring some additional things that need
-		# to be placed there too
-		MENDER_BOOT_PART_SIZE_MB = "64"
+        # Reserve more space than the Mender default for the boot partition,
+        # as the raspberrypi machines bring some additional things that need
+        # to be placed there too
+        MENDER_BOOT_PART_SIZE_MB = "64"
+
+        # Configure U-Boot for Raspberry Pi 5
+        KERNEL_IMAGETYPE_UBOOT:raspberrypi5 ?= "Image"
+        KERNEL_BOOTCMD:raspberrypi5 ?= "booti"
+        UBOOT_MACHINE:raspberrypi5 = "rpi_arm64_config"
 
 - Run `bitbake <image name>`
