@@ -12,3 +12,5 @@ SRC_URI:append:rpi:mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFI
                                                         ' file://0001-configs-rpi-enable-mender-requirements.patch \
                                                         ', \
                                                         d)}"
+
+COMPATIBLE_MACHINE:raspberrypi5 = "(.*)"
