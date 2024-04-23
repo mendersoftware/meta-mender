@@ -12,18 +12,18 @@ do_instrument_artifact () {
 
 do_configure:prepend:mender-testing-enabled () {
     # Remove all the src present in build if it is not a symbolic link to ${S}
-    if [ -d ${B}src ]; then
-        rm -rf ${B}src
+    if [ -d ${B}/src ]; then
+        rm -rf ${B}/src
     fi
 
 }
 
 do_configure:append:mender-testing-enabled () {
     # Remove the symbolic link created by go.bbclass in do_configure
-    if [ -h ${B}src ]; then
-        rm ${B}src
+    if [ -h ${B}/src ]; then
+        rm ${B}/src
     fi
-    mkdir -p ${B}src/${GO_IMPORT}
+    mkdir -p ${B}/src/${GO_IMPORT}
     rsync --archive --recursive --delete ${S}/src/${GO_IMPORT}/ ${B}/src/${GO_IMPORT}/
 }
 
