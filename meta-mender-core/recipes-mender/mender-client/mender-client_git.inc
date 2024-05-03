@@ -7,7 +7,7 @@ PKGV = "${@'999+${PV}' if any(['${PV}'.startswith(p) for p in ['master', 'featur
 
 MENDER_BRANCH = "${@mender_branch_from_preferred_version(d)}"
 
-SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=${MENDER_BRANCH}"
+SRC_URI = "gitsm://github.com/mendersoftware/mender;protocol=https;branch=${MENDER_BRANCH}"
 
 # Disables the need for every dependency to be checked, for easier development.
 _MENDER_DISABLE_STRICT_LICENSE_CHECKING = "1"
