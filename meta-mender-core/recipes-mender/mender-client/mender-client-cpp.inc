@@ -36,6 +36,7 @@ MENDER_CLIENT ?= "mender-updated"
 
 # Don't download the googletest source in Mender CMakefiles.txt
 EXTRA_OECMAKE:append = " -DMENDER_DOWNLOAD_GTEST=NO"
+EXTRA_OECMAKE:append = " -DSYSTEMD_UNIT_DIR=${systemd_system_unitdir}"
 
 inherit cmake
 
