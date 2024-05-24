@@ -28,7 +28,7 @@ packaging==23.1
     # via pytest
 pluggy==1.5.0
     # via pytest
-pytest==8.2.0
+pytest==8.2.1
     # via
     #   -r requirements_py3.in
     #   pytest-html
@@ -46,7 +46,7 @@ python-lzo==1.15
     # via -r requirements_py3.in
 redo==2.0.4
     # via -r requirements_py3.in
-requests==2.31.0
+requests==2.32.2
     # via -r requirements_py3.in
 tomli==2.0.1
     # via pytest
