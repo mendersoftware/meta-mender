@@ -165,6 +165,15 @@ def dbus_set_token_and_url_and_emit_signal(connection, token, server_url):
     )
 
 
+def dbus_emit_signal(connection):
+    connection.run(
+        "dbus-send --print-reply --system "
+        "--dest=io.mender.AuthenticationManager "
+        "/io/mender/AuthenticationManager "
+        "io.mender.Authentication1.MockEmitSignal "
+    )
+
+
 def wait_for_string_in_log(connection, since, timeout, search_string):
     output = ""
     while qemu_system_time(connection) < since + timeout:
@@ -193,12 +202,20 @@ class TestMenderConnect:
         """Test that mender-connect can re-establish the connection on D-Bus signals"""
 
         try:
-            dbus_set_token_and_url(connection, "token1", "http://localhost:5000")
-
             # start the mender-connect service
-            startup_time = qemu_system_time(connection)
             connection.run(
                 "systemctl --job-mode=ignore-dependencies start mender-connect"
+            )
+
+            startup_time = qemu_system_time(connection)
+            # wait until the connection happens
+            wait_for_string_in_log(
+                connection, startup_time, 30, "Started Mender Connect service"
+            )
+
+            signal_time = qemu_system_time(connection)
+            dbus_set_token_and_url_and_emit_signal(
+                connection, "token1", "http://localhost:5000"
             )
 
             # wait for first connect
@@ -277,12 +294,20 @@ class TestMenderConnect:
         """Test that mender-connect can re-establish the connection on remote errors"""
 
         try:
-            dbus_set_token_and_url(connection, "badtoken", "http://localhost:12345")
-
             # start the mender-connect service
-            startup_time = qemu_system_time(connection)
             connection.run(
                 "systemctl --job-mode=ignore-dependencies start mender-connect"
+            )
+
+            startup_time = qemu_system_time(connection)
+            # wait until the connection happens
+            wait_for_string_in_log(
+                connection, startup_time, 30, "Started Mender Connect service"
+            )
+
+            signal_time = qemu_system_time(connection)
+            dbus_set_token_and_url_and_emit_signal(
+                connection, "badtoken", "http://localhost:12345"
             )
 
             # wait for error
@@ -305,11 +330,11 @@ class TestMenderConnect:
             )
 
             dbus_set_token_and_url(connection, "", "")
-            kill_time = qemu_system_time(connection)
             # kill the server and wait for error
             with_mock_servers[1].kill()
+            kill_time = qemu_system_time(connection)
             _ = wait_for_string_in_log(
-                connection, kill_time, 300, "error reconnecting:",
+                connection, kill_time, 300, "waiting for reconnect",
             )
 
             # Signal the other server
