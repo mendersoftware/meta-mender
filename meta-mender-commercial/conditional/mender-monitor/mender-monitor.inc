@@ -2,7 +2,8 @@ inherit mender-licensing
 
 inherit systemd
 
-RDEPENDS:${PN} = "bash mender-auth lmdb"
+RDEPENDS:${PN} = "bash mender-auth lmdb coreutils"
+
 
 FILES:${PN} = " \
     ${bindir}/mender-monitord \
