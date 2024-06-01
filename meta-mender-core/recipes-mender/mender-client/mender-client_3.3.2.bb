@@ -11,7 +11,7 @@ require mender-client.inc
 SRC_URI = "git://github.com/mendersoftware/mender;protocol=https;branch=3.3.x"
 
 # Patches to make mender-client compatible with golang 1.14 (dunfell)
-# Required for mender-artifact 3.3.2 and newer
+# Required for mender-client 3.3.2 and newer
 FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
 SRC_URI_append = " \
     file://0001-3.3.x-golang-1.14-compat-Amend-unit-tests-with-a-cus.patch;patchdir=src/${GO_IMPORT} \
