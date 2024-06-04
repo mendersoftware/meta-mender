@@ -5,5 +5,5 @@ pytest-metadata==3.1.1
 pytest-xdist==3.6.1
 python-lzo==1.15
 redo==2.0.4
-requests==2.32.2
+requests==2.32.3
 ubi-reader==0.8.9
