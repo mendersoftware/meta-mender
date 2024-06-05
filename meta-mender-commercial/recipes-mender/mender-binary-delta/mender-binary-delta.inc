@@ -53,7 +53,7 @@ do_configure() {
 
     if [ -n "${MENDER_FLASH_TOOL}" ]; then
         cat >>${WORKDIR}/mender-binary-delta.conf <<EOF
-   "FlashTool": "mender-flash",
+   "FlashTool": "${MENDER_FLASH_TOOL}",
 EOF
     fi
 
