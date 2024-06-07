@@ -55,7 +55,7 @@ FILES_${PN} += "\
     /data/mender/mender.conf \
 "
 FILES_${PN}-dev += " \
-    ${datadir}/dbus-1/interface \
+    ${datadir}/dbus-1/interfaces \
 "
 
 SYSROOT_DIRS += "/data"
@@ -310,8 +310,8 @@ do_install() {
 
             # install the D-Bus interface file(s)
             if [ -f ${B}/src/${GO_IMPORT}/Documentation/io.mender.Authentication1.xml ]; then
-                install -d ${D}${datadir}/dbus-1/interface
-                install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interface
+                install -d ${D}${datadir}/dbus-1/interfaces
+                install -m 0644 ${B}/src/${GO_IMPORT}/Documentation/io.mender.*.xml ${D}${datadir}/dbus-1/interfaces
             fi
         fi
     fi

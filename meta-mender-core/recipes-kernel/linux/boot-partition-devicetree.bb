@@ -1,7 +1,7 @@
 # A recipe which installs all the DTB files from KERNEL_DEVICETREE into the
 # "dtb" folder of the boot partition.
 
-LICENSE = "GPL-2.0"
+LICENSE = "GPL-2.0-only"
 
 FILES_${PN} = " ${MENDER_BOOT_PART_MOUNT_LOCATION}/dtb"
 

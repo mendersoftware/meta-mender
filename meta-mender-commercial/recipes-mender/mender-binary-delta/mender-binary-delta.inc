@@ -8,6 +8,19 @@ SRC_URI_arm = "file://${SUB_FOLDER}/mender-binary-delta;subdir=${BP} file://lice
 SRC_URI_aarch64 = "file://${SUB_FOLDER}/mender-binary-delta;subdir=${BP} file://licenses;subdir=${BP}"
 SRC_URI_x86-64 = "file://${SUB_FOLDER}/mender-binary-delta;subdir=${BP} file://licenses;subdir=${BP}"
 
+# For dunfell, we are not porting mender-flash tool so the valid
+# options here are mtd-utils-ubifs or empty string (default)
+def mender_flash_tool_dependency(d):
+    flash_tool = d.getVar("MENDER_FLASH_TOOL")
+    if flash_tool == "ubiupdatevol":
+        return " mtd-utils-ubifs"
+    else:
+        return ""
+
+MENDER_FLASH_TOOL ??= "${_MENDER_FLASH_TOOL_DEFAULT}"
+_MENDER_FLASH_TOOL_DEFAULT ??= ""
+RDEPENDS:${PN}:append = "${@mender_flash_tool_dependency(d)}"
+
 COMPATIBLE_HOSTS = "arm|aarch64|x86_64"
 
 # "lsb-ld" is needed because Yocto by default does not provide a cross platform
@@ -36,14 +49,22 @@ do_version_check() {
 addtask do_version_check after do_patch before do_install
 
 do_configure() {
-    # We need the sed operation because bitbake misinterprets the JSON closing
-    # brace as end of function, unless we put spaces in front of it.
-    sed -e 's/^ //' <<EOF | cat > ${WORKDIR}/mender-binary-delta.conf
- {
+    echo "{" > ${WORKDIR}/mender-binary-delta.conf
+
+    if [ -n "${MENDER_FLASH_TOOL}" ]; then
+        cat >>${WORKDIR}/mender-binary-delta.conf <<EOF
+   "FlashTool": "${MENDER_FLASH_TOOL}",
+EOF
+    fi
+
+    cat >> ${WORKDIR}/mender-binary-delta.conf <<EOF
    "RootfsPartA": "${MENDER_ROOTFS_PART_A}",
    "RootfsPartB": "${MENDER_ROOTFS_PART_B}"
- }
 EOF
+
+    # We need to us echo instead of Here Document because bitbake misinterprets the JSON closing
+    # brace as end of function, if it is at the beginning of the line.
+    echo '}' >> ${WORKDIR}/mender-binary-delta.conf
 }
 
 do_install() {

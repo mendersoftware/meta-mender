@@ -1,4 +1,4 @@
-IMAGE_FSTYPES += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender mender.bmap', '', d)}"
+IMAGE_FSTYPES += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image', ' mender', '', d)}"
 IMAGE_FSTYPES += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-sd', ' sdimg sdimg.bmap', '', d)}"
 IMAGE_FSTYPES += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-ubi', ' ubimg mtdimg ubimg.bmap', '', d)}"
 IMAGE_FSTYPES += "${@bb.utils.contains('DISTRO_FEATURES', 'mender-image-uefi', ' uefiimg uefiimg.bmap', '', d)}"
@@ -62,7 +62,7 @@ mender_update_fstab_file() {
 
     if [ "${MENDER_SWAP_PART_SIZE_MB}" -ne "0" ]; then
         local swap_part_num="${@mender_get_swap_part_num(d)}"
-	if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+	if ${@bb.utils.contains('DISTRO_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
 	    swap_uuid="${@d.getVar('MENDER_SWAP_PART_UUID')}"
             printf "%-20s %-20s %-10s %-21s %-2s %s\n"  "PARTUUID=${swap_uuid}" swap swap defaults 0  0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
 	else
