@@ -1,3 +1,18 @@
+MENDER_ARTIFACT_PROVIDES_BOOTSTRAP ?= ""
+MENDER_ARTIFACT_PROVIDES_GROUP_BOOTSTRAP ?= ""
+
+MENDER_ARTIFACT_DEPENDS_BOOTSTRAP ?= ""
+MENDER_ARTIFACT_DEPENDS_GROUPS_BOOTSTRAP ?= ""
+
+MENDER_ARTIFACT_PROVIDES_FINAL = "${MENDER_ARTIFACT_PROVIDES} ${MENDER_ARTIFACT_PROVIDES_BOOTSTRAP}"
+MENDER_ARTIFACT_PROVIDES_GROUP_FINAL = "${MENDER_ARTIFACT_PROVIDES_GROUP} ${MENDER_ARTIFACT_PROVIDES_GROUP_BOOTSTRAP}"
+
+MENDER_ARTIFACT_DEPENDS_FINAL = "${MENDER_ARTIFACT_DEPENDS} ${MENDER_ARTIFACT_DEPENDS_BOOTSTRAP}"
+MENDER_ARTIFACT_DEPENDS_GROUPS_FINAL = "${MENDER_ARTIFACT_DEPENDS_GROUPS} ${MENDER_ARTIFACT_DEPENDS_GROUPS_BOOTSTRAP}"
+
+MENDER_ARTIFACT_NAME_BOOTSTRAP ?= "${MENDER_ARTIFACT_NAME}"
+MENDER_ARTIFACT_NAME_DEPENDS_BOOTSTRAP ?= "${MENDER_ARTIFACT_NAME_DEPENDS}"
+
 IMAGE_CMD:bootstrap-artifact() {
 
     # Write a simple hardcoded bootstrap-artifact first, which we use to detect
@@ -11,8 +26,8 @@ IMAGE_CMD:bootstrap-artifact() {
         exit 0
     fi
 
-    if [ -z "${MENDER_ARTIFACT_NAME}" ]; then
-            bberror "Need to define MENDER_ARTIFACT_NAME variable."
+    if [ -z "${MENDER_ARTIFACT_NAME_BOOTSTRAP}" ]; then
+            bberror "Need to define the MENDER_ARTIFACT_NAME_BOOTSTRAP or MENDER_ARTIFACT_NAME variables"
             exit 1
         fi
 
@@ -30,33 +45,33 @@ IMAGE_CMD:bootstrap-artifact() {
             extra_args="$extra_args -k ${MENDER_ARTIFACT_SIGNING_KEY}"
         fi
 
-        if [ -n "${MENDER_ARTIFACT_NAME_DEPENDS}" ]; then
+        if [ -n "${MENDER_ARTIFACT_NAME_DEPENDS_BOOTSTRAP}" ]; then
             cmd=""
-            apply_arguments "--artifact-name-depends" "${MENDER_ARTIFACT_NAME_DEPENDS}"
+            apply_arguments "--artifact-name-depends" "${MENDER_ARTIFACT_NAME_DEPENDS_BOOTSTRAP}"
             extra_args="$extra_args $cmd"
         fi
 
-        if [ -n "${MENDER_ARTIFACT_PROVIDES}" ]; then
+        if [ -n "${MENDER_ARTIFACT_PROVIDES}" -o -n "${MENDER_ARTIFACT_PROVIDES_BOOTSTRAP}" ]; then
             cmd=""
-            apply_arguments "--provides" "${MENDER_ARTIFACT_PROVIDES}"
+            apply_arguments "--provides" "${MENDER_ARTIFACT_PROVIDES_FINAL}"
             extra_args="$extra_args $cmd"
         fi
 
-        if [ -n "${MENDER_ARTIFACT_PROVIDES_GROUP}" ]; then
+        if [ -n "${MENDER_ARTIFACT_PROVIDES_GROUP}" -o -n "${MENDER_ARTIFACT_PROVIDES_GROUP_BOOTSTRAP}" ]; then
             cmd=""
-            apply_arguments "--provides-group" "${MENDER_ARTIFACT_PROVIDES_GROUP}"
+            apply_arguments "--provides-group" "${MENDER_ARTIFACT_PROVIDES_GROUP_FINAL}"
             extra_args="$extra_args $cmd"
         fi
 
-        if [ -n "${MENDER_ARTIFACT_DEPENDS}" ]; then
+        if [ -n "${MENDER_ARTIFACT_DEPENDS}" -o -n "${MENDER_ARTIFACT_DEPENDS_BOOTSTRAP}" ]; then
             cmd=""
-            apply_arguments "--depends" "${MENDER_ARTIFACT_DEPENDS}"
+            apply_arguments "--depends" "${MENDER_ARTIFACT_DEPENDS_FINAL}"
             extra_args="$extra_args $cmd"
         fi
 
-        if [ -n "${MENDER_ARTIFACT_DEPENDS_GROUPS}" ]; then
+        if [ -n "${MENDER_ARTIFACT_DEPENDS_GROUPS}" -o -n "${MENDER_ARTIFACT_DEPENDS_GROUPS_BOOTSTRAP}" ]; then
             cmd=""
-            apply_arguments "--depends-groups" "${MENDER_ARTIFACT_DEPENDS_GROUPS}"
+            apply_arguments "--depends-groups" "${MENDER_ARTIFACT_DEPENDS_GROUPS_FINAL}"
             extra_args="$extra_args $cmd"
         fi
 
@@ -72,7 +87,7 @@ IMAGE_CMD:bootstrap-artifact() {
 
         # NOTE: We don't allow extra arguments from MENDER_ARTIFACT_EXTRA_ARGS
         mender-artifact write bootstrap-artifact \
-            --artifact-name ${MENDER_ARTIFACT_NAME} \
+            --artifact-name ${MENDER_ARTIFACT_NAME_BOOTSTRAP} \
             --provides "rootfs-image.version:${MENDER_ARTIFACT_NAME}" \
             --provides "rootfs-image.checksum:${img_checksum}" \
             --clears-provides "rootfs-image.*" \
