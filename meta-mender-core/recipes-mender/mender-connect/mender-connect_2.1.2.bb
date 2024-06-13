@@ -10,8 +10,8 @@ require mender-connect.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender-connect.git;protocol=https;branch=2.1.x"
 
-# Tag: 2.1.1
-SRCREV = "84b348354dc90b008a6aaa9acf2badcf5f3e7df1"
+# Tag: 2.1.2
+SRCREV = "30379d86557daaa40d1f270a1fc7cd52576c772d"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
@@ -26,7 +26,7 @@ DEFAULT_PREFERENCE = "-1"
 # file.
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
 LIC_FILES_CHKSUM = " \
-    file://src/github.com/mendersoftware/mender-connect/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
+    file://src/github.com/mendersoftware/mender-connect/LICENSE;md5=30b4554c64108561c0cb1c57e8a044f0 \
     file://src/github.com/mendersoftware/mender-connect/vendor/github.com/mendersoftware/go-lib-micro/LICENSE;md5=3edc376d2e5952a15bcf912ddae86816 \
     file://src/github.com/mendersoftware/mender-connect/vendor/github.com/gorilla/websocket/LICENSE;md5=c007b54a1743d596f46b2748d9f8c044 \
     file://src/github.com/mendersoftware/mender-connect/vendor/github.com/pkg/errors/LICENSE;md5=6fe682a02df52c6653f33bd0f7126b5a \

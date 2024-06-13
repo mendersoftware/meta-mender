@@ -17,8 +17,8 @@ SRC_URI_append = " \
     file://0001-golang-1.14-compat-Amend-unit-tests-with-a-custom-te.patch;patchdir=src/${GO_IMPORT} \
 "
 
-# Tag: 3.5.2
-SRCREV = "9cac733f6913e1107905213fe274445f3951e5c4"
+# Tag: 3.5.3
+SRCREV = "0e326002fc2d013cd7f44650b99068cbddf83540"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
@@ -32,7 +32,7 @@ DEFAULT_PREFERENCE = "-1"
 # releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
 # file.
 LIC_FILES_CHKSUM = " \
-    file://src/github.com/mendersoftware/mender/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
+    file://src/github.com/mendersoftware/mender/LICENSE;md5=30b4554c64108561c0cb1c57e8a044f0 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/mendersoftware/mender-artifact/LICENSE;md5=b4b4cfdaea6d61aa5793b92efd42e081 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/mendersoftware/openssl/LICENSE;md5=19cbd64715b51267a47bf3750cc6a8a5 \
     file://src/github.com/mendersoftware/mender/vendor/github.com/minio/sha256-simd/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
