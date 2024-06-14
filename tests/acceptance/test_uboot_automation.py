@@ -88,7 +88,7 @@ class TestUbootAutomation:
         # Find the repository directories we need
         [poky_dir, meta_mender_dir, _] = (
             subprocess.check_output(
-                "bitbake-layers show-layers | awk '$1~/(^meta$|^meta-mender-core$)/ {print $2}' | xargs -n 1 dirname",
+                "bitbake-layers show-layers | awk '$1~/(^core$|^mender$)/ {print $2}' | xargs -n 1 dirname",
                 cwd=os.environ["BUILDDIR"],
                 shell=True,
             )
@@ -348,8 +348,8 @@ class TestUbootAutomation:
 
             if machine == "vexpress-qemu":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2022.01-gitd637294e264a
-                measured_failed_ratio = 26.0 / 498.0
+                # From version: 2024.01
+                measured_failed_ratio = 66.0 / 535.0
             elif machine == "vexpress-qemu-flash":
                 # PLEASE UPDATE the version you used to find this number if you update it.
                 # From version: 2022.01-gitd637294e264a
