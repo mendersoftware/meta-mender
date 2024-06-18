@@ -52,5 +52,5 @@ tomli==2.0.1
     # via pytest
 ubi-reader==0.8.9
     # via -r requirements_py3.in
-urllib3==1.26.18
+urllib3==1.26.19
     # via requests
