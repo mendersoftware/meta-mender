@@ -35,3 +35,8 @@ do_install:append:mender-systemd:mender-testing-enabled() {
     ln -s ../../../../data/etc/systemd/system/mender-updated.service.d/override.conf ${D}/etc/systemd/system/mender-updated.service.d/override.conf
 }
 
+do_compile:prepend() {
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-testing-enabled', 'false', 'true', d)}; then
+        bbwarn "You are missing mender-testing-enabled feature for mender-ci layer to work properly"
+    fi
+}
