@@ -351,6 +351,9 @@ do_save_mender_auto_configured_patch() {
     # Get rid of absolute paths in the patch.
     sed -ie '/---\|+++/ { s%${MENDER_UBOOT_OLD_SRC}%a%; s%${S}%b% }' ${WORKDIR}/mender_auto_configured.patch
 
+    # Prepend Patch Upstream Status
+    sed -i '1 iUpstream-Status: Inappropriate [Mender specific]\n\n---\n' ${WORKDIR}/mender_auto_configured.patch
+
     # "bbnote" might be more appropriate here, but it doesn't always display.
     bbwarn "Auto configured U-Boot patch has been stored in ${WORKDIR}/mender_auto_configured.patch"
 }
