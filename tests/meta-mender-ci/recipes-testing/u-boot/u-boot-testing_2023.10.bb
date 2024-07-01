@@ -4,7 +4,7 @@ require recipes-bsp/u-boot/u-boot-mender.inc
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
 
-DEPENDS += "bc-native dtc-native"
+DEPENDS += "bc-native dtc-native bison-native"
 
 INSANE_SKIP:u-boot-testing += "ldflags textrel"
 
