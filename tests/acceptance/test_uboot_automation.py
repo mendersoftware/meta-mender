@@ -593,8 +593,7 @@ class TestUbootAutomation:
                     bitbake_image,
                     [
                         'MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"',
-                        'TEST_SRC_URI_APPEND:pn-u-boot = " file://%s"'
-                        % os.path.basename(new_patch.name),
+                        f'TEST_SRC_URI_APPEND:pn-u-boot = " file://{new_patch.name}"',
                     ],
                     target="-c clean u-boot",
                 )
@@ -605,6 +604,7 @@ class TestUbootAutomation:
                         prepared_test_build["bitbake_corebase"],
                         bitbake_image,
                         target="-c compile u-boot",
+                        capture=True,
                     )
 
                     # Should never get here.
@@ -613,13 +613,10 @@ class TestUbootAutomation:
                     )
 
                 except subprocess.CalledProcessError as e:
-                    # A bit risky change after upgrading tests from python2.7 to python3.
-                    # It seems that underneath subprocess.check_output() call in not
-                    # capturing the output as `capture_output` flag is not set.
-                    if e.output:
-                        assert (
-                            e.output.find("Please fix U-Boot's configuration file") >= 0
-                        )
+                    # Output is captured and attached to the Exception. See _run_bitbake
+                    assert e.output.find("Please fix U-Boot's configuration file") >= 0
+                except:
+                    pytest.fail("Unexpected exception!")
 
             finally:
                 build_image(
