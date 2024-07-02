@@ -1,3 +1,7 @@
+Upstream-Status: Inappropriate [Mender specific]
+
+---
+
 diff --git a/licenses/LICENSE.md b/licenses/LICENSE.md
 new file mode 100644
 index 0000000..0f9e941

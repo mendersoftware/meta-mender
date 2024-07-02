@@ -5,7 +5,7 @@ PREFERRED_PROVIDER_virtual/kernel ?= "linux-yocto"
 SERIAL_CONSOLE = "115200 ttyAMA0"
 
 KERNEL_IMAGETYPE = "zImage"
-KERNEL_DEVICETREE = "vexpress-v2p-ca9.dtb"
+KERNEL_DEVICETREE = "arm/vexpress-v2p-ca9.dtb"
 KERNEL_EXTRA_ARGS += "LOADADDR=${UBOOT_ENTRYPOINT}"
 
 UBOOT_SUFFIX = "bin"

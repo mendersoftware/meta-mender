@@ -11,3 +11,6 @@ RDEPENDS:${PN}:append:mender-update-install = " lsb-ld"
 
 # Install Mender add-ons.
 RDEPENDS:${PN}:append:mender-image = " mender-connect mender-configure mender-configure-demo mender-configure-scripts"
+
+# Except for vexpress-qemu-flash platform, where we are running out of space
+RDEPENDS:${PN}:remove:mender-image:vexpress-qemu-flash = "mender-connect mender-configure mender-configure-demo mender-configure-scripts"

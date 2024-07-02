@@ -89,6 +89,9 @@ python() {
 
         # Enable the testing/* layers and functionality
         'mender-testing-enabled',
+
+        # Enable UEFI Capsule artifact generation
+        'mender-image-uefi-capsule',
     }
 
     # Verify that all 'mender-' features are added using MENDER_FEATURES_ENABLE

@@ -245,7 +245,7 @@ PREFERRED_RPROVIDER_mender-update ??= "mender"
 
 IMAGE_INSTALL:append:mender-auth-install = " mender-auth"
 IMAGE_INSTALL:append:mender-update-install = " mender-update"
-IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-dataimg mender-bootimg mender-datatar"
+IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-artifact-uefi-capsule mender-dataimg mender-bootimg mender-datatar"
 
 # Originally defined in bitbake.conf. We define them here so that images with
 # the same MACHINE name, but different MENDER_DEVICE_TYPE, will not result in

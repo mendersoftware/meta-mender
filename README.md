@@ -29,8 +29,6 @@ The following layers in this repository are officially supported by Mender:
 
 * `meta-mender-core` (Core components of Mender)
 * `meta-mender-demo` (Demo layer. Not intended for production)
-* `meta-mender-raspberrypi` (Raspberry Pi 3 board support)
-* `meta-mender-raspberrypi-demo` (Raspberry Pi 3 demo-board modifications)
 * `meta-mender-qemu` (QEMU emulator board support)
 
 Commercially available components are available through the `meta-mender-commercial` layer. See the [Readme](meta-mender-commercial/README.md) for further information.

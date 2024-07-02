@@ -1,0 +1,38 @@
+From f97b9a680230a7539acf371ac0bce22c6473246f Mon Sep 17 00:00:00 2001
+From: Preeti Sachan <preeti.sachan@intel.com>
+Date: Wed, 17 Apr 2024 12:44:37 +0530
+Subject: [PATCH] CMakeLists.txt: fix SYSTEMD_UNIT_DIR
+
+Setting hardcoded path "/lib/systemd/system" to
+SYSTEMD_UNIT_DIR variable, is causing following failure:
+| do_package: Didn't find service unit 'mender-updated.service',
+| specified in SYSTEMD_SERVICE:mender-update
+
+Set SYSTEMD_UNIT_DIR to bitbake env variable ${systemd_system_unitdir}.
+When usrmerge DISTRO_FEATURE is enabled, ${root_prefix} points to
+${exec_prefix} otherwise to ${base_prefix}.
+
+Ref:
+https://git.openembedded.org/openembedded-core/commit/?id=700848c6ebd03bf3105d09a41d758883ab875618
+
+Upstream-Status: Inappropriate [OE specific]
+
+Signed-off-by: Preeti Sachan <preeti.sachan@intel.com>
+
+---
+ support/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/support/CMakeLists.txt b/support/CMakeLists.txt
+index 26b24bae..3fb0c936 100644
+--- a/support/CMakeLists.txt
++++ b/support/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-set(SYSTEMD_UNIT_DIR /lib/systemd/system)
++set(SYSTEMD_UNIT_DIR $ENV{systemd_system_unitdir})
+ 
+ include(GNUInstallDirs)
+ 
+-- 
+2.34.1
+
