@@ -87,8 +87,8 @@ SRC_URI:append:mender-image:mender-systemd = " \
 "
 
 SRC_URI:append:mender-persist-systemd-machine-id = " \
-    file://mender-systemd-machine-id.service \
-    file://mender-set-systemd-machine-id.sh \
+    file://mender-client-systemd-machine-id.service \
+    file://mender-client-set-systemd-machine-id.sh \
 "
 
 SRC_URI:append:mender-growfs-data:mender-systemd = " \
@@ -111,9 +111,9 @@ FILES:mender-update:append:mender-growfs-data:mender-systemd = " \
 "
 
 FILES:mender-update:append:mender-persist-systemd-machine-id = " \
-    ${systemd_unitdir}/system/mender-systemd-machine-id.service \
-    ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/mender-systemd-machine-id.service \
-    ${bindir}/mender-set-systemd-machine-id.sh \
+    ${systemd_unitdir}/system/mender-client-systemd-machine-id.service \
+    ${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/mender-client-systemd-machine-id.service \
+    ${bindir}/mender-client-set-systemd-machine-id.sh \
 "
 
 FILES:mender-config += "\
@@ -323,11 +323,11 @@ do_install:append:class-target:mender-growfs-data:mender-systemd() {
 }
 
 do_install:append:class-target:mender-persist-systemd-machine-id() {
-    install -m 644 ${WORKDIR}/mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/
+    install -m 644 ${WORKDIR}/mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
-    ln -sf ../mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
+    ln -sf ../mender-client-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
     install -d -m 755 ${D}${bindir}
-    install -m 755 ${WORKDIR}/mender-set-systemd-machine-id.sh ${D}${bindir}/
+    install -m 755 ${WORKDIR}/mender-client-set-systemd-machine-id.sh ${D}${bindir}/
 }
 
 do_install() {
