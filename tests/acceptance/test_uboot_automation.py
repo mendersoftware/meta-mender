@@ -88,7 +88,7 @@ class TestUbootAutomation:
         # Find the repository directories we need
         [poky_dir, meta_mender_dir, _] = (
             subprocess.check_output(
-                "bitbake-layers show-layers | awk '$1~/(^meta$|^meta-mender-core$)/ {print $2}' | xargs -n 1 dirname",
+                "bitbake-layers show-layers | awk '$1~/(^core$|^mender$)/ {print $2}' | xargs -n 1 dirname",
                 cwd=os.environ["BUILDDIR"],
                 shell=True,
             )
