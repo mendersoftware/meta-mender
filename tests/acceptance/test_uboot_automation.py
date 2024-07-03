@@ -88,7 +88,7 @@ class TestUbootAutomation:
         # Find the repository directories we need
         [poky_dir, meta_mender_dir, _] = (
             subprocess.check_output(
-                "bitbake-layers show-layers | awk '$1~/(^meta$|^meta-mender-core$)/ {print $2}' | xargs -n 1 dirname",
+                "bitbake-layers show-layers | awk '$1~/(^core$|^mender$)/ {print $2}' | xargs -n 1 dirname",
                 cwd=os.environ["BUILDDIR"],
                 shell=True,
             )
@@ -348,12 +348,12 @@ class TestUbootAutomation:
 
             if machine == "vexpress-qemu":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2022.01-gitd637294e264a
-                measured_failed_ratio = 26.0 / 498.0
+                # From version: 2024.01
+                measured_failed_ratio = 66.0 / 535.0
             elif machine == "vexpress-qemu-flash":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2022.01-gitd637294e264a
-                measured_failed_ratio = 9.0 / 130.0
+                # From version: 2024.01
+                measured_failed_ratio = 19.0 / 122.0
 
             # We tolerate a certain percentage discrepancy in either direction.
             tolerated_discrepancy = 0.1
@@ -593,8 +593,7 @@ class TestUbootAutomation:
                     bitbake_image,
                     [
                         'MENDER_UBOOT_AUTO_CONFIGURE:pn-u-boot = "0"',
-                        'TEST_SRC_URI_APPEND:pn-u-boot = " file://%s"'
-                        % os.path.basename(new_patch.name),
+                        f'TEST_SRC_URI_APPEND:pn-u-boot = " file://{new_patch.name}"',
                     ],
                     target="-c clean u-boot",
                 )
@@ -605,6 +604,7 @@ class TestUbootAutomation:
                         prepared_test_build["bitbake_corebase"],
                         bitbake_image,
                         target="-c compile u-boot",
+                        capture=True,
                     )
 
                     # Should never get here.
@@ -613,13 +613,10 @@ class TestUbootAutomation:
                     )
 
                 except subprocess.CalledProcessError as e:
-                    # A bit risky change after upgrading tests from python2.7 to python3.
-                    # It seems that underneath subprocess.check_output() call in not
-                    # capturing the output as `capture_output` flag is not set.
-                    if e.output:
-                        assert (
-                            e.output.find("Please fix U-Boot's configuration file") >= 0
-                        )
+                    # Output is captured and attached to the Exception. See _run_bitbake
+                    assert e.output.find("Please fix U-Boot's configuration file") >= 0
+                except:
+                    pytest.fail("Unexpected exception!")
 
             finally:
                 build_image(

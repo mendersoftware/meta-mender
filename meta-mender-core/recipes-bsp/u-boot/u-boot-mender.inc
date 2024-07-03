@@ -14,13 +14,12 @@ MENDER_UBOOT_AUTO_CONFIGURE ??= "${@bb.utils.contains('MENDER_FEATURES', 'mender
 ################################################################################
 FILESEXTRAPATHS:prepend := "${THISDIR}/patches:${THISDIR}/files:"
 
-SRC_URI:append:mender-uboot = " file://0001-Add-missing-header-which-fails-on-recent-GCC.patch"
-SRC_URI:append:mender-uboot = " file://0002-Generic-boot-code-for-Mender.patch"
-SRC_URI:append:mender-uboot = " file://0003-Integration-of-Mender-boot-code-into-U-Boot.patch"
+SRC_URI:append:mender-uboot = " file://0001-Generic-boot-code-for-Mender.patch"
+SRC_URI:append:mender-uboot = " file://0002-Integration-of-Mender-boot-code-into-U-Boot.patch"
 
 SRC_URI:append:mender-uboot = "${@bb.utils.contains('MENDER_UBOOT_AUTO_CONFIGURE', \
                                                     '1', \
-                                                    ' file://0004-Disable-CONFIG_BOOTCOMMAND-and-enable-CONFIG_MENDER_.patch', \
+                                                    ' file://0003-Disable-CONFIG_BOOTCOMMAND-and-enable-CONFIG_MENDER_.patch', \
                                                     '', \
                                                     d)}"
 
@@ -351,6 +350,9 @@ do_save_mender_auto_configured_patch() {
 
     # Get rid of absolute paths in the patch.
     sed -ie '/---\|+++/ { s%${MENDER_UBOOT_OLD_SRC}%a%; s%${S}%b% }' ${WORKDIR}/mender_auto_configured.patch
+
+    # Prepend Patch Upstream Status
+    sed -i '1 iUpstream-Status: Inappropriate [Mender specific]\n\n---\n' ${WORKDIR}/mender_auto_configured.patch
 
     # "bbnote" might be more appropriate here, but it doesn't always display.
     bbwarn "Auto configured U-Boot patch has been stored in ${WORKDIR}/mender_auto_configured.patch"

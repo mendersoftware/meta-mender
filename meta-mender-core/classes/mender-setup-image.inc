@@ -1,4 +1,5 @@
 IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image', ' mender', '', d)}"
+IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-uefi-capsule', ' mender-capsule', '', d)}"
 IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-sd', ' sdimg sdimg.bmap', '', d)}"
 IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-ubi', ' ubimg mtdimg ubimg.bmap', '', d)}"
 IMAGE_FSTYPES += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image-uefi', ' uefiimg uefiimg.bmap', '', d)}"

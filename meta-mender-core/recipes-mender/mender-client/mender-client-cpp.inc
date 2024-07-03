@@ -38,6 +38,9 @@ MENDER_CLIENT ?= "mender-updated"
 EXTRA_OECMAKE:append = " -DMENDER_DOWNLOAD_GTEST=NO"
 EXTRA_OECMAKE:append = " -DSYSTEMD_UNIT_DIR=${systemd_system_unitdir}"
 
+# make sure the distro policy for systemd units is followed
+EXTRA_OECMAKE:append = " -D SYSTEMD_UNIT_DIR=${systemd_system_unitdir}"
+
 inherit cmake
 
 DEPENDS += "lmdb googletest boost libarchive dbus"
