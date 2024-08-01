@@ -513,7 +513,10 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         )
 
         output = run_verbose("mender-artifact read %s" % image, capture=True)
-        assert b"Compatible devices: '[machine1 machine2]'" in output
+        if version_is_minimum(bitbake_variables, "mender-artifact", "3.12.0"):
+            assert b"Compatible devices: [machine1, machine2]" in output
+        else:
+            assert b"Compatible devices: '[machine1 machine2]'" in output
 
         output = subprocess.check_output(
             "tar xOf %s header.tar.gz | tar xOz header-info" % image, shell=True
