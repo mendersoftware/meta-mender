@@ -90,8 +90,8 @@ SRC_URI:append:mender-image:mender-systemd = " \
 "
 
 SRC_URI:append:mender-persist-systemd-machine-id = " \
-    file://mender-client-systemd-machine-id.service \
-    file://mender-client-set-systemd-machine-id.sh \
+    file://mender-systemd-machine-id.service \
+    file://mender-set-systemd-machine-id.sh \
 "
 
 SRC_URI:append:mender-growfs-data:mender-systemd = " \
