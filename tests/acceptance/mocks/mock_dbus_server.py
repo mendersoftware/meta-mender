@@ -21,29 +21,32 @@ from pydbus.generic import signal
 class IoMenderAuthenticationIface:
     """
 <node>
-	<interface name="io.mender.Authentication1">
-		<method name="GetJwtToken">
-			<arg type="s" name="token" direction="out"/>
-			<arg type="s" name="server_url" direction="out"/>
-		</method>
-		<method name="FetchJwtToken">
-			<arg type="b" name="success" direction="out"/>
-		</method>
+    <interface name="io.mender.Authentication1">
+        <method name="GetJwtToken">
+            <arg type="s" name="token" direction="out"/>
+            <arg type="s" name="server_url" direction="out"/>
+        </method>
+        <method name="FetchJwtToken">
+            <arg type="b" name="success" direction="out"/>
+        </method>
         <signal name="JwtTokenStateChange">
-			<arg type="s" name="token"/>
-			<arg type="s" name="server_url"/>
-		</signal>
-		<method name="MockSetJwtToken">
-			<arg type="s" name="token" direction="in"/>
-			<arg type="s" name="server_url" direction="in"/>
-		</method>
-		<method name="MockSetJwtTokenAndEmitSignal">
-			<arg type="s" name="token" direction="in"/>
-			<arg type="s" name="server_url" direction="in"/>
-		</method>
-	</interface>
+            <arg type="s" name="token"/>
+            <arg type="s" name="server_url"/>
+        </signal>
+        <method name="MockSetJwtToken">
+            <arg type="s" name="token" direction="in"/>
+            <arg type="s" name="server_url" direction="in"/>
+        </method>
+        <method name="MockSetJwtTokenAndEmitSignal">
+            <arg type="s" name="token" direction="in"/>
+            <arg type="s" name="server_url" direction="in"/>
+        </method>
+        <method name="MockEmitSignal">
+            <arg type="b" name="success" direction="out"/>
+        </method>
+    </interface>
 </node>
-	"""
+    """
 
     def __init__(self):
         self.token = ""
@@ -65,6 +68,10 @@ class IoMenderAuthenticationIface:
     def MockSetJwtTokenAndEmitSignal(self, token, server_url):
         self.token = token
         self.server_url = server_url
+        self.JwtTokenStateChange(self.token, self.server_url)
+        return True
+
+    def MockEmitSignal(self):
         self.JwtTokenStateChange(self.token, self.server_url)
         return True
 
