@@ -1,6 +1,5 @@
 autoconf
 automake
-awscli
 bash
 bc
 build-essential
