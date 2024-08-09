@@ -1,6 +1,5 @@
 autoconf
 automake
-awscli
 bash
 bc
 build-essential
@@ -12,6 +11,7 @@ device-tree-compiler
 diffstat
 docker.io
 e2tools
+file
 gawk
 gdisk
 git
