@@ -13,18 +13,12 @@ SYSTEMD_SERVICE:${PN} = "mender-connect.service"
 
 B = "${WORKDIR}/build"
 
-inherit go
+inherit go-mod
 inherit go-ptest
 inherit pkgconfig
 inherit systemd
 
 GO_IMPORT = "github.com/mendersoftware/mender-connect"
-
-do_compile() {
-    oe_runmake \
-        -C ${B}/src/${GO_IMPORT} \
-        V=1
-}
 
 python do_prepare_mender_connect_conf() {
     import json
@@ -53,19 +47,13 @@ do_prepare_mender_connect_conf[vardeps] = " \
     MENDER_CONNECT_USER \
 "
 
-do_install() {
-    oe_runmake \
-        -C ${B}/src/${GO_IMPORT} \
-        V=1 \
-        prefix=${D} \
-        bindir=${bindir} \
-        datadir=${datadir} \
-        sysconfdir=${sysconfdir} \
-        systemd_unitdir=${systemd_unitdir} \
-        install-bin \
+# Set the version of mender-connect by passing it as an extra ldflag to go.bbclass
+# This is equivalent to how it's set in the Makefile
+GO_EXTRA_LDFLAGS:append = "-X github.com/mendersoftware/mender-connect/config.Version=$(git describe --tags --dirty --exact-match 2>/dev/null || git rev-parse --short HEAD)"
 
-    # install configuration
-    mkdir -p  ${D}/${sysconfdir}/mender
+do_install:append() {
+    # Install configuration
+    mkdir -p ${D}/${sysconfdir}/mender
     install -m 0600 ${B}/mender-connect.conf ${D}/${sysconfdir}/mender/mender-connect.conf
 }
 
