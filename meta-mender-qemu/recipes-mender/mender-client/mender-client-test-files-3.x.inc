@@ -10,7 +10,7 @@ DEPENDS:append:mender-image:qemuall = " softhsm opensc gnutls p11-kit libp11"
 RDEPENDS:${PN}:append:mender-image:qemuall = " softhsm opensc gnutls p11-kit libp11 gnutls-bin"
 
 # Needed for the TestFaultTolerance tests in the integration repository.
-RDEPENDS:${PN}:append:mender-image:qemuall = " \
+RDEPENDS:mender-auth:append:mender-image:qemuall = " \
     kernel-module-ipt-reject \
     kernel-module-ts-bm \
     kernel-module-xt-string \
