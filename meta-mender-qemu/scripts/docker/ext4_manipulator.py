@@ -21,6 +21,9 @@ def get(remote_path, local_path, rootfs):
                           stderr=subprocess.STDOUT)
 
 def put(local_path, remote_path, rootfs, remote_path_mkdir_p=False):
+    # Debugfs doesn't produce error if a file doesn't exist, so let's check that first.
+    assert os.path.exists(local_path), f"\"{local_path}\" doesn't exist"
+
     proc = subprocess.Popen(["debugfs", "-w", rootfs], stdin=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
     if remote_path_mkdir_p:
