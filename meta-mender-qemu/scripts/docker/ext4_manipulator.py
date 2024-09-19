@@ -20,10 +20,10 @@ def get(remote_path, local_path, rootfs):
     subprocess.check_call(["debugfs", "-R", "dump -p %s %s" % (remote_path, local_path), rootfs],
                           stderr=subprocess.STDOUT)
 
-def put(local_path, remote_path, rootfs, remote_path_mkdir_p=False):
-    # Debugfs doesn't produce error if a file doesn't exist, so let's check that first.
-    assert os.path.exists(local_path), f"\"{local_path}\" doesn't exist"
+EXT4_PUT = 0
+EXT4_SYMLINK = 1
 
+def _put_common(operation, local_path, remote_path, rootfs, remote_path_mkdir_p=False):
     proc = subprocess.Popen(["debugfs", "-w", rootfs], stdin=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
     if remote_path_mkdir_p:
@@ -33,10 +33,24 @@ def put(local_path, remote_path, rootfs, remote_path_mkdir_p=False):
             proc.stdin.write(("mkdir %s\n" % parent).encode())
     proc.stdin.write(("cd %s\n" % os.path.dirname(remote_path)).encode())
     proc.stdin.write(("rm %s\n" % os.path.basename(remote_path)).encode())
-    proc.stdin.write(("write %s %s\n" % (local_path, os.path.basename(remote_path))).encode())
+    if operation == EXT4_PUT:
+        proc.stdin.write(("write %s %s\n" % (local_path, os.path.basename(remote_path))).encode())
+    elif operation == EXT4_SYMLINK:
+        proc.stdin.write(("symlink %s %s\n" % (os.path.basename(remote_path), local_path)).encode())
+    else:
+        assert False, "_put_common: Invalid operation"
     proc.stdin.close()
     ret = proc.wait()
     assert ret == 0
+
+def put(local_path, remote_path, rootfs, remote_path_mkdir_p=False):
+    # Debugfs doesn't produce error if a file doesn't exist, so let's check that first.
+    assert os.path.exists(local_path), f"\"{local_path}\" doesn't exist"
+
+    return _put_common(EXT4_PUT, local_path, remote_path, rootfs, remote_path_mkdir_p=remote_path_mkdir_p)
+
+def symlink(target, remote_path, rootfs, remote_path_mkdir_p=False):
+    return _put_common(EXT4_SYMLINK, target, remote_path, rootfs, remote_path_mkdir_p=remote_path_mkdir_p)
 
 def extract_ext4(img, rootfs):
     return _manipulate_ext4(img=img, rootfs=rootfs, write=False)
