@@ -25,7 +25,7 @@
 #       Copy the configuration file for mender-gateway
 #       Note that the file needs to be mounted into the Docker container
 
-FROM python:3.12.5-alpine3.20
+FROM python:3.12.6-alpine3.20
 
 # Install packages
 RUN apk add --no-cache util-linux multipath-tools \
