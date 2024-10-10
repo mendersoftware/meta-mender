@@ -92,6 +92,9 @@ python() {
 
         # Enable UEFI Capsule artifact generation
         'mender-image-uefi-capsule',
+
+        # Enable prepopulation of second root partition
+        'mender-prepopulate-inactive-partition',
     }
 
     # Verify that all 'mender-' features are added using MENDER_FEATURES_ENABLE
