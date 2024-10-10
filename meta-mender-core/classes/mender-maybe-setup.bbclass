@@ -100,6 +100,9 @@ python() {
 
         # Enable the testing/* layers and functionality
         'mender-testing-enabled',
+
+        # Enable prepopulation of second root partition
+        'mender-prepopulate-inactive-partition',
     }
 
     # Verify that all 'mender-' features are added using MENDER_FEATURES_ENABLE
