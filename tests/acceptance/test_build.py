@@ -455,6 +455,11 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         else:
             base_recipe = recipe
 
+        init_env_cmd = "cd %s && . oe-init-build-env %s" % (
+            prepared_test_build["bitbake_corebase"],
+            prepared_test_build["build_dir"],
+        )
+
         for pn_style in ["", "pn-"]:
             with open(old_file) as old_fd, open(new_file, "w") as new_fd:
                 for line in old_fd.readlines():
@@ -483,11 +488,12 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                         % (pn_style, base_recipe, version)
                     )
 
-            init_env_cmd = "cd %s && . oe-init-build-env %s" % (
-                prepared_test_build["bitbake_corebase"],
-                prepared_test_build["build_dir"],
-            )
             run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
+
+        # QA-784: setting/unsetting PREFERRED_VERSION and rebuilding the recipes breaks some times
+        # the state cache so that consecutive tests will fail in a very inexplicable way.
+        # Cleaning the cache here for each version built seems to workaround the issue...
+        run_verbose("%s && bitbake --cmd cleanall %s" % (init_env_cmd, recipe))
 
     @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("1.1.0")
