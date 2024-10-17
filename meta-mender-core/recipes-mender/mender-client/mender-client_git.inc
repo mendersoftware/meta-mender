@@ -91,18 +91,3 @@ LIC_FILES_CHKSUM = " \
     ${@mender_license(d.getVar('MENDER_BRANCH'))['license_file']};md5=30b4554c64108561c0cb1c57e8a044f0 \
 "
 LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
-
-def mender_maybe_artifact_info(d):
-    import re
-    branch = d.getVar("MENDER_BRANCH")
-    match = re.match(r"([0-9]+)\.([0-9]+)\.", branch)
-    if match is None:
-        return ""
-
-    major = int(match.group(1))
-    minor = int(match.group(2))
-    if major < 3 or (major == 3 and minor < 5):
-        return " mender-artifact-info"
-    else:
-        return ""
-
