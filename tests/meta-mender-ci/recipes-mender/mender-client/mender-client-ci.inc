@@ -16,25 +16,6 @@ do_install:append:class-target:mender-image:mender-systemd() {
     fi
 }
 
-FILES:${PN}:append:mender-testing-enabled = "                       \
-    /data/etc/systemd/                                              \
-    /data/etc/systemd/system/mender-updated.service.d/              \
-    /data/etc/systemd/system/mender-updated.service.d/override.conf \
-    /etc/systemd/system/mender-updated.service.d/override.conf      \
-"
-
-# # Create an override.conf systemd file for the mender-updated.service file
-do_install:append:mender-systemd:mender-testing-enabled() {
-    mkdir -p ${D}/data/etc/systemd/system/mender-updated.service.d/
-    mkdir -p ${D}/etc/systemd/system/mender-updated.service.d
-    touch ${D}/data/etc/systemd/system/mender-updated.service.d/override.conf
-
-    # NOTE: We use a relative path, as bitbake runs systemctl interactively
-    # during build, and the global /data/etc/systemd/... does not exist on your
-    # system ofc
-    ln -s ../../../../data/etc/systemd/system/mender-updated.service.d/override.conf ${D}/etc/systemd/system/mender-updated.service.d/override.conf
-}
-
 do_compile:prepend() {
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-testing-enabled', 'false', 'true', d)}; then
         bbwarn "You are missing mender-testing-enabled feature for mender-ci layer to work properly"
