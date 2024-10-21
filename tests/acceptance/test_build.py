@@ -60,13 +60,18 @@ def extract_partition(img, number, dstdir):
     )
 
 
-def versions_of_recipe(recipe):
+def versions_of_recipe(recipe_name, recipe_dir=None):
     """Returns a list of all the versions we have of the given recipe, excluding
     git recipes."""
 
+    if recipe_dir == None:
+        recipe_dir = recipe_name
+
     versions = []
-    for entry in os.listdir("../../meta-mender-core/recipes-mender/%s/" % recipe):
-        match = re.match(r"^%s_([1-9][0-9]*\.[0-9]+\.[0-9]+[^.]*)\.bb" % recipe, entry)
+    for entry in os.listdir("../../meta-mender-core/recipes-mender/%s/" % recipe_dir):
+        match = re.match(
+            r"^%s_([1-9][0-9]*\.[0-9]+\.[0-9]+[^.]*)\.bb" % recipe_name, entry
+        )
         if match is not None:
             versions.append(match.group(1))
     return versions
@@ -428,7 +433,20 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
     # e.g. latest.
     @pytest.mark.parametrize(
         "recipe,version",
-        [("mender-client", version) for version in versions_of_recipe("mender-client")]
+        [
+            ("mender", version)
+            for version in versions_of_recipe("mender", "mender-client")
+        ]
+        + [("mender", None)]
+        + [
+            ("mender-native", version)
+            for version in versions_of_recipe("mender", "mender-client")
+        ]
+        + [("mender-native", None)]
+        + [
+            ("mender-client", version)
+            for version in versions_of_recipe("mender-client")
+        ]
         + [("mender-client", None)]
         + [
             ("mender-client-native", version)
