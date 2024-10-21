@@ -124,9 +124,11 @@ EOF
         bbwarn "MENDER_BOOT_PART_SIZE_MB is set to zero, but IMAGE_BOOT_FILES is not empty. The files are being omitted from the image."
     fi
 
-    # 'squashfs' fstype doesn't support empty partitions. For all others we make
-    # it empty to save compression space.
-    if [ "${ARTIFACTIMG_FSTYPE}" = "squashfs" ]; then
+    # By default the inactive partition filesystem is empty to allow for more efficient compression.
+    # A full filesystem is populated if one of the following applies
+    # - ARTIFACTIMG_FSTYPE is squashfs, because it doesn not allow empty partitions.
+    # - the "mender-prepopulate-inactive-partition" MENDER_FEATURE is enabled
+    if [ "${ARTIFACTIMG_FSTYPE}" = "squashfs" || ${@bb.utils.contains('MENDER_FEATURES', 'mender-prepopulate-inactive-partition', 'true', 'false', d)} ]; then
         part2_content="--source rawcopy --sourceparams=\"file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}\""
     else
         part2_content=
