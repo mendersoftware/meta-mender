@@ -27,7 +27,6 @@ from utils.common import (
     get_bitbake_variables,
     run_verbose,
     signing_key,
-    versions_of_recipe,
     get_local_conf_path,
     get_local_conf_orig_path,
     make_tempdir,
@@ -59,6 +58,18 @@ def extract_partition(img, number, dstdir):
             "count=%d" % (end - start),
         ]
     )
+
+
+def versions_of_recipe(recipe):
+    """Returns a list of all the versions we have of the given recipe, excluding
+    git recipes."""
+
+    versions = []
+    for entry in os.listdir("../../meta-mender-core/recipes-mender/%s/" % recipe):
+        match = re.match(r"^%s_([1-9][0-9]*\.[0-9]+\.[0-9]+[^.]*)\.bb" % recipe, entry)
+        if match is not None:
+            versions.append(match.group(1))
+    return versions
 
 
 class TestBuild:
