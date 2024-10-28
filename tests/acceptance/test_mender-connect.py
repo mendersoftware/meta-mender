@@ -264,6 +264,9 @@ class TestMenderConnect:
                 "Connection established with http://localhost:6000",
             )
 
+        except:
+            connection.run("journalctl --unit mender-connect --output cat")
+
         finally:
             connection.run(
                 "systemctl --job-mode=ignore-dependencies stop mender-connect || true"
