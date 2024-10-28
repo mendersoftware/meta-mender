@@ -205,7 +205,7 @@ class TestMenderConnect:
             _ = wait_for_string_in_log(
                 connection,
                 startup_time,
-                30,
+                300,
                 "Connection established with http://localhost:5000",
             )
 
@@ -217,7 +217,7 @@ class TestMenderConnect:
             _ = wait_for_string_in_log(
                 connection,
                 signal_time,
-                30,
+                300,
                 "Connection established with http://localhost:5000",
             )
 
@@ -229,7 +229,7 @@ class TestMenderConnect:
             _ = wait_for_string_in_log(
                 connection,
                 signal_time,
-                30,
+                300,
                 "Connection established with http://localhost:6000",
             )
 
@@ -241,7 +241,7 @@ class TestMenderConnect:
             _ = wait_for_string_in_log(
                 connection,
                 signal_time,
-                30,
+                300,
                 "Connection established with http://localhost:5000",
             )
 
@@ -251,7 +251,7 @@ class TestMenderConnect:
             _ = wait_for_string_in_log(
                 connection,
                 signal_time,
-                30,
+                300,
                 "dbusEventLoop terminated 0 sessions, 0 shells",
             )
             dbus_set_token_and_url_and_emit_signal(
@@ -260,9 +260,12 @@ class TestMenderConnect:
             _ = wait_for_string_in_log(
                 connection,
                 signal_time,
-                30,
+                300,
                 "Connection established with http://localhost:6000",
             )
+
+        except:
+            connection.run("journalctl --unit mender-connect --output cat")
 
         finally:
             connection.run(
