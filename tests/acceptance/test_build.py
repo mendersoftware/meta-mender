@@ -461,7 +461,6 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         + [("mender-flash", version) for version in versions_of_recipe("mender-flash")]
         + [("mender-flash", None)],
     )
-    @pytest.mark.skip(reason="QA-784")
     def test_preferred_versions(self, prepared_test_build, recipe, version):
         """Most CI builds build with PREFERRED_VERSION set, because we want to
         build from a specific SHA. Test that we can change that or turn it off
@@ -496,6 +495,16 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                         is not None
                     ):
                         continue
+
+                    # QA-784: setting/unsetting PREFERRED_VERSION and rebuilding the recipes breaks
+                    # some times the state cache so that consecutive tests will fail in a very
+                    # inexplicable way. Disable the cache for this test to workaround the issue.
+                    elif line.startswith("SSTATE_DIR"):
+                        new_fd.write(
+                            "# QA-784: Cache updates disabled for this test\n# %s"
+                            % line
+                        )
+                        continue
                     else:
                         new_fd.write(line)
                 if version is not None:
@@ -509,11 +518,6 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                     )
 
             run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
-
-        # QA-784: setting/unsetting PREFERRED_VERSION and rebuilding the recipes breaks some times
-        # the state cache so that consecutive tests will fail in a very inexplicable way.
-        # Cleaning the cache here for each version built seems to workaround the issue...
-        run_verbose("%s && bitbake --cmd cleanall %s" % (init_env_cmd, recipe))
 
     @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("1.1.0")
