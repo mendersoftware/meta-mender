@@ -461,7 +461,6 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         + [("mender-flash", version) for version in versions_of_recipe("mender-flash")]
         + [("mender-flash", None)],
     )
-    @pytest.mark.skip(reason="QA-784")
     def test_preferred_versions(self, prepared_test_build, recipe, version):
         """Most CI builds build with PREFERRED_VERSION set, because we want to
         build from a specific SHA. Test that we can change that or turn it off
@@ -480,40 +479,62 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
             prepared_test_build["build_dir"],
         )
 
-        for pn_style in ["", "pn-"]:
-            with open(old_file) as old_fd, open(new_file, "w") as new_fd:
-                for line in old_fd.readlines():
-                    if (
-                        re.match(r"^EXTERNALSRC:pn-%s(-native)? *=" % base_recipe, line)
-                        is not None
-                    ):
-                        continue
-                    elif (
-                        re.match(
-                            "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe,
-                            line,
+        try:
+            for pn_style in ["", "pn-"]:
+                with open(old_file) as old_fd, open(new_file, "w") as new_fd:
+                    for line in old_fd.readlines():
+                        if (
+                            re.match(
+                                r"^EXTERNALSRC:pn-%s(-native)? *=" % base_recipe, line
+                            )
+                            is not None
+                        ):
+                            continue
+                        elif (
+                            re.match(
+                                "^PREFERRED_VERSION:(pn-)?%s(-native)? *="
+                                % base_recipe,
+                                line,
+                            )
+                            is not None
+                        ):
+                            continue
+                        else:
+                            new_fd.write(line)
+                    if version is not None:
+                        new_fd.write(
+                            'PREFERRED_VERSION:%s%s = "%s"\n'
+                            % (pn_style, base_recipe, version)
                         )
-                        is not None
-                    ):
-                        continue
-                    else:
-                        new_fd.write(line)
-                if version is not None:
-                    new_fd.write(
-                        'PREFERRED_VERSION:%s%s = "%s"\n'
-                        % (pn_style, base_recipe, version)
-                    )
-                    new_fd.write(
-                        'PREFERRED_VERSION:%s%s-native = "%s"\n'
-                        % (pn_style, base_recipe, version)
-                    )
+                        new_fd.write(
+                            'PREFERRED_VERSION:%s%s-native = "%s"\n'
+                            % (pn_style, base_recipe, version)
+                        )
 
-            run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
+                run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
 
-        # QA-784: setting/unsetting PREFERRED_VERSION and rebuilding the recipes breaks some times
-        # the state cache so that consecutive tests will fail in a very inexplicable way.
-        # Cleaning the cache here for each version built seems to workaround the issue...
-        run_verbose("%s && bitbake --cmd cleanall %s" % (init_env_cmd, recipe))
+        finally:
+            # QA-784: setting/unsetting PREFERRED_VERSION and rebuilding the recipes invalidates
+            # SPDX data for them.
+            #
+            # The recipes that use externalsrc will correctly recreate the data the next time a
+            # rootfs is being built, but for some inexplicable reason this does not happen for
+            # recipes that using sources from upstream, an instead the build will rely on the stale
+            # do_create_runtime_spdx_setscene from before the tests.
+            #
+            # At the time of writing this, this is the case for mender-flash and consecutive tests
+            # would fail with:
+            # ERROR: No SPDX file found for package mender-flash, False sstate:mender-flash:core2...
+            #
+            # Workaround it by explicitly recreating the spdx data. Note that we have already tried
+            # cleaning everything (too aggressive) and not using the cache (it didn't work):
+            # -> https://github.com/mendersoftware/meta-mender/pull/2181/commits/c66217fe4
+            # -> https://github.com/mendersoftware/meta-mender/pull/2190
+            #
+            reset_build_conf(prepared_test_build["build_dir"])
+            run_verbose(
+                "%s && bitbake --clear-stamp create_spdx %s" % (init_env_cmd, recipe)
+            )
 
     @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("1.1.0")
