@@ -60,23 +60,6 @@ def extract_partition(img, number, dstdir):
     )
 
 
-def versions_of_recipe(recipe_name, recipe_dir=None):
-    """Returns a list of all the versions we have of the given recipe, excluding
-    git recipes."""
-
-    if recipe_dir == None:
-        recipe_dir = recipe_name
-
-    versions = []
-    for entry in os.listdir("../../meta-mender-core/recipes-mender/%s/" % recipe_dir):
-        match = re.match(
-            r"^%s_([1-9][0-9]*\.[0-9]+\.[0-9]+[^.]*)\.bb" % recipe_name, entry
-        )
-        if match is not None:
-            versions.append(match.group(1))
-    return versions
-
-
 class TestBuild:
     @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("1.0.0")
@@ -426,103 +409,6 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                 bitbake_image,
                 target="-c clean example-state-scripts",
             )
-
-    @pytest.mark.cross_platform
-    @pytest.mark.min_mender_version("1.0.0")
-    # The extra None elements are to check for no preferred version,
-    # e.g. latest.
-    @pytest.mark.parametrize(
-        "recipe,version",
-        [
-            ("mender", version)
-            for version in versions_of_recipe("mender", "mender-client")
-        ]
-        + [("mender", None)]
-        + [
-            ("mender-native", version)
-            for version in versions_of_recipe("mender", "mender-client")
-        ]
-        + [("mender-native", None)]
-        + [
-            ("mender-client", version)
-            for version in versions_of_recipe("mender-client")
-        ]
-        + [("mender-client", None)]
-        + [
-            ("mender-client-native", version)
-            for version in versions_of_recipe("mender-client")
-        ]
-        + [("mender-client-native", None)]
-        + [
-            ("mender-artifact-native", version)
-            for version in versions_of_recipe("mender-artifact")
-        ]
-        + [("mender-artifact-native", None)]
-        + [
-            ("mender-connect", version)
-            for version in versions_of_recipe("mender-connect")
-        ]
-        + [("mender-connect", None)]
-        + [
-            ("mender-configure", version)
-            for version in versions_of_recipe("mender-configure")
-        ]
-        + [("mender-configure", None)]
-        + [("mender-flash", version) for version in versions_of_recipe("mender-flash")]
-        + [("mender-flash", None)],
-    )
-    def test_preferred_versions(self, prepared_test_build, recipe, version):
-        """Most CI builds build with PREFERRED_VERSION set, because we want to
-        build from a specific SHA. Test that we can change that or turn it off
-        and the build still works."""
-
-        old_file = get_local_conf_orig_path(prepared_test_build["build_dir"])
-        new_file = get_local_conf_path(prepared_test_build["build_dir"])
-
-        if recipe.endswith("-native"):
-            base_recipe = recipe[: -len("-native")]
-        else:
-            base_recipe = recipe
-
-        init_env_cmd = "cd %s && . oe-init-build-env %s" % (
-            prepared_test_build["bitbake_corebase"],
-            prepared_test_build["build_dir"],
-        )
-
-        for pn_style in ["", "pn-"]:
-            with open(old_file) as old_fd, open(new_file, "w") as new_fd:
-                for line in old_fd.readlines():
-                    if (
-                        re.match(r"^EXTERNALSRC:pn-%s(-native)? *=" % base_recipe, line)
-                        is not None
-                    ):
-                        continue
-                    elif (
-                        re.match(
-                            "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe,
-                            line,
-                        )
-                        is not None
-                    ):
-                        continue
-                    else:
-                        new_fd.write(line)
-                if version is not None:
-                    new_fd.write(
-                        'PREFERRED_VERSION:%s%s = "%s"\n'
-                        % (pn_style, base_recipe, version)
-                    )
-                    new_fd.write(
-                        'PREFERRED_VERSION:%s%s-native = "%s"\n'
-                        % (pn_style, base_recipe, version)
-                    )
-
-            run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
-
-        # QA-784: setting/unsetting PREFERRED_VERSION and rebuilding the recipes breaks some times
-        # the state cache so that consecutive tests will fail in a very inexplicable way.
-        # Cleaning the cache here for each version built seems to workaround the issue...
-        run_verbose("%s && bitbake --cmd cleanall %s" % (init_env_cmd, recipe))
 
     @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("1.1.0")
@@ -1400,3 +1286,127 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             assert (
                 bytes(file, "utf-8") in output
             ), f"{file} seems not to be a part of the {mender_pkg}-dev package, like it should"
+
+
+def versions_of_recipe(recipe_name, recipe_dir=None):
+    """Returns a list of all the versions we have of the given recipe, excluding
+    git recipes."""
+
+    if recipe_dir == None:
+        recipe_dir = recipe_name
+
+    versions = []
+    for entry in os.listdir("../../meta-mender-core/recipes-mender/%s/" % recipe_dir):
+        match = re.match(
+            r"^%s_([1-9][0-9]*\.[0-9]+\.[0-9]+[^.]*)\.bb" % recipe_name, entry
+        )
+        if match is not None:
+            versions.append(match.group(1))
+    return versions
+
+
+class TestPreferredVersions:
+    @pytest.mark.cross_platform
+    @pytest.mark.min_mender_version("1.0.0")
+    # The extra None elements are to check for no preferred version,
+    # e.g. latest.
+    @pytest.mark.parametrize(
+        "recipe,version",
+        [
+            ("mender", version)
+            for version in versions_of_recipe("mender", "mender-client")
+        ]
+        + [("mender", None)]
+        + [
+            ("mender-native", version)
+            for version in versions_of_recipe("mender", "mender-client")
+        ]
+        + [("mender-native", None)]
+        + [
+            ("mender-client", version)
+            for version in versions_of_recipe("mender-client")
+        ]
+        + [("mender-client", None)]
+        + [
+            ("mender-client-native", version)
+            for version in versions_of_recipe("mender-client")
+        ]
+        + [("mender-client-native", None)]
+        + [
+            ("mender-artifact-native", version)
+            for version in versions_of_recipe("mender-artifact")
+        ]
+        + [("mender-artifact-native", None)]
+        + [
+            ("mender-connect", version)
+            for version in versions_of_recipe("mender-connect")
+        ]
+        + [("mender-connect", None)]
+        + [
+            ("mender-configure", version)
+            for version in versions_of_recipe("mender-configure")
+        ]
+        + [("mender-configure", None)]
+        + [("mender-flash", version) for version in versions_of_recipe("mender-flash")]
+        + [("mender-flash", None)],
+    )
+    def test_preferred_versions(
+        self, class_scoped_prepared_test_build, recipe, version
+    ):
+        """Most CI builds build with PREFERRED_VERSION set, because we want to
+        build from a specific SHA. Test that we can change that or turn it off
+        and the build still works."""
+
+        old_file = get_local_conf_orig_path(
+            class_scoped_prepared_test_build["build_dir"]
+        )
+        new_file = get_local_conf_path(class_scoped_prepared_test_build["build_dir"])
+
+        if recipe.endswith("-native"):
+            base_recipe = recipe[: -len("-native")]
+        else:
+            base_recipe = recipe
+
+        init_env_cmd = "cd %s && . oe-init-build-env %s" % (
+            class_scoped_prepared_test_build["bitbake_corebase"],
+            class_scoped_prepared_test_build["build_dir"],
+        )
+
+        for pn_style in ["", "pn-"]:
+            with open(old_file) as old_fd, open(new_file, "w") as new_fd:
+                for line in old_fd.readlines():
+                    if (
+                        re.match(r"^EXTERNALSRC:pn-%s(-native)? *=" % base_recipe, line)
+                        is not None
+                    ):
+                        continue
+                    elif (
+                        re.match(
+                            "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe,
+                            line,
+                        )
+                        is not None
+                    ):
+                        continue
+
+                    elif line.startswith("SSTATE_DIR"):
+                        new_fd.write(
+                            "# QA-784: Cache write disabled for this test\n# %s" % line
+                        )
+                        continue
+                    else:
+                        new_fd.write(line)
+                if version is not None:
+                    new_fd.write(
+                        'PREFERRED_VERSION:%s%s = "%s"\n'
+                        % (pn_style, base_recipe, version)
+                    )
+                    new_fd.write(
+                        'PREFERRED_VERSION:%s%s-native = "%s"\n'
+                        % (pn_style, base_recipe, version)
+                    )
+
+            run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
+
+        # Clean leftovers to have a fresh start for the next recipe
+        run_verbose("%s && bitbake --cmd clean %s" % (init_env_cmd, recipe))
