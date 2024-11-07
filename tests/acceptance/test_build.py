@@ -628,27 +628,39 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         prepared_test_build,
         bitbake_path,
         bitbake_image,
-        mender_update_binary,
+        bitbake_variables,
     ):
         """Test that with PACKAGECONFIG "modules" switch in mender-client recipe the modules
         are installed in the root filesystem, and the built mender Artifact(s) contain them
         as "provides" keys."""
 
         # List of expected update modules
-        default_update_modules = [
-            "deb",
-            "directory",
-            "docker",
-            "rpm",
-            "script",
-            "single-file",
-        ]
-
-        if mender_update_binary == "mender":
-            default_update_modules.append("rootfs-image-v2")
+        if version_is_minimum(bitbake_variables, "mender", "4.1.0"):
+            default_update_modules = [
+                "directory",
+                "single-file",
+                "rootfs-image",
+            ]
+        elif version_is_minimum(bitbake_variables, "mender", "4.0.0"):
+            default_update_modules = [
+                "deb",
+                "directory",
+                "docker",
+                "rpm",
+                "script",
+                "single-file",
+                "rootfs-image",
+            ]
         else:
-            # After Mender client < v4.0 goes EOL, we can keep only this path.
-            default_update_modules.append("rootfs-image")
+            default_update_modules = [
+                "deb",
+                "directory",
+                "docker",
+                "rpm",
+                "script",
+                "single-file",
+                "rootfs-image-v2",
+            ]
 
         mender_vars = get_bitbake_variables(
             request, "mender-client", prepared_test_build
