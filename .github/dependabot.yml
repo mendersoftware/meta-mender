@@ -37,7 +37,7 @@ updates:
     schedule:
       interval: monthly
       day: saturday
-    target-branch: dunfell
+    target-branch: scarthgap
     reviewers:
       - "mendersoftware/client-dependabot-reviewers"
   - commit-message:
