@@ -131,6 +131,7 @@ FILES:mender-update += "\
     ${datadir}/mender/inventory/mender-inventory-network \
     ${datadir}/mender/inventory/mender-inventory-os \
     ${datadir}/mender/inventory/mender-inventory-rootfs-type \
+    ${sysconfdir}/mender/artifact-verify-key.pem \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
 "
 FILES:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' ${datadir}/mender/modules', '', d)}"
