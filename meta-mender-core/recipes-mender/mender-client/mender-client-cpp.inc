@@ -19,11 +19,6 @@ PACKAGES =+ "mender-auth mender-update mender-config mender-auth-dev"
 RDEPENDS:mender-auth += "mender-config"
 
 RDEPENDS:mender-update += "mender-auth mender-config"
-RRECOMMENDS:mender-update += "mender-flash"
-
-# rootfs-image module uses jq to parse the config file, but it is able to fall
-# back to line based parsing, which is less resilient.
-RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' jq', '', d)}"
 
 SYSTEMD_SERVICE:mender-update = "mender-updated.service"
 SYSTEMD_SERVICE:mender-auth = "mender-authd.service"
@@ -61,7 +56,11 @@ RDEPENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'u-boot',
 PACKAGECONFIG[grub] = ",,,"
 RDEPENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'grub', ' grub-editenv grub-mender-grubenv', '', d)}"
 
+# rootfs-image module uses jq to parse the config file and mender-flash to write into the inactive
+# partition, but can fall back to line based parsing (less resilient) and cat (less efficient).
 PACKAGECONFIG[modules] = ",,,"
+RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' jq', '', d)}"
+RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' mender-flash', '', d)}"
 
 PACKAGECONFIG[inventory-network-scripts] = ",,,"
 
