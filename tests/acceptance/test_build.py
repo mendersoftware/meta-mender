@@ -27,7 +27,6 @@ from utils.common import (
     get_bitbake_variables,
     run_verbose,
     signing_key,
-    versions_of_recipe,
     get_local_conf_path,
     get_local_conf_orig_path,
     make_tempdir,
@@ -59,6 +58,23 @@ def extract_partition(img, number, dstdir):
             "count=%d" % (end - start),
         ]
     )
+
+
+def versions_of_recipe(recipe_name, recipe_dir=None):
+    """Returns a list of all the versions we have of the given recipe, excluding
+    git recipes."""
+
+    if recipe_dir == None:
+        recipe_dir = recipe_name
+
+    versions = []
+    for entry in os.listdir("../../meta-mender-core/recipes-mender/%s/" % recipe_dir):
+        match = re.match(
+            r"^%s_([1-9][0-9]*\.[0-9]+\.[0-9]+[^.]*)\.bb" % recipe_name, entry
+        )
+        if match is not None:
+            versions.append(match.group(1))
+    return versions
 
 
 class TestBuild:
@@ -417,7 +433,20 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
     # e.g. latest.
     @pytest.mark.parametrize(
         "recipe,version",
-        [("mender-client", version) for version in versions_of_recipe("mender-client")]
+        [
+            ("mender", version)
+            for version in versions_of_recipe("mender", "mender-client")
+        ]
+        + [("mender", None)]
+        + [
+            ("mender-native", version)
+            for version in versions_of_recipe("mender", "mender-client")
+        ]
+        + [("mender-native", None)]
+        + [
+            ("mender-client", version)
+            for version in versions_of_recipe("mender-client")
+        ]
         + [("mender-client", None)]
         + [
             ("mender-client-native", version)
@@ -707,27 +736,39 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         prepared_test_build,
         bitbake_path,
         bitbake_image,
-        mender_update_binary,
+        bitbake_variables,
     ):
         """Test that with PACKAGECONFIG "modules" switch in mender-client recipe the modules
         are installed in the root filesystem, and the built mender Artifact(s) contain them
         as "provides" keys."""
 
         # List of expected update modules
-        default_update_modules = [
-            "deb",
-            "directory",
-            "docker",
-            "rpm",
-            "script",
-            "single-file",
-        ]
-
-        if mender_update_binary == "mender":
-            default_update_modules.append("rootfs-image-v2")
+        if version_is_minimum(bitbake_variables, "mender", "4.1.0"):
+            default_update_modules = [
+                "directory",
+                "single-file",
+                "rootfs-image",
+            ]
+        elif version_is_minimum(bitbake_variables, "mender", "4.0.0"):
+            default_update_modules = [
+                "deb",
+                "directory",
+                "docker",
+                "rpm",
+                "script",
+                "single-file",
+                "rootfs-image",
+            ]
         else:
-            # After Mender client < v4.0 goes EOL, we can keep only this path.
-            default_update_modules.append("rootfs-image")
+            default_update_modules = [
+                "deb",
+                "directory",
+                "docker",
+                "rpm",
+                "script",
+                "single-file",
+                "rootfs-image-v2",
+            ]
 
         mender_vars = get_bitbake_variables(
             request, "mender-client", prepared_test_build

@@ -11,19 +11,9 @@ inherit go-ptest
 
 GO_IMPORT = "github.com/mendersoftware/mender-snapshot"
 
-do_compile() {
-    oe_runmake \
-        -C ${B}/src/${GO_IMPORT} \
-        V=1
-}
+# Prefer static linkage (golang's default)
+GO_LINKSHARED = ""
 
-do_install() {
-    oe_runmake \
-        -C ${B}/src/${GO_IMPORT} \
-        V=1 \
-        prefix=${D} \
-        bindir=${bindir} \
-        datadir=${datadir} \
-        sysconfdir=${sysconfdir} \
-        install-bin
-}
+# Set the version of mender-snapshot by passing it as an extra ldflag to go.bbclass
+# This is equivalent to how it's set in the Makefile
+GO_EXTRA_LDFLAGS:append = "-X github.com/mendersoftware/mender-snapshot/conf.Version=$(git describe --tags --dirty --exact-match 2>/dev/null || git rev-parse --short HEAD)"

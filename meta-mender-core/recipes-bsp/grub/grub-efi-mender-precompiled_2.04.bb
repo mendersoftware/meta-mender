@@ -28,6 +28,8 @@ SRC_URI = " \
 
 S = "${WORKDIR}/git"
 
+MENDER_EFI_LOADER ?= ""
+
 require ${@'uboot_version_logic.inc' if d.getVar('MENDER_EFI_LOADER').startswith('u-boot') else ''}
 
 DEPENDS:append = " ${MENDER_EFI_LOADER}"
