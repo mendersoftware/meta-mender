@@ -20,6 +20,9 @@ inherit systemd
 
 GO_IMPORT = "github.com/mendersoftware/mender-connect"
 
+# Prefer static linkage (golang's default)
+GO_LINKSHARED = ""
+
 python do_prepare_mender_connect_conf() {
     import json
 
