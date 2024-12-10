@@ -35,6 +35,7 @@ libssl-dev
 libxml2-dev
 libxslt-dev
 libyaml-dev
+lmdb-utils
 locales
 nfs-client
 nfs-common
