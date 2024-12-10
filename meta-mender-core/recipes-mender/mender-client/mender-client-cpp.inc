@@ -19,11 +19,6 @@ PACKAGES =+ "mender-auth mender-update mender-config mender-auth-dev"
 RDEPENDS:mender-auth += "mender-config"
 
 RDEPENDS:mender-update += "mender-auth mender-config"
-RRECOMMENDS:mender-update += "mender-flash"
-
-# rootfs-image module uses jq to parse the config file, but it is able to fall
-# back to line based parsing, which is less resilient.
-RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' jq', '', d)}"
 
 SYSTEMD_SERVICE:mender-update = "mender-updated.service"
 SYSTEMD_SERVICE:mender-auth = "mender-authd.service"
@@ -58,11 +53,11 @@ RDEPENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'u-boot',
 PACKAGECONFIG[grub] = ",,,"
 RDEPENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'grub', ' grub-editenv grub-mender-grubenv', '', d)}"
 
-# The docker module depends on bash, and of course on docker. However, docker is
-# a very large requirement, which we will not mandate. Bash however, we require,
-# because otherwise the Yocto QA checks will complain.
+# rootfs-image module uses jq to parse the config file and mender-flash to write into the inactive
+# partition, but can fall back to line based parsing (less resilient) and cat (less efficient).
 PACKAGECONFIG[modules] = ",,,"
-RDEPENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' bash', '', d)}"
+RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' jq', '', d)}"
+RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' mender-flash', '', d)}"
 
 PACKAGECONFIG[inventory-network-scripts] = ",,,"
 
@@ -128,6 +123,7 @@ FILES:mender-update += "\
     ${datadir}/mender/inventory/mender-inventory-network \
     ${datadir}/mender/inventory/mender-inventory-os \
     ${datadir}/mender/inventory/mender-inventory-rootfs-type \
+    ${sysconfdir}/mender/artifact-verify-key.pem \
     ${sysconfdir}/udev/mount.blacklist.d/mender \
 "
 FILES:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' ${datadir}/mender/modules', '', d)}"
