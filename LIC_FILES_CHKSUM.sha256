@@ -1,4 +1,4 @@
-d0f406b04e7901e6b4076bdf5fd20f9d7f04fc41681069fd8954413ac6295688  LICENSE
+38791d93beae962b266e11ac888ea2af4f07578b272c2f9dcb05f54f32960a76  LICENSE
 b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1  meta-mender-core/recipes-mender/mender-migrate-configuration/files/LICENSE
 b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1  meta-mender-core/recipes-mender/mender-wait-for-timesync/files/LICENSE
 beb140be4cd64599bedc691a55b2729c9cc611a4b9d6ec44e01270105daf18a2  meta-mender-core/recipes-core/lsb-ld/files/LICENSE
