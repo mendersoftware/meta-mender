@@ -62,7 +62,7 @@ def mender_connect_license(branch):
                "license": "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT",
     }
 LIC_FILES_CHKSUM = " \
-    file://src/github.com/mendersoftware/mender-connect/LICENSE;md5=30b4554c64108561c0cb1c57e8a044f0 \
+    file://src/github.com/mendersoftware/mender-connect/LICENSE;md5=f92624f2343d21e1986ca36f82756029 \
 "
 LICENSE = "${@mender_connect_license(d.getVar('MENDER_CONNECT_BRANCH'))['license']}"
 
