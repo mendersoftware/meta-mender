@@ -1316,11 +1316,6 @@ class TestPreferredVersions:
         ]
         + [("mender", None)]
         + [
-            ("mender-native", version)
-            for version in versions_of_recipe("mender", "mender-client")
-        ]
-        + [("mender-native", None)]
-        + [
             ("mender-artifact-native", version)
             for version in versions_of_recipe("mender-artifact")
         ]
