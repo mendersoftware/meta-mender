@@ -1330,20 +1330,10 @@ class TestPreferredVersions:
         ]
         + [("mender", None)]
         + [
-            ("mender-native", version)
-            for version in versions_of_recipe("mender", "mender-client")
-        ]
-        + [("mender-native", None)]
-        + [
             ("mender-client", version)
             for version in versions_of_recipe("mender-client")
         ]
         + [("mender-client", None)]
-        + [
-            ("mender-client-native", version)
-            for version in versions_of_recipe("mender-client")
-        ]
-        + [("mender-client-native", None)]
         + [
             ("mender-artifact-native", version)
             for version in versions_of_recipe("mender-artifact")
@@ -1384,41 +1374,35 @@ class TestPreferredVersions:
             class_scoped_prepared_test_build["build_dir"],
         )
 
-        for pn_style in ["", "pn-"]:
-            with open(old_file) as old_fd, open(new_file, "w") as new_fd:
-                for line in old_fd.readlines():
-                    if (
-                        re.match(r"^EXTERNALSRC:pn-%s(-native)? *=" % base_recipe, line)
-                        is not None
-                    ):
-                        continue
-                    elif (
-                        re.match(
-                            "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe,
-                            line,
-                        )
-                        is not None
-                    ):
-                        continue
-
-                    elif line.startswith("SSTATE_DIR"):
-                        new_fd.write(
-                            "# QA-784: Cache write disabled for this test\n# %s" % line
-                        )
-                        continue
-                    else:
-                        new_fd.write(line)
-                if version is not None:
-                    new_fd.write(
-                        'PREFERRED_VERSION:%s%s = "%s"\n'
-                        % (pn_style, base_recipe, version)
+        with open(old_file) as old_fd, open(new_file, "w") as new_fd:
+            for line in old_fd.readlines():
+                if (
+                    re.match(r"^EXTERNALSRC:pn-%s(-native)? *=" % base_recipe, line)
+                    is not None
+                ):
+                    continue
+                elif (
+                    re.match(
+                        "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe, line,
                     )
-                    new_fd.write(
-                        'PREFERRED_VERSION:%s%s-native = "%s"\n'
-                        % (pn_style, base_recipe, version)
-                    )
+                    is not None
+                ):
+                    continue
 
-            run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
+                elif line.startswith("SSTATE_DIR"):
+                    new_fd.write(
+                        "# QA-784: Cache write disabled for this test\n# %s" % line
+                    )
+                    continue
+                else:
+                    new_fd.write(line)
+            if version is not None:
+                new_fd.write('PREFERRED_VERSION:%s = "%s"\n' % (base_recipe, version))
+                new_fd.write(
+                    'PREFERRED_VERSION:%s-native = "%s"\n' % (base_recipe, version)
+                )
+
+        run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
 
         # Clean leftovers to have a fresh start for the next recipe
         run_verbose("%s && bitbake --cmd clean %s" % (init_env_cmd, recipe))
