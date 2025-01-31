@@ -439,20 +439,10 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         ]
         + [("mender", None)]
         + [
-            ("mender-native", version)
-            for version in versions_of_recipe("mender", "mender-client")
-        ]
-        + [("mender-native", None)]
-        + [
             ("mender-client", version)
             for version in versions_of_recipe("mender-client")
         ]
         + [("mender-client", None)]
-        + [
-            ("mender-client-native", version)
-            for version in versions_of_recipe("mender-client")
-        ]
-        + [("mender-client-native", None)]
         + [
             ("mender-artifact-native", version)
             for version in versions_of_recipe("mender-artifact")
@@ -484,39 +474,33 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         else:
             base_recipe = recipe
 
-        for pn_style in ["", "pn-"]:
-            with open(old_file) as old_fd, open(new_file, "w") as new_fd:
-                for line in old_fd.readlines():
-                    if (
-                        re.match(r"^EXTERNALSRC:pn-%s(-native)? *=" % base_recipe, line)
-                        is not None
-                    ):
-                        continue
-                    elif (
-                        re.match(
-                            "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe,
-                            line,
-                        )
-                        is not None
-                    ):
-                        continue
-                    else:
-                        new_fd.write(line)
-                if version is not None:
-                    new_fd.write(
-                        'PREFERRED_VERSION:%s%s = "%s"\n'
-                        % (pn_style, base_recipe, version)
+        with open(old_file) as old_fd, open(new_file, "w") as new_fd:
+            for line in old_fd.readlines():
+                if (
+                    re.match(r"^EXTERNALSRC:pn-%s(-native)? *=" % base_recipe, line)
+                    is not None
+                ):
+                    continue
+                elif (
+                    re.match(
+                        "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe, line,
                     )
-                    new_fd.write(
-                        'PREFERRED_VERSION:%s%s-native = "%s"\n'
-                        % (pn_style, base_recipe, version)
-                    )
+                    is not None
+                ):
+                    continue
+                else:
+                    new_fd.write(line)
+            if version is not None:
+                new_fd.write('PREFERRED_VERSION:%s = "%s"\n' % (base_recipe, version))
+                new_fd.write(
+                    'PREFERRED_VERSION:%s-native = "%s"\n' % (base_recipe, version)
+                )
 
-            init_env_cmd = "cd %s && . oe-init-build-env %s" % (
-                prepared_test_build["bitbake_corebase"],
-                prepared_test_build["build_dir"],
-            )
-            run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
+        init_env_cmd = "cd %s && . oe-init-build-env %s" % (
+            prepared_test_build["bitbake_corebase"],
+            prepared_test_build["build_dir"],
+        )
+        run_verbose("%s && bitbake %s" % (init_env_cmd, recipe))
 
     @pytest.mark.cross_platform
     @pytest.mark.min_mender_version("1.1.0")
