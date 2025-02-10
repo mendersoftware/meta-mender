@@ -20,6 +20,7 @@ def mender_get_uboot_env_mmc_linux_device_path(d):
     return storage_device + env_part_append
 
 MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH ?= "${@mender_get_uboot_env_mmc_linux_device_path(d)}"
+MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH_REDUND ?= "${MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH}"
 
 # This should evaluate to the same as MENDER_RESERVED_SPACE_BOOTLOADER_DATA.
 # The only reason it's not evaluated the same way is that we don't have the
@@ -52,7 +53,7 @@ mender_create_fw_env_config_file() {
     # create fw_env.config file
     cat > $1 <<EOF
 ${MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_1} $HEX_BOOTENV_SIZE
-${MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2} $HEX_BOOTENV_SIZE
+${MENDER_UBOOT_MMC_ENV_LINUX_DEVICE_PATH_REDUND} ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET_2} $HEX_BOOTENV_SIZE
 EOF
 }
 
