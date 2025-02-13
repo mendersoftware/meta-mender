@@ -127,7 +127,7 @@ FILES:mender-update += "\
     ${datadir}/mender/inventory/mender-inventory-os \
     ${datadir}/mender/inventory/mender-inventory-rootfs-type \
     ${sysconfdir}/mender/artifact-verify-key.pem \
-    ${sysconfdir}/udev/mount.blacklist.d/mender \
+    ${sysconfdir}/udev/mount.ignorelist.d/mender \
 "
 FILES:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' ${datadir}/mender/modules', '', d)}"
 
@@ -274,10 +274,10 @@ do_install:append() {
         install -m 0444 "${MENDER_ARTIFACT_VERIFY_KEY}" ${D}${sysconfdir}/mender/artifact-verify-key.pem
     fi
 
-    # Setup blacklist to ensure udev does not automatically mount Mender managed partitions
-    install -d ${D}${sysconfdir}/udev/mount.blacklist.d
-    echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.blacklist.d/mender
-    echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.blacklist.d/mender
+    # Setup ignorelist to ensure udev does not automatically mount Mender managed partitions
+    install -d ${D}${sysconfdir}/udev/mount.ignorelist.d
+    echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
+    echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
 }
 
 do_install:append:class-target:mender-image:mender-systemd() {

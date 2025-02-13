@@ -22,7 +22,7 @@ DEFAULT_PREFERENCE = "-1"
 def mender_autorev_if_git_version(d):
     version = d.getVar("PREFERRED_VERSION")
     if version is None or version == "":
-        version = d.getVar("PREFERRED_VERSION_%s" % d.getVar('PN'))
+        version = d.getVar("PREFERRED_VERSION:%s" % d.getVar('PN'))
     if not d.getVar("EXTERNALSRC") and version is not None and "git" in version:
         return d.getVar("AUTOREV")
     else:
@@ -32,7 +32,7 @@ def mender_branch_from_preferred_version(d):
     import re
     version = d.getVar("PREFERRED_VERSION")
     if version is None or version == "":
-        version = d.getVar("PREFERRED_VERSION_%s" % d.getVar('PN'))
+        version = d.getVar("PREFERRED_VERSION:%s" % d.getVar('PN'))
     if version is None:
         version = ""
     match = re.match(r"^[0-9]+\.[0-9]+\.", version)
@@ -50,7 +50,7 @@ def mender_version_from_preferred_version(d):
     pref_version = d.getVar("PREFERRED_VERSION")
     srcpv = d.getVar("SRCPV")
     if pref_version is None:
-        pref_version = d.getVar("PREFERRED_VERSION_%s" % d.getVar("PN"))
+        pref_version = d.getVar("PREFERRED_VERSION:%s" % d.getVar("PN"))
     if pref_version is not None and pref_version.find("-git") >= 0:
         # If "-git" is in the version, remove it along with any suffix it has,
         # and then readd it with commit SHA.
