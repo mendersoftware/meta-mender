@@ -2,7 +2,7 @@
 def mender_closed_source_srcrev_from_src_uri(d, src_uri, repo_name):
     pref_version = d.getVar("PREFERRED_VERSION")
     if pref_version is None or pref_version == "":
-        pref_version = d.getVar("PREFERRED_VERSION_%s" % d.getVar('PN'))
+        pref_version = d.getVar("PREFERRED_VERSION:%s" % d.getVar('PN'))
     if pref_version and pref_version.find("-build") >= 0:
         # If "-build" is in the version, SRCREV won't be used for defining PV
         return ""
@@ -44,7 +44,7 @@ def mender_closed_source_srcrev_from_src_uri(d, src_uri, repo_name):
 def mender_closed_source_pv_from_preferred_version(d, srcrev):
     pref_version = d.getVar("PREFERRED_VERSION")
     if pref_version is None or pref_version == "":
-        pref_version = d.getVar("PREFERRED_VERSION_%s" % d.getVar('PN'))
+        pref_version = d.getVar("PREFERRED_VERSION:%s" % d.getVar('PN'))
     if pref_version is not None and pref_version.find("-build") >= 0:
         # If "-build" is in the version, use the version as is. This means that
         # we can build tags with "-build" in them from this recipe, but not
