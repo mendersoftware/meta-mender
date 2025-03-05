@@ -34,7 +34,7 @@ MENDER_BOOT_PART_MOUNT_LOCATION:mender-grub:mender-bios = "/boot/grub"
 EFI_PREFIX:mender-image = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
 
 # Update fstab for Mender
-ROOTFS_POSTPROCESS_COMMAND:append = " mender_update_fstab_file;"
+ROOTFS_POSTPROCESS_COMMAND += "mender_update_fstab_file"
 mender_update_fstab_file() {
     local tmpBootPart="${MENDER_BOOT_PART}"
     local tmpDataPart="${MENDER_DATA_PART}"
@@ -92,7 +92,7 @@ def mender_default_state_scripts_version(d):
 
 # Setup state script version file.
 MENDER_STATE_SCRIPTS_VERSION = "${@mender_default_state_scripts_version(d)}"
-ROOTFS_POSTPROCESS_COMMAND:append = "${@bb.utils.contains('MENDER_FEATURES', 'mender-image', ' mender_create_scripts_version_file;', '', d)}"
+ROOTFS_POSTPROCESS_COMMAND += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image', 'mender_create_scripts_version_file', '', d)}"
 
 mender_create_scripts_version_file() {
     install -d -m 755 ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/
