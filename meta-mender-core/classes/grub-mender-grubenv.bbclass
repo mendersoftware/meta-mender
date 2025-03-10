@@ -1,4 +1,4 @@
-GRUB_MENDER_GRUBENV_REV ?= "eeb7ebd9e6558cf6bbe661b4f2e4e45d52efa305"
+GRUB_MENDER_GRUBENV_REV ?= "6eabae13042a0f4128b15d9a7416cbf200f0853b"
 GRUB_MENDER_GRUBENV_SRC_URI ?= "git://github.com/mendersoftware/grub-mender-grubenv;protocol=https;branch=master;rev=${GRUB_MENDER_GRUBENV_REV}"
 
 GRUB_BUILDIN = "boot linux ext2 fat serial part_msdos part_gpt normal \
