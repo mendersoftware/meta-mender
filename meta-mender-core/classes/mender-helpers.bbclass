@@ -207,28 +207,26 @@ def mender_is_msdos_ptable_image(d):
 
 def mender_get_extra_and_total_parts_num(d):
     extra_pos = 3
-    parts_num = 3
 
     boot_part_size = d.getVar('MENDER_BOOT_PART_SIZE_MB')
     if (boot_part_size and boot_part_size != '0'):
         extra_pos += 1
-        parts_num += 1
 
     swap_part_size = d.getVar('MENDER_SWAP_PART_SIZE_MB')
     if (swap_part_size and swap_part_size != '0'):
         extra_pos += 1
-        parts_num += 1
 
     extra_parts = d.getVar('MENDER_EXTRA_PARTS')
     if extra_parts is None or len(extra_parts) == 0:
         extra_parts = []
     else:
         extra_parts = extra_parts.split()
-    parts_num += len(extra_parts)
+    parts_num = extra_pos + len(extra_parts)
 
     #is an msdos extended partion going to be required
-    if parts_num > 4 and mender_is_msdos_ptable_image(d):
-        parts_num += 1
+    if mender_is_msdos_ptable_image(d):
+        if parts_num >= 4:
+            parts_num += 1
         if extra_pos >= 4:
             extra_pos += 1
     return extra_pos, parts_num
