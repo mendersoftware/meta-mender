@@ -351,17 +351,17 @@ def get_extra_parts_relative_offset_by_id(d, id):
     offset = mender_get_extra_parts_offset(d)
     return idx - offset + 1
 
+
 def get_extra_parts_mount_location(d, id = None):
     mounts_flags = d.getVarFlags("MENDER_EXTRA_PARTS_MOUNT_LOCATIONS") or {}
-    if id and mounts_flags:
-        if id in mounts_flags:
-            return mounts_flags[id]
-        else:
-            label = get_extra_parts_label(d, id)
-            if not label:
-                label = "extra{}".format(get_extra_parts_relative_offset_by_id(d, id))
-            return "/mnt/{}".format(label)
-    return ""
+    if id is None:
+        return ""
+    if id in mounts_flags:
+        return mounts_flags[id]
+    label = get_extra_parts_label(d, id)
+    if not label:
+        label = "extra{}".format(get_extra_parts_relative_offset_by_id(d, id))
+    return "/mnt/{}".format(label)
 
 def get_extra_parts_mount_locations(d):
     mounts = []
@@ -370,7 +370,6 @@ def get_extra_parts_mount_locations(d):
         for id in ids:
             mounts.append(get_extra_parts_mount_location(d, id))
     return ' '.join(mounts)
-
 
 def get_extra_parts_sizes(d):
     final_sizes = []
@@ -413,8 +412,8 @@ def get_extra_parts_wks(d):
 
 def get_extra_parts_fstab_opts(d, id = None):
     parts_fstab_flags = d.getVarFlags("MENDER_EXTRA_PARTS_FSTAB") or {}
-    extra_parts_flags = (d.getVar('MENDER_EXTRA_PARTS') or "").split()
-    if parts_fstab_flags:
+
+    if id and parts_fstab_flags:
         if id in parts_fstab_flags:
             split = parts_fstab_flags[id].split()
             elems = len(split)
@@ -432,18 +431,22 @@ def get_extra_parts_fstab_opts(d, id = None):
     return "auto defaults 0 2"
 
 def get_extra_parts_fstab(d):
+    """
+    Return fstab entries for partitions from MENDER_EXTRA_PARTS that are also
+    specified in MENDER_EXTRA_PARTS_FSTAB.
+    """
     out = []
-    extra_parts_offset = mender_get_extra_parts_offset(d)
     device = d.getVar('MENDER_STORAGE_DEVICE_BASE')
-    for part in get_extra_parts_flags(d):
+    parts_fstab_flags = d.getVarFlags("MENDER_EXTRA_PARTS_FSTAB") or {}
+    for part in parts_fstab_flags.keys():
         mount = get_extra_parts_mount_location(d, part)
         fstype_opts = get_extra_parts_fstab_opts(d, part)
         if bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', True, False, d):
             uuid = get_extra_parts_uuid(d, part)
             out.append("PARTUUID={} {} {}".format(uuid, mount, fstype_opts))
         else:
-            out.append("{} {} {}".format(device + str(extra_parts_offset), mount, fstype_opts))
-        extra_parts_offset += 1
+            offset = mender_get_extra_parts_offset_by_id(d, part)
+            out.append("{} {} {}".format(device + str(offset), mount, fstype_opts))
 
     return '\n'.join(out)
 
