@@ -205,18 +205,18 @@ def mender_is_msdos_ptable_image(d):
     return bb.utils.contains_any('MENDER_FEATURES', mptimgs , True, False, d)
 
 
-def mender_get_data_and_total_parts_num(d):
-    data_pos = 3
+def mender_get_extra_and_total_parts_num(d):
+    extra_pos = 3
     parts_num = 3
 
     boot_part_size = d.getVar('MENDER_BOOT_PART_SIZE_MB')
     if (boot_part_size and boot_part_size != '0'):
-        data_pos += 1
+        extra_pos += 1
         parts_num += 1
 
     swap_part_size = d.getVar('MENDER_SWAP_PART_SIZE_MB')
     if (swap_part_size and swap_part_size != '0'):
-        data_pos += 1
+        extra_pos += 1
         parts_num += 1
 
     extra_parts = d.getVar('MENDER_EXTRA_PARTS')
@@ -229,33 +229,28 @@ def mender_get_data_and_total_parts_num(d):
     #is an msdos extended partion going to be required
     if parts_num > 4 and mender_is_msdos_ptable_image(d):
         parts_num += 1
-        if data_pos >= 4:
-            data_pos += 1
-    return data_pos, parts_num
+        if extra_pos >= 4:
+            extra_pos += 1
+    return extra_pos, parts_num
 
 def mender_get_data_part_num(d):
-    data_num, _ = mender_get_data_and_total_parts_num(d)
-    return data_num
+    return mender_get_total_parts_num(d)
+
+def mender_get_extra_part_num(d):
+    extra_num, _ = mender_get_extra_and_total_parts_num(d)
+    return extra_num
 
 def mender_get_swap_part_num(d):
-    data_num, _ = mender_get_data_and_total_parts_num(d)
+    extra_num, _ = mender_get_extra_and_total_parts_num(d)
     # swap is always before data partition
-    return data_num - 1
+    return extra_num - 1
 
 def mender_get_total_parts_num(d):
-    _, total_part_num = mender_get_data_and_total_parts_num(d)
+    _, total_part_num = mender_get_extra_and_total_parts_num(d)
     return total_part_num
 
 def mender_get_extra_parts_offset(d):
-    data_num = mender_get_data_part_num(d)
-    total_part_num = mender_get_total_parts_num(d)
-    # extra parts start after data part
-    extra_part_num = data_num + 1
-
-    # we have no boot part and add two or more extra partitions then move index as extended partition is created
-    if data_num < 4 and total_part_num >= 5: extra_part_num += 1
-
-    return extra_part_num
+    return mender_get_extra_part_num(d)
 
 def mender_get_extra_parts_offset_by_id(d, id = None):
     parts = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
@@ -315,12 +310,10 @@ mender_merge_bootfs_and_image_boot_files() {
 def get_extra_parts(d):
     final_parts = []
     partsflags = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
-    if partsflags:
-        parts = (d.getVar('MENDER_EXTRA_PARTS') or "").split()
-
-        for flag, flagval in partsflags.items():
-            if flag in parts:
-                final_parts.append(flagval)
+    parts = (d.getVar('MENDER_EXTRA_PARTS') or "").split()
+    for flag in parts:
+        if flag in partsflags.keys():
+            final_parts.append(partsflags[flag])
 
     return final_parts
 
@@ -413,10 +406,10 @@ def get_extra_parts_total_size_mb(d):
 def get_extra_parts_wks(d):
     final_parts = []
     for part in get_extra_parts_flags(d):
-      size = get_extra_parts_size_mb_by_id(d, part)
-      fixed_size = "--fixed-size {}M".format(size) if size else ""
+        size = get_extra_parts_size_mb_by_id(d, part)
+        fixed_size = "--fixed-size {}M".format(size) if size else ""
 
-      final_parts.append("part --ondisk \"$ondisk_dev\" {} --align \"$alignment_kb\" {}".format(fixed_size, get_extra_parts_by_id(d, part)))
+        final_parts.append("part --ondisk \"$ondisk_dev\" {} --align \"$alignment_kb\" {}".format(fixed_size, get_extra_parts_by_id(d, part)))
 
     return '\n'.join(final_parts)
 
