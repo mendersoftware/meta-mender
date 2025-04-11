@@ -1320,6 +1320,7 @@ class TestPreferredVersions:
             for version in versions_of_recipe("mender-artifact")
         ]
         + [("mender-artifact-native", None)]
+        + [("mender-artifact-native", "9.9.9")]
         + [
             ("mender-connect", version)
             for version in versions_of_recipe("mender-connect")
