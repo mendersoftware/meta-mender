@@ -87,6 +87,7 @@ mender_part_image() {
                     "reserved for U-Boot environment storage. Please raise it" \
                     "manually."
         fi
+
         cat >> "$wks" <<EOF
 # embed bootloader
 part --source rawcopy --sourceparams="file=$bootloader_file" --ondisk "$ondisk_dev" --align $bootloader_align_kb --no-table
@@ -117,6 +118,16 @@ EOF
     IMAGE_BOOT_FILES_STRIPPED=$(echo "${IMAGE_BOOT_FILES}" | sed -r 's/(^\s*)|(\s*$)//g')
 
     if [ "${MENDER_BOOT_PART_SIZE_MB}" -ne "0" ]; then
+        # TODO: if autoboot is used
+        cat >> "$wks" <<EOF
+part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.autobootimg" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size 128 --active $boot_part_params
+EOF
+
+        cat >> "$wks" <<EOF
+part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.bootimg" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_BOOT_PART_SIZE_MB} --active $boot_part_params
+EOF
+
+        # TODO: IF A/B UBOOT bootloader partition
         cat >> "$wks" <<EOF
 part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.bootimg" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_BOOT_PART_SIZE_MB} --active $boot_part_params
 EOF

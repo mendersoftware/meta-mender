@@ -208,6 +208,9 @@ def mender_is_msdos_ptable_image(d):
 def mender_get_extra_and_total_parts_num(d):
     extra_pos = 3
 
+    # TODO: IF A/B Boot partitions with autoboot
+    extra_pos += 2
+
     boot_part_size = d.getVar('MENDER_BOOT_PART_SIZE_MB')
     if (boot_part_size and boot_part_size != '0'):
         extra_pos += 1
@@ -268,7 +271,9 @@ mender_merge_bootfs_and_image_boot_files() {
     W="${WORKDIR}/bootfs"
     rm -rf "$W"
 
-    cp -a "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
+    if [ -d "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" ]; then
+        cp -a "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
+    fi
 
     # Put in variable to avoid expansion and ';' being parsed by shell.
     image_boot_files="${IMAGE_BOOT_FILES}"
