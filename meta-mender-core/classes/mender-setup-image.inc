@@ -48,15 +48,22 @@ mender_update_fstab_file() {
         tmpDataPart="LABEL=${MENDER_DATA_PART_LABEL}"
     fi
 
-    if ! ${@bb.utils.contains('MENDER_FEATURES', 'mender-image-ubi', 'true', 'false', d)}; then
-        if [ "${MENDER_BOOT_PART_SIZE_MB}" != "0" ] && [ -n "${MENDER_BOOT_PART}" ]; then
-            echo "# Where the U-Boot environment resides; for devices with SD card support ONLY!" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
-            mkdir -p ${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}
-            printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpBootPart} ${MENDER_BOOT_PART_MOUNT_LOCATION} ${MENDER_BOOT_PART_FSTYPE} ${MENDER_BOOT_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
-        else
-            bbdebug 2 "MENDER_BOOT_PART not applicable. Not adding to fstab..."
-        fi
-    fi
+
+    # TODO: If autoboot add it to fstab
+    MENDER_AUTOBOOT_PART="${MENDER_STORAGE_DEVICE_BASE}1"
+    mkdir -p ${IMAGE_ROOTFS}/autoboot
+    printf "%-20s %-20s %-10s %-21s %-2s %s\n" $MENDER_AUTOBOOT_PART /autoboot ${MENDER_BOOT_PART_FSTYPE} ${MENDER_BOOT_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+
+    # TODO: IF do not mount the A/B do not include in the fstab
+    # if ! ${@bb.utils.contains('MENDER_FEATURES', 'mender-image-ubi', 'true', 'false', d)}; then
+    #     if [ "${MENDER_BOOT_PART_SIZE_MB}" != "0" ] && [ -n "${MENDER_BOOT_PART}" ]; then
+    #         echo "# Where the U-Boot environment resides; for devices with SD card support ONLY!" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    #         mkdir -p ${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}
+    #         printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpBootPart} ${MENDER_BOOT_PART_MOUNT_LOCATION} ${MENDER_BOOT_PART_FSTYPE} ${MENDER_BOOT_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    #     else
+    #         bbdebug 2 "MENDER_BOOT_PART not applicable. Not adding to fstab..."
+    #     fi
+    # fi
 
     mkdir -p ${IMAGE_ROOTFS}/data
     printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpDataPart} /data ${MENDER_DATA_PART_FSTYPE} ${MENDER_DATA_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
