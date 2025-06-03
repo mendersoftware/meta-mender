@@ -6,7 +6,9 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7ca
 DEPENDS = "ca-certificates"
 RDEPENDS:${PN} = "ca-certificates"
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 localdatadir = "${prefix}/local/share"
 
 inherit allarch

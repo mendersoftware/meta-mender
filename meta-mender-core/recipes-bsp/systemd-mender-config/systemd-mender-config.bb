@@ -8,7 +8,8 @@ SRC_URI = " \
     file://ab_setup.py \
     "
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 do_compile() {
     :
