@@ -254,10 +254,10 @@ def mender_get_extra_parts_offset(d):
     return mender_get_extra_part_num(d)
 
 def mender_get_extra_parts_offset_by_id(d, id = None):
-    parts = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
-    if parts and id in parts:
+    parts = get_extra_parts(d)
+    if parts and id in parts.keys():
         idx = mender_get_extra_parts_offset(d)
-        for part in parts:
+        for part in parts.keys():
             if id == part:
                 return idx
             idx += 1
@@ -311,24 +311,27 @@ mender_merge_bootfs_and_image_boot_files() {
 }
 
 def get_extra_parts(d):
-    final_parts = []
-    partsflags = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
-    parts = (d.getVar('MENDER_EXTRA_PARTS') or "").split()
-    for flag in parts:
-        if flag in partsflags.keys():
-            final_parts.append(partsflags[flag])
+    from collections import OrderedDict
 
-    return final_parts
+    partsflags = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
+    orderflags = d.getVarFlags("MENDER_EXTRA_PARTS_ORDER") or {}
+
+    # Sort the items by order and return as an OrderedDict
+    sorted_items = sorted(
+        partsflags.items(),
+        key=lambda item: int(orderflags.get(item[0], 999))  # Default to 999 if not specified
+    )
+
+    return OrderedDict(sorted_items)
 
 def get_extra_parts_flags(d):
-    partsflags = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
+    partsflags = get_extra_parts(d)
     if partsflags:
-        return partsflags.keys()
-
+        return list(partsflags.keys())
     return []
 
 def get_extra_parts_by_id(d, id = None):
-    partsflags = d.getVarFlags("MENDER_EXTRA_PARTS") or {}
+    partsflags = get_extra_parts(d)
     if partsflags:
         if id in partsflags.keys():
             return partsflags[id]
@@ -407,7 +410,7 @@ def get_extra_parts_total_size_mb(d):
 
 def get_extra_parts_wks(d):
     final_parts = []
-    for part in get_extra_parts_flags(d):
+    for part in get_extra_parts(d):
         size = get_extra_parts_size_mb_by_id(d, part)
         fixed_size = "--fixed-size {}M".format(size) if size else ""
 
