@@ -24,6 +24,8 @@ python() {
             bb.fatal("If enabling %s in MENDER_FEATURES_ENABLE, mender-image must also be enabled"
                      % dep)
 }
+MENDER_AUTOBOOT_PART_MOUNT_LOCATION = "/autoboot"
+MENDER_AUTOBOOT_PART="${MENDER_STORAGE_DEVICE_BASE}1"
 
 MENDER_BOOT_PART_MOUNT_LOCATION = "/boot/efi"
 MENDER_BOOT_PART_MOUNT_LOCATION:mender-uboot = "/uboot"
@@ -50,9 +52,8 @@ mender_update_fstab_file() {
 
 
     # TODO: If autoboot add it to fstab
-    MENDER_AUTOBOOT_PART="${MENDER_STORAGE_DEVICE_BASE}1"
-    mkdir -p ${IMAGE_ROOTFS}/autoboot
-    printf "%-20s %-20s %-10s %-21s %-2s %s\n" $MENDER_AUTOBOOT_PART /autoboot ${MENDER_BOOT_PART_FSTYPE} ${MENDER_BOOT_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    mkdir -p ${IMAGE_ROOTFS}/${MENDER_AUTOBOOT_PART_MOUNT_LOCATION}
+    printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${MENDER_AUTOBOOT_PART} ${MENDER_AUTOBOOT_PART_MOUNT_LOCATION} ${MENDER_BOOT_PART_FSTYPE} ${MENDER_BOOT_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
 
     # TODO: IF do not mount the A/B do not include in the fstab
     # if ! ${@bb.utils.contains('MENDER_FEATURES', 'mender-image-ubi', 'true', 'false', d)}; then

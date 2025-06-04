@@ -120,7 +120,7 @@ EOF
     if [ "${MENDER_BOOT_PART_SIZE_MB}" -ne "0" ]; then
         # TODO: if autoboot is used
         cat >> "$wks" <<EOF
-part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.autobootimg" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size 128 --active $boot_part_params
+part --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.autobootimg" --ondisk "$ondisk_dev" --align $alignment_kb --fixed-size ${MENDER_AUTO_BOOT_PART_SIZE_MB} --active $boot_part_params
 EOF
 
         cat >> "$wks" <<EOF
