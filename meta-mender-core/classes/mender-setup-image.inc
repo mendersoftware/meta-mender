@@ -24,6 +24,8 @@ python() {
             bb.fatal("If enabling %s in MENDER_FEATURES_ENABLE, mender-image must also be enabled"
                      % dep)
 }
+MENDER_AUTOBOOT_PART_MOUNT_LOCATION = "/autoboot"
+MENDER_AUTOBOOT_PART="${MENDER_STORAGE_DEVICE_BASE}1"
 
 MENDER_BOOT_PART_MOUNT_LOCATION = "/boot/efi"
 MENDER_BOOT_PART_MOUNT_LOCATION:mender-uboot = "/uboot"
@@ -48,15 +50,21 @@ mender_update_fstab_file() {
         tmpDataPart="LABEL=${MENDER_DATA_PART_LABEL}"
     fi
 
-    if ! ${@bb.utils.contains('MENDER_FEATURES', 'mender-image-ubi', 'true', 'false', d)}; then
-        if [ "${MENDER_BOOT_PART_SIZE_MB}" != "0" ] && [ -n "${MENDER_BOOT_PART}" ]; then
-            echo "# Where the U-Boot environment resides; for devices with SD card support ONLY!" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
-            mkdir -p ${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}
-            printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpBootPart} ${MENDER_BOOT_PART_MOUNT_LOCATION} ${MENDER_BOOT_PART_FSTYPE} ${MENDER_BOOT_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
-        else
-            bbdebug 2 "MENDER_BOOT_PART not applicable. Not adding to fstab..."
-        fi
-    fi
+
+    # TODO: If autoboot add it to fstab
+    mkdir -p ${IMAGE_ROOTFS}/${MENDER_AUTOBOOT_PART_MOUNT_LOCATION}
+    printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${MENDER_AUTOBOOT_PART} ${MENDER_AUTOBOOT_PART_MOUNT_LOCATION} ${MENDER_BOOT_PART_FSTYPE} ${MENDER_BOOT_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+
+    # TODO: IF do not mount the A/B do not include in the fstab
+    # if ! ${@bb.utils.contains('MENDER_FEATURES', 'mender-image-ubi', 'true', 'false', d)}; then
+    #     if [ "${MENDER_BOOT_PART_SIZE_MB}" != "0" ] && [ -n "${MENDER_BOOT_PART}" ]; then
+    #         echo "# Where the U-Boot environment resides; for devices with SD card support ONLY!" >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    #         mkdir -p ${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}
+    #         printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpBootPart} ${MENDER_BOOT_PART_MOUNT_LOCATION} ${MENDER_BOOT_PART_FSTYPE} ${MENDER_BOOT_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    #     else
+    #         bbdebug 2 "MENDER_BOOT_PART not applicable. Not adding to fstab..."
+    #     fi
+    # fi
 
     mkdir -p ${IMAGE_ROOTFS}/data
     printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${tmpDataPart} /data ${MENDER_DATA_PART_FSTYPE} ${MENDER_DATA_PART_FSTAB_OPTS} 0 2 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
@@ -73,13 +81,12 @@ mender_update_fstab_file() {
     fi
 
     if [ "${MENDER_SWAP_PART_SIZE_MB}" -ne "0" ]; then
-        local swap_part_num="${@mender_get_swap_part_num(d)}"
-	if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
-	    swap_uuid="${@d.getVar('MENDER_SWAP_PART_UUID')}"
+        if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
+            swap_uuid="${@d.getVar('MENDER_SWAP_PART_UUID')}"
             printf "%-20s %-20s %-10s %-21s %-2s %s\n"  "PARTUUID=${swap_uuid}" swap swap defaults 0  0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
-	else
-            printf "%-20s %-20s %-10s %-21s %-2s %s\n"  ${MENDER_STORAGE_DEVICE_BASE}${swap_part_num} swap swap defaults 0  0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
-	fi
+        else
+            printf "%-20s %-20s %-10s %-21s %-2s %s\n"  ${MENDER_SWAP_PART} ${MENDER_SWAP_MOUNTPOINT} swap sw,nofail 0  0 >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+        fi
     fi
 }
 
