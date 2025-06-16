@@ -11,8 +11,6 @@ updates:
       python-test-dependencies:
         patterns:
           - "*"
-    reviewers:
-      - "mendersoftware/client-dependabot-reviewers"
   - commit-message:
       prefix: chore
     directory: /meta-mender-qemu/docker/qemux86-64
@@ -20,8 +18,6 @@ updates:
     schedule:
       interval: monthly
       day: saturday
-    reviewers:
-      - "mendersoftware/client-dependabot-reviewers"
   - commit-message:
       prefix: chore
     directory: /
