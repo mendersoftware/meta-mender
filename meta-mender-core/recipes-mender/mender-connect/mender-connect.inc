@@ -58,12 +58,12 @@ do_install:append() {
     # Install configuration
     mkdir -p ${D}/${sysconfdir}/mender
     install -m 0600 ${B}/mender-connect.conf ${D}/${sysconfdir}/mender/mender-connect.conf
-}
 
-do_install:append:mender-systemd() {
-    # Install systemd service
-    install -m 755 -d ${D}${systemd_unitdir}/system
-    install -m 0644 ${B}/src/${GO_IMPORT}/support/mender-connect.service ${D}${systemd_unitdir}/system/
+    # Install service if systemd is configured
+    if [ "${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)}" ]; then
+        install -m 755 -d ${D}${systemd_unitdir}/system
+        install -m 0644 ${B}/src/${GO_IMPORT}/support/mender-connect.service ${D}${systemd_unitdir}/system/
+    fi
 }
 
 FILES:${PN}:append = "\
