@@ -51,11 +51,19 @@ def pytest_sessionfinish(session, exitstatus):
     and copy them over to CI WORKSPACE /tmp so they can be collected as artifacts.
     """
     log_path = "/tmp/journalctl.log"
-    try:
-        connection.run(f"journalctl --no-pager > {log_path}")
-        get_no_sftp(log_path, connection, local=log_path)
-    except Exception:
-        # it might fail for some board types but that's okay the collection is best effort
-        print("\n\n!!!! Failed to retrieve journal logs from the device. This is non-fatal.")
-        traceback.print_exc()
-        print("!!!! End of non-fatal error.\n")
+
+    # Retrieve the connection object from the config
+    conn = getattr(session.config, "_session_connection", None)
+
+    if conn:
+        try:
+            conn.run(f"journalctl --no-pager > {log_path}")
+            get_no_sftp(log_path, conn, local=log_path)
+            print("\n\n!!!! Journal logs collected successfully.")
+        except Exception:
+            # it might fail for some board types but that's okay the collection is best effort
+            print("\n\n!!!! Failed to retrieve journal logs from the device. This is non-fatal.")
+            traceback.print_exc()
+    else:
+        print("\n!!!! Could not retrieve logs because connection object was not available.")
+
