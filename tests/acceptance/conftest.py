@@ -16,6 +16,7 @@
 import os
 import pytest
 import sys
+import traceback
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "image-tests", "tests"))
 
@@ -53,6 +54,8 @@ def pytest_sessionfinish(session, exitstatus):
     try:
         connection.run(f"journalctl --no-pager > {log_path}")
         get_no_sftp(log_path, connection, local=log_path)
-    except:
+    except Exception:
         # it might fail for some board types but that's okay the collection is best effort
-        pass
+        print("\n\n!!!! Failed to retrieve journal logs from the device. This is non-fatal.")
+        traceback.print_exc()
+        print("!!!! End of non-fatal error.\n")
