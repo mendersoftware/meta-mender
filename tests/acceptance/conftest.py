@@ -16,7 +16,6 @@
 import os
 import pytest
 import sys
-import traceback
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "image-tests", "tests"))
 
@@ -43,27 +42,4 @@ def pytest_collection_modifyitems(session, config, items):
             break
     if test_index:
         items.insert(0, items.pop(test_index))
-
-
-def pytest_sessionfinish(session, exitstatus):
-    """
-    At the end of the test run, collect journal logs from the machine under test
-    and copy them over to CI WORKSPACE /tmp so they can be collected as artifacts.
-    """
-    log_path = "/tmp/journalctl.log"
-
-    # Retrieve the connection object from the config
-    conn = getattr(session.config, "_session_connection", None)
-
-    if conn:
-        try:
-            conn.run(f"journalctl --no-pager > {log_path}")
-            get_no_sftp(log_path, conn, local=log_path)
-            print("\n\n!!!! Journal logs collected successfully.")
-        except Exception:
-            # it might fail for some board types but that's okay the collection is best effort
-            print("\n\n!!!! Failed to retrieve journal logs from the device. This is non-fatal.")
-            traceback.print_exc()
-    else:
-        print("\n!!!! Could not retrieve logs because connection object was not available.")
 
