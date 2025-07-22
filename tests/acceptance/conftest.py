@@ -42,4 +42,3 @@ def pytest_collection_modifyitems(session, config, items):
             break
     if test_index:
         items.insert(0, items.pop(test_index))
-
