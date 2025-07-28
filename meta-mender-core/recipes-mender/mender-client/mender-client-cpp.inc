@@ -63,7 +63,6 @@ RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modul
 RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' mender-flash', '', d)}"
 
 PACKAGECONFIG[inventory-network-scripts] = ",,,"
-RDEPENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'inventory-network-scripts', ' wget', '', d)}"
 
 # NOTE: Splits the mender.conf file by default into a transient and a persistent config. Needs to be
 # explicitly disabled if this is not to apply.
