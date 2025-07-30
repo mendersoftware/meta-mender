@@ -10,7 +10,7 @@ The repository follows the release-named branch strategy.
 
 ### Current branch state
 
-Branch `master` is in **development** maintenance.
+Branch `master-next` is in **bleeding edge** maintenance.
 
 ### Maintenance states
 
