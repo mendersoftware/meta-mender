@@ -10,12 +10,13 @@ inherit systemd
 
 SYSTEMD_SERVICE:${PN} = "boot-script.service"
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 do_install() {
     install -d ${D}${sbindir}
-    install -m 0755 ${WORKDIR}/boot-script.sh ${D}${sbindir}
+    install -m 0755 ${UNPACKDIR}/boot-script.sh ${D}${sbindir}
 
     install -d ${D}${systemd_unitdir}/system
-    install -m 0644 ${WORKDIR}/boot-script.service ${D}${systemd_unitdir}/system
+    install -m 0644 ${UNPACKDIR}/boot-script.service ${D}${systemd_unitdir}/system
 }

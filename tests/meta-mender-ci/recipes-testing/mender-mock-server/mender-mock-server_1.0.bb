@@ -7,7 +7,8 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = " \
     file://mender-mock-server.py;beginline=2;endline=14;md5=0022954814efed30323d08ab6de15a4e \
 "
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 RDEPENDS:${PN} = "python3-core python3-netserver python3-json"
 

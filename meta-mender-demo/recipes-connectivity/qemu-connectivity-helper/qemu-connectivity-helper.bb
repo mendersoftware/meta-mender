@@ -9,7 +9,8 @@ inherit systemd
 SYSTEMD_SERVICE:${PN} = "qemu-connectivity-helper.service"
 FILES:${PN} = "${systemd_unitdir}/system/qemu-connectivity-helper.service"
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 do_install() {
     install -d ${D}${systemd_unitdir}/system

@@ -282,7 +282,7 @@ do_install:append() {
 
 do_install:append:class-target:mender-image:mender-systemd() {
     install -d ${D}${systemd_unitdir}/system/
-    install -m 644 ${WORKDIR}/mender-data-dir.service ${D}${systemd_unitdir}/system/mender-data-dir.service
+    install -m 644 ${UNPACKDIR}/mender-data-dir.service ${D}${systemd_unitdir}/system/mender-data-dir.service
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/mender-data-dir.service
 }
@@ -291,27 +291,27 @@ do_install:append:class-target:mender-growfs-data:mender-systemd() {
 
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid -L ${MENDER_DATA_PART_LABEL})#g" \
-            ${WORKDIR}/mender-resize-data-part.sh.in
+            ${UNPACKDIR}/mender-resize-data-part.sh.in
     elif ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid | grep 'PARTUUID=\"${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')}\"' | awk -F: '{ print \$1 }')#g" \
-            ${WORKDIR}/mender-resize-data-part.sh.in
+            ${UNPACKDIR}/mender-resize-data-part.sh.in
     else
         sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
-            ${WORKDIR}/mender-resize-data-part.sh.in
+            ${UNPACKDIR}/mender-resize-data-part.sh.in
     fi
 
     sed -i "s#@MENDER_DATA_PART_NUMBER@#${MENDER_DATA_PART_NUMBER}#g" \
-        ${WORKDIR}/mender-resize-data-part.sh.in
+        ${UNPACKDIR}/mender-resize-data-part.sh.in
 
 
     install -d ${D}/${bindir}/
 
-    install -m 0755 ${WORKDIR}/mender-resize-data-part.sh.in \
+    install -m 0755 ${UNPACKDIR}/mender-resize-data-part.sh.in \
         ${D}/${bindir}/mender-resize-data-part
 
     install -d ${D}/${systemd_unitdir}/system
-    install -m 644 ${WORKDIR}/mender-grow-data.service ${D}/${systemd_unitdir}/system/
-    install -m 644 ${WORKDIR}/mender-systemd-growfs-data.service ${D}/${systemd_unitdir}/system/
+    install -m 644 ${UNPACKDIR}/mender-grow-data.service ${D}/${systemd_unitdir}/system/
+    install -m 644 ${UNPACKDIR}/mender-systemd-growfs-data.service ${D}/${systemd_unitdir}/system/
 
     install -d ${D}${systemd_unitdir}/system/data.mount.wants/
     ln -sf ../mender-grow-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
@@ -319,11 +319,11 @@ do_install:append:class-target:mender-growfs-data:mender-systemd() {
 }
 
 do_install:append:class-target:mender-persist-systemd-machine-id() {
-    install -m 644 ${WORKDIR}/mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/
+    install -m 644 ${UNPACKDIR}/mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
     install -d -m 755 ${D}${bindir}
-    install -m 755 ${WORKDIR}/mender-set-systemd-machine-id.sh ${D}${bindir}/
+    install -m 755 ${UNPACKDIR}/mender-set-systemd-machine-id.sh ${D}${bindir}/
 }
 
 do_install() {
