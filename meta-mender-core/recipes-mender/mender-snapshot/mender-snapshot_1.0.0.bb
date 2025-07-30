@@ -8,7 +8,7 @@ require mender-snapshot.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender-snapshot.git;protocol=https;branch=1.0.x"
+SRC_URI = "git://github.com/mendersoftware/mender-snapshot.git;protocol=https;branch=1.0.x;destsuffix=${GO_SRCURI_DESTSUFFIX}"
 
 # Tag: 1.0.0
 SRCREV = "6f451781ec252fa9d40f04301aad1b2faa98905f"

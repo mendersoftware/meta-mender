@@ -40,7 +40,7 @@ def mender_version_from_preferred_version(d):
         return "master-git%s" % srcpv
 PV = "${@mender_version_from_preferred_version(d)}"
 
-SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=master"
+SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=master;destsuffix=${GO_SRCURI_DESTSUFFIX}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
