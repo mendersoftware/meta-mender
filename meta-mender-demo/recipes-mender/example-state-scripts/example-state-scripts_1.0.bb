@@ -1,7 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI = "file://example-script;subdir=${PN}-${PV} \
-          file://LICENSE;subdir=${PN}-${PV} \
+SRC_URI = "file://example-script;subdir=${BPN}-${PV} \
+          file://LICENSE;subdir=${BPN}-${PV} \
           "
 
 LICENSE = "Apache-2.0"
