@@ -244,8 +244,9 @@ EOF
 IMAGE_CMD:sdimg() {
     mender_part_image sdimg msdos
 }
+# C12A7328-F81F-11D2-BA4B-00A0C93EC93B is the GUID specified for the ESP, the deprecated value was EF00
 IMAGE_CMD:uefiimg() {
-    mender_part_image uefiimg gpt "--part-type EF00"
+    mender_part_image uefiimg gpt "--part-type C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
 }
 IMAGE_CMD:biosimg() {
     mender_part_image biosimg msdos
