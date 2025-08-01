@@ -128,7 +128,7 @@ EOF
     # A full filesystem is populated if one of the following applies
     # - ARTIFACTIMG_FSTYPE is squashfs, because it doesn not allow empty partitions.
     # - the "mender-prepopulate-inactive-partition" MENDER_FEATURE is enabled
-    if [ "${ARTIFACTIMG_FSTYPE}" = "squashfs" || ${@bb.utils.contains('MENDER_FEATURES', 'mender-prepopulate-inactive-partition', 'true', 'false', d)} ]; then
+    if [ "${ARTIFACTIMG_FSTYPE}" = "squashfs" ] || ${@bb.utils.contains('MENDER_FEATURES', 'mender-prepopulate-inactive-partition', 'true', 'false', d)}; then
         part2_content="--source rawcopy --sourceparams=\"file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${ARTIFACTIMG_FSTYPE}\""
     else
         part2_content=
