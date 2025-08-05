@@ -46,5 +46,5 @@ fakeroot python do_cleanconfigs:class-target() {
 }
 fakeroot python do_cleanconfigs() {
 }
-addtask cleanconfigs after do_sign do_chownboot before deploy do_package
+addtask cleanconfigs after deploy before do_package
 do_cleanconfigs[depends] += "virtual/fakeroot-native:do_populate_sysroot"
