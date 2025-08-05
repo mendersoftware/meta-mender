@@ -8,7 +8,8 @@ SRC_URI = " \
     file://ab_setup.py \
     "
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 do_compile() {
     :
@@ -16,7 +17,7 @@ do_compile() {
 
 do_install() {
     install -d ${D}${sbindir}
-    install -m 0755 "${WORKDIR}/ab_setup.py" "${D}${sbindir}"
+    install -m 0755 "${UNPACKDIR}/ab_setup.py" "${D}${sbindir}"
 
     ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/systemd-boot-printenv"
     ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/systemd-boot-setenv"

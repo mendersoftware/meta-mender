@@ -8,7 +8,7 @@ require mender-artifact.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=3.11.x"
+SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=3.11.x;destsuffix=${GO_SRCURI_DESTSUFFIX}"
 
 # Tag: 3.11.2
 SRCREV = "fb66ab2bac09029d13dade7c3a81e24633d957eb"

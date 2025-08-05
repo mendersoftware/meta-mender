@@ -6,7 +6,9 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7ca
 DEPENDS = "ca-certificates"
 RDEPENDS:${PN} = "ca-certificates"
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
 localdatadir = "${prefix}/local/share"
 
 inherit allarch
@@ -14,7 +16,7 @@ inherit allarch
 PV = "0.1"
 
 do_install() {
-    if [ ! -f ${WORKDIR}/server.crt ]; then
+    if [ ! -f ${UNPACKDIR}/server.crt ]; then
         bbfatal "No server server.crt found in SRC_URI"
     fi
 
@@ -23,7 +25,7 @@ do_install() {
     # MEN-4580: Multiple certificates in one file are necessary to split in
     # order for `update-ca-certificates` to produce a hashed symlink to them,
     # which is required by some programs, such as curl.
-    if [ $(fgrep 'BEGIN CERTIFICATE' ${WORKDIR}/server.crt | wc -l) -gt 1 ]; then
+    if [ $(fgrep 'BEGIN CERTIFICATE' ${UNPACKDIR}/server.crt | wc -l) -gt 1 ]; then
         certnum=1
         while read LINE; do
             if [ -z "$cert" ] || echo "$LINE" | fgrep -q 'BEGIN CERTIFICATE'; then
@@ -34,9 +36,9 @@ do_install() {
                 certnum=$(expr $certnum + 1)
             fi
             echo "$LINE" >> $cert
-        done < ${WORKDIR}/server.crt
+        done < ${UNPACKDIR}/server.crt
     else
-        install -m 0444 ${WORKDIR}/server.crt ${D}${localdatadir}/ca-certificates/mender/server.crt
+        install -m 0444 ${UNPACKDIR}/server.crt ${D}${localdatadir}/ca-certificates/mender/server.crt
     fi
 }
 

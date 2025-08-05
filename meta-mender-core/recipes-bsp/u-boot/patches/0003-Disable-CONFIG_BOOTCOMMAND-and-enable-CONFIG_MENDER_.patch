@@ -1,4 +1,4 @@
-From b38c4f3d1d76a3e1c6207847482bb3a0ba4d22e4 Mon Sep 17 00:00:00 2001
+From 4115b143c4bd90246cc5d6945cf294f50c107da5 Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@northern.tech>
 Date: Mon, 28 Aug 2017 18:12:37 +0200
 Subject: [PATCH] Disable CONFIG_BOOTCOMMAND and enable
@@ -7,16 +7,15 @@ Subject: [PATCH] Disable CONFIG_BOOTCOMMAND and enable
 
 Upstream-Status: Inappropriate
 Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
-
 ---
  include/env_default.h | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/include/env_default.h b/include/env_default.h
-index cf04f1253b..1d13a8ff5a 100644
+index ecb48f79a3b..d42abeb4cc0 100644
 --- a/include/env_default.h
 +++ b/include/env_default.h
-@@ -41,8 +41,8 @@ const char default_environment[] = {
+@@ -40,8 +40,8 @@ const char default_environment[] = {
  #ifdef	CONFIG_USE_BOOTARGS
  	"bootargs="	CONFIG_BOOTARGS			"\0"
  #endif

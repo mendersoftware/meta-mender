@@ -49,7 +49,7 @@ def mender_snapshot_version_from_preferred_version(d, srcpv):
         return "master-git%s" % srcpv
 PV = "${@mender_snapshot_version_from_preferred_version(d, '${SRCPV}')}"
 
-SRC_URI = "git://${GO_IMPORT};protocol=https;branch=${MENDER_SNAPSHOT_BRANCH}"
+SRC_URI = "git://${GO_IMPORT};protocol=https;branch=${MENDER_SNAPSHOT_BRANCH};destsuffix=${GO_SRCURI_DESTSUFFIX}"
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below. Note that for
