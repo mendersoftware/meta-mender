@@ -1,0 +1,8 @@
+api_version: mender/v1
+kind: topology
+system_type: "test-device"
+
+components:
+  - component_type: rootfs
+    interface: rootfs-image
+    version: v1
