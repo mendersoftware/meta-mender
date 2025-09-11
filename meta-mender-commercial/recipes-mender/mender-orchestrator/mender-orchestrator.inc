@@ -50,8 +50,7 @@ do_install() {
     install -d -m 755 ${D}${localstatedir}/lib/
     ln -s /data/mender-orchestrator ${D}${localstatedir}/lib/mender-orchestrator
 
-    install -d -m 755 ${D}/data/mender-orchestrator/manifests
-    install -m 755 ${WORKDIR}/topology.yaml ${D}/data/mender-orchestrator/manifests/topology.yaml
+    install -m 755 ${WORKDIR}/topology.yaml ${D}/data/mender-orchestrator/topology.yaml
 }
 
 do_install:append:mender-update-install() {

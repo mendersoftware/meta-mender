@@ -54,7 +54,7 @@ class TestMenderOrchestrator:
 
         for file in (
             "/usr/bin/mender-orchestrator",
-            "/data/mender-orchestrator/manifests/topology.yaml",
+            "/data/mender-orchestrator/topology.yaml",
             "/usr/share/mender/inventory/mender-inventory-orchestrator-inventory",
         ):
             output = subprocess.check_output(
