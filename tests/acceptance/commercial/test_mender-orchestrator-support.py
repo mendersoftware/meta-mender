@@ -14,6 +14,7 @@
 #    limitations under the License.
 
 import subprocess
+import os
 
 import pytest
 
@@ -23,18 +24,33 @@ from utils.common import (
 )
 
 
+# Note that this test requires mender-orchestrator, and therefore require
+# a tarball added to SRC_URI:pn-mender-orchestrator
+@pytest.mark.commercial
 @pytest.mark.cross_platform
 class TestMenderOrchestratorSupport:
     @pytest.mark.only_with_image("ext4")
     def test_build_mender_orchestrator_support(
         self, request, bitbake_variables, prepared_test_build, bitbake_image
     ):
+        # Get the directory where the topology is located
+        test_dir = os.path.dirname(os.path.abspath(__file__))
+
         build_image(
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['IMAGE_INSTALL:append = " mender-orchestrator-support"'],
+            [
+                'IMAGE_INSTALL:append = " mender-orchestrator mender-orchestrator-support"',
+                f'FILESEXTRAPATHS:prepend := "{test_dir}/files:"',
+                'SRC_URI:append:pn-mender-orchestrator = " file://topology.yaml"',
+            ],
+            [
+                'BBLAYERS:append = " %s/../meta-mender-commercial"'
+                % bitbake_variables["LAYERDIR_MENDER"],
+            ],
         )
+
         image = latest_build_artifact(
             request, prepared_test_build["build_dir"], "core-image*.ext4"
         )
