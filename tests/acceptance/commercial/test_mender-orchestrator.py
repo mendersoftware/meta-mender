@@ -21,6 +21,7 @@ import pytest
 from utils.common import (
     build_image,
     latest_build_artifact,
+    make_tempdir,
 )
 
 
@@ -39,12 +40,14 @@ class TestMenderOrchestrator:
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            ['IMAGE_INSTALL:append = " mender-orchestrator"'],
+            [
+                'IMAGE_INSTALL:append = " mender-orchestrator"',
+                f'FILESEXTRAPATHS:prepend := "{test_dir}/files:"',
+                'SRC_URI:append:pn-mender-orchestrator = " file://topology.yaml"',
+            ],
             [
                 'BBLAYERS:append = " %s/../meta-mender-commercial"'
                 % bitbake_variables["LAYERDIR_MENDER"],
-                f'FILESEXTRAPATHS:prepend:pn-mender-orchestrator = "{test_dir}/files:"',
-                'SRC_URI:append:pn-mender-orchestrator = " file://topology.yaml"',
             ],
         )
 
@@ -54,7 +57,6 @@ class TestMenderOrchestrator:
 
         for file in (
             "/usr/bin/mender-orchestrator",
-            "/data/mender-orchestrator/topology.yaml",
             "/usr/share/mender/inventory/mender-inventory-orchestrator-inventory",
         ):
             output = subprocess.check_output(
@@ -67,3 +69,36 @@ class TestMenderOrchestrator:
         ).decode()
         assert "Type: symlink" in output
         assert 'Fast link dest: "/data/mender-orchestrator"' in output
+
+        # Check topology.yaml in dataimg
+        data_image = latest_build_artifact(
+            request, prepared_test_build["build_dir"], "core-image*.dataimg"
+        )
+
+        with make_tempdir() as tmpdir:
+            mender_orch_dir = os.path.join(tmpdir, "mender-orchestrator")
+            if (
+                "ARTIFACTIMG_FSTYPE" in bitbake_variables
+                and bitbake_variables["ARTIFACTIMG_FSTYPE"] == "ubifs"
+            ):
+                subprocess.check_call(
+                    ["ubireader_extract_files", "-o", tmpdir, data_image]
+                )
+            else:
+                os.mkdir(mender_orch_dir)
+                subprocess.check_call(
+                    [
+                        "debugfs",
+                        "-R",
+                        f"dump -p /mender-orchestrator/topology.yaml {os.path.join(mender_orch_dir, 'topology.yaml')}",
+                        data_image,
+                    ]
+                )
+
+            with open(os.path.join(mender_orch_dir, "topology.yaml")) as fd_data:
+                data_topology = fd_data.read()
+                with open(os.path.join(test_dir, "files", "topology.yaml")) as fd:
+                    test_topology = fd.read()
+                    assert (
+                        data_topology == test_topology
+                    ), "Error: the installed topology doesn't match"
