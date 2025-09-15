@@ -29,7 +29,7 @@ AB_FORMAT = "6B512s512s"
 # 256 bits -> 256/8 = 32 bytes
 SHA256_SIZE = 32
 
-ROOTFS_OFFSET = 1
+ROOTFS_OFFSET = 2
 
 def try_read_file(path, length):
     """Try to read the designated file with the specified length. Fill with
