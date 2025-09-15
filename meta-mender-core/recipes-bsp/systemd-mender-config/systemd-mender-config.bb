@@ -25,6 +25,8 @@ do_install() {
 
     ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/systemd-boot-printenv"
     ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/systemd-boot-setenv"
+    ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/fw_printenv"
+    ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/fw_setenv"
 }
 
 BBCLASSEXTEND += "native"
