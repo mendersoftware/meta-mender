@@ -390,7 +390,6 @@ do_deploy:append:mender-uboot() {
 
     install -m 644 ${WORKDIR}/fw_env.config.default ${DEPLOYDIR}/fw_env.config.default
 }
-addtask deploy after do_compile before do_package
 
 # Ignore this, only used for testing.
 # The reason it's here is so that the test URI is appended last.
