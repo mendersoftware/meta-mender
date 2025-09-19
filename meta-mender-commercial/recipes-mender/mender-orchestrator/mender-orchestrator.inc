@@ -50,7 +50,10 @@ do_install() {
     install -d -m 755 ${D}${localstatedir}/lib/
     ln -s /data/mender-orchestrator ${D}${localstatedir}/lib/mender-orchestrator
 
-    install -m 755 ${WORKDIR}/topology.yaml ${D}/data/mender-orchestrator/topology.yaml
+    # mender-orchestrator-support provides a pre-made topology in the demo layer
+    if [ -e ${WORKDIR}/topology.yaml ]; then
+        install -m 755 ${WORKDIR}/topology.yaml ${D}/data/mender-orchestrator/topology.yaml
+    fi
 }
 
 do_install:append:mender-update-install() {
