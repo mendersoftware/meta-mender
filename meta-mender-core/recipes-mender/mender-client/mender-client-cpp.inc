@@ -198,6 +198,9 @@ python do_prepare_mender_conf() {
     # Tenant-token is optional, but falls back to a default-value set in source code
     conf_maybe_add("TenantToken", "MENDER_TENANT_TOKEN", getvar=True, integer=False)
 
+    # DeviceTier is optional, but falls back to a default-value set in source code
+    conf_maybe_add("DeviceTier", "MENDER_DEVICE_TIER", getvar=True, integer=False)
+
     # Filter returns the variables that are present in both instances.
     # Thus no misspelled variables will ever enter the persistent configuration during migration.
     persistent_configs = bb.utils.filter("MENDER_PERSISTENT_CONFIGURATION_VARS", d.getVar("MENDER_CONFIGURATION_VARS"), d)
