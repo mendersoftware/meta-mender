@@ -19,10 +19,6 @@ FILES:${PN} = " \
     /data/mender-orchestrator \
 "
 
-FILES:${PN}:append:mender-update-install = " \
-    ${datadir}/mender/inventory/mender-inventory-orchestrator-inventory \
-"
-
 S = "${WORKDIR}/mender-orchestrator-${PV}"
 
 do_version_check() {
@@ -57,9 +53,4 @@ do_install() {
     if [ -e ${WORKDIR}/topology.yaml ]; then
         install -m 755 ${WORKDIR}/topology.yaml ${D}/data/mender-orchestrator/topology.yaml
     fi
-}
-
-do_install:append:mender-update-install() {
-    install -d -m 755 ${D}${datadir}/mender/inventory/
-    install -m 755 ${S}/support/mender-inventory-orchestrator-inventory ${D}${datadir}/mender/inventory/mender-inventory-orchestrator-inventory
 }
