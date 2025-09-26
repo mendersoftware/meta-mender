@@ -58,6 +58,7 @@ class TestMenderOrchestratorSupport:
         for file in (
             "/usr/share/mender-orchestrator/interfaces/v1/rootfs-image",
             "/usr/share/mender/modules/v3/mender-orchestrator-manifest",
+            "/usr/share/mender/inventory/mender-inventory-mender-orchestrator",
         ):
             output = subprocess.check_output(
                 ["debugfs", "-R", f"stat {file}", image]

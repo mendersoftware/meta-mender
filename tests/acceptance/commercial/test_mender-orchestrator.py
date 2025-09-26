@@ -55,14 +55,10 @@ class TestMenderOrchestrator:
             request, prepared_test_build["build_dir"], "core-image*.ext4"
         )
 
-        for file in (
-            "/usr/bin/mender-orchestrator",
-            "/usr/share/mender/inventory/mender-inventory-orchestrator-inventory",
-        ):
-            output = subprocess.check_output(
-                ["debugfs", "-R", f"stat {file}", image]
-            ).decode()
-            assert "Type: regular" in output
+        output = subprocess.check_output(
+            ["debugfs", "-R", "stat /usr/bin/mender-orchestrator", image]
+        ).decode()
+        assert "Type: regular" in output
 
         output = subprocess.check_output(
             ["debugfs", "-R", "stat /var/lib/mender-orchestrator", image]
