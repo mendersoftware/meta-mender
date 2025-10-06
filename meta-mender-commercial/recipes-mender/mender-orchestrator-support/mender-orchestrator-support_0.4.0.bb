@@ -10,8 +10,8 @@ require mender-orchestrator-support.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender-orchestrator-support;protocol=https;branch=main"
 
-# We don't actually have a tag 0.1, so point it to the latest revision of main
-SRCREV = "a074100cf481ece4e3e201bb75a6b32344e98385"
+# Tag: 0.4.0
+SRCREV = "73a9bab92587f11517106d08377e1ec1cd9cf73d"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
