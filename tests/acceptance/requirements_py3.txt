@@ -18,6 +18,8 @@ execnet==2.1.1
     # via pytest-xdist
 filelock==3.19.1
     # via -r requirements_py3.in
+flaky==3.8.1
+    # via -r requirements_py3.in
 idna==3.7
     # via requests
 iniconfig==2.0.0
