@@ -18,6 +18,7 @@ import subprocess
 import tempfile
 
 import pytest
+from flaky import flaky
 
 from utils.common import (
     determine_active_passive_part,
@@ -167,6 +168,18 @@ class TestSnapshotStandalone:
             connection.run("rm -f /data/tmp-file-system")
 
 
+def rerun_on_blkid_glitch(err, *args):
+    if not issubclass(err[0], subprocess.CalledProcessError):
+        return False
+
+    if not err[1].stderr:
+        return False
+
+    stderr = err[1].stderr.decode()
+    return stderr and "blkid command failed: exit status 2" in stderr
+
+
+@flaky(rerun_filter=rerun_on_blkid_glitch, max_runs=2)
 @pytest.mark.cross_platform
 @pytest.mark.only_with_image("uefiimg", "sdimg", "biosimg", "gptimg")
 @pytest.mark.usefixtures("setup_board", "bitbake_path")
@@ -185,12 +198,14 @@ class TestSnapshotMenderArtifact:
             (active, _) = determine_active_passive_part(bitbake_variables, connection)
 
             try:
-                subprocess.check_call(
+                subprocess.run(
                     f"{terminal} mender-artifact write rootfs-image "
                     + f"{get_ssh_args_mender_artifact(connection)} -n test -t test "
                     + f"-o {artifact.name} "
                     + f"-f ssh://{connection.user}@{connection.host}:{connection.port}",
                     shell=True,
+                    check=True,
+                    capture_output=True,
                 )
             finally:
                 subprocess.call(f"cat {screen_log.name}", shell=True)
@@ -230,12 +245,14 @@ class TestSnapshotMenderArtifact:
             try:
                 # mender-artifact as of mender-artifact/pull/305 does not use sudo
                 #  when user is root or when uid is 0
-                subprocess.check_call(
+                subprocess.run(
                     f"{terminal} mender-artifact write rootfs-image "
                     + f"{get_ssh_args_mender_artifact(connection)} -n test -t test "
                     + f"-o {artifact.name} "
                     + f"-f ssh://{connection.user}@{connection.host}:{connection.port}",
                     shell=True,
+                    check=True,
+                    capture_output=True,
                 )
             finally:
                 subprocess.call(f"cat {screen_log.name}", shell=True)
