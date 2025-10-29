@@ -105,6 +105,7 @@ EOF
     if write_config:
         with open("mender.conf", "w") as fd:
             json.dump(conf, fd, indent=4, sort_keys=True)
+            fd.write("\n")
         put(local_path="mender.conf",
             remote_path="/etc/mender/mender.conf",
             rootfs=rootfs)
