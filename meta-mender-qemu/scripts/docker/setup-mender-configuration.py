@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2022 Northern.tech AS
+# Copyright 2025 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -41,19 +41,16 @@ def main():
     rootfs = "%s.ext4" % args.img
     extract_ext4(img=args.img, rootfs=rootfs)
 
+    get(local_path="mender.conf",
+        remote_path="/etc/mender/mender.conf",
+        rootfs=rootfs)
+    with open("mender.conf") as fd:
+        conf = json.load(fd)
+        write_config = False
+
     if args.tenant_token:
-        get(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
-        with open("mender.conf") as fd:
-            conf = json.load(fd)
         conf['TenantToken'] = args.tenant_token
-        with open("mender.conf", "w") as fd:
-            json.dump(conf, fd, indent=4, sort_keys=True)
-        put(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
-        os.unlink("mender.conf")
+        write_config = True
 
     if args.server_crt:
         put(local_path=args.server_crt,
@@ -61,18 +58,8 @@ def main():
             rootfs=rootfs)
 
     if args.server_url:
-        get(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
-        with open("mender.conf") as fd:
-            conf = json.load(fd)
         conf['ServerURL'] = args.server_url
-        with open("mender.conf", "w") as fd:
-            json.dump(conf, fd, indent=4, sort_keys=True)
-        put(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
-        os.unlink("mender.conf")
+        write_config = True
 
     if args.server_ip:
         if not args.server_url:
@@ -95,21 +82,11 @@ def main():
         key_img_location = "/etc/mender/artifact-verify-key.pem"
         if not os.path.exists(args.verify_key):
             raise SystemExit("failed to load file: " + args.verify_key)
-        get(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
         put(local_path=args.verify_key,
             remote_path=key_img_location,
             rootfs=rootfs)
-        with open("mender.conf") as fd:
-            conf = json.load(fd)
-            conf['ArtifactVerifyKey'] = key_img_location
-        with open("mender.conf", "w") as fd:
-            json.dump(conf, fd, indent=4, sort_keys=True)
-        put(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
-        os.unlink("mender.conf")
+        conf['ArtifactVerifyKey'] = key_img_location
+        write_config = True
 
     if args.docker_ip:
         with open("mender-inventory-docker-ip", "w") as fd:
@@ -124,6 +101,15 @@ EOF
             remote_path="/usr/share/mender/inventory/mender-inventory-docker-ip",
             rootfs=rootfs)
         os.unlink("mender-inventory-docker-ip")
+
+    if write_config:
+        with open("mender.conf", "w") as fd:
+            json.dump(conf, fd, indent=4, sort_keys=True)
+            fd.write("\n")
+        put(local_path="mender.conf",
+            remote_path="/etc/mender/mender.conf",
+            rootfs=rootfs)
+        os.unlink("mender.conf")
 
     if args.mender_gateway_conffile:
         put(local_path=args.mender_gateway_conffile,
