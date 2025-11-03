@@ -26,6 +26,7 @@ def main():
     parser.add_argument("--img", help="Img to modify", required=True)
     parser.add_argument("--docker-ip", help="IP (in IP/netmask format) to report as Docker IP")
     parser.add_argument("--tenant-token", help="tenant token to use by client")
+    parser.add_argument("--device-tier", help="Device tier to put in configuration")
     parser.add_argument("--server-crt", help="server.crt file to put in image")
     parser.add_argument("--server-url", help="Server address to put in configuration")
     parser.add_argument("--server-ip", help="Server IP to add to /etc/hosts pointing to Server host. Requires --server-url.")
@@ -50,6 +51,10 @@ def main():
 
     if args.tenant_token:
         conf['TenantToken'] = args.tenant_token
+        write_config = True
+
+    if args.device_tier:
+        conf['DeviceTier'] = args.device_tier
         write_config = True
 
     if args.server_crt:
