@@ -21,6 +21,8 @@
 #       Set a "<SERVER_IP> <SERVER_HOST>" entry in /etc/hosts
 # -e TENANT_TOKEN=<token>
 #       Use token as tenant token for client.
+# -e DEVICE_TIER=<tier>
+#       Device tier to use for client.
 # -e MENDER_GATEWAY_CONFFILE=<conffile>
 #       Copy the configuration file for mender-gateway
 #       Note that the file needs to be mounted into the Docker container
