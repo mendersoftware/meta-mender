@@ -23,6 +23,8 @@
 #       Use token as tenant token for client.
 # -e DEVICE_TIER=<tier>
 #       Device tier to use for client.
+# -e LOG_LEVEL=<log-level>
+#      Log level to use for mender-updated and mender-authd
 # -e MENDER_GATEWAY_CONFFILE=<conffile>
 #       Copy the configuration file for mender-gateway
 #       Note that the file needs to be mounted into the Docker container
