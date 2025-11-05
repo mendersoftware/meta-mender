@@ -48,6 +48,8 @@ if [ ! -e /mender-setup-complete ]; then
                                     --server-url=$SERVER_URL \
                                     --server-ip=$SERVER_IP \
                                     --tenant-token=$TENANT_TOKEN $CONFIG_ARGS \
+                                    --device-tier=$DEVICE_TIER \
+                                    --log-level=$LOG_LEVEL \
                                     --docker-ip="$DOCKER_IP" \
                                     --mender-gateway-conffile "$MENDER_GATEWAY_CONFFILE"
     touch /mender-setup-complete

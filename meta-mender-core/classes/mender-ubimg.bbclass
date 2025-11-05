@@ -10,7 +10,9 @@
 inherit image
 inherit image_types
 
-do_image_ubimg[depends] += "mtd-utils-native:do_populate_sysroot rsync-native:do_populate_sysroot"
+do_image_ubimg[depends] += "mtd-utils-native:do_populate_sysroot rsync-native:do_populate_sysroot \
+                            ${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', 'u-boot:do_deploy', '', d)} \
+                           "
 
 IMAGE_CMD:ubimg () {
     set -e -x
