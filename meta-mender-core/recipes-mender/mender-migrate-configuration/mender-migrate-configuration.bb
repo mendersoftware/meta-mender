@@ -1,8 +1,8 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI = " \
-          file://mender-migrate-configuration;subdir=${PN}-${PV} \
-          file://LICENSE;subdir=${PN}-${PV} \
+          file://mender-migrate-configuration;subdir=${BPN}-${PV} \
+          file://LICENSE;subdir=${BPN}-${PV} \
           "
 
 LICENSE = "Apache-2.0"
