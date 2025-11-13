@@ -2,7 +2,7 @@ inherit mender-licensing
 
 inherit systemd
 
-RDEPENDS:${PN} = "bash mender-auth lmdb coreutils"
+RDEPENDS:${PN} = "bash dbus mender-auth lmdb coreutils curl"
 
 
 FILES:${PN} = " \

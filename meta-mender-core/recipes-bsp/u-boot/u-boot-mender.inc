@@ -38,9 +38,7 @@ do_provide_mender_defines() {
     # Since the libubootenv recipe will typically not have access to the proper
     # BOOTENV_SIZE, let's create the fw_env.config file here, so that it can
     # pick it from the deploy directory.
-    if [ ! -e "${WORKDIR}/fw_env.config.default" ]; then
-        mender_create_fw_env_config_file ${WORKDIR}/fw_env.config.default
-    fi
+    mender_create_fw_env_config_file ${WORKDIR}/fw_env.config.default
 
     if [ ${MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART} -eq "0" ]; then
         # Only check reserved space for bootloader data when the bootloader data is saved to the user partition of the MMC.
@@ -388,7 +386,6 @@ do_deploy:append:mender-uboot() {
 
     install -m 644 ${WORKDIR}/fw_env.config.default ${DEPLOYDIR}/fw_env.config.default
 }
-addtask deploy after do_compile before do_package
 
 # Ignore this, only used for testing.
 # The reason it's here is so that the test URI is appended last.
