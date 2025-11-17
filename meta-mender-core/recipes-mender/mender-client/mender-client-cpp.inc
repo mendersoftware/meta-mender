@@ -35,6 +35,8 @@ EXTRA_OECMAKE:append = " -D SYSTEMD_UNIT_DIR=${systemd_system_unitdir}"
 
 inherit cmake
 
+ALLOW_EMPTY:${PN} = "1"
+
 DEPENDS += "lmdb googletest boost libarchive dbus"
 RDEPENDS:mender-auth:append = " boost-filesystem dbus"
 RDEPENDS:mender-update:append = " boost-filesystem libarchive lmdb dbus"
