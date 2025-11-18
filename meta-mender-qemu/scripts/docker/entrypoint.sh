@@ -50,6 +50,7 @@ if [ ! -e /mender-setup-complete ]; then
                                     --tenant-token=$TENANT_TOKEN $CONFIG_ARGS \
                                     --device-tier=$DEVICE_TIER \
                                     --log-level=$LOG_LEVEL \
+                                    --log-dir=$LOG_DIR \
                                     --docker-ip="$DOCKER_IP" \
                                     --mender-gateway-conffile "$MENDER_GATEWAY_CONFFILE"
     touch /mender-setup-complete

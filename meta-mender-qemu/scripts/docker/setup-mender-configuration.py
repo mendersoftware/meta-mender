@@ -28,6 +28,7 @@ def main():
     parser.add_argument("--tenant-token", help="tenant token to use by client")
     parser.add_argument("--device-tier", help="Device tier to put in configuration")
     parser.add_argument("--log-level", help="Log level for mender-authd and mender-updated")
+    parser.add_argument("--log-dir", help="Directory for mender-authd and mender-updated logs")
     parser.add_argument("--server-crt", help="server.crt file to put in image")
     parser.add_argument("--server-url", help="Server address to put in configuration")
     parser.add_argument("--server-ip", help="Server IP to add to /etc/hosts pointing to Server host. Requires --server-url.")
@@ -125,6 +126,28 @@ EOF
         put(local_path=args.mender_gateway_conffile,
             remote_path="/etc/mender/mender-gateway.conf",
             rootfs=rootfs)
+
+    if args.log_dir:
+        # Log files for the daemons cannot be specified in the config file, we
+        # need to use custom systemd unit/service files instead.
+        for daemon in ("mender-updated", "mender-authd"):
+            get(local_path=daemon + ".service.orig",
+                remote_path="/usr/lib/systemd/system/" + daemon + ".service",
+                rootfs=rootfs)
+            log_path = os.path.join(args.log_dir, daemon + ".log")
+            with open(daemon + ".service.orig") as orig:
+                with open(daemon + ".service", "w") as new:
+                    for line in orig:
+                        if line.startswith("ExecStart="):
+                            # The '--log-file some/path' option needs to be in front of the 'daemon' command argument
+                            line = line.replace("daemon", f"--log-file {log_path} daemon")
+                        new.write(line)
+            # We put the new .service files under /etc/systemd/system because that's
+            # where systemd unit file overrides should go. They take precedence over
+            # the ones under /usr/lib/systemd/system so we can keep those intact.
+            put(local_path=daemon + ".service",
+                remote_path="/etc/systemd/system/" + daemon + ".service",
+                rootfs=rootfs)
 
     # Put back ext4 image into img.
     insert_ext4(img=args.img, rootfs=rootfs)
