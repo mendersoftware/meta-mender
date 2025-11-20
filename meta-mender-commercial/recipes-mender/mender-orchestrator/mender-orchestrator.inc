@@ -4,6 +4,8 @@ SUB_FOLDER:arm = "arm"
 SUB_FOLDER:aarch64 = "aarch64"
 SUB_FOLDER:x86-64 = "x86_64"
 
+MENDER_DEVICE_TIER:mender-update-install ?= "system"
+
 COMPATIBLE_HOSTS = "arm|aarch64|x86_64"
 
 RDEPENDS:${PN} = " \
