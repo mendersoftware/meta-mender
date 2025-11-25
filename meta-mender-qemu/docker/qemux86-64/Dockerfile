@@ -21,11 +21,20 @@
 #       Set a "<SERVER_IP> <SERVER_HOST>" entry in /etc/hosts
 # -e TENANT_TOKEN=<token>
 #       Use token as tenant token for client.
+# -e DEVICE_TIER=<tier>
+#       Device tier to use for client.
+# -e LOG_LEVEL=<log-level>
+#      Log level to use for mender-updated and mender-authd
+# -e LOG_DIR=<log-dir>
+#      Directory to use for mender-updated and mender-authd logs
 # -e MENDER_GATEWAY_CONFFILE=<conffile>
 #       Copy the configuration file for mender-gateway
 #       Note that the file needs to be mounted into the Docker container
+# -e QEMU_MEMORY=<memory>
+#     The amount of memory to be passed to qemu-system-x86_64 in mender-qemu
+#     Specify the amount, e.g. 256M (M stands for Megabyte, G for Gigabyte).
 
-FROM python:3.13.0-alpine3.20
+FROM python:3.13.3-alpine3.20
 
 # Install packages
 RUN apk add --no-cache util-linux multipath-tools \

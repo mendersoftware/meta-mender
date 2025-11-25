@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2022 Northern.tech AS
+# Copyright 2025 Northern.tech AS
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -26,6 +26,9 @@ def main():
     parser.add_argument("--img", help="Img to modify", required=True)
     parser.add_argument("--docker-ip", help="IP (in IP/netmask format) to report as Docker IP")
     parser.add_argument("--tenant-token", help="tenant token to use by client")
+    parser.add_argument("--device-tier", help="Device tier to put in configuration")
+    parser.add_argument("--log-level", help="Log level for mender-authd and mender-updated")
+    parser.add_argument("--log-dir", help="Directory for mender-authd and mender-updated logs")
     parser.add_argument("--server-crt", help="server.crt file to put in image")
     parser.add_argument("--server-url", help="Server address to put in configuration")
     parser.add_argument("--server-ip", help="Server IP to add to /etc/hosts pointing to Server host. Requires --server-url.")
@@ -41,19 +44,24 @@ def main():
     rootfs = "%s.ext4" % args.img
     extract_ext4(img=args.img, rootfs=rootfs)
 
+    get(local_path="mender.conf",
+        remote_path="/etc/mender/mender.conf",
+        rootfs=rootfs)
+    with open("mender.conf") as fd:
+        conf = json.load(fd)
+        write_config = False
+
     if args.tenant_token:
-        get(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
-        with open("mender.conf") as fd:
-            conf = json.load(fd)
         conf['TenantToken'] = args.tenant_token
-        with open("mender.conf", "w") as fd:
-            json.dump(conf, fd, indent=4, sort_keys=True)
-        put(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
-        os.unlink("mender.conf")
+        write_config = True
+
+    if args.device_tier:
+        conf['DeviceTier'] = args.device_tier
+        write_config = True
+
+    if args.log_level:
+        conf['DaemonLogLevel'] = args.log_level
+        write_config = True
 
     if args.server_crt:
         put(local_path=args.server_crt,
@@ -61,18 +69,8 @@ def main():
             rootfs=rootfs)
 
     if args.server_url:
-        get(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
-        with open("mender.conf") as fd:
-            conf = json.load(fd)
         conf['ServerURL'] = args.server_url
-        with open("mender.conf", "w") as fd:
-            json.dump(conf, fd, indent=4, sort_keys=True)
-        put(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
-        os.unlink("mender.conf")
+        write_config = True
 
     if args.server_ip:
         if not args.server_url:
@@ -95,21 +93,11 @@ def main():
         key_img_location = "/etc/mender/artifact-verify-key.pem"
         if not os.path.exists(args.verify_key):
             raise SystemExit("failed to load file: " + args.verify_key)
-        get(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
         put(local_path=args.verify_key,
             remote_path=key_img_location,
             rootfs=rootfs)
-        with open("mender.conf") as fd:
-            conf = json.load(fd)
-            conf['ArtifactVerifyKey'] = key_img_location
-        with open("mender.conf", "w") as fd:
-            json.dump(conf, fd, indent=4, sort_keys=True)
-        put(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
-            rootfs=rootfs)
-        os.unlink("mender.conf")
+        conf['ArtifactVerifyKey'] = key_img_location
+        write_config = True
 
     if args.docker_ip:
         with open("mender-inventory-docker-ip", "w") as fd:
@@ -125,10 +113,41 @@ EOF
             rootfs=rootfs)
         os.unlink("mender-inventory-docker-ip")
 
+    if write_config:
+        with open("mender.conf", "w") as fd:
+            json.dump(conf, fd, indent=4, sort_keys=True)
+            fd.write("\n")
+        put(local_path="mender.conf",
+            remote_path="/etc/mender/mender.conf",
+            rootfs=rootfs)
+        os.unlink("mender.conf")
+
     if args.mender_gateway_conffile:
         put(local_path=args.mender_gateway_conffile,
             remote_path="/etc/mender/mender-gateway.conf",
             rootfs=rootfs)
+
+    if args.log_dir:
+        # Log files for the daemons cannot be specified in the config file, we
+        # need to use custom systemd unit/service files instead.
+        for daemon in ("mender-updated", "mender-authd"):
+            get(local_path=daemon + ".service.orig",
+                remote_path="/usr/lib/systemd/system/" + daemon + ".service",
+                rootfs=rootfs)
+            log_path = os.path.join(args.log_dir, daemon + ".log")
+            with open(daemon + ".service.orig") as orig:
+                with open(daemon + ".service", "w") as new:
+                    for line in orig:
+                        if line.startswith("ExecStart="):
+                            # The '--log-file some/path' option needs to be in front of the 'daemon' command argument
+                            line = line.replace("daemon", f"--log-file {log_path} daemon")
+                        new.write(line)
+            # We put the new .service files under /etc/systemd/system because that's
+            # where systemd unit file overrides should go. They take precedence over
+            # the ones under /usr/lib/systemd/system so we can keep those intact.
+            put(local_path=daemon + ".service",
+                remote_path="/etc/systemd/system/" + daemon + ".service",
+                rootfs=rootfs)
 
     # Put back ext4 image into img.
     insert_ext4(img=args.img, rootfs=rootfs)
