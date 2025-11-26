@@ -1,3 +1,5 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend:mender-systemd-boot := "${THISDIR}/files:"
 
-SRC_URI:mender-systemd-boot += "file://systemd-boot-slotconfig.patch"
+SRC_URI:append:mender-systemd-boot := "\
+                                      file://systemd-boot-slotconfig.patch \
+                                      "
