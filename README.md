@@ -28,6 +28,7 @@ A branch can be in one of the following maintenance states:
 The following layers in this repository are officially supported by Mender:
 
 * `meta-mender-core` (Core components of Mender)
+* `meta-mender-extended` (Extended components of Mender)
 * `meta-mender-demo` (Demo layer. Not intended for production)
 * `meta-mender-qemu` (QEMU emulator board support)
 
