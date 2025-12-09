@@ -45,5 +45,6 @@ FILES:${PN} += " \
 "
 
 pkg_postinst:${PN} () {
-    SYSROOT="$D" $D${sbindir}/update-ca-certificates
+    [ -n "$D" ] && sysroot_args="--sysroot $D"
+    $D${sbindir}/update-ca-certificates $sysroot_args
 }
