@@ -67,6 +67,8 @@ def main():
         put(local_path=args.server_crt,
             remote_path="/etc/mender/server.crt",
             rootfs=rootfs)
+        conf['ServerCertificate'] = "/etc/mender/server.crt"
+        write_config = True
 
     if args.server_url:
         conf['ServerURL'] = args.server_url
