@@ -12,17 +12,21 @@ DEPENDS = "jq-native gettext-native"
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
+# On production releases we must build the script using RELEASE=${PV} but for
+# master and release candidates we need to tweak it.
+BUILD_RELEASE ?= "${PV}"
+
 do_compile() {
     oe_runmake \
         -C ${S} \
-        RELEASE=${PV} \
+        $([ -n "${BUILD_RELEASE}" ] && echo RELEASE=${BUILD_RELEASE};) \
         build-inventory-script
 }
 
 do_install() {
     oe_runmake \
         -C ${S} \
-        RELEASE=${PV} \
+        $([ -n "${BUILD_RELEASE}" ] && echo RELEASE=${BUILD_RELEASE};) \
         DESTDIR=${D} \
         prefix=${D} \
         install-inventory-script
@@ -37,7 +41,7 @@ do_install() {
 run_make_conflicts () {
     oe_runmake \
         -C ${S} \
-        RELEASE=${PV} \
+        $([ -n "${BUILD_RELEASE}" ] && echo RELEASE=${BUILD_RELEASE};) \
         CONFLICTS_FILE=${B}/conflicts \
         generate-conflicts
 }
