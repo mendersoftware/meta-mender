@@ -15,6 +15,14 @@ def build_release_from_preferred_version(d):
         return ""
 BUILD_RELEASE = "${@build_release_from_preferred_version(d)}"
 
+# Special handling for RCONFLICTS: skip for master builds
+python do_set_rconflicts () {
+    if build_release_from_preferred_version(d) != "":
+        actual_do_set_rconflicts(d)
+    else:
+        bb.warn("Skipping run_make_conflicts")
+}
+
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
 # anyway. If git version is enabled, the AUTOREV will be chosen instead of the
