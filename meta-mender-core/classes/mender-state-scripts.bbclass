@@ -1,5 +1,9 @@
 inherit deploy
 
+# Allow empty package when recipe contains only Artifact scripts (no rootfs scripts).
+# Artifact scripts deploy to .mender artifact, not to rootfs, so the package may be empty.
+ALLOW_EMPTY:${PN} = "1"
+
 MENDER_STATE_SCRIPTS_DIR = "${B}/mender-state-scripts"
 
 # Default is to look in these two directories for scripts.
