@@ -9,7 +9,7 @@ do_check_config_efi_stub() {
 do_check_config_efi_stub:mender-grub() {
     # The first "if" is just to make sure "file" is working correctly.
     if file -Lk ${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE} | fgrep "Linux kernel"; then
-        if ! file -Lk ${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE} | fgrep "EFI application"; then
+        if ! file -Lk ${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE} | fgrep -e "EFI application" -e "EFI (application)"; then
             bbwarn 'Kernel without CONFIG_EFI_STUB detected. This kernel will probably not boot with the current configuration (mender-grub). Mender tries to automatically apply the CONFIG_EFI_STUB configuration, but this does not always work. Consider adding the "enable_efi_stub.cfg" file, from the meta-mender repository, to the SRC_URI of your kernel recipe manually.'
         fi
     fi
