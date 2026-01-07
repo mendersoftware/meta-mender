@@ -56,7 +56,7 @@ SRC_URI = "git://github.com/mendersoftware/mender-orchestrator-support;protocol=
 # DO NOT change the checksum here without making sure that ALL licenses (including
 # dependencies) are included in the LICENSE variable below.
 LIC_FILES_CHKSUM = " \
-    file://LICENSE;md5=ed7b7edaf4c941c8d3d64890db92ad92 \
+    file://LICENSE;md5=bdb3c11018be1e2200c1c75a15fa7228 \
 "
 LICENSE = "Apache-2.0"
 
