@@ -7,7 +7,7 @@ inherit mender-closed-source-utils
 LICENSE = "Mender-Yocto-Layer-License.md & Apache-2.0 & MIT & CC0-1.0 & BSL-1.0 & BSD-3-Clause"
 LICENSE_FLAGS = "commercial_mender-yocto-layer-license"
 LIC_FILES_CHKSUM = " \
-    file://licenses/LICENSE;md5=bf62066192c8cf34a26d34c62f510fc5 \
+    file://licenses/LICENSE;md5=425e73757010d92651a87c6338ebce7c \
 "
 
 # Disables the need for every dependency to be checked, for easier development.
