@@ -88,6 +88,6 @@ def mender_license(branch):
             "license_file": "file://LICENSE",
         }
 LIC_FILES_CHKSUM = " \
-    ${@mender_license(d.getVar('MENDER_BRANCH'))['license_file']};md5=f92624f2343d21e1986ca36f82756029 \
+    ${@mender_license(d.getVar('MENDER_BRANCH'))['license_file']};md5=a8c81350f12516cbb62844f937d81d11 \
 "
 LICENSE = "${@mender_license(d.getVar('MENDER_BRANCH'))['license']}"
