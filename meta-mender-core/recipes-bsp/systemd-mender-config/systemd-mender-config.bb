@@ -10,16 +10,23 @@ SRC_URI = " \
 
 S = "${WORKDIR}"
 
+FILES:${PN}:append = "\
+    /mnt/inactive \
+"
+
 do_compile() {
     :
 }
 
 do_install() {
     install -d ${D}${sbindir}
+    install -d ${D}/mnt/inactive
     install -m 0755 "${WORKDIR}/ab_setup.py" "${D}${sbindir}"
 
     ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/systemd-boot-printenv"
     ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/systemd-boot-setenv"
+    ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/fw_printenv"
+    ln -s "../..${sbindir}/ab_setup.py" "${D}${sbindir}/fw_setenv"
 }
 
 BBCLASSEXTEND += "native"
