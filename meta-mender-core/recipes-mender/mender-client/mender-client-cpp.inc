@@ -147,6 +147,7 @@ FILES:mender-auth += "\
     ${datadir}/mender/identity \
     ${datadir}/mender/identity/mender-device-identity \
     ${datadir}/dbus-1/system.d/io.mender.AuthenticationManager.conf \
+    ${datadir}/dbus-1/system-services/io.mender.AuthenticationManager.service \
 "
 
 FILES:mender-auth-dev += "\
