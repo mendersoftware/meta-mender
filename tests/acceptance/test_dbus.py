@@ -44,14 +44,9 @@ class TestDBus:
         ).stdout.strip()
         assert "io.mender.AuthenticationManager" in output
 
-    @pytest.mark.min_mender_version("2.5.0")
+    @pytest.mark.min_mender_version("4.0.0")
     def test_dbus_non_root_access(
-        self,
-        request,
-        bitbake_variables,
-        connection,
-        mender_auth_binary,
-        mender_auth_service,
+        self, request, bitbake_variables, connection,
     ):
         """Test that only root user can access Mender DBus API."""
 
@@ -59,12 +54,12 @@ class TestDBus:
         dbus_send_command = "dbus-send --system --dest=io.mender.AuthenticationManager --print-reply /io/mender/AuthenticationManager io.mender.Authentication1.GetJwtToken"
 
         try:
-            connection.run(f"{mender_auth_binary} bootstrap", warn=True)
-            connection.run(f"systemctl start {mender_auth_service}")
+            connection.run("mender-auth bootstrap", warn=True)
+            connection.run("systemctl start mender-authd")
 
             # Wait one state machine cycle for the D-Bus API to be available
             for _ in range(60):
-                result = connection.run(f"journalctl --unit {mender_auth_service}")
+                result = connection.run("journalctl --unit mender-authd")
                 if (
                     "Authorize failed:" in result.stdout
                     or "Failed to authorize" in result.stdout
@@ -88,23 +83,17 @@ class TestDBus:
             ), result.stderr
 
         finally:
-            connection.run(f"systemctl stop {mender_auth_service}")
+            connection.run("systemctl stop mender-authd")
             cleanup_mender_state(request, connection)
 
-    @pytest.mark.min_mender_version("2.5.0")
+    @pytest.mark.min_mender_version("4.0.0")
     def test_dbus_fetch_jwt_token(
-        self,
-        request,
-        bitbake_variables,
-        connection,
-        setup_mock_server,
-        mender_auth_binary,
-        mender_auth_service,
+        self, request, bitbake_variables, connection, setup_mock_server,
     ):
         """Test that the JWT token can be fetched using D-Bus."""
 
         # bootstrap the auth service
-        result = connection.run(f"{mender_auth_binary} bootstrap --forcebootstrap")
+        result = connection.run("mender-auth bootstrap --forcebootstrap")
         assert result.exited == 0
 
         try:
@@ -117,7 +106,7 @@ class TestDBus:
             # get the JWT token via D-Bus
             try:
                 # start the mender-auth service
-                result = connection.run(f"systemctl start {mender_auth_service}")
+                result = connection.run("systemctl start mender-authd")
                 assert result.exited == 0
 
                 # fetch the JWT token
@@ -163,7 +152,7 @@ class TestDBus:
 
             finally:
                 p.terminate()
-                connection.run(f"systemctl stop {mender_auth_service}")
+                connection.run("systemctl stop mender-authd")
                 connection.run("rm -f /tmp/dbus-monitor.log")
 
         finally:
