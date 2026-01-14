@@ -1259,13 +1259,6 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         mender_recipe = "mender"
         mender_pkg = "mender-auth"
 
-        # Can be removed after mender-client < v4.0 goes EOL. Update Control is not available
-        # anymore in v4.0 and later.
-        if mender_update_binary == "mender":
-            EXPECTED_FILES.append("io.mender.Update1.xml")
-            mender_recipe = "mender-client"
-            mender_pkg = "mender-client"
-
         # build mender-client
         build_image(
             prepared_test_build["build_dir"],
