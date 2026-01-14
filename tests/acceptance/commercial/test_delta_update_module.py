@@ -35,7 +35,7 @@ from utils.helpers import Helpers
 
 @pytest.mark.cross_platform
 @pytest.mark.commercial
-@pytest.mark.min_mender_version("2.1.0")
+@pytest.mark.min_mender_version("4.0.0")
 class TestDeltaUpdateModule:
     @pytest.mark.only_with_image("ext4")
     def test_build_module(
@@ -75,7 +75,6 @@ class TestDeltaUpdateModule:
         bitbake_variables,
         bitbake_image,
         connection,
-        mender_update_binary,
         http_server,
         board_type,
         use_s3,
@@ -97,19 +96,13 @@ class TestDeltaUpdateModule:
         )
 
         Helpers.install_update(
-            image,
-            connection,
-            mender_update_binary,
-            http_server,
-            board_type,
-            use_s3,
-            s3_address,
+            image, connection, http_server, board_type, use_s3, s3_address,
         )
 
         reboot(connection)
 
         run_after_connect("true", connection)
-        connection.run(f"{mender_update_binary} commit")
+        connection.run("mender-update commit")
 
         return image
 
@@ -123,7 +116,6 @@ class TestDeltaUpdateModule:
         bitbake_image,
         bitbake_path,
         connection,
-        mender_update_binary,
         http_server,
         board_type,
         use_s3,
@@ -145,7 +137,6 @@ class TestDeltaUpdateModule:
             bitbake_variables,
             bitbake_image,
             connection,
-            mender_update_binary,
             http_server,
             board_type,
             use_s3,
@@ -181,7 +172,6 @@ class TestDeltaUpdateModule:
         bitbake_image,
         bitbake_path,
         connection,
-        mender_update_binary,
         http_server,
         board_type,
         use_s3,
@@ -204,7 +194,6 @@ class TestDeltaUpdateModule:
             bitbake_variables,
             bitbake_image,
             connection,
-            mender_update_binary,
             http_server,
             board_type,
             use_s3,
@@ -242,7 +231,7 @@ class TestDeltaUpdateModule:
             )
 
             # Verbose provides/depends of the different Artifacts and the client (when supported)
-            connection.run(f"{mender_update_binary} show-provides", warn=True)
+            connection.run("mender-update show-provides", warn=True)
             subprocess.check_call(
                 "mender-artifact read %s" % artifact_from, shell=True,
             )
@@ -258,13 +247,7 @@ class TestDeltaUpdateModule:
                 bitbake_variables, connection
             )
             Helpers.install_update(
-                artifact_delta,
-                connection,
-                mender_update_binary,
-                http_server,
-                board_type,
-                use_s3,
-                s3_address,
+                artifact_delta, connection, http_server, board_type, use_s3, s3_address,
             )
             reboot(connection)
             run_after_connect("true", connection)
@@ -273,4 +256,4 @@ class TestDeltaUpdateModule:
             )
             assert new_active == passive
             assert new_passive == active
-            connection.run(f"{mender_update_binary} commit")
+            connection.run("mender-update commit")
