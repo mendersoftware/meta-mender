@@ -1239,14 +1239,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         ), "mender-inventory-network-scripts unexpectedly a part of the image"
 
     @pytest.mark.cross_platform
-    @pytest.mark.min_mender_version("2.7.0")
+    @pytest.mark.min_mender_version("4.0.0")
     def test_mender_dbus_interface_file(
-        self,
-        request,
-        prepared_test_build,
-        bitbake_image,
-        bitbake_path,
-        mender_update_binary,
+        self, request, prepared_test_build, bitbake_image, bitbake_path,
     ):
         """
         Test that the D-Bus interface files are provided by the mender-client-dev package,
