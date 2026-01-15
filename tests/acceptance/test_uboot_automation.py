@@ -86,6 +86,7 @@ class TestUbootAutomation:
         days_to_be_old = 7
 
         # Find the repository directories we need
+        # TOUCH
         [poky_dir, meta_mender_dir, _] = (
             subprocess.check_output(
                 "bitbake-layers show-layers | awk '$1~/(^core$|^mender$)/ {print $2}' | xargs -n 1 dirname",
