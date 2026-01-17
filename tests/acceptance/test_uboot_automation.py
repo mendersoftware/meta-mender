@@ -85,6 +85,14 @@ class TestUbootAutomation:
         # Number of days that must pass for the branch to be considered stable.
         days_to_be_old = 7
 
+        # DEBUG
+        output = subprocess.check_output(
+                "bitbake-layers show-layers",
+                cwd=os.environ["BUILDDIR"],
+                shell=True,
+        ).decode()
+        assert "debug" == output
+
         # Find the repository directories we need
         [poky_dir, meta_mender_dir, _] = (
             subprocess.check_output(
