@@ -109,11 +109,11 @@ def boot_device_with_bootstrap_image(
 
 
 @pytest.mark.cross_platform
-@pytest.mark.min_mender_version("3.5.0")
+@pytest.mark.min_mender_version("4.0.0")
 @pytest.mark.min_yocto_version("dunfell")
 @pytest.mark.only_with_image("ext4", "ext3", "ext2")
 def test_bootstrap_artifact_install(
-    request, boot_device_with_bootstrap_image, connection, mender_update_binary
+    request, boot_device_with_bootstrap_image, connection
 ):
     """Test that the Mender Bootstrap Artifact works correctly
 
@@ -138,16 +138,12 @@ def test_bootstrap_artifact_install(
         )
 
     # Check that the database of the client has been populated
-    device_provides = connection.run(
-        f"{mender_update_binary} show-provides"
-    ).stdout.strip()
+    device_provides = connection.run("mender-update show-provides").stdout.strip()
     assert "rootfs-image.checksum" in device_provides
     assert "rootfs-image.version" in device_provides
 
     # Verify that no errors occured during the install (in which case the artifact-name would be uknown)
-    show_artifact = connection.run(
-        f"{mender_update_binary} show-artifact"
-    ).stdout.strip()
+    show_artifact = connection.run("mender-update show-artifact").stdout.strip()
     assert (
         show_artifact != "unknown"
     ), "There were errors installing the Bootstrap Artifact"
