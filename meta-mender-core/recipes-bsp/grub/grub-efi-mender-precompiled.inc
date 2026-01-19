@@ -20,8 +20,6 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-3.0-or-lat
 
 URL_BASE ?= "https://downloads.mender.io/grub-mender-grubenv/grub-efi"
 
-S = "${WORKDIR}/git"
-
 MENDER_EFI_LOADER ?= ""
 
 require ${@'uboot_version_logic.inc' if d.getVar('MENDER_EFI_LOADER').startswith('u-boot') else ''}
