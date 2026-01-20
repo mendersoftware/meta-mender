@@ -263,6 +263,8 @@ class TestUbootAutomation:
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
 
+        # Run this test, please
+
         # No need to test this on non-vexpress-qemu. It is a very resource
         # consuming test, and it is identical on all boards, since it internally
         # tests all boards.
