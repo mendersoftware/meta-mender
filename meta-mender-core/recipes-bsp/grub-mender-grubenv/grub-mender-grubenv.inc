@@ -33,7 +33,6 @@ FILES:${PN} += "/data/mender_grubenv.config \
                 ${sysconfdir}/mender_grubenv.config \
 "
 
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 SRC_URI:append = "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', ' file://01_efi_secure_boot_grub.cfg;subdir=git', '', d)}"
