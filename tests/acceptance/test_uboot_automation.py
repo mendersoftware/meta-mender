@@ -64,7 +64,7 @@ class TestUbootAutomation:
         # Pick the smallest number that makes NUMBER * job_count >= cpu_count
         return int(math.ceil(float(cpu_count) / float(job_count)))
 
-    def check_if_should_run(self, prepared_test_build):
+    def check_if_should_run(self):
         # The logic here is this:
         #
         # * If any commit in poky, or a commit touching
@@ -89,7 +89,7 @@ class TestUbootAutomation:
         [poky_dir, meta_mender_dir, _] = (
             subprocess.check_output(
                 "bitbake-layers show-layers | awk '$1~/(^core$|^mender$)/ {print $2}' | xargs -n 1 dirname",
-                cwd=prepared_test_build["build_dir"],
+                cwd=os.environ["BUILDDIR"],
                 shell=True,
             )
             .decode()
@@ -259,9 +259,7 @@ class TestUbootAutomation:
     # already.
     @pytest.mark.exclusive
     @pytest.mark.min_mender_version("1.0.0")
-    def test_uboot_compile(
-        self, request, prepared_test_build, bitbake_image, bitbake_variables
-    ):
+    def test_uboot_compile(self, request, bitbake_variables):
         """Test that our automatic patching of U-Boot still successfully builds
         the expected number of boards."""
 
@@ -273,27 +271,18 @@ class TestUbootAutomation:
             pytest.skip("Skipping test on non-vexpress-qemu platforms")
 
         # This is a slow running test. Skip if appropriate.
-        self.check_if_should_run(prepared_test_build)
-
-        build_image(
-            prepared_test_build["build_dir"],
-            prepared_test_build["bitbake_corebase"],
-            bitbake_image,
-            target="u-boot",
-        )
+        self.check_if_should_run()
 
         for task in ["do_provide_mender_defines", "prepare_recipe_sysroot"]:
-            build_image(
-                prepared_test_build["build_dir"],
-                prepared_test_build["bitbake_corebase"],
-                bitbake_image,
-                target="-c %s u-boot" % task,
+            subprocess.check_call(
+                "cd %s && bitbake -c %s u-boot" % (os.environ["BUILDDIR"], task),
+                shell=True,
             )
         bitbake_variables = get_bitbake_variables(
-            request, "u-boot", prepared_test_build
+            request, "u-boot", prepared_test_build=None
         )
 
-        with bitbake_env_from(request, "u-boot", prepared_test_build):
+        with bitbake_env_from(request, "u-boot", prepared_test_build=None):
             self.do_board_compiles(machine, bitbake_variables)
 
     def do_board_compiles(self, machine, bitbake_variables):
