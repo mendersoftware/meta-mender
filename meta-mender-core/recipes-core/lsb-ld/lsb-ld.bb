@@ -4,7 +4,6 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=269720c1a5608250abd54a7818f369f6"
 
 FILESEXTRAPATHS:append := ":${THISDIR}/files"
 SRC_URI = "file://LICENSE"
-S = "${WORKDIR}"
 
 # Only x86-64 needs any files.
 ALLOW_EMPTY:${PN} = "1"

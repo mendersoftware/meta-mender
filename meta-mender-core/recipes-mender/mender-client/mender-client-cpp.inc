@@ -80,8 +80,7 @@ RDEPENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'version-
 PACKAGECONFIG[split-mender-config] = ",,,"
 PACKAGECONFIG:append = " split-mender-config"
 
-S = "${WORKDIR}/git"
-B = "${WORKDIR}/build"
+B = "${UNPACKDIR}/build"
 
 inherit pkgconfig
 inherit systemd
@@ -169,14 +168,14 @@ python do_prepare_mender_conf() {
 
     # If a mender.conf has been provided in SRC_URI, merge this with the
     # settings we generate. The settings specified by variables take precedence.
-    src_conf = os.path.join(d.getVar("WORKDIR"), "mender.conf")
+    src_conf = os.path.join(d.getVar("UNPACKDIR"), "mender.conf")
     if os.path.exists(src_conf):
-        bb.debug(1, "mender.conf already present in ${WORKDIR}, merging with generated settings.")
+        bb.debug(1, "mender.conf already present in ${UNPACKDIR}, merging with generated settings.")
         fd = open(src_conf)
         transient_conf = json.load(fd)
         fd.close()
     else:
-        bb.debug(1, "mender.conf not present in ${WORKDIR}, generating a new one.")
+        bb.debug(1, "mender.conf not present in ${UNPACKDIR}, generating a new one.")
         transient_conf = {}
     def conf_maybe_add(key, value, getvar, integer):
         if getvar:
@@ -192,7 +191,7 @@ python do_prepare_mender_conf() {
             else:
                 transient_conf[key] = value
 
-    key_in_src_uri = os.path.exists(os.path.join(d.getVar("WORKDIR"), "artifact-verify-key.pem"))
+    key_in_src_uri = os.path.exists(os.path.join(d.getVar("UNPACKDIR"), "artifact-verify-key.pem"))
     key_in_var = d.getVar("MENDER_ARTIFACT_VERIFY_KEY") not in [None, ""]
 
     # Add new variable -> config assignments here.
@@ -279,11 +278,11 @@ do_install:append() {
     fi
 
     # install artifact verification key, if any.
-    if [ -e ${WORKDIR}/artifact-verify-key.pem ]; then
+    if [ -e ${UNPACKDIR}/artifact-verify-key.pem ]; then
         if [ -n "${MENDER_ARTIFACT_VERIFY_KEY}" ]; then
             bbfatal "You can not specify both MENDER_ARTIFACT_VERIFY_KEY and have artifact-verify-key.pem in SRC_URI."
         fi
-        install -m 0444 ${WORKDIR}/artifact-verify-key.pem ${D}${sysconfdir}/mender
+        install -m 0444 ${UNPACKDIR}/artifact-verify-key.pem ${D}${sysconfdir}/mender
     elif [ -n "${MENDER_ARTIFACT_VERIFY_KEY}" ]; then
         install -m 0444 "${MENDER_ARTIFACT_VERIFY_KEY}" ${D}${sysconfdir}/mender/artifact-verify-key.pem
     fi
@@ -296,7 +295,7 @@ do_install:append() {
 
 do_install:append:class-target:mender-image:mender-systemd() {
     install -d ${D}${systemd_unitdir}/system/
-    install -m 644 ${WORKDIR}/mender-data-dir.service ${D}${systemd_unitdir}/system/mender-data-dir.service
+    install -m 644 ${UNPACKDIR}/mender-data-dir.service ${D}${systemd_unitdir}/system/mender-data-dir.service
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-data-dir.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/mender-data-dir.service
 }
@@ -305,27 +304,27 @@ do_install:append:class-target:mender-growfs-data:mender-systemd() {
 
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid -L ${MENDER_DATA_PART_LABEL})#g" \
-            ${WORKDIR}/mender-resize-data-part.sh.in
+            ${UNPACKDIR}/mender-resize-data-part.sh.in
     elif ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid | grep 'PARTUUID=\"${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')}\"' | awk -F: '{ print \$1 }')#g" \
-            ${WORKDIR}/mender-resize-data-part.sh.in
+            ${UNPACKDIR}/mender-resize-data-part.sh.in
     else
         sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
-            ${WORKDIR}/mender-resize-data-part.sh.in
+            ${UNPACKDIR}/mender-resize-data-part.sh.in
     fi
 
     sed -i "s#@MENDER_DATA_PART_NUMBER@#${MENDER_DATA_PART_NUMBER}#g" \
-        ${WORKDIR}/mender-resize-data-part.sh.in
+        ${UNPACKDIR}/mender-resize-data-part.sh.in
 
 
     install -d ${D}/${bindir}/
 
-    install -m 0755 ${WORKDIR}/mender-resize-data-part.sh.in \
+    install -m 0755 ${UNPACKDIR}/mender-resize-data-part.sh.in \
         ${D}/${bindir}/mender-resize-data-part
 
     install -d ${D}/${systemd_unitdir}/system
-    install -m 644 ${WORKDIR}/mender-grow-data.service ${D}/${systemd_unitdir}/system/
-    install -m 644 ${WORKDIR}/mender-systemd-growfs-data.service ${D}/${systemd_unitdir}/system/
+    install -m 644 ${UNPACKDIR}/mender-grow-data.service ${D}/${systemd_unitdir}/system/
+    install -m 644 ${UNPACKDIR}/mender-systemd-growfs-data.service ${D}/${systemd_unitdir}/system/
 
     install -d ${D}${systemd_unitdir}/system/data.mount.wants/
     ln -sf ../mender-grow-data.service ${D}${systemd_unitdir}/system/data.mount.wants/
@@ -333,11 +332,11 @@ do_install:append:class-target:mender-growfs-data:mender-systemd() {
 }
 
 do_install:append:class-target:mender-persist-systemd-machine-id() {
-    install -m 644 ${WORKDIR}/mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/
+    install -m 644 ${UNPACKDIR}/mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/
     install -d -m 755 ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants
     ln -sf ../mender-systemd-machine-id.service ${D}${systemd_unitdir}/system/${MENDER_CLIENT}.service.wants/
     install -d -m 755 ${D}${bindir}
-    install -m 755 ${WORKDIR}/mender-set-systemd-machine-id.sh ${D}${bindir}/
+    install -m 755 ${UNPACKDIR}/mender-set-systemd-machine-id.sh ${D}${bindir}/
 }
 
 do_install() {

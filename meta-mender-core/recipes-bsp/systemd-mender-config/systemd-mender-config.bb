@@ -8,8 +8,6 @@ SRC_URI = " \
     file://ab_setup.py \
     "
 
-S = "${WORKDIR}"
-
 do_compile() {
     :
 }

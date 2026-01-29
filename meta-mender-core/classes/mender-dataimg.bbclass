@@ -3,6 +3,8 @@
 
 inherit mender-bootstrap-artifact
 
+PSEUDO_INCLUDE_PATHS:append = ",${WORKDIR}/data.copy.image_dataimg"
+
 IMAGE_CMD:dataimg() {
     if [ ${MENDER_DATA_PART_FSTYPE_TO_GEN} = "btrfs" ]; then
         force_flag="-f"
