@@ -246,29 +246,22 @@ class TestUbimg:
         assert int(ubinfo["rootfsa"]["ubinize"]["vol_size"]) <= 1.02 * rootfs_size
         assert int(ubinfo["rootfsb"]["ubinize"]["vol_size"]) <= 1.02 * rootfs_size
 
+    @pytest.mark.min_mender_version("4.0.0")
     def test_volume_contents(
-        self,
-        bitbake_variables,
-        mender_auth_binary,
-        mender_update_binary,
-        ubimg_without_uboot_env,
+        self, bitbake_variables, ubimg_without_uboot_env,
     ):
         """Test that data volume has correct contents"""
 
         with make_tempdir() as tmpdir:
             rootdir = extract_ubimg_files(ubimg_without_uboot_env, tmpdir)
 
+            assert os.path.exists(os.path.join(rootdir, "rootfsa/usr/bin/mender-auth"))
+            assert os.path.exists(os.path.join(rootdir, "rootfsb/usr/bin/mender-auth"))
             assert os.path.exists(
-                os.path.join(rootdir, f"rootfsa/usr/bin/{mender_auth_binary}")
+                os.path.join(rootdir, "rootfsa/usr/bin/mender-update")
             )
             assert os.path.exists(
-                os.path.join(rootdir, f"rootfsb/usr/bin/{mender_auth_binary}")
-            )
-            assert os.path.exists(
-                os.path.join(rootdir, f"rootfsa/usr/bin/{mender_update_binary}")
-            )
-            assert os.path.exists(
-                os.path.join(rootdir, f"rootfsb/usr/bin/{mender_update_binary}")
+                os.path.join(rootdir, "rootfsb/usr/bin/mender-update")
             )
             # TODO: verify contents of data partition
 
