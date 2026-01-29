@@ -2,7 +2,7 @@ require mender-client-version-inventory-script.inc
 
 # Special handling from Git recipe to set the release to build: for build
 # candidates, take the base version as the release target, while for master
-# builds, set to blank so that Makefile itself decides which json to use.
+# builds, set to blank so that Makefile itself decides.
 def build_release_from_preferred_version(d):
     pref_version = d.getVar("PREFERRED_VERSION")
     if pref_version is None:
@@ -11,17 +11,9 @@ def build_release_from_preferred_version(d):
         # If "-build" is in the version, use the version as final
         return pref_version.split('-build')[0]
     else:
-        # main or release branches, keep blank for the Makefile to chose the latest
+        # main or release branches, keep blank for the Makefile to build "unsupported" version
         return ""
 BUILD_RELEASE = "${@build_release_from_preferred_version(d)}"
-
-# Special handling for RCONFLICTS: skip for master builds
-python do_set_rconflicts () {
-    if build_release_from_preferred_version(d) != "":
-        actual_do_set_rconflicts(d)
-    else:
-        bb.warn("Skipping run_make_conflicts")
-}
 
 # The revision listed below is not really important, it's just a way to avoid
 # network probing during parsing if we are not gonna build the git version
