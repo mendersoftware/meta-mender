@@ -1,6 +1,6 @@
 filelock==3.20.3
 pytest==9.0.2
-pytest-html==4.1.1
+pytest-html==4.2.0
 pytest-metadata==3.1.1
 pytest-xdist==3.8.0
 python-lzo==1.15
