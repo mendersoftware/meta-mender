@@ -13,8 +13,6 @@ FILES:${PN}:append:mender-update-install = " \
     ${datadir}/mender/inventory/mender-inventory-mender-orchestrator \
 "
 
-S = "${WORKDIR}/git"
-
 do_install() {
     # Install interfaces using the Makefile
     oe_runmake \

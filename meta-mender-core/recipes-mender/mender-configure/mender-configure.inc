@@ -37,7 +37,6 @@ FILES:${PN}-scripts = " \
     /usr/lib/mender-configure/apply-device-config.d/timezone \
 "
 
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 do_install() {
