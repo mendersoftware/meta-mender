@@ -158,7 +158,7 @@ class TestDeltaUpdateModule:
         artifact_sum = match.group(1)
         assert rootfs_sum == artifact_sum
 
-    # Not testable on QEMU/ARM combination currently. See MEN-4297.
+    # Not testable on QEMU/ARM combination currently. See QA-718.
     @pytest.mark.not_for_machine("vexpress-qemu")
     # mender-binary-delta 1.2.0 requires mender-artifact 3.5.0
     @pytest.mark.min_mender_version("2.5.0")
