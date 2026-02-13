@@ -10,8 +10,8 @@ require mender-artifact.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=master"
 
-# Tag: 4.2.0
-SRCREV = "f6554240ba1ddde47751520686b151e7fe076ebb"
+# Tag: 4.3.0
+SRCREV = "97dae7cf57f1afb3c5c128c4ae1300461d744567"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
@@ -27,7 +27,7 @@ SRCREV = "f6554240ba1ddde47751520686b151e7fe076ebb"
 LICENSE = "Apache-2.0 & BSD-2-Clause & BSD-3-Clause & ISC & MIT"
 
 LIC_FILES_CHKSUM = " \
-    file://src/github.com/mendersoftware/mender-artifact/LICENSE;md5=f92624f2343d21e1986ca36f82756029 \
+    file://src/github.com/mendersoftware/mender-artifact/LICENSE;md5=a8c81350f12516cbb62844f937d81d11 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/minio/sha256-simd/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/github.com/mendersoftware/progressbar/LICENSE;md5=f4a60996eb58eca8e4aede01250758e6 \
     file://src/github.com/mendersoftware/mender-artifact/vendor/google.golang.org/genproto/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57 \
