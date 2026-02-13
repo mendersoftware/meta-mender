@@ -434,7 +434,7 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         )
 
         output = run_verbose("mender-artifact read %s" % image, capture=True)
-        if version_is_minimum(bitbake_variables, "mender-artifact", "5.0.0"):
+        if version_is_minimum(bitbake_variables, "mender-artifact", "4.3.0"):
             assert b"Compatible types: [machine1, machine2]" in output
         elif version_is_minimum(bitbake_variables, "mender-artifact", "3.12.0"):
             assert b"Compatible devices: [machine1, machine2]" in output
