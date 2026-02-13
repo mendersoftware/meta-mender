@@ -1,15 +1,11 @@
 require mender-client-version-inventory-script.inc
 
-# Special handling from Git recipe to set the release to build: for build
-# candidates, take the base version as the release target, while for master
+# Special handling from Git recipe to set the release to build: for master
 # builds, set to blank so that Makefile itself decides.
 def build_release_from_preferred_version(d):
     pref_version = d.getVar("PREFERRED_VERSION")
     if pref_version is None:
         pref_version = d.getVar("PREFERRED_VERSION_%s" % d.getVar("PN"))
-    if pref_version is not None and pref_version.find("-build") >= 0:
-        # If "-build" is in the version, use the version as final
-        return pref_version.split('-build')[0]
     else:
         # main or release branches, keep blank for the Makefile to build "unsupported" version
         return ""
