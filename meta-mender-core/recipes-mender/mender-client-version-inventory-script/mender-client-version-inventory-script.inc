@@ -13,7 +13,7 @@ S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 # On production releases we must build the script using RELEASE=${PV} but for
-# master and release candidates we need to tweak it.
+# master we need to tweak it.
 BUILD_RELEASE ?= "${PV}"
 
 do_compile() {
