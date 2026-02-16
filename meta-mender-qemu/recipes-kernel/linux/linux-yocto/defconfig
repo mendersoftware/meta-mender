@@ -1598,7 +1598,7 @@ CONFIG_FB_MODE_HELPERS=y
 #
 # Frame buffer hardware drivers
 #
-CONFIG_FB_ARMCLCD=y
+# CONFIG_FB_ARMCLCD is not set
 # CONFIG_FB_OPENCORES is not set
 # CONFIG_FB_S1D13XXX is not set
 # CONFIG_FB_SMSCUFX is not set
