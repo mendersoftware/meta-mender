@@ -1,6 +1,5 @@
 stages:
   - test
-  - trigger
 
 include:
   - project: 'Northern.tech/Mender/mendertesting'
@@ -14,18 +13,3 @@ include:
 
 variables:
   LICENSE_HEADERS_IGNORE_FILES_REGEXP: '\./meta-mender-core/recipes-bsp/u-boot/files/.*\.py\|\./meta-mender-core/recipes-bsp/systemd-mender-config/files/ab_setup\.py'
-
-trigger:mender-qa:
-  image: python:alpine
-  stage: trigger
-  before_script:
-    - apk add --no-cache git curl bash
-    - pip3 install pyyaml
-    - git clone https://github.com/mendersoftware/integration.git integration
-    - wget -q https://raw.githubusercontent.com/mendersoftware/mender-qa/master/scripts/gitlab_trigger_client_publish
-    - chmod +x gitlab_trigger_client_publish
-  script:
-    - export WORKSPACE=$(pwd)
-    - ./gitlab_trigger_client_publish ${CI_COMMIT_REF_NAME} ${CI_PROJECT_NAME}
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
