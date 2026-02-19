@@ -18,7 +18,7 @@ SRCREV = "${@mender_closed_source_srcrev_from_src_uri(d, '${SRC_URI}', 'mender-o
 PV = "${@mender_closed_source_pv_from_preferred_version(d, '${SRCREV}')}"
 
 def tarball_directory_from_pv(d, pv):
-    return pv.split("master-git+")[-1]
+    return pv.split("main-git+")[-1]
 
 # Define S to work both on git sha and "master" tarballs
 S = "${WORKDIR}/mender-orchestrator-${@tarball_directory_from_pv(d, '${PV}')}"
