@@ -60,3 +60,4 @@ texinfo
 wget
 zlib1g-dev
 zstd
+libarchive-dev
