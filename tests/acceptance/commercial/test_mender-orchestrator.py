@@ -15,6 +15,7 @@
 
 import subprocess
 import os
+import yaml
 
 import pytest
 
@@ -99,3 +100,52 @@ class TestMenderOrchestrator:
         check_common_orchestrator_files(
             request, prepared_test_build, bitbake_variables, test_dir
         )
+
+    def test_build_mender_orchestrator_mender_feature(
+        self, request, bitbake_variables, prepared_test_build, bitbake_image
+    ):
+        test_dir = os.path.dirname(os.path.abspath(__file__))
+
+        build_image(
+            prepared_test_build["build_dir"],
+            prepared_test_build["bitbake_corebase"],
+            bitbake_image,
+            [
+                'MENDER_FEATURES_ENABLE:append = " mender-orchestrator-install"',
+                f'FILESEXTRAPATHS:prepend := "{test_dir}/files:"',
+                'SRC_URI:append:pn-mender-orchestrator = " file://topology.yaml"',
+            ],
+            [
+                'BBLAYERS:append = " %s/../meta-mender-commercial"'
+                % bitbake_variables["LAYERDIR_MENDER"],
+            ],
+        )
+
+        check_common_orchestrator_files(
+            request, prepared_test_build, bitbake_variables, test_dir
+        )
+
+        ext4_image = latest_build_artifact(
+            request, prepared_test_build["build_dir"], "core-image*.ext4"
+        )
+
+        # Check mender-orchestrator-support files
+        for file in (
+            "/usr/share/mender-orchestrator/interfaces/v1/rootfs-image",
+            "/usr/share/mender/modules/v3/mender-orchestrator-manifest",
+            "/usr/share/mender/inventory/mender-inventory-mender-orchestrator",
+        ):
+            output = subprocess.check_output(
+                ["debugfs", "-R", f"stat {file}", ext4_image]
+            ).decode()
+            assert "Type: regular" in output
+
+        image = latest_build_artifact(
+            request, prepared_test_build["build_dir"], "core-image*.dataimg"
+        )
+        # Check for DeviceTier
+        conf = subprocess.check_output(
+            ["debugfs", "-R", f"cat /etc/mender/mender.conf", image]
+        ).decode()
+        data = yaml.safe_load(conf)
+        assert data["DeviceTier"] == "system", "Expected 'DeviceTier' to be 'system'"
