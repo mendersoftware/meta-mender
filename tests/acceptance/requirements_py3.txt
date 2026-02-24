@@ -46,6 +46,8 @@ pytest-xdist==3.6.1
     # via -r requirements_py3.in
 python-lzo==1.15
     # via -r requirements_py3.in
+pyyaml==6.0.2
+    # via -r requirements_py3.in
 redo==2.0.4
     # via -r requirements_py3.in
 requests==2.32.3
