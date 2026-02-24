@@ -242,6 +242,7 @@ python do_prepare_mender_conf() {
 addtask do_prepare_mender_conf after do_compile before do_install
 do_prepare_mender_conf[vardeps] = " \
     MENDER_ARTIFACT_VERIFY_KEY \
+    MENDER_DEVICE_TIER \
     MENDER_INVENTORY_POLL_INTERVAL_SECONDS \
     MENDER_RETRY_POLL_INTERVAL_SECONDS \
     MENDER_ROOTFS_PART_A \

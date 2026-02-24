@@ -95,6 +95,9 @@ python() {
 
         # Enable prepopulation of second root partition
         'mender-prepopulate-inactive-partition',
+
+        # Installation of mender-orchestrator, which requires system device tier
+        'mender-orchestrator-install',
     }
 
     # Verify that all 'mender-' features are added using MENDER_FEATURES_ENABLE

@@ -8,3 +8,4 @@ redo==3.0.0
 requests==2.32.5
 ubi-reader==0.8.12
 flaky==3.8.1
+PyYAML==6.0.2
