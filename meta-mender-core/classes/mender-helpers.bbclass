@@ -306,7 +306,11 @@ mender_merge_bootfs_and_image_boot_files() {
                     bbfatal "$destfile already exists in boot partition. Please verify that packages do not put files in the boot partition that conflict with IMAGE_BOOT_FILES."
                 fi
             else
-                cp "$file" "$destfile"
+                if [ -d "$file" ]; then
+                    cp -a "$file" "$destfile"
+                else
+                    cp "$file" "$destfile"
+                fi
             fi
         done
     done
