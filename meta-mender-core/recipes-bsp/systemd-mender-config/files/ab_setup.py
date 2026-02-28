@@ -29,7 +29,7 @@ AB_FORMAT = "6B512s512s"
 # 256 bits -> 256/8 = 32 bytes
 SHA256_SIZE = 32
 
-ROOTFS_OFFSET = 1
+ROOTFS_OFFSET = 2
 
 def try_read_file(path, length):
     """Try to read the designated file with the specified length. Fill with
@@ -165,13 +165,11 @@ def extract_kernel(esp_base, config, slot):
     target_kernel_path = "{}{}".format(esp_base, config["{}_efi".format(slot_name)].replace("\\", "/"))
 
     # Mount inactive slot and extract file
-    os.makedirs(inactive_base, exist_ok=True)
     check_call(["mount", partition_name, inactive_base])
 
     shutil.copyfile(source_kernel_path, target_kernel_path);
 
     check_call(["umount", inactive_base])
-    os.rmdir(inactive_base)
     os.sync()
 
 def set_mender_key(esp_base, config, key, value):
