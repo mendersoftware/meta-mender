@@ -1,0 +1,41 @@
+require mender-client-cpp.inc
+require mender_5.1.x.inc
+require mender_5.x.inc
+
+################################################################################
+#-------------------------------------------------------------------------------
+# THINGS TO CONSIDER FOR EACH RELEASE:
+# - SRC_URI (particularly "branch")
+# - SRCREV
+# - DEFAULT_PREFERENCE
+#-------------------------------------------------------------------------------
+
+SRC_URI = "gitsm://github.com/mendersoftware/mender;protocol=https;branch=5.1.x"
+
+# Tag: 5.1.0
+SRCREV = "54d57fc32abd0bb1a8f0336d6d5ab624d3c5ac49"
+
+# Enable this in Betas, and in branches that cannot carry this major version as
+# default.
+# Downprioritize this recipe in version selections.
+#DEFAULT_PREFERENCE = "-1"
+
+################################################################################
+
+# DO NOT change the checksum here without make sure that ALL licenses (including
+# dependencies) are included in the LICENSE variable below. Note that for
+# releases, we must check the LIC_FILES_CHKSUM.sha256 file, not the LICENSE
+# file.
+LIC_FILES_CHKSUM = " \
+    file://LICENSE;md5=a8c81350f12516cbb62844f937d81d11 \
+    file://src/common/vendor/json/LICENSE.MIT;md5=e046aa7fd39db177f5ca0cefe06ddbdc \
+    file://src/common/vendor/json/docs/mkdocs/docs/home/license.md;md5=c5a1dd27557149dade30bc0d56e403a7 \
+    file://src/common/vendor/tiny-process-library/LICENSE;md5=14d72bb1dc7487cee6c51cedd497eccd \
+    file://src/common/vendor/yaml-cpp/LICENSE;md5=6a8aaf0595c2efc1a9c2e0913e9c1a2c \
+    file://src/common/vendor/lmdbxx/UNLICENSE;md5=7246f848faa4e9c9fc0ea91122d6e680 \
+    file://src/common/vendor/expected/COPYING;md5=65d3616852dbf7b1a6d4b53b00626032 \
+    file://src/common/vendor/optional-lite/LICENSE.txt;md5=e4224ccaecb14d942c71d31bef20d78c \
+    file://src/common/vendor/yaml-cpp/test/googletest-1.13.0/LICENSE;md5=cbbd27594afd089daa160d3a16dd515a \
+"
+LICENSE = "Apache-2.0 & BSL-1.0 & CC0-1.0 & MIT & Unlicense"
+
