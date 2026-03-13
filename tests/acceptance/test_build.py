@@ -434,7 +434,9 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         )
 
         output = run_verbose("mender-artifact read %s" % image, capture=True)
-        if version_is_minimum(bitbake_variables, "mender-artifact", "3.12.0"):
+        if version_is_minimum(bitbake_variables, "mender-artifact", "4.3.0"):
+            assert b"Compatible types: [machine1, machine2]" in output
+        elif version_is_minimum(bitbake_variables, "mender-artifact", "3.12.0"):
             assert b"Compatible devices: [machine1, machine2]" in output
         else:
             assert b"Compatible devices: '[machine1 machine2]'" in output
@@ -1253,14 +1255,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         ), "mender-inventory-network-scripts unexpectedly a part of the image"
 
     @pytest.mark.cross_platform
-    @pytest.mark.min_mender_version("2.7.0")
+    @pytest.mark.min_mender_version("4.0.0")
     def test_mender_dbus_interface_file(
-        self,
-        request,
-        prepared_test_build,
-        bitbake_image,
-        bitbake_path,
-        mender_update_binary,
+        self, request, prepared_test_build, bitbake_image, bitbake_path,
     ):
         """
         Test that the D-Bus interface files are provided by the mender-client-dev package,
@@ -1272,13 +1269,6 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         ]
         mender_recipe = "mender"
         mender_pkg = "mender-auth"
-
-        # Can be removed after mender-client < v4.0 goes EOL. Update Control is not available
-        # anymore in v4.0 and later.
-        if mender_update_binary == "mender":
-            EXPECTED_FILES.append("io.mender.Update1.xml")
-            mender_recipe = "mender-client"
-            mender_pkg = "mender-client"
 
         # build mender-client
         build_image(

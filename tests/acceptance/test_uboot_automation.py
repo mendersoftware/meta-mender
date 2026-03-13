@@ -86,15 +86,21 @@ class TestUbootAutomation:
         days_to_be_old = 7
 
         # Find the repository directories we need
-        [poky_dir, meta_mender_dir, _] = (
-            subprocess.check_output(
-                "bitbake-layers show-layers | awk '$1~/(^core$|^mender$)/ {print $2}' | xargs -n 1 dirname",
-                cwd=os.environ["BUILDDIR"],
-                shell=True,
-            )
-            .decode()
-            .split("\n")
-        )
+        poky_dir = None
+        meta_mender_dir = None
+        bitbake_layers_output = subprocess.check_output(
+            "bitbake-layers show-layers", cwd=os.environ["BUILDDIR"], shell=True,
+        ).decode()
+        for line in bitbake_layers_output.split("\n"):
+            fields = line.split()
+            if len(fields) >= 2:
+                layer_name = fields[0]
+                layer_path = fields[1]
+
+                if layer_name == "core":
+                    poky_dir = os.path.dirname(layer_path)
+                elif layer_name == "mender":
+                    meta_mender_dir = os.path.dirname(layer_path)
 
         # SHA from poky repository, limited by date.
         poky_rev = (
@@ -348,12 +354,12 @@ class TestUbootAutomation:
 
             if machine == "vexpress-qemu":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2024.01
+                # From version: 2024.01 on scarthgap-5.0.14
                 measured_failed_ratio = 66.0 / 535.0
             elif machine == "vexpress-qemu-flash":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2024.01
-                measured_failed_ratio = 19.0 / 122.0
+                # From version: 2024.01 on scarthgap-5.0.14
+                measured_failed_ratio = 26.0 / 122.0
 
             # We tolerate a certain percentage discrepancy in either direction.
             tolerated_discrepancy = 0.1
