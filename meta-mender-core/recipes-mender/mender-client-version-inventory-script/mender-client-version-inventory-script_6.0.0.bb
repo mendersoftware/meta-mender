@@ -1,7 +1,3 @@
-################################################################################
-# This is a tentative recipe for next Mender Client release
-#
-
 require mender-client-version-inventory-script.inc
 
 ################################################################################
