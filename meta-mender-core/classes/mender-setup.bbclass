@@ -237,6 +237,10 @@ MENDER_PERSISTENT_CONFIGURATION_VARS ?= "RootfsPartA RootfsPartB"
 MENDER_BOOT_PART_LABEL ??= "${@bb.utils.contains('MENDER_BOOT_PART_FSTYPE', 'vfat', 'BOOT', 'boot', d)}"
 MENDER_DATA_PART_LABEL ??= "data"
 
+# Device tier for mender-orchestrator
+# Orchestrator requires a system device tier to function properly
+MENDER_DEVICE_TIER:mender-orchestrator-install = "system"
+
 # --------------------------- END OF CONFIGURATION -----------------------------
 
 PREFERRED_PROVIDER_mender-native ??= "mender-native"
@@ -245,6 +249,7 @@ PREFERRED_RPROVIDER_mender-update ??= "mender"
 
 IMAGE_INSTALL:append:mender-auth-install = " mender-auth"
 IMAGE_INSTALL:append:mender-update-install = " mender-update"
+IMAGE_INSTALL:append:mender-orchestrator-install = " mender-orchestrator mender-orchestrator-support"
 IMAGE_CLASSES += "mender-part-images mender-ubimg mender-artifactimg mender-artifact-uefi-capsule mender-dataimg mender-bootimg mender-datatar"
 
 # Originally defined in bitbake.conf. We define them here so that images with

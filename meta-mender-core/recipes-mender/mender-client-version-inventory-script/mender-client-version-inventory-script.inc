@@ -12,7 +12,7 @@ DEPENDS = "jq-native gettext-native"
 B = "${WORKDIR}/build"
 
 # On production releases we must build the script using RELEASE=${PV} but for
-# master and release candidates we need to tweak it.
+# master we need to tweak it.
 BUILD_RELEASE ?= "${PV}"
 
 do_compile() {
@@ -35,8 +35,7 @@ do_install() {
 ################################################################################
 ## Dynamic generation of RCONFLICTS:
 ## * run_make_conflicts: The shell task runs the make target
-## * actual_do_set_rconflicts: The Python function updates RCONFLICTS
-## * do_set_rconflicts: The Python task that calls the function. Overridden in Git recipe
+## * do_set_rconflicts: The Python task that updates RCONFLICTS
 
 run_make_conflicts () {
     oe_runmake \
@@ -46,13 +45,10 @@ run_make_conflicts () {
         generate-conflicts
 }
 
-def actual_do_set_rconflicts(d):
+python do_set_rconflicts () {
     bb.build.exec_func("run_make_conflicts", d)
     with open(os.path.join(d.getVar("B"), 'conflicts')) as f: conflicts_string = f.read()
     d.setVar("RCONFLICTS", conflicts_string)
-
-python do_set_rconflicts () {
-    actual_do_set_rconflicts(d)
 }
 
 addtask do_set_rconflicts after do_unpack before do_package

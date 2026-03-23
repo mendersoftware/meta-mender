@@ -1,8 +1,4 @@
-################################################################################
-# This is a tentative recipe for next Mender Client release
-#
-
-require mender-client-version-inventory-script.inc
+require mender-configure.inc
 
 ################################################################################
 #-------------------------------------------------------------------------------
@@ -12,10 +8,10 @@ require mender-client-version-inventory-script.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender-client-subcomponents.git;protocol=https;branch=6.0.x"
+SRC_URI = "git://github.com/mendersoftware/mender-configure-module;protocol=https;branch=1.1.x"
 
-# Tag 6.0.0
-SRCREV = "9e824cf0e09193dbfe5e49f8bcf3258e9e536911"
+# Tag: 1.1.4
+SRCREV = "cb4f153c4ded04989e1878332486552734323785"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
