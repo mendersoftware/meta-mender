@@ -18,6 +18,11 @@ SRCREV = "9e824cf0e09193dbfe5e49f8bcf3258e9e536911"
 # Downprioritize this recipe in version selections.
 #DEFAULT_PREFERENCE = "-1"
 
+# Strict dependency checking is enabled by default (build fails on package conflicts).
+# When cherry-picking to maintenance branches where the default inventory script's version
+# doesn't correspond to the default versions of Mender Client subcomponents, uncomment
+# the following line in this directory's mender_%.bbappend:
+#       PACKAGECONFIG:remove:pn-mender = "version-inventory-script-strict"
 ################################################################################
 
 # DO NOT change the checksum here without make sure that ALL licenses (including
