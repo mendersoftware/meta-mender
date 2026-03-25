@@ -13,6 +13,8 @@ MENDER_ARTIFACT_DEPENDS_GROUPS_FINAL = "${MENDER_ARTIFACT_DEPENDS_GROUPS} ${MEND
 MENDER_ARTIFACT_NAME_BOOTSTRAP ?= "${MENDER_ARTIFACT_NAME}"
 MENDER_ARTIFACT_NAME_DEPENDS_BOOTSTRAP ?= "${MENDER_ARTIFACT_NAME_DEPENDS}"
 
+PSEUDO_INCLUDE_PATHS:append = ",${WORKDIR}/data.copy.image_dataimg"
+
 IMAGE_CMD:bootstrap-artifact() {
 
     # Write a simple hardcoded bootstrap-artifact first, which we use to detect
