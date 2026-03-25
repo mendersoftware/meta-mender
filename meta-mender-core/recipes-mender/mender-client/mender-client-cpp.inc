@@ -45,7 +45,7 @@ RDEPENDS:mender-update:append:mender-growfs-data:mender-systemd = " parted util-
 RDEPENDS:mender-update:append:mender-growfs-data:mender-systemd:mender-partlabel = " util-linux-blkid"
 RDEPENDS:mender-update:append:mender-growfs-data:mender-systemd:mender-partuuid = " util-linux-blkid"
 
-_MENDER_PACKAGECONFIG_DEFAULT = "modules inventory-network-scripts version-inventory-script"
+_MENDER_PACKAGECONFIG_DEFAULT = "modules inventory-network-scripts version-inventory-script version-inventory-script-strict"
 PACKAGECONFIG ?= "${_MENDER_PACKAGECONFIG_DEFAULT}"
 
 PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
@@ -73,7 +73,10 @@ PACKAGECONFIG[inventory-network-scripts] = ",,,"
 # the script by removing version-inventory-script from PACKAGECONFIG
 #  PACKAGECONFIG:remove:pn-mender = "version-inventory-script"
 PACKAGECONFIG[version-inventory-script] = ",,,"
-RDEPENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'version-inventory-script', mender_maybe_version_inventory_script(d), '', d)}"
+PACKAGECONFIG[version-inventory-script-strict] = ",,,"
+
+RDEPENDS:mender-update:append = "${@mender_version_inventory_script_rdepends(d)}"
+RRECOMMENDS:mender-update:append = "${@mender_version_inventory_script_rrecommends(d)}"
 
 # NOTE: Splits the mender.conf file by default into a transient and a persistent config. Needs to be
 # explicitly disabled if this is not to apply.
@@ -379,3 +382,17 @@ def mender_maybe_version_inventory_script(d):
         return " mender-client-version-inventory-script"
     else:
         return ""
+
+def mender_version_inventory_script_rdepends(d):
+    if bb.utils.contains('PACKAGECONFIG', 'version-inventory-script', True, False, d) and \
+       bb.utils.contains('PACKAGECONFIG', 'version-inventory-script-strict', True, False, d):
+        pkg = mender_maybe_version_inventory_script(d)
+        return " " + pkg if pkg else ""
+    return ""
+
+def mender_version_inventory_script_rrecommends(d):
+    if bb.utils.contains('PACKAGECONFIG', 'version-inventory-script', True, False, d) and \
+       not bb.utils.contains('PACKAGECONFIG', 'version-inventory-script-strict', True, False, d):
+        pkg = mender_maybe_version_inventory_script(d)
+        return " " + pkg if pkg else ""
+    return ""
