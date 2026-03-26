@@ -7,14 +7,14 @@ inherit go
 inherit go-ptest
 inherit pkgconfig
 
-S = "${WORKDIR}/git"
-B = "${WORKDIR}/build"
-
 GOPATHDIR = "${B}/src/${GO_IMPORT}"
 
 BBCLASSEXTEND = "native nativesdk"
 
 do_compile() {
+    # Force Go to use GOPATH mode:
+    export GO111MODULE=off
+
     # we could check out the sources at some destsuffix and use default
     # do_compile from go.bbclass, but that would prevent us from always building
     # the most recent version due to recursive expansion if SRCPV
@@ -37,3 +37,5 @@ do_install() {
 
     install ${BUILD_BIN_FOLDER}/mender-artifact -m 0755 ${D}${bindir}
 }
+
+INSANE_SKIP:${PN} = "already-stripped textrel ldflags"
