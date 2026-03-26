@@ -353,8 +353,8 @@ patch_all_candidates_sdimg() {
         'CONFIG_ENV_OFFSET_REDUND' \
         "$CONFIG_ENV_OFFSET_REDUND"
     replace_definition \
-        'CONFIG_SYS_REDUNDAND_ENVIRONMENT' \
-        'CONFIG_SYS_REDUNDAND_ENVIRONMENT'
+        'CONFIG_ENV_REDUNDANT' \
+        'CONFIG_ENV_REDUNDANT'
 
     # Remove all of the below entries.
     replace_definition \
@@ -410,8 +410,8 @@ patch_all_candidates_ubi() {
         'CONFIG_ENV_IS_IN_UBI'
 
     replace_definition \
-        'CONFIG_SYS_REDUNDAND_ENVIRONMENT' \
-        'CONFIG_SYS_REDUNDAND_ENVIRONMENT'
+        'CONFIG_ENV_REDUNDANT' \
+        'CONFIG_ENV_REDUNDANT'
 
     # And remove volume definitions of environment so Mender can configure them.
     replace_definition \
