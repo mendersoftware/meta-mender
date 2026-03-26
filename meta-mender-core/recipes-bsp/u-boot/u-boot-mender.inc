@@ -37,7 +37,7 @@ do_provide_mender_defines() {
     # Since the libubootenv recipe will typically not have access to the proper
     # BOOTENV_SIZE, let's create the fw_env.config file here, so that it can
     # pick it from the deploy directory.
-    mender_create_fw_env_config_file ${WORKDIR}/fw_env.config.default
+    mender_create_fw_env_config_file ${UNPACKDIR}/fw_env.config.default
 
     if [ ${MENDER_UBOOT_CONFIG_SYS_MMC_ENV_PART} -eq "0" ]; then
         # Only check reserved space for bootloader data when the bootloader data is saved to the user partition of the MMC.
@@ -306,7 +306,7 @@ do_mender_uboot_auto_configure() {
         bbwarn 'Detected previously applied Mender patch on top of U-Boot. Probably U-Boot will either produce compile errors or misbehave. It is advised to either remove any Mender specific patches, or disable the auto-patching by setting MENDER_UBOOT_AUTO_CONFIGURE = "0" somewhere in the U-Boot recipe.'
     fi
 
-    cd ${WORKDIR}
+    cd ${B}
 
     # This is for diffing and displaying the patch later, if necessary.
     rm -rf ${MENDER_UBOOT_OLD_SRC}
@@ -371,9 +371,9 @@ do_deploy:append() {
 }
 do_deploy:append:mender-uboot() {
     # Copy script to the deploy area with u-boot, uImage, and rootfs
-    if [ -e ${WORKDIR}/uEnv.txt ] ; then
+    if [ -e ${UNPACKDIR}/uEnv.txt ] ; then
         install -d ${DEPLOYDIR}
-        install -m 0444 ${WORKDIR}/uEnv.txt ${DEPLOYDIR}
+        install -m 0444 ${UNPACKDIR}/uEnv.txt ${DEPLOYDIR}
     fi
 
     # Creates the blob that will be the U-Boot environment, with proper
@@ -383,10 +383,10 @@ do_deploy:append:mender-uboot() {
     # Note: We cannot use a sparse file here, even though it's filled with
     # zeros, because the build process uses "du" to determine the size of this
     # file.
-    dd if=/dev/zero of=${WORKDIR}/uboot.env bs=${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} count=1
-    install -m 644 ${WORKDIR}/uboot.env ${DEPLOYDIR}/uboot.env
+    dd if=/dev/zero of=${UNPACKDIR}/uboot.env bs=${MENDER_BOOTENV_TOTAL_ALIGNED_SIZE} count=1
+    install -m 644 ${UNPACKDIR}/uboot.env ${DEPLOYDIR}/uboot.env
 
-    install -m 644 ${WORKDIR}/fw_env.config.default ${DEPLOYDIR}/fw_env.config.default
+    install -m 644 ${UNPACKDIR}/fw_env.config.default ${DEPLOYDIR}/fw_env.config.default
 }
 
 # Ignore this, only used for testing.
