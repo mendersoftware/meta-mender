@@ -142,6 +142,11 @@ FILES:mender-update += "\
 "
 FILES:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' ${datadir}/mender/modules', '', d)}"
 
+# The DBus service is only available in mender-auth >= 5.1
+# Only include the file in 5.1 and newer recipes
+FILES:mender-auth:append = "${@ ' ${datadir}/dbus-1/system-services/io.mender.AuthenticationManager.service' \
+    if bb.utils.vercmp_string(d.getVar('PV'), '5.1') >= 0 else ''}"
+
 FILES:mender-auth += "\
     ${bindir}/mender-auth \
     ${datadir}/mender/identity \
@@ -292,6 +297,9 @@ do_install:append() {
     install -d ${D}${sysconfdir}/udev/mount.ignorelist.d
     echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
+
+    # Install DBus service file in 5.1 and newer recipes
+    ${@ "DESTDIR='${D}' cmake_runcmake_build --target install-dbus-service-files" if bb.utils.vercmp_string(d.getVar('PV'), '5.1') >= 0 else ":"}
 }
 
 do_install:append:class-target:mender-image:mender-systemd() {
