@@ -49,7 +49,7 @@ class TestSnapshotStandalone:
     @pytest.mark.parametrize("compression", [("", ">"), ("-C gzip", "| gunzip -c >")])
     def test_basic_snapshot(self, compression, bitbake_variables, connection):
         try:
-            (_, passive) = determine_active_passive_part(bitbake_variables, connection)
+            _, passive = determine_active_passive_part(bitbake_variables, connection)
 
             # Wipe the inactive partition first.
             connection.run(f"dd if=/dev/zero of={passive} bs=1M count=100")
@@ -72,7 +72,7 @@ class TestSnapshotStandalone:
 
     def test_snapshot_device_file(self, bitbake_variables, connection):
         try:
-            (active, passive) = determine_active_passive_part(
+            active, passive = determine_active_passive_part(
                 bitbake_variables, connection
             )
 
@@ -98,7 +98,7 @@ class TestSnapshotStandalone:
 
     def test_snapshot_inactive(self, bitbake_variables, connection):
         try:
-            (_, passive) = determine_active_passive_part(bitbake_variables, connection)
+            _, passive = determine_active_passive_part(bitbake_variables, connection)
 
             test_str = "TeSt StrIng!#"
 
@@ -195,7 +195,7 @@ class TestSnapshotMenderArtifact:
             suffix=".mender"
         ) as artifact, tempfile.NamedTemporaryFile() as screen_log:
             terminal = terminal.replace("%%", screen_log.name)
-            (active, _) = determine_active_passive_part(bitbake_variables, connection)
+            active, _ = determine_active_passive_part(bitbake_variables, connection)
 
             try:
                 subprocess.run(
@@ -211,14 +211,15 @@ class TestSnapshotMenderArtifact:
                 subprocess.call(f"cat {screen_log.name}", shell=True)
 
             output = subprocess.check_output(
-                f"mender-artifact read {artifact.name}", shell=True,
+                f"mender-artifact read {artifact.name}",
+                shell=True,
             ).decode()
 
             partsize = connection.run(f"blockdev --getsize64 {active}").stdout.strip()
 
             # Ensure that the payload size of the produced artifact matches the
             # partition.
-            assert re.search(fr"size: *{partsize}", output) is not None
+            assert re.search(rf"size: *{partsize}", output) is not None
 
     def test_snapshot_using_mender_artifact_no_sudo(  # see MEN-3987
         self, terminal, bitbake_path, bitbake_variables, connection
@@ -227,7 +228,7 @@ class TestSnapshotMenderArtifact:
             suffix=".mender"
         ) as artifact, tempfile.NamedTemporaryFile() as screen_log:
             terminal = terminal.replace("%%", screen_log.name)
-            (active, _) = determine_active_passive_part(bitbake_variables, connection)
+            active, _ = determine_active_passive_part(bitbake_variables, connection)
 
             # /usr/bin/sudo is a link to /data/usr/bin/sudo see
             #  meta-mender-qemu/recipes-extended/sudo/sudo_%.bbappend
@@ -264,11 +265,12 @@ class TestSnapshotMenderArtifact:
                 assert result.return_code == 0
 
             output = subprocess.check_output(
-                f"mender-artifact read {artifact.name}", shell=True,
+                f"mender-artifact read {artifact.name}",
+                shell=True,
             ).decode()
 
             partsize = connection.run(f"blockdev --getsize64 {active}").stdout.strip()
 
             # Ensure that the payload size of the produced artifact matches the
             # partition.
-            assert re.search(fr"size: *{partsize}", output) is not None
+            assert re.search(rf"size: *{partsize}", output) is not None
