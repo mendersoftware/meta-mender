@@ -46,7 +46,10 @@ class TestDBus:
 
     @pytest.mark.min_mender_version("4.0.0")
     def test_dbus_non_root_access(
-        self, request, bitbake_variables, connection,
+        self,
+        request,
+        bitbake_variables,
+        connection,
     ):
         """Test that only root user can access Mender DBus API."""
 
@@ -88,7 +91,11 @@ class TestDBus:
 
     @pytest.mark.min_mender_version("4.0.0")
     def test_dbus_fetch_jwt_token(
-        self, request, bitbake_variables, connection, setup_mock_server,
+        self,
+        request,
+        bitbake_variables,
+        connection,
+        setup_mock_server,
     ):
         """Test that the JWT token can be fetched using D-Bus."""
 

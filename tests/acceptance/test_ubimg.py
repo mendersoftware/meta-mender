@@ -248,7 +248,9 @@ class TestUbimg:
 
     @pytest.mark.min_mender_version("4.0.0")
     def test_volume_contents(
-        self, bitbake_variables, ubimg_without_uboot_env,
+        self,
+        bitbake_variables,
+        ubimg_without_uboot_env,
     ):
         """Test that data volume has correct contents"""
 
