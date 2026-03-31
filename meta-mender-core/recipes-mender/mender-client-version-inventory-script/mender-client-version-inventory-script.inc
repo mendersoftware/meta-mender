@@ -9,7 +9,6 @@ FILES:${PN}:append:mender-update-install = " \
 
 DEPENDS = "jq-native gettext-native"
 
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 # On production releases we must build the script using RELEASE=${PV} but for
