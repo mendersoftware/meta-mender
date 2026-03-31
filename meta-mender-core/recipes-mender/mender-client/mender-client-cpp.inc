@@ -35,6 +35,8 @@ EXTRA_OECMAKE:append = " -D SYSTEMD_UNIT_DIR=${systemd_system_unitdir}"
 
 inherit cmake
 
+ALLOW_EMPTY:${PN} = "1"
+
 DEPENDS += "lmdb googletest boost libarchive dbus"
 RDEPENDS:mender-auth:append = " boost-filesystem dbus"
 RDEPENDS:mender-update:append = " boost-filesystem libarchive lmdb dbus"
@@ -43,7 +45,7 @@ RDEPENDS:mender-update:append:mender-growfs-data:mender-systemd = " parted util-
 RDEPENDS:mender-update:append:mender-growfs-data:mender-systemd:mender-partlabel = " util-linux-blkid"
 RDEPENDS:mender-update:append:mender-growfs-data:mender-systemd:mender-partuuid = " util-linux-blkid"
 
-_MENDER_PACKAGECONFIG_DEFAULT = "modules inventory-network-scripts"
+_MENDER_PACKAGECONFIG_DEFAULT = "modules inventory-network-scripts version-inventory-script version-inventory-script-strict"
 PACKAGECONFIG ?= "${_MENDER_PACKAGECONFIG_DEFAULT}"
 
 PACKAGECONFIG:append:class-target = "${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', ' u-boot', '', d)}"
@@ -63,6 +65,18 @@ RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modul
 RRECOMMENDS:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' mender-flash', '', d)}"
 
 PACKAGECONFIG[inventory-network-scripts] = ",,,"
+
+# From mender-update 5.1, the inventory key "mender_client_version" is provided
+# by an script. It represents the Mender Client version (not mender-update) and
+# ensures a compatible combination of Mender components
+# In order to allow user specified combination of Mender components, remove
+# the script by removing version-inventory-script from PACKAGECONFIG
+#  PACKAGECONFIG:remove:pn-mender = "version-inventory-script"
+PACKAGECONFIG[version-inventory-script] = ",,,"
+PACKAGECONFIG[version-inventory-script-strict] = ",,,"
+
+RDEPENDS:mender-update:append = "${@mender_version_inventory_script_rdepends(d)}"
+RRECOMMENDS:mender-update:append = "${@mender_version_inventory_script_rrecommends(d)}"
 
 # NOTE: Splits the mender.conf file by default into a transient and a persistent config. Needs to be
 # explicitly disabled if this is not to apply.
@@ -131,6 +145,9 @@ FILES:mender-update += "\
 "
 FILES:mender-update:append = "${@bb.utils.contains('PACKAGECONFIG', 'modules', ' ${datadir}/mender/modules', '', d)}"
 
+# The DBus service is only available in mender-auth >= 5.1
+FILES:mender-auth:append = " ${datadir}/dbus-1/system-services/io.mender.AuthenticationManager.service"
+
 FILES:mender-auth += "\
     ${bindir}/mender-auth \
     ${datadir}/mender/identity \
@@ -197,6 +214,9 @@ python do_prepare_mender_conf() {
 
     # Tenant-token is optional, but falls back to a default-value set in source code
     conf_maybe_add("TenantToken", "MENDER_TENANT_TOKEN", getvar=True, integer=False)
+
+    # DeviceTier is optional, but falls back to a default-value set in source code
+    conf_maybe_add("DeviceTier", "MENDER_DEVICE_TIER", getvar=True, integer=False)
 
     # Filter returns the variables that are present in both instances.
     # Thus no misspelled variables will ever enter the persistent configuration during migration.
@@ -278,6 +298,9 @@ do_install:append() {
     install -d ${D}${sysconfdir}/udev/mount.ignorelist.d
     echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
     echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
+
+    # The target is only available in 5.1.x and newer
+    DESTDIR='${D}' cmake_runcmake_build --target install-dbus-service-files || true
 }
 
 do_install:append:class-target:mender-image:mender-systemd() {
@@ -350,3 +373,31 @@ EXTRA_OECMAKE:append:class-native = " -DMENDER_NO_BUILD=1"
 do_install:class-native() {
     DESTDIR='${D}' cmake_runcmake_build --target install-modules-gen
 }
+
+def mender_maybe_version_inventory_script(d):
+    import re
+    pv = d.getVar("PV")
+    match = re.match(r"([0-9]+)\.([0-9]+)\..*", pv)
+    if match is None:
+        return " mender-client-version-inventory-script"
+
+    major = int(match.group(1))
+    minor = int(match.group(2))
+    if major > 5 or (major == 5 and minor >= 1):
+        return " mender-client-version-inventory-script"
+    else:
+        return ""
+
+def mender_version_inventory_script_rdepends(d):
+    if bb.utils.contains('PACKAGECONFIG', 'version-inventory-script', True, False, d) and \
+       bb.utils.contains('PACKAGECONFIG', 'version-inventory-script-strict', True, False, d):
+        pkg = mender_maybe_version_inventory_script(d)
+        return " " + pkg if pkg else ""
+    return ""
+
+def mender_version_inventory_script_rrecommends(d):
+    if bb.utils.contains('PACKAGECONFIG', 'version-inventory-script', True, False, d) and \
+       not bb.utils.contains('PACKAGECONFIG', 'version-inventory-script-strict', True, False, d):
+        pkg = mender_maybe_version_inventory_script(d)
+        return " " + pkg if pkg else ""
+    return ""

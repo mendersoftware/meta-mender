@@ -269,7 +269,13 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                 request, prepared_test_build["build_dir"], "core-image*.mender"
             )
             output = subprocess.check_output(
-                ["mender-artifact", "read", "-k", verify_key.name, built_artifact,]
+                [
+                    "mender-artifact",
+                    "read",
+                    "-k",
+                    verify_key.name,
+                    built_artifact,
+                ]
             ).decode()
             assert output.find("Signature: signed and verified correctly") >= 0
 
@@ -434,7 +440,9 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         )
 
         output = run_verbose("mender-artifact read %s" % image, capture=True)
-        if version_is_minimum(bitbake_variables, "mender-artifact", "3.12.0"):
+        if version_is_minimum(bitbake_variables, "mender-artifact", "4.3.0"):
+            assert b"Compatible types: [machine1, machine2]" in output
+        elif version_is_minimum(bitbake_variables, "mender-artifact", "3.12.0"):
             assert b"Compatible devices: [machine1, machine2]" in output
         else:
             assert b"Compatible devices: '[machine1 machine2]'" in output
@@ -551,14 +559,14 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         self, request, prepared_test_build, bitbake_path, bitbake_image
     ):
         """Test IMAGE_BOOT_FILES population in the boot partition. Notice in particular a mix of
-        tabs, newlines and spaces. All there to check that whitespace it treated correctly."""
+        tabs, newlines and spaces. All there to check that whitespace it treated correctly.
+        """
 
         build_image(
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            [
-                """
+            ["""
 IMAGE_INSTALL:append = " test-boot-files"
 
 IMAGE_BOOT_FILES:append = " deployed-test1 deployed-test-dir2/deployed-test2 \
@@ -569,8 +577,7 @@ deployed-test-dir7/* \
 deployed-test-dir8/*;./ \
 deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 "
-"""
-            ],
+"""],
         )
 
         image = latest_build_artifact(
@@ -739,7 +746,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             request, os.environ["BUILDDIR"], "core-image*.mender"
         )
         original_bootstrap_artifact = latest_build_artifact(
-            request, os.environ["BUILDDIR"], "core-image*.bootstrap-artifact",
+            request,
+            os.environ["BUILDDIR"],
+            "core-image*.bootstrap-artifact",
         )
 
         if originally_on:
@@ -770,10 +779,14 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             request, prepared_test_build["build_dir"], "core-image*.ext[234]"
         )
         new_artifact = latest_build_artifact(
-            request, prepared_test_build["build_dir"], "core-image*.mender",
+            request,
+            prepared_test_build["build_dir"],
+            "core-image*.mender",
         )
         new_bootstrap_artifact = latest_build_artifact(
-            request, prepared_test_build["build_dir"], "core-image*.bootstrap-artifact",
+            request,
+            prepared_test_build["build_dir"],
+            "core-image*.bootstrap-artifact",
         )
 
         if originally_on:
@@ -1253,14 +1266,13 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         ), "mender-inventory-network-scripts unexpectedly a part of the image"
 
     @pytest.mark.cross_platform
-    @pytest.mark.min_mender_version("2.7.0")
+    @pytest.mark.min_mender_version("4.0.0")
     def test_mender_dbus_interface_file(
         self,
         request,
         prepared_test_build,
         bitbake_image,
         bitbake_path,
-        mender_update_binary,
     ):
         """
         Test that the D-Bus interface files are provided by the mender-client-dev package,
@@ -1272,13 +1284,6 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
         ]
         mender_recipe = "mender"
         mender_pkg = "mender-auth"
-
-        # Can be removed after mender-client < v4.0 goes EOL. Update Control is not available
-        # anymore in v4.0 and later.
-        if mender_update_binary == "mender":
-            EXPECTED_FILES.append("io.mender.Update1.xml")
-            mender_recipe = "mender-client"
-            mender_pkg = "mender-client"
 
         # build mender-client
         build_image(
@@ -1383,7 +1388,8 @@ class TestPreferredVersions:
                     continue
                 elif (
                     re.match(
-                        "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe, line,
+                        "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe,
+                        line,
                     )
                     is not None
                 ):

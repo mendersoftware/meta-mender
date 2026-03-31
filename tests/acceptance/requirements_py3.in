@@ -7,3 +7,4 @@ python-lzo==1.15
 redo==2.0.4
 requests==2.32.3
 ubi-reader==0.8.9
+flaky==3.8.1
