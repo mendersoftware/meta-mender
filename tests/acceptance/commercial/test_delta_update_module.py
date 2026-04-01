@@ -96,7 +96,12 @@ class TestDeltaUpdateModule:
         )
 
         Helpers.install_update(
-            image, connection, http_server, board_type, use_s3, s3_address,
+            image,
+            connection,
+            http_server,
+            board_type,
+            use_s3,
+            s3_address,
         )
 
         reboot(connection)
@@ -145,7 +150,7 @@ class TestDeltaUpdateModule:
 
         # Check that checksum of the currently mounted rootfs matches that
         # of the artifact which we just updated to.
-        (active, _) = determine_active_passive_part(bitbake_variables, connection)
+        active, _ = determine_active_passive_part(bitbake_variables, connection)
         output = connection.run("sha256sum %s" % active)
         rootfs_sum = output.stdout.split()[0]
         output = subprocess.check_output(
@@ -233,25 +238,33 @@ class TestDeltaUpdateModule:
             # Verbose provides/depends of the different Artifacts and the client (when supported)
             connection.run("mender-update show-provides", warn=True)
             subprocess.check_call(
-                "mender-artifact read %s" % artifact_from, shell=True,
+                "mender-artifact read %s" % artifact_from,
+                shell=True,
             )
             subprocess.check_call(
-                "mender-artifact read %s" % artifact_to, shell=True,
+                "mender-artifact read %s" % artifact_to,
+                shell=True,
             )
             subprocess.check_call(
-                "mender-artifact read %s" % artifact_delta, shell=True,
+                "mender-artifact read %s" % artifact_delta,
+                shell=True,
             )
 
             # Install Artifact, verify partitions and commit
-            (active, passive) = determine_active_passive_part(
+            active, passive = determine_active_passive_part(
                 bitbake_variables, connection
             )
             Helpers.install_update(
-                artifact_delta, connection, http_server, board_type, use_s3, s3_address,
+                artifact_delta,
+                connection,
+                http_server,
+                board_type,
+                use_s3,
+                s3_address,
             )
             reboot(connection)
             run_after_connect("true", connection)
-            (new_active, new_passive) = determine_active_passive_part(
+            new_active, new_passive = determine_active_passive_part(
                 bitbake_variables, connection
             )
             assert new_active == passive

@@ -18,7 +18,6 @@ import argparse
 import asyncio
 import websockets
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("port", type=int, help="port")
 

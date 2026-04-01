@@ -89,7 +89,9 @@ class TestUbootAutomation:
         poky_dir = None
         meta_mender_dir = None
         bitbake_layers_output = subprocess.check_output(
-            "bitbake-layers show-layers", cwd=os.environ["BUILDDIR"], shell=True,
+            "bitbake-layers show-layers",
+            cwd=os.environ["BUILDDIR"],
+            shell=True,
         ).decode()
         for line in bitbake_layers_output.split("\n"):
             fields = line.split()
@@ -371,9 +373,11 @@ class TestUbootAutomation:
                     "Less boards failed than expected. Good? Or a mistake somewhere? Failed: %d, Total: %d"
                     % (failed, total)
                 )
-                assert failed / total <= upper_bound, (
-                    "More boards failed than expected. Failed: %d, Total: %d"
-                    % (failed, total)
+                assert (
+                    failed / total <= upper_bound
+                ), "More boards failed than expected. Failed: %d, Total: %d" % (
+                    failed,
+                    total,
                 )
             except AssertionError:
                 for file in os.listdir(env["LOGS"]):

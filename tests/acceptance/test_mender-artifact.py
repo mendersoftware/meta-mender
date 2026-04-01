@@ -21,11 +21,11 @@ import pytest
 
 from utils.common import build_image, latest_build_artifact, version_is_minimum
 
-
 # The format of the artifact file which is tested here is documented at:
 # https://github.com/mendersoftware/mender-artifact/blob/master/Documentation/artifact-format.md
 
 LAST_BUILD_VERSION = None
+
 
 # params is the versions we will test.
 @pytest.fixture(scope="function", params=[2, 3])
