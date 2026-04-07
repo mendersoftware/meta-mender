@@ -119,7 +119,7 @@ fi
 
 # Prepare env tools for host platform.
 bash $SUB_X "$SCRIPT_DIR/uboot_auto_patch.sh" --patch-config-file
-$MAKE HOSTCC="$BUILD_CC -DMENDER_AUTO_PROBING" CC="$BUILD_CC -DMENDER_AUTO_PROBING" $ENV_TARGET
+$MAKE HOSTCC="$BUILD_CC -DMENDER_AUTO_PROBING" CC="$BUILD_CC -DMENDER_AUTO_PROBING" STRIP=strip $ENV_TARGET
 
 # Prepare a fake environment to make work fw_printenv properly. Doesn't have
 # to be valid, just existing.
