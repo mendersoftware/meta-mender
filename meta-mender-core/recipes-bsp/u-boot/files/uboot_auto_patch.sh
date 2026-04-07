@@ -356,15 +356,17 @@ patch_all_candidates_sdimg() {
         'CONFIG_ENV_REDUNDANT' \
         'CONFIG_ENV_REDUNDANT'
 
-    # Remove all of the below entries.
+    # Set the MMC device and partition for environment storage.
+    # U-Boot 2026.01+ renamed CONFIG_SYS_MMC_ENV_DEV/PART to
+    # CONFIG_ENV_MMC_DEVICE_INDEX/EMMC_HW_PARTITION.
     replace_definition \
-        'CONFIG_SYS_MMC_ENV_DEV' \
-        'CONFIG_SYS_MMC_ENV_DEV' \
-        "$CONFIG_SYS_MMC_ENV_DEV"
+        'CONFIG_ENV_MMC_DEVICE_INDEX\|CONFIG_SYS_MMC_ENV_DEV' \
+        'CONFIG_ENV_MMC_DEVICE_INDEX' \
+        "$CONFIG_ENV_MMC_DEVICE_INDEX"
     replace_definition \
-        'CONFIG_SYS_MMC_ENV_PART' \
-        'CONFIG_SYS_MMC_ENV_PART' \
-        "$CONFIG_SYS_MMC_ENV_PART"
+        'CONFIG_ENV_MMC_EMMC_HW_PARTITION\|CONFIG_SYS_MMC_ENV_PART' \
+        'CONFIG_ENV_MMC_EMMC_HW_PARTITION' \
+        "$CONFIG_ENV_MMC_EMMC_HW_PARTITION"
 
     # Make sure the environment is in MMC.
     replace_definition \
