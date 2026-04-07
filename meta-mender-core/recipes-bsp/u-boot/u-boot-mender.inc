@@ -306,7 +306,7 @@ do_mender_uboot_auto_configure() {
         bbwarn 'Detected previously applied Mender patch on top of U-Boot. Probably U-Boot will either produce compile errors or misbehave. It is advised to either remove any Mender specific patches, or disable the auto-patching by setting MENDER_UBOOT_AUTO_CONFIGURE = "0" somewhere in the U-Boot recipe.'
     fi
 
-    cd ${B}
+    cd ${UNPACKDIR}
 
     # This is for diffing and displaying the patch later, if necessary.
     rm -rf ${MENDER_UBOOT_OLD_SRC}
