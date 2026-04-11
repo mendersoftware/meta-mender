@@ -287,6 +287,16 @@ patch_all_candidates() {
     add_definition \
         'CONFIG_BOOTCOUNT_ENV'
 
+    # U-Boot 2025.04+ introduced CONFIG_BOOTCOUNT_ALTBOOTCMD (Kconfig string,
+    # defaults to "").  The empty default is compiled into env_default.h and
+    # can override Mender's altbootcmd from MENDER_ENV_SETTINGS depending on
+    # environment import ordering.  Set it explicitly to match Mender's
+    # MENDER_DEFAULT_ALTBOOTCMD so the rollback mechanism works regardless of
+    # ordering.  On older U-Boot versions the symbol does not exist in Kconfig
+    # and add_definition falls through harmlessly.
+    add_definition \
+        'CONFIG_BOOTCOUNT_ALTBOOTCMD' '"run mender_altbootcmd; run bootcmd"'
+
     # Patch away "root=/dev/blah" arguments, we will provide our own. Take care
     # to replace an occurrence ending in '\0' first, to avoid losing it if
     # present.
