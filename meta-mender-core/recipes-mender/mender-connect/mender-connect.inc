@@ -28,7 +28,7 @@ python do_prepare_mender_connect_conf() {
 
     mender_connect_conf = {}
     # If a mender-connect.conf has been provided in SRC_URI, merge contents
-    src_conf = os.path.join(d.getVar("WORKDIR"), "mender-connect.conf")
+    src_conf = os.path.join(d.getVar("UNPACKDIR"), "mender-connect.conf")
     if os.path.exists(src_conf):
         with open(src_conf) as fd:
             mender_connect_conf = json.load(fd)
