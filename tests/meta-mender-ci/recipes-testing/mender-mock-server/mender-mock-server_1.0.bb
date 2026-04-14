@@ -7,7 +7,7 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = " \
     file://mender-mock-server.py;beginline=2;endline=14;md5=0022954814efed30323d08ab6de15a4e \
 "
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} = "python3-core python3-netserver python3-json"
 
@@ -24,11 +24,11 @@ FILES:${PN} += "\
 
 do_install() {
     install -d ${D}${prefix}/local/bin
-    install -m 644 ${WORKDIR}/mender-mock-server.py ${D}${prefix}/local/bin/mender-mock-server.py
-    install -m 600 ${WORKDIR}/private.key ${D}${prefix}/local/bin/private.key
+    install -m 644 ${UNPACKDIR}/mender-mock-server.py ${D}${prefix}/local/bin/mender-mock-server.py
+    install -m 600 ${UNPACKDIR}/private.key ${D}${prefix}/local/bin/private.key
 
     install -d ${D}/${systemd_unitdir}/system
-    install -m 644 ${WORKDIR}/mender-mock-server.service ${D}${systemd_unitdir}/system/mender-mock-server.service
+    install -m 644 ${UNPACKDIR}/mender-mock-server.service ${D}${systemd_unitdir}/system/mender-mock-server.service
 
     install -m 755 -d ${D}/data
     mv ${D}${prefix}/local/bin/mender-mock-server.py ${D}/data/mender-mock-server.py
