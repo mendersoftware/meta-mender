@@ -18,7 +18,7 @@ SRCREV = "${@mender_closed_source_srcrev_from_src_uri(d, '${SRC_URI}', 'mender-g
 PV = "${@mender_closed_source_pv_from_preferred_version(d, '${SRCREV}')}"
 
 # Define S to work both on git sha and "master" tarballs
-S = "${WORKDIR}/mender-gateway-${@mender_closed_source_tarball_dir_from_pv(d, '${PV}')}"
+S = "${UNPACKDIR}/mender-gateway-${@mender_closed_source_tarball_dir_from_pv(d, '${PV}')}"
 
 # Skip version check
 MENDER_DEVMODE = "true"

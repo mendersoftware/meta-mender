@@ -19,7 +19,7 @@ FILES:${PN} = " \
     /data/mender-orchestrator \
 "
 
-S = "${WORKDIR}/mender-orchestrator-${PV}"
+S = "${UNPACKDIR}/mender-orchestrator-${PV}"
 
 do_version_check() {
     if [ ! -e ${S}/${SUB_FOLDER}/mender-orchestrator ]; then
@@ -35,7 +35,7 @@ do_version_check() {
 addtask do_version_check after do_unpack before do_topology_file_check
 
 do_topology_file_check() {
-    if [ ! -e ${WORKDIR}/topology.yaml ]; then
+    if [ ! -e ${UNPACKDIR}/topology.yaml ]; then
         bbfatal "No topology.yaml found. Have you added the package to SRC_URI?"
     fi
 }
@@ -50,7 +50,7 @@ do_install() {
     ln -s /data/mender-orchestrator ${D}${localstatedir}/lib/mender-orchestrator
 
     # mender-orchestrator-support provides a pre-made topology in the demo layer
-    if [ -e ${WORKDIR}/topology.yaml ]; then
-        install -m 755 ${WORKDIR}/topology.yaml ${D}/data/mender-orchestrator/topology.yaml
+    if [ -e ${UNPACKDIR}/topology.yaml ]; then
+        install -m 755 ${UNPACKDIR}/topology.yaml ${D}/data/mender-orchestrator/topology.yaml
     fi
 }

@@ -17,7 +17,6 @@ FILES:mender-docker-compose:append:mender-image = " \
     /etc/mender/mender-docker-compose.conf \
 "
 
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
 do_configure:mender-image() {
