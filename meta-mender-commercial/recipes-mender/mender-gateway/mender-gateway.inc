@@ -20,7 +20,7 @@ FILES:${PN}:append:mender-update-install = " \
     ${datadir}/mender/inventory/mender-inventory-mender-gateway \
 "
 
-S = "${WORKDIR}/mender-gateway-${PV}"
+S = "${UNPACKDIR}/mender-gateway-${PV}"
 
 do_version_check() {
     if [ ! -e ${S}/${SUB_FOLDER}/mender-gateway ]; then

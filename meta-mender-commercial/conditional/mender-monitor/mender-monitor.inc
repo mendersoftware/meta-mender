@@ -18,7 +18,7 @@ FILES:${PN}:append:mender-systemd = " \
     ${systemd_system_unitdir}/mender-monitor.service \
 "
 
-S = "${WORKDIR}/mender-monitor"
+S = "${UNPACKDIR}/mender-monitor"
 
 do_version_check() {
     if [ ! -e ${S}/.version ]; then
