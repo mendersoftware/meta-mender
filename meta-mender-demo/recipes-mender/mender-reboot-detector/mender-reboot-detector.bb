@@ -11,9 +11,9 @@ FILES:${PN} = "${systemd_unitdir}/system/mender-reboot-detector.service"
 
 RDEPENDS:${PN} = "bash openssh-sshd"
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 do_install() {
     install -d ${D}${systemd_unitdir}/system
-    install -m 0644 ${WORKDIR}/mender-reboot-detector.service ${D}${systemd_unitdir}/system
+    install -m 0644 ${UNPACKDIR}/mender-reboot-detector.service ${D}${systemd_unitdir}/system
 }
