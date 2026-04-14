@@ -162,7 +162,11 @@ class TestUpdateControl:
         {
             "name": "Empty map",
             "case": {
-                "maps": [{"id": MUID,}],
+                "maps": [
+                    {
+                        "id": MUID,
+                    }
+                ],
                 "success": True,
                 "last_successful_state": "ArtifactCommit",
             },
@@ -173,7 +177,11 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactInstall_Enter": {"action": "fail",},},
+                        "states": {
+                            "ArtifactInstall_Enter": {
+                                "action": "fail",
+                            },
+                        },
                     }
                 ],
                 "success": False,
@@ -186,7 +194,11 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactReboot_Enter": {"action": "fail",},},
+                        "states": {
+                            "ArtifactReboot_Enter": {
+                                "action": "fail",
+                            },
+                        },
                     }
                 ],
                 "success": False,
@@ -199,7 +211,11 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactCommit_Enter": {"action": "fail",},},
+                        "states": {
+                            "ArtifactCommit_Enter": {
+                                "action": "fail",
+                            },
+                        },
                     }
                 ],
                 "success": False,
@@ -212,14 +228,22 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactInstall_Enter": {"action": "pause",},},
+                        "states": {
+                            "ArtifactInstall_Enter": {
+                                "action": "pause",
+                            },
+                        },
                     }
                 ],
                 "success": True,
                 "state_before_pause": "Download",
                 "continue_map": {
                     "id": MUID,
-                    "states": {"ArtifactInstall_Enter": {"action": "continue",},},
+                    "states": {
+                        "ArtifactInstall_Enter": {
+                            "action": "continue",
+                        },
+                    },
                 },
                 "last_successful_state": "ArtifactCommit",
             },
@@ -230,7 +254,11 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactInstall_Enter": {"action": "pause",},},
+                        "states": {
+                            "ArtifactInstall_Enter": {
+                                "action": "pause",
+                            },
+                        },
                     }
                 ],
                 # Actually the update will fail, but because it happens before ArtifactInstall, we
@@ -242,7 +270,11 @@ class TestUpdateControl:
                 "continue_map": {
                     "id": MUID,
                     # Action does not matter, this should fail.
-                    "states": {"ArtifactInstall_Enter": {"action": "continue",},},
+                    "states": {
+                        "ArtifactInstall_Enter": {
+                            "action": "continue",
+                        },
+                    },
                 },
                 "last_successful_state": "Download",
             },
@@ -253,14 +285,22 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactReboot_Enter": {"action": "pause",},},
+                        "states": {
+                            "ArtifactReboot_Enter": {
+                                "action": "pause",
+                            },
+                        },
                     }
                 ],
                 "success": True,
                 "state_before_pause": "ArtifactInstall",
                 "continue_map": {
                     "id": MUID,
-                    "states": {"ArtifactReboot_Enter": {"action": "continue",},},
+                    "states": {
+                        "ArtifactReboot_Enter": {
+                            "action": "continue",
+                        },
+                    },
                 },
                 "last_successful_state": "ArtifactCommit",
             },
@@ -271,7 +311,11 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactReboot_Enter": {"action": "pause",},},
+                        "states": {
+                            "ArtifactReboot_Enter": {
+                                "action": "pause",
+                            },
+                        },
                     }
                 ],
                 "success": True,
@@ -281,7 +325,11 @@ class TestUpdateControl:
                     "id": MUID,
                     # The restart should make sure we continue after the reboot, even if the
                     # ArtifactReboot_Enter map is set to pause.
-                    "states": {"ArtifactReboot_Enter": {"action": "pause",},},
+                    "states": {
+                        "ArtifactReboot_Enter": {
+                            "action": "pause",
+                        },
+                    },
                 },
                 "last_successful_state": "ArtifactCommit",
             },
@@ -292,14 +340,22 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactCommit_Enter": {"action": "pause",},},
+                        "states": {
+                            "ArtifactCommit_Enter": {
+                                "action": "pause",
+                            },
+                        },
                     }
                 ],
                 "success": True,
                 "state_before_pause": "ArtifactVerifyReboot",
                 "continue_map": {
                     "id": MUID,
-                    "states": {"ArtifactCommit_Enter": {"action": "continue",},},
+                    "states": {
+                        "ArtifactCommit_Enter": {
+                            "action": "continue",
+                        },
+                    },
                 },
                 "last_successful_state": "ArtifactCommit",
             },
@@ -310,7 +366,11 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactCommit_Enter": {"action": "pause",},},
+                        "states": {
+                            "ArtifactCommit_Enter": {
+                                "action": "pause",
+                            },
+                        },
                     }
                 ],
                 "success": False,
@@ -319,7 +379,11 @@ class TestUpdateControl:
                 "continue_map": {
                     "id": MUID,
                     # Action does not matter, this should fail.
-                    "states": {"ArtifactCommit_Enter": {"action": "pause",},},
+                    "states": {
+                        "ArtifactCommit_Enter": {
+                            "action": "pause",
+                        },
+                    },
                 },
                 "last_successful_state": "ArtifactVerifyReboot",
             },
@@ -388,11 +452,19 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactInstall_Enter": {"action": "fail",},},
+                        "states": {
+                            "ArtifactInstall_Enter": {
+                                "action": "fail",
+                            },
+                        },
                     },
                     {
                         "id": MUID2,
-                        "states": {"ArtifactInstall_Enter": {"action": "continue",},},
+                        "states": {
+                            "ArtifactInstall_Enter": {
+                                "action": "continue",
+                            },
+                        },
                         "priority": 1,
                     },
                 ],
@@ -408,12 +480,18 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactInstall_Enter": {"action": "pause",},},
+                        "states": {
+                            "ArtifactInstall_Enter": {
+                                "action": "pause",
+                            },
+                        },
                     },
                     {
                         "id": MUID2,
                         "states": {
-                            "ArtifactInstall_Enter": {"action": "force_continue",},
+                            "ArtifactInstall_Enter": {
+                                "action": "force_continue",
+                            },
                         },
                         "priority": 1,
                     },
@@ -428,12 +506,18 @@ class TestUpdateControl:
                 "maps": [
                     {
                         "id": MUID,
-                        "states": {"ArtifactCommit_Enter": {"action": "fail",},},
+                        "states": {
+                            "ArtifactCommit_Enter": {
+                                "action": "fail",
+                            },
+                        },
                     },
                     {
                         "id": MUID2,
                         "states": {
-                            "ArtifactCommit_Enter": {"action": "force_continue",},
+                            "ArtifactCommit_Enter": {
+                                "action": "force_continue",
+                            },
                         },
                         "priority": -1,
                     },
@@ -649,15 +733,23 @@ class TestUpdateControl:
             "case": {
                 "pause_map": {
                     "priority": 0,
-                    "states": {"ArtifactCommit_Enter": {"action": "pause",},},
+                    "states": {
+                        "ArtifactCommit_Enter": {
+                            "action": "pause",
+                        },
+                    },
                 },
                 "pause_state": "ArtifactVerifyReboot",
                 "continue_map": {
                     "id": MUID,
                     "priority": 10,
                     "states": {
-                        "ArtifactInstall_Enter": {"action": "fail",},
-                        "ArtifactCommit_Enter": {"action": "force_continue",},
+                        "ArtifactInstall_Enter": {
+                            "action": "fail",
+                        },
+                        "ArtifactCommit_Enter": {
+                            "action": "force_continue",
+                        },
                     },
                 },
                 "expect_failure": False,
@@ -668,15 +760,23 @@ class TestUpdateControl:
             "case": {
                 "pause_map": {
                     "priority": 0,
-                    "states": {"ArtifactCommit_Enter": {"action": "pause",},},
+                    "states": {
+                        "ArtifactCommit_Enter": {
+                            "action": "pause",
+                        },
+                    },
                 },
                 "pause_state": "ArtifactVerifyReboot",
                 "continue_map": {
                     "id": MUID,
                     "priority": 10,
                     "states": {
-                        "ArtifactInstall_Enter": {"action": "fail",},
-                        "ArtifactCommit_Enter": {"action": "fail",},
+                        "ArtifactInstall_Enter": {
+                            "action": "fail",
+                        },
+                        "ArtifactCommit_Enter": {
+                            "action": "fail",
+                        },
                     },
                 },
                 "expect_failure": True,
@@ -771,29 +871,23 @@ class TestUpdateControl:
         try:
             start_and_ready_mender_client(connection)
 
-            ucm = (
-                """{
+            ucm = """{
     "ID": "%s",
     "states": {
         "ArtifactInstall_Enter": {
             "action": "pause"
         }
     }
-}"""
-                % MUID
-            )
+}""" % MUID
 
             with tempfile.TemporaryDirectory() as tmpdir:
                 script = os.path.join(tmpdir, "map-insert.sh")
                 with open(script, "w") as fd:
-                    fd.write(
-                        """#!/bin/sh
+                    fd.write("""#!/bin/sh
 while sleep 0.2; do
     dbus-send --system --dest=io.mender.UpdateManager --print-reply /io/mender/UpdateManager io.mender.Update1.SetUpdateControlMap string:'%s'
 done
-"""
-                        % ucm
-                    )
+""" % ucm)
                 put_no_sftp(script, connection, remote="/data/map-insert.sh")
 
             # Constantly reinsert map over and over in the background, to force

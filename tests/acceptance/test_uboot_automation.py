@@ -365,9 +365,11 @@ class TestUbootAutomation:
                     "Less boards failed than expected. Good? Or a mistake somewhere? Failed: %d, Total: %d"
                     % (failed, total)
                 )
-                assert failed / total <= upper_bound, (
-                    "More boards failed than expected. Failed: %d, Total: %d"
-                    % (failed, total)
+                assert (
+                    failed / total <= upper_bound
+                ), "More boards failed than expected. Failed: %d, Total: %d" % (
+                    failed,
+                    total,
                 )
             except AssertionError:
                 for file in os.listdir(env["LOGS"]):

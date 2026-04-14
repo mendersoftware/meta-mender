@@ -20,30 +20,30 @@ from pydbus.generic import signal
 
 class IoMenderAuthenticationIface:
     """
-<node>
-	<interface name="io.mender.Authentication1">
-		<method name="GetJwtToken">
-			<arg type="s" name="token" direction="out"/>
-			<arg type="s" name="server_url" direction="out"/>
-		</method>
-		<method name="FetchJwtToken">
-			<arg type="b" name="success" direction="out"/>
-		</method>
-        <signal name="JwtTokenStateChange">
-			<arg type="s" name="token"/>
-			<arg type="s" name="server_url"/>
-		</signal>
-		<method name="MockSetJwtToken">
-			<arg type="s" name="token" direction="in"/>
-			<arg type="s" name="server_url" direction="in"/>
-		</method>
-		<method name="MockSetJwtTokenAndEmitSignal">
-			<arg type="s" name="token" direction="in"/>
-			<arg type="s" name="server_url" direction="in"/>
-		</method>
-	</interface>
-</node>
-	"""
+    <node>
+            <interface name="io.mender.Authentication1">
+                    <method name="GetJwtToken">
+                            <arg type="s" name="token" direction="out"/>
+                            <arg type="s" name="server_url" direction="out"/>
+                    </method>
+                    <method name="FetchJwtToken">
+                            <arg type="b" name="success" direction="out"/>
+                    </method>
+            <signal name="JwtTokenStateChange">
+                            <arg type="s" name="token"/>
+                            <arg type="s" name="server_url"/>
+                    </signal>
+                    <method name="MockSetJwtToken">
+                            <arg type="s" name="token" direction="in"/>
+                            <arg type="s" name="server_url" direction="in"/>
+                    </method>
+                    <method name="MockSetJwtTokenAndEmitSignal">
+                            <arg type="s" name="token" direction="in"/>
+                            <arg type="s" name="server_url" direction="in"/>
+                    </method>
+            </interface>
+    </node>
+    """
 
     def __init__(self):
         self.token = ""
