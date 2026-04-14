@@ -12,6 +12,6 @@ FILES:${PN}:append:mender-systemd = " \
 
 do_install:append:mender-systemd() {
         install -d ${D}${sysconfdir}/systemd/network
-        install -m 0755 ${WORKDIR}/eth.network ${D}${sysconfdir}/systemd/network
-        install -m 0755 ${WORKDIR}/en.network ${D}${sysconfdir}/systemd/network
+        install -m 0755 ${UNPACKDIR}/eth.network ${D}${sysconfdir}/systemd/network
+        install -m 0755 ${UNPACKDIR}/en.network ${D}${sysconfdir}/systemd/network
 }
