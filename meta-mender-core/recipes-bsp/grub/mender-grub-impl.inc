@@ -61,8 +61,8 @@ do_mkimage:class-target:mender-bios() {
     # Search for the grub.cfg on the local boot media by using the built in cfg
     # file provided via this recipe
     EMBEDDED_CFG=
-    if [ -e ${WORKDIR}/bios-cfg ]; then
-        EMBEDDED_CFG="-c ${WORKDIR}/bios-cfg"
+    if [ -e ${UNPACKDIR}/bios-cfg ]; then
+        EMBEDDED_CFG="-c ${UNPACKDIR}/bios-cfg"
     fi
 
     grub-mkimage $EMBEDDED_CFG -p / -d ./grub-core/ \

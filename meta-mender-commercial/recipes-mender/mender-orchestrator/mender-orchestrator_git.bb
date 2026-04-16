@@ -21,7 +21,7 @@ def tarball_directory_from_pv(d, pv):
     return pv.split("main-git+")[-1]
 
 # Define S to work both on git sha and "master" tarballs
-S = "${WORKDIR}/mender-orchestrator-${@tarball_directory_from_pv(d, '${PV}')}"
+S = "${UNPACKDIR}/mender-orchestrator-${@tarball_directory_from_pv(d, '${PV}')}"
 
 # Skip version check
 MENDER_DEVMODE = "true"

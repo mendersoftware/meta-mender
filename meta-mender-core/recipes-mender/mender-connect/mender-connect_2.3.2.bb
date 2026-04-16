@@ -8,7 +8,7 @@ require mender-connect.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender-connect.git;protocol=https;branch=2.3.x"
+SRC_URI = "git://github.com/mendersoftware/mender-connect.git;protocol=https;destsuffix=${GO_SRCURI_DESTSUFFIX};branch=2.3.x"
 
 # Tag: 2.3.2
 SRCREV = "60ffcc324a61d9ede58b2815a23f3e35fd5bee49"

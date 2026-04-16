@@ -10,5 +10,5 @@ FILES:${PN}:append:mender-systemd = " \
 
 do_install:append:mender-systemd() {
         install -d ${D}${sysconfdir}/systemd/journald.conf.d/
-        install -m 0644 ${WORKDIR}/journald.conf ${D}${sysconfdir}/systemd/journald.conf.d/00-journal-size.conf
+        install -m 0644 ${UNPACKDIR}/journald.conf ${D}${sysconfdir}/systemd/journald.conf.d/00-journal-size.conf
 }
