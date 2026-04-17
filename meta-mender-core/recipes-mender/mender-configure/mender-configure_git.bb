@@ -62,7 +62,7 @@ def mender_configure_license(branch):
                "license": "Apache-2.0",
     }
 LIC_FILES_CHKSUM = " \
-    file://LICENSE;md5=f92624f2343d21e1986ca36f82756029 \
+    file://LICENSE;md5=a8c81350f12516cbb62844f937d81d11 \
 "
 LICENSE = "${@mender_configure_license(d.getVar('MENDER_CONFIGURE_BRANCH'))['license']}"
 
