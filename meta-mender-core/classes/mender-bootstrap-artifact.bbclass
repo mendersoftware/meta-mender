@@ -19,7 +19,7 @@ IMAGE_CMD:bootstrap-artifact() {
     # whether this version of mender-artifact supports bootstrap artifacts.
     if ! mender-artifact write bootstrap-artifact \
             --artifact-name test \
-            --device-type test \
+            --compatible-types test \
             --output-path "${WORKDIR}/test-artifact.mender"
     then
         # Not supported, don't generate.
@@ -38,7 +38,7 @@ IMAGE_CMD:bootstrap-artifact() {
         extra_args=
 
         for dev in ${MENDER_DEVICE_TYPES_COMPATIBLE}; do
-            extra_args="$extra_args -t $dev"
+            extra_args="$extra_args -c $dev"
         done
 
         if [ -n "${MENDER_ARTIFACT_SIGNING_KEY}" ]; then

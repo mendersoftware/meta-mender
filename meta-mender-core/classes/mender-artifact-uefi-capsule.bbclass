@@ -103,7 +103,7 @@ IMAGE_CMD:mender-capsule () {
     extra_args=""
 
     for dev in ${MENDER_DEVICE_TYPES_COMPATIBLE}; do
-        extra_args="$extra_args -t $dev"
+        extra_args="$extra_args -c $dev"
     done
 
     if [ -n "${MENDER_ARTIFACT_SIGNING_KEY}" ]; then
