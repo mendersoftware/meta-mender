@@ -19,7 +19,7 @@ IMAGE_CMD:bootstrap-artifact() {
     # whether this version of mender-artifact supports bootstrap artifacts.
     if ! mender-artifact write bootstrap-artifact \
             --artifact-name test \
-            --device-type test \
+            --compatible-types test \
             --output-path "${WORKDIR}/test-artifact.mender"
     then
         # Not supported, don't generate.
