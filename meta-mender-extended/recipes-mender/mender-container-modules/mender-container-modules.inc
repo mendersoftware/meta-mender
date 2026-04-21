@@ -5,7 +5,7 @@ HOMEPAGE = "https://mender.io"
 
 PACKAGES =+ "mender-docker-compose"
 
-RDEPENDS:mender-docker-compose = "mender-update docker-compose docker jq"
+RDEPENDS:mender-docker-compose = "mender-update python3-docker-compose python3-distutils docker jq"
 
 FILES:mender-docker-compose = " \
     ${datadir}/mender/modules/v3/docker-compose \
