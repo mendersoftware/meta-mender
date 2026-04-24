@@ -286,7 +286,13 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                 request, prepared_test_build["build_dir"], "core-image*.mender"
             )
             output = subprocess.check_output(
-                ["mender-artifact", "read", "-k", verify_key.name, built_artifact,]
+                [
+                    "mender-artifact",
+                    "read",
+                    "-k",
+                    verify_key.name,
+                    built_artifact,
+                ]
             ).decode()
             assert output.find("Signature: signed and verified correctly") >= 0
 
@@ -483,7 +489,8 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
                     continue
                 elif (
                     re.match(
-                        "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe, line,
+                        "^PREFERRED_VERSION:(pn-)?%s(-native)? *=" % base_recipe,
+                        line,
                     )
                     is not None
                 ):
@@ -643,14 +650,14 @@ b524b8b3f13902ef8014c0af7aa408bc  ./usr/local/share/ca-certificates/mender/serve
         self, request, prepared_test_build, bitbake_path, bitbake_image
     ):
         """Test IMAGE_BOOT_FILES population in the boot partition. Notice in particular a mix of
-        tabs, newlines and spaces. All there to check that whitespace it treated correctly."""
+        tabs, newlines and spaces. All there to check that whitespace it treated correctly.
+        """
 
         build_image(
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
-            [
-                """
+            ["""
 IMAGE_INSTALL:append = " test-boot-files"
 
 IMAGE_BOOT_FILES:append = " deployed-test1 deployed-test-dir2/deployed-test2 \
@@ -661,8 +668,7 @@ deployed-test-dir7/* \
 deployed-test-dir8/*;./ \
 deployed-test-dir9/*;renamed-deployed-test-dir9/ \
 "
-"""
-            ],
+"""],
         )
 
         image = latest_build_artifact(
@@ -831,7 +837,9 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             request, os.environ["BUILDDIR"], "core-image*.mender"
         )
         original_bootstrap_artifact = latest_build_artifact(
-            request, os.environ["BUILDDIR"], "core-image*.bootstrap-artifact",
+            request,
+            os.environ["BUILDDIR"],
+            "core-image*.bootstrap-artifact",
         )
 
         if originally_on:
@@ -862,10 +870,14 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
             request, prepared_test_build["build_dir"], "core-image*.ext[234]"
         )
         new_artifact = latest_build_artifact(
-            request, prepared_test_build["build_dir"], "core-image*.mender",
+            request,
+            prepared_test_build["build_dir"],
+            "core-image*.mender",
         )
         new_bootstrap_artifact = latest_build_artifact(
-            request, prepared_test_build["build_dir"], "core-image*.bootstrap-artifact",
+            request,
+            prepared_test_build["build_dir"],
+            "core-image*.bootstrap-artifact",
         )
 
         if originally_on:

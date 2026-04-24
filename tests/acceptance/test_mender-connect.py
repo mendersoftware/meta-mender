@@ -58,16 +58,16 @@ class SshZombieProccess:
         self._sh_file = f"/tmp/{unique_id}.sh"
 
         wrapper = NamedTemporaryFile()
-        wrapper.write(
-            f"""
+        wrapper.write(f"""
 {remote_command} >/dev/null 2>&1 &
 echo $! >{self._pid_file}
-""".encode()
-        )
+""".encode())
         wrapper.flush()
 
         put_no_sftp(
-            wrapper.name, connection, remote=self._sh_file,
+            wrapper.name,
+            connection,
+            remote=self._sh_file,
         )
         connection.run(f"bash {self._sh_file}")
         result = connection.run(f"cat {self._pid_file}")
@@ -188,7 +188,11 @@ def wait_for_string_in_log(connection, since, timeout, search_string):
 class TestMenderConnect:
     @pytest.mark.min_mender_version("2.5.0")
     def test_mender_connect_auth_changes(
-        self, request, connection, with_mock_files, with_mock_servers,
+        self,
+        request,
+        connection,
+        with_mock_files,
+        with_mock_servers,
     ):
         """Test that mender-connect can re-establish the connection on D-Bus signals"""
 
@@ -309,7 +313,10 @@ class TestMenderConnect:
             # kill the server and wait for error
             with_mock_servers[1].kill()
             _ = wait_for_string_in_log(
-                connection, kill_time, 300, "error reconnecting:",
+                connection,
+                kill_time,
+                300,
+                "error reconnecting:",
             )
 
             # Signal the other server

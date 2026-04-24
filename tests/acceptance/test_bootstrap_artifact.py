@@ -79,7 +79,6 @@ def boot_device_with_bootstrap_image(
     conversion,
     build_image_with_signed_bootstrap_artifact,
 ):
-
     """
 
     Simple override of the global setup_board fixture with 'function' local scope.
