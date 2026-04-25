@@ -36,7 +36,7 @@ pycparser==2.22
     # via cffi
 pygments==2.19.1
     # via pytest
-pytest==9.0.2
+pytest==9.0.3
     # via
     #   -r requirements_py3.in
     #   pytest-html
