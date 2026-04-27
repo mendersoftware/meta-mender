@@ -34,7 +34,7 @@ pluggy==1.5.0
     # via pytest
 pycparser==2.22
     # via cffi
-pygments==2.19.1
+pygments==2.20.0
     # via pytest
 pytest==9.0.2
     # via
