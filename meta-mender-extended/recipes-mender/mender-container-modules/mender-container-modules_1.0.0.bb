@@ -8,7 +8,9 @@ require mender-container-modules.inc
 # - DEFAULT_PREFERENCE
 #-------------------------------------------------------------------------------
 
-SRC_URI = "git://github.com/mendersoftware/mender-container-modules.git;protocol=https;branch=1.0.x"
+SRC_URI = "git://github.com/mendersoftware/mender-container-modules.git;protocol=https;branch=1.0.x \
+           file://0001-fix-cd-into-manifest-dir-beforing-listing-running-co.patch \
+"
 
 # Tag: 1.0.0
 SRCREV = "0fa65ca310ba10166d630c3910b94a3c44396f20"
