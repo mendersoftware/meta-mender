@@ -125,6 +125,8 @@ case $DISK_IMG in
         fi
 esac
 
+QEMU_MEMORY=${QEMU_MEMORY:-"256M"}
+
 echo "--- qemu version"
 $QEMU_SYSTEM --version || exit 1
 
@@ -134,7 +136,7 @@ ret=0
 for maybe_kvm in -enable-kvm ""; do
     if QEMU_AUDIO_DRV=none \
             $QEMU_SYSTEM \
-            -m 256M \
+            -m "${QEMU_MEMORY}" \
             $BOOTLOADER_ARG \
             -net nic,macaddr="$RANDOM_MAC" \
             -net user,hostfwd=tcp::${PORT_NUMBER}-:22$QEMU_NET_HOSTFWD \
