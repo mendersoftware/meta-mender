@@ -19,11 +19,8 @@ SRCREV = "${@mender_closed_source_srcrev_from_src_uri(d, '${SRC_URI}', 'mender-b
 
 PV = "${@mender_closed_source_pv_from_preferred_version(d, '${SRCREV}')}"
 
-def tarball_directory_from_pv(d, pv):
-    return pv.split("master-git+")[-1]
-
 # Define S to work both on git sha and "master" tarballs
-S = "${WORKDIR}/mender-binary-delta-${@tarball_directory_from_pv(d, '${PV}')}"
+S = "${WORKDIR}/mender-binary-delta-${@mender_closed_source_tarball_dir_from_pv(d, '${PV}')}"
 
 # Skip version check
 MENDER_DEVMODE = "true"
