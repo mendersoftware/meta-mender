@@ -25,7 +25,7 @@ def mender_closed_source_srcrev_from_src_uri(d, src_uri, repo_name):
             bb.error("Expected exactly one file, found: %s" % filenames)
         filename = os.path.basename(filenames[0])
         # Now extract the version from the filename
-        m = re.match(repo_name + r"-master\.tar\.(?:xz|gz)", filename)
+        m = re.match(repo_name + r"-(?:master|main)\.tar\.(?:xz|gz)", filename)
         if m:
             # Building from external tarball, do not append git info
             return ""
@@ -50,6 +50,18 @@ def mender_closed_source_pv_from_preferred_version(d, srcrev):
         # we can build tags with "-build" in them from this recipe, but not
         # final tags, which will need their own recipe.
         return pref_version
-    else:
-        # Else return "master${SRCREV}".
-        return "master%s" % srcrev
+    # Derive branch prefix from PREFERRED_VERSION (e.g. "<branch>-git%"); fall
+    # back to "master" when nothing usable is set.
+    branch = "master"
+    if pref_version is not None and pref_version.endswith(("-git", "-git%")):
+        branch = pref_version.rsplit("-git", 1)[0]
+    return "%s%s" % (branch, srcrev)
+
+def mender_closed_source_tarball_dir_from_pv(d, pv):
+    # PV is "<branch>-git+<sha>" for git builds, "<branch>" for branch
+    # tarballs, or a tagged version like "1.2.3" / "1.2.3-build1". The
+    # directory inside the tarball is the trailing "<sha>" for git builds,
+    # otherwise the literal PV.
+    if "-git+" in pv:
+        return pv.split("-git+", 1)[1]
+    return pv
