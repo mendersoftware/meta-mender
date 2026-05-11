@@ -50,20 +50,18 @@ mender_part_image() {
 
     set -ex
 
-    mkdir -p "${WORKDIR}"
-
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', 'true', 'false', d)}; then
-        # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
-        install -m 0644 "${DEPLOY_DIR_IMAGE}/uboot.env" "${WORKDIR}/"
+        # Copy the files to embed in the WIC image into work directory for exclusive access
+        install -m 0644 "${DEPLOY_DIR_IMAGE}/uboot.env" "${WORKDIR}/build-$suffix"
     fi
 
     ondisk_dev="$(basename "${MENDER_STORAGE_DEVICE}")"
 
-    wks="${WORKDIR}/mender-$suffix.wks"
+    wks="${WORKDIR}/build-$suffix/mender-$suffix.wks"
     rm -f "$wks"
     if [ -n "${MENDER_IMAGE_BOOTLOADER_FILE}" ]; then
-        # Copy the files to embed in the WIC image into ${WORKDIR} for exclusive access
-        install -m 0644 "${DEPLOY_DIR_IMAGE}/${MENDER_IMAGE_BOOTLOADER_FILE}" "${WORKDIR}/"
+        # Copy the files to embed in the WIC image into work directory for exclusive access
+        install -m 0644 "${DEPLOY_DIR_IMAGE}/${MENDER_IMAGE_BOOTLOADER_FILE}" "${WORKDIR}/build-$suffix"
 
         if [ $(expr ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} % 2) -ne 0 ]; then
             # wic doesn't support fractions of kiB, so we need to do some tricks
@@ -72,11 +70,11 @@ mender_part_image() {
             # which coincides with a whole kiB, and then write the missing
             # sector manually afterwards.
             bootloader_sector=$(expr ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} + 1)
-            bootloader_file=${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE}-partial
-            dd if=${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE} of=$bootloader_file skip=1
+            bootloader_file=${WORKDIR}/build-$suffix/${MENDER_IMAGE_BOOTLOADER_FILE}-partial
+            dd if=${WORKDIR}/build-$suffix/${MENDER_IMAGE_BOOTLOADER_FILE} of=$bootloader_file skip=1
         else
             bootloader_sector=${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET}
-            bootloader_file=${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE}
+            bootloader_file=${WORKDIR}/build-$suffix/${MENDER_IMAGE_BOOTLOADER_FILE}
         fi
         bootloader_align_kb=$(expr $(expr $bootloader_sector \* 512) / 1024)
         bootloader_size=$(stat -c '%s' "$bootloader_file")
@@ -96,7 +94,7 @@ EOF
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-uboot', 'true', 'false', d)} && [ -n "${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET}" ]; then
         boot_env_align_kb=$(expr ${MENDER_UBOOT_ENV_STORAGE_DEVICE_OFFSET} / 1024)
         cat >> "$wks" <<EOF
-part --source rawcopy --sourceparams="file=${WORKDIR}/uboot.env" --ondisk "$ondisk_dev" --align $boot_env_align_kb --no-table
+part --source rawcopy --sourceparams="file=${WORKDIR}/build-$suffix/uboot.env" --ondisk "$ondisk_dev" --align $boot_env_align_kb --no-table
 EOF
     fi
 
@@ -187,7 +185,7 @@ EOF
     if [ -n "${MENDER_IMAGE_BOOTLOADER_FILE}" ] && [ ${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} -ne $bootloader_sector ]; then
         # We need to write the first sector of the bootloader. See comment above
         # where bootloader_sector is set.
-        dd if=${WORKDIR}/${MENDER_IMAGE_BOOTLOADER_FILE} of="$outimgname" seek=${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} count=1 conv=notrunc
+        dd if=${WORKDIR}/build-$suffix/${MENDER_IMAGE_BOOTLOADER_FILE} of="$outimgname" seek=${MENDER_IMAGE_BOOTLOADER_BOOTSECTOR_OFFSET} count=1 conv=notrunc
     fi
 
     if [ -n "${MENDER_MBR_BOOTLOADER_FILE}" ]; then
@@ -261,16 +259,34 @@ EOF
 IMAGE_CMD:sdimg() {
     mender_part_image sdimg msdos
 }
+do_image_sdimg[dirs] = "${WORKDIR}/build-sdimg"
+do_image_sdimg[cleandirs] = "${WORKDIR}/build-sdimg"
+do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
+do_image_sdimg[respect_exclude_path] = "0"
+
 IMAGE_CMD:uefiimg() {
     mender_part_image uefiimg gpt "--part-type EF00"
 }
+do_image_uefiimg[dirs] = "${WORKDIR}/build-uefiimg"
+do_image_uefiimg[cleandirs] = "${WORKDIR}/build-uefiimg"
+do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
+do_image_uefiimg[respect_exclude_path] = "0"
+
 IMAGE_CMD:biosimg() {
     mender_part_image biosimg msdos
 }
+do_image_biosimg[dirs] = "${WORKDIR}/build-biosimg"
+do_image_biosimg[cleandirs] = "${WORKDIR}/build-biosimg"
+do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
+do_image_biosimg[respect_exclude_path] = "0"
+
 IMAGE_CMD:gptimg() {
     mender_part_image gptimg gpt
 }
-
+do_image_gptimg[dirs] = "${WORKDIR}/build-gptimg"
+do_image_gptimg[cleandirs] = "${WORKDIR}/build-gptimg"
+do_image_gptimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
+do_image_gptimg[respect_exclude_path] = "0"
 
 addtask do_rootfs_wicenv after do_image before do_image_sdimg
 addtask do_rootfs_wicenv after do_image before do_image_uefiimg
@@ -309,64 +325,29 @@ _MENDER_PART_IMAGE_DEPENDS:append:mender-systemd-boot = " \
     ${IMAGE_BASENAME}:do_uefiapp_deploy \
 "
 
-do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
-do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'rpi-bootfiles:do_populate_sysroot', '', d)}"
-
-do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS} \
-                              gptfdisk-native:do_populate_sysroot"
-
-do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
-
-do_image_gptimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
-
 IMAGE_TYPEDEP:sdimg:append   = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
 IMAGE_TYPEDEP:uefiimg:append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
 IMAGE_TYPEDEP:biosimg:append = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
 IMAGE_TYPEDEP:gptimg:append  = " ${ARTIFACTIMG_FSTYPE} dataimg bootimg"
 
-# This isn't actually a dependency, but a way to avoid sdimg and uefiimg
-# building simultaneously, since wic will use the same file names in both, and
-# in parallel builds this is a recipe for disaster.
-IMAGE_TYPEDEP:uefiimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)}"
-# And same here.
-IMAGE_TYPEDEP:biosimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)}"
-# And same here.
-IMAGE_TYPEDEP:gptimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
-                               ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
-                               ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
-# Make sure the Mender part image is available in the live installer
-IMAGE_TYPEDEP:hddimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
-                               ${@bb.utils.contains('IMAGE_FSTYPES', 'gptimg', ' gptimg', '', d)} \
-                               ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
-                               ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
-
 # Use the Mender part image as the Live image
-python() {
+def mender_get_live_type(d):
     if bb.utils.contains('IMAGE_FSTYPES', 'sdimg', True, False, d):
-        type='sdimg'
+        type = 'sdimg.bz2'
     elif bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', True, False, d):
-        type='uefiimg'
+        type = 'uefiimg.bz2'
     elif bb.utils.contains('IMAGE_FSTYPES', 'biosimg', True, False, d):
-        type='biosimg'
+        type = 'biosimg.bz2'
     elif bb.utils.contains('IMAGE_FSTYPES', 'gptimg', True, False, d):
-        type='gptimg'
+        type = 'gptimg.bz2'
     else:
-        return
+        type = 'ext4'
 
-    d.setVar('LIVE_ROOTFS_TYPE', type)
-    d.setVar('ROOTFS', "${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.%s.bz2" % type)
-    d.appendVar('IMAGE_FSTYPES', ' %s.bz2 ' % type)
+    return type
 
-    # Remove the boot option on the Live installer; it won't work since Mender hard codes
-    # the device nodes
-    d.setVar('LABELS_LIVE:remove', 'boot')
-}
-
-# So that we can use the files from excluded paths in the full images.
-do_image_sdimg[respect_exclude_path] = "0"
-do_image_uefiimg[respect_exclude_path] = "0"
-do_image_biosimg[respect_exclude_path] = "0"
-do_image_gptimg[respect_exclude_path] = "0"
+LIVE_ROOTFS_TYPE = "${@mender_get_live_type(d)}"
+# Remove the boot option on the Live installer; it won't work since Mender hard codes the device nodes
+LABELS_LIVE:remove = "boot"
 
 ################################################################################
 # Flash storage
