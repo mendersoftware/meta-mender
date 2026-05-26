@@ -15,6 +15,20 @@ include:
   - project: 'Northern.tech/Mender/mendertesting'
     file: '.gitlab-ci-github-status-updates.yml'
 
+test:check-version-bump:
+  stage: test
+  image: python:3.12-slim
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
+  before_script:
+    - apt-get update && apt-get install -y git gcc liblzo2-dev
+    - pip install -r tests/acceptance/requirements_py3.txt
+  script:
+    - git config --global --add safe.directory $CI_PROJECT_DIR
+    - python3 -m pytest -v -c /dev/null tests/version/test_version_bump.py
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "scarthgap" || $CI_COMMIT_BRANCH == "wrynose"
+
 default:
   tags: !reference [.qa-common-default-runner, tags]
   retry: !reference [.qa-common-default-retry, retry]
