@@ -15,6 +15,19 @@ include:
   - project: 'Northern.tech/Mender/mendertesting'
     file: '.gitlab-ci-github-status-updates.yml'
 
+test:check-version-bump:
+  stage: test
+  image: registry.gitlab.com/northern.tech/mender/mender-test-containers/base-ubuntu:master
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
+  before_script:
+    - export DEBIAN_FRONTEND=noninteractive
+    - python3 -m venv .venv
+    - source .venv/bin/activate
+    - pip3 install pytest
+  script:
+    - pytest -v -rs -s tests/version/test_version_bump.py
+
 default:
   tags: !reference [.qa-common-default-runner, tags]
   retry: !reference [.qa-common-default-retry, retry]
