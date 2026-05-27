@@ -40,9 +40,9 @@ class TestMetaMenderExtended:
             ],
             [
                 f'BBLAYERS:append = " {bitbake_variables["LAYERDIR_MENDER"]}/../meta-mender-extended"',
-                f'BBLAYERS:append = " {bitbake_variables["COREBASE"]}/meta-virtualization"',
-                f'BBLAYERS:append = " {bitbake_variables["COREBASE"]}/meta-openembedded/meta-networking"',
-                f'BBLAYERS:append = " {bitbake_variables["COREBASE"]}/meta-openembedded/meta-filesystems"',
+                f'BBLAYERS:append = " {bitbake_variables["COREBASE"]}/../meta-virtualization"',
+                f'BBLAYERS:append = " {bitbake_variables["COREBASE"]}/../meta-openembedded/meta-networking"',
+                f'BBLAYERS:append = " {bitbake_variables["COREBASE"]}/../meta-openembedded/meta-filesystems"',
             ],
         )
 
