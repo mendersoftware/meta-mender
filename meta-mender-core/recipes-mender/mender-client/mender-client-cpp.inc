@@ -312,9 +312,6 @@ do_install:append:class-target:mender-image:mender-systemd() {
 
 do_install:append:class-target:mender-growfs-data:mender-systemd() {
 
-    # Copy to build dir to do replacements in-place
-    cp ${WORKDIR}/mender-resize-data-part.sh.in ${B}/mender-resize-data-part.sh.in
-
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid -L ${MENDER_DATA_PART_LABEL})#g" \
             ${UNPACKDIR}/mender-resize-data-part.sh.in
