@@ -313,26 +313,26 @@ do_install:append:class-target:mender-image:mender-systemd() {
 do_install:append:class-target:mender-growfs-data:mender-systemd() {
 
     # Copy to build dir to do replacements in-place
-    cp ${WORKDIR}/mender-resize-data-part.sh.in ${B}/mender-resize-data-part.sh.in
+    cp ${UNPACKDIR}/mender-resize-data-part.sh.in ${B}/mender-resize-data-part.sh.in
 
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partlabel', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid -L ${MENDER_DATA_PART_LABEL})#g" \
-            ${UNPACKDIR}/mender-resize-data-part.sh.in
+            ${B}/mender-resize-data-part.sh.in
     elif ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
         sed -i "s#@MENDER_DATA_PART@#\$(blkid | grep 'PARTUUID=\"${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')}\"' | awk -F: '{ print \$1 }')#g" \
-            ${UNPACKDIR}/mender-resize-data-part.sh.in
+            ${B}/mender-resize-data-part.sh.in
     else
         sed -i "s#@MENDER_DATA_PART@#${MENDER_DATA_PART}#g" \
-            ${UNPACKDIR}/mender-resize-data-part.sh.in
+            ${B}/mender-resize-data-part.sh.in
     fi
 
     sed -i "s#@MENDER_DATA_PART_NUMBER@#${MENDER_DATA_PART_NUMBER}#g" \
-        ${UNPACKDIR}/mender-resize-data-part.sh.in
+        ${B}/mender-resize-data-part.sh.in
 
 
     install -d ${D}/${bindir}/
 
-    install -m 0755 ${UNPACKDIR}/mender-resize-data-part.sh.in \
+    install -m 0755 ${B}/mender-resize-data-part.sh.in \
         ${D}/${bindir}/mender-resize-data-part
 
     install -d ${D}/${systemd_unitdir}/system
