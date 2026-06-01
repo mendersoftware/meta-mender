@@ -1,5 +1,3 @@
-require mender-client-test-files.inc
-
 # Remove mender-snapshot to save storage space. We are not running snapshot tests for this device
 RRECOMMENDS:mender-update:remove:vexpress-qemu-flash = "mender-snapshot"
 
@@ -12,11 +10,11 @@ RRECOMMENDS:mender-update:remove:vexpress-qemu-flash = "mender-snapshot"
 # * opensc: pkcs11-tool for initialization of token
 # * gnutls-bin: provides p11tool for getting the contents of the token
 # * pkcs11-provider is a third-party implementation of a PKCS#11 provider for OpenSSLv3
-DEPENDS:append:mender-image:qemuall = " softhsm opensc gnutls p11-kit libp11"
-RDEPENDS:mender-auth:append:mender-image:qemuall = " softhsm opensc gnutls p11-kit libp11 gnutls-bin pkcs11-provider"
+DEPENDS:append:mender-image:qemux86-64 = " softhsm opensc gnutls p11-kit libp11"
+RDEPENDS:mender-auth:append:mender-image:qemux86-64 = " softhsm opensc gnutls p11-kit libp11 gnutls-bin pkcs11-provider"
 
 # Needed for the TestFaultTolerance tests in the integration repository.
-RDEPENDS:mender-auth:append:mender-image:qemuall = " \
+RDEPENDS:mender-auth:append:mender-image:qemux86-64 = " \
     kernel-module-ipt-reject \
     kernel-module-ts-bm \
     kernel-module-xt-string \
