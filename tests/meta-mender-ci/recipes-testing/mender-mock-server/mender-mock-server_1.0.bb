@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = " \
 "
 S = "${UNPACKDIR}"
 
-RDEPENDS:${PN} = "python3-core python3-netserver python3-json"
+RDEPENDS:${PN} = "python3-core python3-netserver python3-json python3-html"
 
 inherit systemd
 
