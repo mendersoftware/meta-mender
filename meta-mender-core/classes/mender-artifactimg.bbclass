@@ -138,3 +138,11 @@ IMAGE_CMD:mender () {
 IMAGE_CMD:mender[vardepsexclude] += "IMAGE_ID"
 # We need to have the filesystem image generated already.
 IMAGE_TYPEDEP:mender:append = " ${ARTIFACTIMG_FSTYPE}"
+
+# oe_mkext234fs stamps every ext4 inode with the recipe SOURCE_DATE_EPOCH, which
+# falls back to 2011 for a sourceless image -- including systemd's clock markers
+# (/usr/lib/clock-epoch and timesyncd's clock). That puts the system clock in 2011:
+# systemd resets the clock back to those markers when it boots too far ahead, so the
+# device comes up in the past, the server TLS certificate reads as "not yet valid",
+# and the client can't authenticate until NTP corrects the clock.
+IMAGE_CMD:ext4:prepend = "export SOURCE_DATE_EPOCH=$(stat -c '%Y' ${IMAGE_ROOTFS}); "
