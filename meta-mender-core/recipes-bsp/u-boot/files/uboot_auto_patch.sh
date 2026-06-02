@@ -165,10 +165,10 @@ is_kconfig_option() {
     # now, and the Kconfig if-statements also respected. If the option still
     # isn't there, then we conclude it is not a Kconfig option.
 
-    # Special case for CONFIG_BOOTCOUNT_ENV: Due to conditional selection, ENV
-    # may be missing from the .config file. However, it is in Kconfig if
-    # CONFIG_BOOTCOUNT_LIMIT is.
-    if [ "$1" = "CONFIG_BOOTCOUNT_ENV" ]; then
+    # Special case for CONFIG_BOOTCOUNT_ENV and CONFIG_BOOTCOUNT_ALTBOOTCMD: Due
+    # to conditional selection, they may be missing from the .config file.
+    # However, they are in Kconfig if CONFIG_BOOTCOUNT_LIMIT is.
+    if [ "$1" = "CONFIG_BOOTCOUNT_ENV" ] || [ "$1" = "CONFIG_BOOTCOUNT_ALTBOOTCMD" ]; then
         is_kconfig_option CONFIG_BOOTCOUNT_LIMIT || return $?
         return $?
     fi
