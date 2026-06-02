@@ -356,12 +356,12 @@ class TestUbootAutomation:
 
             if machine == "vexpress-qemu":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2024.01 on scarthgap-5.0.14
-                measured_failed_ratio = 66.0 / 535.0
+                # From version: 2026.01 on wrynose-6.0
+                measured_failed_ratio = 133.0 / 595.0
             elif machine == "vexpress-qemu-flash":
                 # PLEASE UPDATE the version you used to find this number if you update it.
-                # From version: 2024.01 on scarthgap-5.0.14
-                measured_failed_ratio = 26.0 / 122.0
+                # From version: 2026.01 on wrynose-6.0
+                measured_failed_ratio = 38.0 / 127.0
 
             # We tolerate a certain percentage discrepancy in either direction.
             tolerated_discrepancy = 0.1
