@@ -26,8 +26,8 @@ test:check-version-bump:
   script:
     - git config --global --add safe.directory $CI_PROJECT_DIR
     - python3 -m pytest -v -c /dev/null tests/version/test_version_bump.py
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "scarthgap" || $CI_COMMIT_BRANCH == "wrynose"
+  #rules:
+  #  - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "scarthgap" || $CI_COMMIT_BRANCH == "wrynose"
 
 default:
   tags: !reference [.qa-common-default-runner, tags]
