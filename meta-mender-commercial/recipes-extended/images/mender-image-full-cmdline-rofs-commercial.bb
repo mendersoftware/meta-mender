@@ -1,3 +1,5 @@
-require recipes-extended/images/mender-image-full-cmdline-rofs.bb
+require recipes-extended/images/core-image-full-cmdline.bb
+
+IMAGE_FEATURES:append += " read-only-rootfs"
 
 IMAGE_INSTALL:append = " mender-binary-delta"
