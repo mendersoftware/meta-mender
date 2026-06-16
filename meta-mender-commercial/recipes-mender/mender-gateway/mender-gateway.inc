@@ -28,7 +28,7 @@ do_version_check() {
     fi
 
     if ! ${@'true' if d.getVar('MENDER_DEVMODE') else 'false'}; then
-        if ! strings ${S}/${SUB_FOLDER}/mender-gateway | grep -q "^${PV}$"; then
+        if ! strings ${S}/${SUB_FOLDER}/mender-gateway | grep -qE "^${PV}$|main\.Version=${PV}"; then
             bbfatal "String '${PV}' not found in binary. Is it the correct version? Check with --version."
         fi
     fi
