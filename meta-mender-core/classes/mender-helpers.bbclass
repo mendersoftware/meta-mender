@@ -275,7 +275,7 @@ mender_merge_bootfs_and_image_boot_files() {
     W="${WORKDIR}/bootfs"
     rm -rf "$W"
 
-    cp -a "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
+    cp -R "${IMAGE_ROOTFS}/${MENDER_BOOT_PART_MOUNT_LOCATION}" "$W"
 
     # Put in variable to avoid expansion and ';' being parsed by shell.
     image_boot_files="${IMAGE_BOOT_FILES}"

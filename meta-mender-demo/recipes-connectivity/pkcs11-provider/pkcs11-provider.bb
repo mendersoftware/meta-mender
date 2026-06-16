@@ -7,8 +7,6 @@ SRC_URI = "git://github.com/latchset/pkcs11-provider;protocol=https;branch=main"
 PV = "0.5+git${SRCPV}"
 SRCREV = "7d8b369dcd9e4b72695404e4bbd9106f1436a55f"
 
-S = "${WORKDIR}/git"
-
 DEPENDS:append = " openssl p11-kit autoconf-archive"
 
 inherit pkgconfig meson

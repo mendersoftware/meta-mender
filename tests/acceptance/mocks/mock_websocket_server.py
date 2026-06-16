@@ -26,15 +26,14 @@ args = parser.parse_args()
 server_host = "localhost"
 
 
-async def hello(websocket, path):
+async def hello(websocket):
     await websocket.recv()
 
 
-start_server = websockets.serve(hello, server_host, args.port)
-serverws = asyncio.get_event_loop().run_until_complete(start_server)
+async def main():
+    async with websockets.serve(hello, server_host, args.port):
+        print("Listening on http://%s:%d" % (server_host, args.port))
+        await asyncio.Future()  # run forever
 
-port = serverws.server.sockets[0].getsockname()[1]
-server_url = f"http://{server_host}:{port}"
 
-print("Listening on %s" % server_url)
-asyncio.get_event_loop().run_forever()
+asyncio.run(main())

@@ -12,9 +12,9 @@ do_compile:append:mender-uboot() {
     fi
 
     if [ ! -e ${DEPLOY_DIR_IMAGE}/fw_env.config.default ]; then
-        mender_create_fw_env_config_file ${WORKDIR}/fw_env.config
+        mender_create_fw_env_config_file ${UNPACKDIR}/fw_env.config
     else
-        cp ${DEPLOY_DIR_IMAGE}/fw_env.config.default ${WORKDIR}/fw_env.config
+        cp ${DEPLOY_DIR_IMAGE}/fw_env.config.default ${UNPACKDIR}/fw_env.config
     fi
 }
 do_compile[depends] += "u-boot:do_deploy"
@@ -24,5 +24,5 @@ do_install:append:mender-uboot() {
     ln -sf /data/u-boot/fw_env.config ${D}${sysconfdir}/fw_env.config
 
     install -d ${D}/data/u-boot
-    install -m 0644 ${WORKDIR}/fw_env.config ${D}/data/u-boot/fw_env.config
+    install -m 0644 ${UNPACKDIR}/fw_env.config ${D}/data/u-boot/fw_env.config
 }

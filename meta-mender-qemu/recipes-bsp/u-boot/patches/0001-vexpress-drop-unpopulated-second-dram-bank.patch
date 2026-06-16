@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Skinstad Drabitzius <daniel.drabitzius@northern.tech>
+Date: Mon, 9 Jun 2026 00:00:00 +0200
+Subject: [PATCH] vexpress: drop the second DRAM bank when it is unpopulated
+
+vexpress declares two DRAM banks, but the second (PHYS_SDRAM_2, 0x80000000) is
+not always populated. get_ram_size() sizes a bank by writing to its cells and
+reading them back; an empty cell reads back 0, so it cannot tell an empty cell
+from one holding 0, and sizes an empty bank as a few bytes instead of 0. A bank
+is then registered for memory that is not there. Since the EFI memory map became
+LMB-backed (v2025.01) that bank reaches the kernel and hangs it in early boot.
+Drop a bank whose probed size is below 4 KB: it cannot be real DRAM, while a
+partially-populated bank keeps its true size.
+
+Upstream-Status: Inappropriate [Mender specific]
+
+Signed-off-by: Daniel Skinstad Drabitzius <daniel.drabitzius@northern.tech>
+---
+ board/armltd/vexpress/vexpress_common.c | 13 +++++++++++++++
+ 1 file changed, 13 insertions(+)
+
+--- a/board/armltd/vexpress/vexpress_common.c
++++ b/board/armltd/vexpress/vexpress_common.c
+@@ -16,6 +16,7 @@
+  * Philippe Robin, <philippe.robin@arm.com>
+  */
+ #include <config.h>
++#include <linux/sizes.h>
+ #include <bootstage.h>
+ #include <cpu_func.h>
+ #include <init.h>
+@@ -86,6 +87,18 @@
+ 	gd->bd->bi_dram[1].size =
+ 			get_ram_size((long *)PHYS_SDRAM_2, PHYS_SDRAM_2_SIZE);
+ 
++	/*
++	 * The second DRAM bank is not always populated. get_ram_size()
++	 * sizes a bank by writing to cells and reading them back; an empty
++	 * cell reads back 0, so it cannot tell empty from a cell holding 0
++	 * and sizes an empty bank as a few bytes, not 0. Drop a bank below
++	 * 4 KB: it cannot be real DRAM; a real or partial bank is unaffected.
++	 */
++	if (gd->bd->bi_dram[1].size < SZ_4K) {
++		gd->bd->bi_dram[1].start = 0;
++		gd->bd->bi_dram[1].size = 0;
++	}
++
+ 	return 0;
+ }
+ 

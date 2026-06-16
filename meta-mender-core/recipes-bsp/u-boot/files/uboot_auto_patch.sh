@@ -165,10 +165,10 @@ is_kconfig_option() {
     # now, and the Kconfig if-statements also respected. If the option still
     # isn't there, then we conclude it is not a Kconfig option.
 
-    # Special case for CONFIG_BOOTCOUNT_ENV: Due to conditional selection, ENV
-    # may be missing from the .config file. However, it is in Kconfig if
-    # CONFIG_BOOTCOUNT_LIMIT is.
-    if [ "$1" = "CONFIG_BOOTCOUNT_ENV" ]; then
+    # Special case for CONFIG_BOOTCOUNT_ENV and CONFIG_BOOTCOUNT_ALTBOOTCMD: Due
+    # to conditional selection, they may be missing from the .config file.
+    # However, they are in Kconfig if CONFIG_BOOTCOUNT_LIMIT is.
+    if [ "$1" = "CONFIG_BOOTCOUNT_ENV" ] || [ "$1" = "CONFIG_BOOTCOUNT_ALTBOOTCMD" ]; then
         is_kconfig_option CONFIG_BOOTCOUNT_LIMIT || return $?
         return $?
     fi
@@ -287,6 +287,16 @@ patch_all_candidates() {
     add_definition \
         'CONFIG_BOOTCOUNT_ENV'
 
+    # U-Boot 2025.04+ introduced CONFIG_BOOTCOUNT_ALTBOOTCMD (Kconfig string,
+    # defaults to "").  The empty default is compiled into env_default.h and
+    # can override Mender's altbootcmd from MENDER_ENV_SETTINGS depending on
+    # environment import ordering.  Set it explicitly to match Mender's
+    # MENDER_DEFAULT_ALTBOOTCMD so the rollback mechanism works regardless of
+    # ordering.  On older U-Boot versions the symbol does not exist in Kconfig
+    # and add_definition falls through harmlessly.
+    add_definition \
+        'CONFIG_BOOTCOUNT_ALTBOOTCMD' '"run mender_altbootcmd; run bootcmd"'
+
     # Patch away "root=/dev/blah" arguments, we will provide our own. Take care
     # to replace an occurrence ending in '\0' first, to avoid losing it if
     # present.
@@ -353,18 +363,20 @@ patch_all_candidates_sdimg() {
         'CONFIG_ENV_OFFSET_REDUND' \
         "$CONFIG_ENV_OFFSET_REDUND"
     replace_definition \
-        'CONFIG_SYS_REDUNDAND_ENVIRONMENT' \
-        'CONFIG_SYS_REDUNDAND_ENVIRONMENT'
+        'CONFIG_ENV_REDUNDANT' \
+        'CONFIG_ENV_REDUNDANT'
 
-    # Remove all of the below entries.
+    # Set the MMC device and partition for environment storage.
+    # U-Boot 2026.01+ renamed CONFIG_SYS_MMC_ENV_DEV/PART to
+    # CONFIG_ENV_MMC_DEVICE_INDEX/EMMC_HW_PARTITION.
     replace_definition \
-        'CONFIG_SYS_MMC_ENV_DEV' \
-        'CONFIG_SYS_MMC_ENV_DEV' \
-        "$CONFIG_SYS_MMC_ENV_DEV"
+        'CONFIG_ENV_MMC_DEVICE_INDEX\|CONFIG_SYS_MMC_ENV_DEV' \
+        'CONFIG_ENV_MMC_DEVICE_INDEX' \
+        "$CONFIG_ENV_MMC_DEVICE_INDEX"
     replace_definition \
-        'CONFIG_SYS_MMC_ENV_PART' \
-        'CONFIG_SYS_MMC_ENV_PART' \
-        "$CONFIG_SYS_MMC_ENV_PART"
+        'CONFIG_ENV_MMC_EMMC_HW_PARTITION\|CONFIG_SYS_MMC_ENV_PART' \
+        'CONFIG_ENV_MMC_EMMC_HW_PARTITION' \
+        "$CONFIG_ENV_MMC_EMMC_HW_PARTITION"
 
     # Make sure the environment is in MMC.
     replace_definition \
@@ -410,8 +422,8 @@ patch_all_candidates_ubi() {
         'CONFIG_ENV_IS_IN_UBI'
 
     replace_definition \
-        'CONFIG_SYS_REDUNDAND_ENVIRONMENT' \
-        'CONFIG_SYS_REDUNDAND_ENVIRONMENT'
+        'CONFIG_ENV_REDUNDANT' \
+        'CONFIG_ENV_REDUNDANT'
 
     # And remove volume definitions of environment so Mender can configure them.
     replace_definition \

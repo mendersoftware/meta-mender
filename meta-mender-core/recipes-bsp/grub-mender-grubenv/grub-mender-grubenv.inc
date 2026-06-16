@@ -33,15 +33,14 @@ FILES:${PN} += "/data/mender_grubenv.config \
                 ${sysconfdir}/mender_grubenv.config \
 "
 
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
-SRC_URI:append = "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', ' file://01_efi_secure_boot_grub.cfg;subdir=git', '', d)}"
+SRC_URI:append = "${@bb.utils.contains('DISTRO_FEATURES', 'efi-secure-boot', ' file://01_efi_secure_boot_grub.cfg;subdir=${BP}', '', d)}"
 
 PACKAGECONFIG[debug-pause] = ",,,"
-SRC_URI:append = "${@bb.utils.contains('PACKAGECONFIG', 'debug-pause', ' file://06_mender_debug_pause_grub.cfg;subdir=git', '', d)}"
+SRC_URI:append = "${@bb.utils.contains('PACKAGECONFIG', 'debug-pause', ' file://06_mender_debug_pause_grub.cfg;subdir=${BP}', '', d)}"
 PACKAGECONFIG[force-grub-prompt] = ",,,"
-SRC_URI:append = "${@bb.utils.contains('PACKAGECONFIG', 'force-grub-prompt', ' file://06_mender_debug_force_grub_prompt_grub.cfg;subdir=git', '', d)}"
+SRC_URI:append = "${@bb.utils.contains('PACKAGECONFIG', 'force-grub-prompt', ' file://06_mender_debug_force_grub_prompt_grub.cfg;subdir=${BP}', '', d)}"
 PACKAGECONFIG[debug-log] = ",,,"
 
 RDEPENDS:${PN} = "grub-efi util-linux-flock"

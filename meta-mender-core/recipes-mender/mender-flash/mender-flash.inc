@@ -16,5 +16,4 @@ FILES:${PN} = " \
 
 DEPENDS += "googletest"
 
-S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"

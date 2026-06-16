@@ -20,7 +20,6 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-3.0-or-lat
 
 URL_BASE ?= "https://downloads.mender.io/grub-mender-grubenv/grub-efi"
 
-S = "${WORKDIR}/git"
 
 MENDER_EFI_LOADER ?= ""
 
@@ -64,10 +63,10 @@ do_compile() {
 
 do_install() {
     install -d -m 755 ${D}${EFI_FILES_PATH}
-    install -m 644 ${WORKDIR}/grub-efi-${EFI_BOOT_IMAGE} ${D}${EFI_FILES_PATH}/${EFI_BOOT_IMAGE}
+    install -m 644 ${UNPACKDIR}/grub-efi-${EFI_BOOT_IMAGE} ${D}${EFI_FILES_PATH}/${EFI_BOOT_IMAGE}
 
     install -d -m 755 ${D}${bindir}
-    install -m 755 ${WORKDIR}/grub-editenv ${D}${bindir}/
+    install -m 755 ${UNPACKDIR}/grub-editenv ${D}${bindir}/
 }
 
 INSANE_SKIP:${PN} = "already-stripped"
