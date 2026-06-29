@@ -54,6 +54,7 @@ def github_api_get(url):
         print(f"GitHub API Request Failed for {url}: {e}")
         return None
 
+
 @pytest.fixture(scope="session")
 def pr_num_from_sha():
     """Returns the pull request number from environment or GitHub Search API."""
@@ -94,6 +95,15 @@ def target_recipes(target_branch):
         pytest.skip(
             "Skipping check: Target branch is not a maintenance branch (scarthgap / wrynose)"
         )
+
+    print(f"Fetching target branch '{target_branch}' from origin...")
+    subprocess.run(
+        ["git", "fetch", "origin", f"{target_branch}:{target_branch}", "--depth=1"],
+        cwd=REPO_DIR,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
     cmd = ["git", "ls-tree", "-r", target_branch]
 
