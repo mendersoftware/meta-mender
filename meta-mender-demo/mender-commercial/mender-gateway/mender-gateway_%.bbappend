@@ -1,7 +1,6 @@
 
 FILES:${PN}-doc:append = " \
     ${docdir}/mender-gateway/examples \
-    ${sysconfdir}/mender/mender-gateway.conf \
 "
 
 def examples_dir_from_s_dir(d, s):
