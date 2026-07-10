@@ -14,7 +14,7 @@ cryptography==46.0.7
     # via ubi-reader
 execnet==2.1.1
     # via pytest-xdist
-filelock==3.25.2
+filelock==3.29.7
     # via -r requirements_py3.in
 flaky==3.8.1
     # via -r requirements_py3.in
@@ -36,7 +36,7 @@ pycparser==2.22
     # via cffi
 pygments==2.20.0
     # via pytest
-pytest==9.0.3
+pytest==9.1.1
     # via
     #   -r requirements_py3.in
     #   pytest-html
@@ -56,9 +56,11 @@ pyyaml==6.0.3
     # via -r requirements_py3.in
 redo==3.0.0
     # via -r requirements_py3.in
-requests==2.33.1
+requests==2.34.2
     # via -r requirements_py3.in
-ubi-reader==0.8.13
+ubi-reader==0.8.14
     # via -r requirements_py3.in
 urllib3==2.7.0
     # via requests
+zstandard==0.25.0
+    # via ubi-reader
