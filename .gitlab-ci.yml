@@ -1,4 +1,5 @@
 stages:
+  - renovate
   - test
 
 include:
@@ -13,6 +14,9 @@ include:
     file: '.gitlab-ci-check-python3-format.yml'
   - project: 'Northern.tech/Mender/mendertesting'
     file: '.gitlab-ci-github-status-updates.yml'
+  - component: gitlab.com/Northern.tech/Mender/mendertesting/renovate@master
+    inputs:
+      stage: "renovate"
 
 test:check-version-bump:
   stage: test
