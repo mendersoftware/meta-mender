@@ -5,6 +5,7 @@ Dockerfile* @mendersoftware/client-dependabot-reviewers
 *requirements*.txt @mendersoftware/client-dependabot-reviewers
 package.json @mendersoftware/client-dependabot-reviewers
 package-lock.json @mendersoftware/client-dependabot-reviewers
+.gitlab-ci.yml @mendersoftware/client-dependabot-reviewers
 
 # Git submodules
 /tests/acceptance/image-tests @mendersoftware/client-dependabot-reviewers

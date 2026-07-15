@@ -1,0 +1,53 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+
+  "extends": [
+    "config:recommended",
+    ":gitSignOff",
+    ":rebaseStalePrs"
+  ],
+
+  // CODEOWNERS drives reviewer assignment. Keep CODEOWNERS complete.
+  "reviewersFromCodeOwners": true,
+
+  // chore(deps): <desc>, matching the old Dependabot prefix. CI files get ci: below.
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+
+  // Drain backlogs gradually. 10 concurrent because there are three base branches.
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 10,
+
+  "baseBranchPatterns": ["master", "wrynose", "scarthgap"],
+
+  // Security PRs bypass the schedule
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": ["at any time"],
+    "labels": ["security"]
+  },
+
+  "packageRules": [
+    // GitLab CI image bumps -> ci: (keeps them out of the deps changelog section).
+    {
+      "matchManagers": ["gitlabci", "gitlabci-include"],
+      "semanticCommitType": "ci",
+      "semanticCommitScope": ""
+    },
+
+    // Go: one PR for all modules.
+    {
+      "matchManagers": ["gomod"],
+      "groupName": "golang-dependencies",
+      "groupSlug": "golang-dependencies"
+    },
+
+    // Docker base images: one grouped PR.
+    {
+      "matchManagers": ["dockerfile"],
+      "groupName": "docker-base-images",
+      "groupSlug": "docker-base-images"
+    },
+  ]
+}
