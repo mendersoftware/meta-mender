@@ -1,6 +1,7 @@
 FILES:${PN} += " \
     /data/mender-orchestrator/mock-instances \
     ${datadir}/mender-orchestrator/interfaces/v1/rtos-interface \
+    ${datadir}/mender-orchestrator/interfaces/v1/esp32 \
 "
 
 python () {
