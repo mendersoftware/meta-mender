@@ -26,7 +26,7 @@ libbz2-dev
 libfdt-dev
 libffi-dev
 libglib2.0-dev
-liblz4-tool
+lz4
 liblzma-dev
 liblzo2-dev
 libpixman-1-dev
@@ -46,8 +46,6 @@ psmisc
 python3-dev
 python3-libvirt
 python3-pip
-qemu-kvm
-qemu-system-arm
 qemu-system-x86
 qemu-utils
 rustc
