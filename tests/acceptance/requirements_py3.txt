@@ -10,7 +10,7 @@ cffi==2.0.0
     # via cryptography
 charset-normalizer==2.1.1
     # via requests
-cryptography==46.0.7
+cryptography==48.0.1
     # via ubi-reader
 execnet==2.1.1
     # via pytest-xdist
