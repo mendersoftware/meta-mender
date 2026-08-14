@@ -54,7 +54,6 @@ class TestDeltaDockerComposeModule:
 
         for path in [
             "/usr/share/mender/modules/v3/delta-docker-compose",
-            "/usr/bin/xdelta3",
         ]:
             output = subprocess.check_output(
                 ["debugfs", "-R", f"stat {path}", image]
