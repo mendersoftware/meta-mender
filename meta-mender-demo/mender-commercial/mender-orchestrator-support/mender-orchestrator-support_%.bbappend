@@ -8,7 +8,7 @@ FILES:${PN} += " \
     /etc/mosquitto/conf.d/mender-orchestrator.conf \
     ${datadir}/mender-orchestrator/remote-mqtt/mender-mqtt-agent \
     /etc/mender-mqtt-agent/mender-mqtt-agent.conf.example \
-    /lib/systemd/system/mender-mqtt-agent.service \
+    ${systemd_system_unitdir}/mender-mqtt-agent.service \
 "
 
 # mender-mqtt-agent.service is only meaningful on a Component board, only once
@@ -37,5 +37,13 @@ do_install:append() {
     # 0.7.0; call this conditionally on remote-mqtt existing, to avoid oe_runmake error.
     if [ -d "${S}/remote-mqtt" ]; then
         oe_runmake -C ${S} prefix=${D} install-mqtt-broker install-mqtt-component-agent
+        if [ -f "${D}/lib/systemd/system/mender-mqtt-agent.service" ] && \
+           [ "${D}/lib/systemd/system/mender-mqtt-agent.service" != "${D}${systemd_system_unitdir}/mender-mqtt-agent.service" ]; then
+            install -d -m 755 ${D}${systemd_system_unitdir}
+            mv ${D}/lib/systemd/system/mender-mqtt-agent.service ${D}${systemd_system_unitdir}/mender-mqtt-agent.service
+            rmdir ${D}/lib/systemd/system
+            rmdir ${D}/lib/systemd
+            rmdir ${D}/lib
+        fi
     fi
 }
