@@ -68,8 +68,9 @@ mender_update_fstab_file() {
             mkdir -p ${IMAGE_ROOTFS}/${mount}
         done
 
-        parts="${extra_part_fstab}"
-        printf "%-20s %-20s %-10s %-21s %-2s %s\n" $parts >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+        printf "%s\n" "$extra_part_fstab" | while IFS= read -r parts; do
+            printf "%-20s %-20s %-10s %-21s %-2s %s\n" ${parts} >> ${IMAGE_ROOTFS}${sysconfdir}/fstab
+        done
     fi
 
     if [ "${MENDER_SWAP_PART_SIZE_MB}" -ne "0" ]; then
