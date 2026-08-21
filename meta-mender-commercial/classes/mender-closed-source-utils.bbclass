@@ -57,11 +57,25 @@ def mender_closed_source_pv_from_preferred_version(d, srcrev):
         branch = pref_version.rsplit("-git", 1)[0]
     return "%s%s" % (branch, srcrev)
 
-def mender_closed_source_tarball_dir_from_pv(d, pv):
-    # PV is "<branch>-git+<sha>" for git builds, "<branch>" for branch
-    # tarballs, or a tagged version like "1.2.3" / "1.2.3-build1". The
-    # directory inside the tarball is the trailing "<sha>" for git builds,
-    # otherwise the literal PV.
-    if "-git+" in pv:
-        return pv.split("-git+", 1)[1]
-    return pv
+def mender_closed_source_tarball_dir_from_src_uri(d, src_uri, repo_name):
+    # The tarball always unpacks to a directory with the same name as the
+    # tarball itself. So instead of guessing the directory from
+    # PREFERRED_VERSION (which breaks when e.g. a "-master"-named tarball is
+    # selected via "main-git%"), strip the "<repo_name>-" prefix and the
+    # .tar.* extension from the filename and use whatever remains
+    # ("main", "master", a sha or a tag).
+    import glob
+    import re
+    src_uri_list = src_uri.split()
+    if len(src_uri_list) == 0:
+        # No source specified. We won't be building this component.
+        return ""
+    filenames = glob.glob(src_uri_list[0][len("file://"):])
+    if len(filenames) != 1:
+        # mender_closed_source_srcrev_from_src_uri errors on this in the
+        # non-"-build" path; otherwise the fetch/version-check fails later.
+        return ""
+    m = re.match(repo_name + r"-(.+)\.tar\.(?:xz|gz)", os.path.basename(filenames[0]))
+    if not m:
+        bb.fatal("Failed to parse version from %s" % os.path.basename(filenames[0]))
+    return m.group(1)
