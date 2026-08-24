@@ -17,8 +17,8 @@ SRCREV = "${@mender_closed_source_srcrev_from_src_uri(d, '${SRC_URI}', 'mender-o
 
 PV = "${@mender_closed_source_pv_from_preferred_version(d, '${SRCREV}')}"
 
-# Define S to work both on git sha and "master" tarballs
-S = "${UNPACKDIR}/mender-orchestrator-${@mender_closed_source_tarball_dir_from_pv(d, '${PV}')}"
+# Define S to match the directory the tarball unpacks to
+S = "${UNPACKDIR}/mender-orchestrator-${@mender_closed_source_tarball_dir_version_from_src_uri(d, '${SRC_URI}', 'mender-orchestrator')}"
 
 # Skip version check
 MENDER_DEVMODE = "true"
