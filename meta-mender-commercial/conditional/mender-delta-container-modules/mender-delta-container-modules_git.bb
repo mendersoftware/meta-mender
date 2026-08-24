@@ -18,8 +18,8 @@ SRCREV = "${@mender_closed_source_srcrev_from_src_uri(d, '${SRC_URI}', 'delta-do
 
 PV = "${@mender_closed_source_pv_from_preferred_version(d, '${SRCREV}')}"
 
-# Define S to work both on git sha and "main" tarballs
-S = "${UNPACKDIR}/delta-docker-compose-${@mender_closed_source_tarball_dir_from_pv(d, '${PV}')}"
+# Define S to match the directory the tarball unpacks to
+S = "${UNPACKDIR}/delta-docker-compose-${@mender_closed_source_tarball_dir_version_from_src_uri(d, '${SRC_URI}', 'delta-docker-compose')}"
 
 # Skip version check
 MENDER_DEVMODE = "true"
