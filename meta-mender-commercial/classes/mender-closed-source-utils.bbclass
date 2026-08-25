@@ -25,7 +25,7 @@ def mender_closed_source_srcrev_from_src_uri(d, src_uri, repo_name):
             bb.error("Expected exactly one file, found: %s" % filenames)
         filename = os.path.basename(filenames[0])
         # Now extract the version from the filename
-        m = re.match(repo_name + r"-master\.tar\.(?:xz|gz)", filename)
+        m = re.match(repo_name + r"-(?:master|main)\.tar\.(?:xz|gz)", filename)
         if m:
             # Building from external tarball, do not append git info
             return ""
@@ -50,6 +50,32 @@ def mender_closed_source_pv_from_preferred_version(d, srcrev):
         # we can build tags with "-build" in them from this recipe, but not
         # final tags, which will need their own recipe.
         return pref_version
-    else:
-        # Else return "master${SRCREV}".
-        return "master%s" % srcrev
+    # Derive branch prefix from PREFERRED_VERSION (e.g. "<branch>-git%"); fall
+    # back to "master" when nothing usable is set.
+    branch = "master"
+    if pref_version is not None and pref_version.endswith(("-git", "-git%")):
+        branch = pref_version.rsplit("-git", 1)[0]
+    return "%s%s" % (branch, srcrev)
+
+def mender_closed_source_tarball_dir_version_from_src_uri(d, src_uri, repo_name):
+    # The tarball always unpacks to a directory with the same name as the
+    # tarball itself. So instead of guessing the directory from
+    # PREFERRED_VERSION (which breaks when e.g. a "-master"-named tarball is
+    # selected via "main-git%"), strip the "<repo_name>-" prefix and the
+    # .tar.* extension from the filename and use whatever remains
+    # ("main", "master", a sha or a tag).
+    import glob
+    import re
+    src_uri_list = src_uri.split()
+    if len(src_uri_list) == 0:
+        # No source specified. We won't be building this component.
+        return ""
+    filenames = glob.glob(src_uri_list[0][len("file://"):])
+    if len(filenames) != 1:
+        # mender_closed_source_srcrev_from_src_uri errors on this in the
+        # non-"-build" path; otherwise the fetch/version-check fails later.
+        return ""
+    m = re.match(repo_name + r"-(.+)\.tar\.(?:xz|gz)", os.path.basename(filenames[0]))
+    if not m:
+        bb.fatal("Failed to parse version from %s" % os.path.basename(filenames[0]))
+    return m.group(1)
