@@ -20,7 +20,7 @@ SRCREV = "${@mender_closed_source_srcrev_from_src_uri(d, '${SRC_URI}', 'mender-b
 PV = "${@mender_closed_source_pv_from_preferred_version(d, '${SRCREV}')}"
 
 # Define S to match the directory the tarball unpacks to
-S = "${UNPACKDIR}/mender-binary-delta-${@mender_closed_source_tarball_dir_version_from_src_uri(d, '${SRC_URI}', 'mender-binary-delta')}"
+S = "${WORKDIR}/mender-binary-delta-${@mender_closed_source_tarball_dir_version_from_src_uri(d, '${SRC_URI}', 'mender-binary-delta')}"
 
 # Skip version check
 MENDER_DEVMODE = "true"
