@@ -25,7 +25,7 @@ def mender_closed_source_srcrev_from_src_uri(d, src_uri, repo_name):
             bb.error("Expected exactly one file, found: %s" % filenames)
         filename = os.path.basename(filenames[0])
         # Now extract the version from the filename
-        m = re.match(repo_name + r"-(?:master|main)\.tar\.(?:xz|gz)", filename)
+        m = re.match(repo_name + r"-(?:master|main|pr_[0-9]+)\.tar\.(?:xz|gz)", filename)
         if m:
             # Building from external tarball, do not append git info
             return ""
