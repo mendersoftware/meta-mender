@@ -14,7 +14,6 @@
 #    limitations under the License.
 
 import subprocess
-import os
 
 import pytest
 
@@ -33,17 +32,14 @@ class TestMenderOrchestratorSupport:
     def test_build_mender_orchestrator_support(
         self, request, bitbake_variables, prepared_test_build, bitbake_image
     ):
-        # Get the directory where the topology is located
-        test_dir = os.path.dirname(os.path.abspath(__file__))
-
+        # No topology.yaml in SRC_URI on purpose as that is what makes
+        # mender-orchestrator-support install the mock-env topology, but we need our own.
         build_image(
             prepared_test_build["build_dir"],
             prepared_test_build["bitbake_corebase"],
             bitbake_image,
             [
                 'IMAGE_INSTALL:append = " mender-orchestrator mender-orchestrator-support"',
-                f'FILESEXTRAPATHS:prepend := "{test_dir}/files:"',
-                'SRC_URI:append:pn-mender-orchestrator = " file://topology.yaml"',
             ],
             [
                 'BBLAYERS:append = " %s/../meta-mender-commercial"'
@@ -64,3 +60,17 @@ class TestMenderOrchestratorSupport:
                 ["debugfs", "-R", f"stat {file}", image]
             ).decode()
             assert "Type: regular" in output
+
+        data_image = latest_build_artifact(
+            request, prepared_test_build["build_dir"], "core-image*.dataimg"
+        )
+
+        # relative to the data partition mounted at /data
+        for file in (
+            "/mender-orchestrator/topology.yaml",
+            "/mender-orchestrator/mock-instances",
+        ):
+            output = subprocess.check_output(
+                ["debugfs", "-R", f"stat {file}", data_image]
+            ).decode()
+            assert "Inode" in output, f"Expected {file} to be installed"
