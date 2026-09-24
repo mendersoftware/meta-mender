@@ -9,7 +9,15 @@ LICENSE_FLAGS = "commercial_mender-yocto-layer-license"
 LIC_FILES_CHKSUM = " \
     file://licenses/LICENSE.md;md5=fd6f2f84e25bc8e0cee29484baf2f0e6 \
     file://licenses/xdelta/xdelta3/LICENSE;md5=cf96fa0d649f7c7b16616d95e7880a73 \
+    ${@mender_binary_delta_cpp_btree_license(d)} \
 "
+
+# 1.5.x and older vendor cpp-btree inside xdelta3; later versions do not.
+def mender_binary_delta_cpp_btree_license(d):
+    import re
+    if re.match(r"^1\.[0-5]\.", d.getVar("PV")):
+        return "file://licenses/xdelta/xdelta3/cpp-btree/COPYING;md5=3b83ef96387f14655fc854ddc3c6bd57"
+    return ""
 
 # Disables the need for every dependency to be checked, for easier development.
 _MENDER_DISABLE_STRICT_LICENSE_CHECKING = "1"
