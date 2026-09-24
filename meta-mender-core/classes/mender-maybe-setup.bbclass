@@ -20,7 +20,7 @@ def mender_features(d, separator=" "):
     return separator.join(mender_features_list(d))
 
 MENDER_FEATURES = "${@mender_features(d)}"
-DISTROOVERRIDES:append = ":${@mender_features(d, separator=':')}"
+DISTROOVERRIDES:append = "${@(':' + mender_features(d, separator=':')) if mender_features(d, separator=':') else ''}"
 
 python() {
     # Add all possible Mender features here. This list is here to have an
