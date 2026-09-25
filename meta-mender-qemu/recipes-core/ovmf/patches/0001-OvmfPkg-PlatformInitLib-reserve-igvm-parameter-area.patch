@@ -1,0 +1,93 @@
+From e4f99a85545f41ef7ae23cd939484d69a84b6176 Mon Sep 17 00:00:00 2001
+From: Gerd Hoffmann <kraxel@redhat.com>
+Date: Fri, 5 Dec 2025 13:59:18 +0100
+Subject: [PATCH] OvmfPkg/PlatformInitLib: reserve igvm parameter area
+
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+Upstream-Status: Backport [https://github.com/tianocore/edk2/commit/e4f99a85545f41ef7ae23cd939484d69a84b6176]
+
+---
+ OvmfPkg/Include/Library/PlatformInitLib.h     |  6 +++++
+ OvmfPkg/Library/PlatformInitLib/Igvm.c        | 27 +++++++++++++++++++
+ OvmfPkg/Library/PlatformInitLib/MemDetect.c   |  2 ++
+ .../PlatformInitLib/PlatformInitLib.inf       |  1 +
+ 4 files changed, 36 insertions(+)
+
+diff --git a/OvmfPkg/Include/Library/PlatformInitLib.h b/OvmfPkg/Include/Library/PlatformInitLib.h
+index 469c49b6285e..884e381928a0 100644
+--- a/OvmfPkg/Include/Library/PlatformInitLib.h
++++ b/OvmfPkg/Include/Library/PlatformInitLib.h
+@@ -321,4 +321,10 @@ PlatformIgvmVpCount (
+   VOID
+   );
+ 
++VOID
++EFIAPI
++PlatformIgvmParamReserve (
++  VOID
++  );
++
+ #endif // PLATFORM_INIT_LIB_H_
+diff --git a/OvmfPkg/Library/PlatformInitLib/Igvm.c b/OvmfPkg/Library/PlatformInitLib/Igvm.c
+index 1b0d9a9b851a..dd5a94ef38f6 100644
+--- a/OvmfPkg/Library/PlatformInitLib/Igvm.c
++++ b/OvmfPkg/Library/PlatformInitLib/Igvm.c
+@@ -75,6 +75,33 @@ PlatformIgvmMemoryMapFind (
+   return Map;
+ }
+ 
++VOID
++EFIAPI
++PlatformIgvmParamReserve (
++  VOID
++  )
++{
++  UINT64  Base;
++  UINT64  Size;
++
++  Base = FixedPcdGet64 (PcdOvmfIgvmParamBase);
++  Size = FixedPcdGet64 (PcdOvmfIgvmParamSize);
++
++  if (Base && Size) {
++    //
++    // Reserve igvm parameter area as runtime data, to make sure the OS isn't
++    // going to use it, otherwise we can get corrupted IGVM parameters after
++    // guest reboot.
++    //
++    DEBUG ((DEBUG_INFO, "%a: 0x%x +0x%x\n", __func__, Base, Size));
++    BuildMemoryAllocationHob (
++      Base,
++      Size,
++      EfiRuntimeServicesData
++      );
++  }
++}
++
+ BOOLEAN
+ EFIAPI
+ PlatformIgvmMemoryMapCheck (
+diff --git a/OvmfPkg/Library/PlatformInitLib/MemDetect.c b/OvmfPkg/Library/PlatformInitLib/MemDetect.c
+index 81fa60ade507..937e2b77a553 100644
+--- a/OvmfPkg/Library/PlatformInitLib/MemDetect.c
++++ b/OvmfPkg/Library/PlatformInitLib/MemDetect.c
+@@ -1240,6 +1240,8 @@ PlatformQemuInitializeRam (
+ 
+   DEBUG ((DEBUG_INFO, "%a called\n", __func__));
+ 
++  PlatformIgvmParamReserve ();
++
+   //
+   // Determine total memory size available
+   //
+diff --git a/OvmfPkg/Library/PlatformInitLib/PlatformInitLib.inf b/OvmfPkg/Library/PlatformInitLib/PlatformInitLib.inf
+index a02959c2cdbe..9df218c65c7a 100644
+--- a/OvmfPkg/Library/PlatformInitLib/PlatformInitLib.inf
++++ b/OvmfPkg/Library/PlatformInitLib/PlatformInitLib.inf
+@@ -113,6 +113,7 @@
+   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfEarlyMemDebugLogSize
+ 
+   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfIgvmParamBase
++  gUefiOvmfPkgTokenSpaceGuid.PcdOvmfIgvmParamSize
+   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfIgvmHobBase
+   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfIgvmHobSize
+ 
