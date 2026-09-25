@@ -15,6 +15,12 @@ SRC_URI:append:vexpress-qemu-flash = " file://defconfig \
 
 COMPATIBLE_MACHINE:vexpress-qemu-flash = "vexpress-qemu-flash"
 
+# Build in the i6300esb watchdog so systemd's RebootWatchdogSec can arm it and
+# a hung "reboot: machine restart" under KVM self-recovers (see mender-qemu,
+# which attaches -device i6300esb). Without a watchdog driver there is no
+# /dev/watchdog to arm and a stalled reset hangs the guest forever.
+SRC_URI:append:qemux86-64 = " file://watchdog.cfg"
+
 # See commit 28a1f5cd95cfd in poky. This was added in order to support running
 # kernel tests. However it appears that this file is not present in the source
 # at the time of writing. Rather than dig into this we will just remove this

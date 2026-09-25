@@ -66,6 +66,13 @@ case "$MACHINE" in
                 QEMU_SYSTEM="${QEMU_SYSTEM:-"qemu-system-i386"} -cpu Skylake-Client"
                 ;;
         esac
+        # Attach an i6300esb watchdog with the reset action. Under KVM the
+        # guest's final reset (reboot: machine restart) intermittently fails to
+        # reset the VM (observed on the 6.18.x kernel; no reboot= method avoids
+        # it), which would otherwise hang the guest forever. The image's
+        # RebootWatchdogSec=60 arms this watchdog just before the reset, so a
+        # stalled reset is force-reset by QEMU within ~60s instead.
+        QEMU_ARGS="$QEMU_ARGS -device i6300esb -action watchdog=reset"
         if echo "$MENDER_FEATURES" | grep -q mender-image-bios; then
             BOOTLOADER_ARG=""
             DISK_IMG=${DISK_IMG:-"${BUILDTMP}/deploy/images/${MACHINE}/${IMAGE_NAME}-${MENDER_DEVICE_TYPE}.biosimg"}
