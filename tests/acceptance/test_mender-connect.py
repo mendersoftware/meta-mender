@@ -93,24 +93,19 @@ def wait_for_mock_dbus_server(connection):
     while time.time() < start + 60:
         result = connection.run(
             "dbus-send --print-reply --system "
-            "--dest=io.mender.AuthenticationManager "
-            "/io/mender/AuthenticationManager "
-            "io.mender.Authentication1.FetchJwtToken ",
+            "--dest=org.freedesktop.DBus /org/freedesktop/DBus "
+            "org.freedesktop.DBus.NameHasOwner "
+            "string:io.mender.AuthenticationManager",
             warn=True,
         )
-
+        # Probe with NameHasOwner, not a method on the name itself: a method
+        # call would D-Bus-activate the real mender-authd (it has an activation
+        # file) and let it grab the name before the slow-starting mock does,
+        # which the mock can never reclaim. NameHasOwner does not activate, so
+        # a true result means the mock has claimed the name and is ready.
         if result.exited == 0 and "boolean true" in result.stdout:
-            # The interface is ready
             break
-        elif (
-            "The name io.mender.AuthenticationManager was not provided by any .service files"
-            in result.stderr
-        ):
-            # The interface is not ready, sleep and retry
-            time.sleep(2)
-        else:
-            # Unexpected error, fail here
-            pytest.fail("Unknown error '%s'" % result.stderr)
+        time.sleep(2)
     else:
         pytest.fail(
             "Timed out waiting for io.mender.AuthenticationManager D-Bus interface"
