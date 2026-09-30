@@ -1,24 +1,24 @@
-From 7bc27a7201d19a5e39fe6f7f9017c1b272f759f6 Mon Sep 17 00:00:00 2001
-From: Kristian Amlie <kristian.amlie@northern.tech>
-Date: Tue, 21 Apr 2020 12:54:15 +0200
+From 54cb2b97337e3c65a6f36027bebaf07f4b99811b Mon Sep 17 00:00:00 2001
+From: Sebastian Suesens <sebastian.suesens@zeiss.com>
+Date: Mon, 28 Sep 2026 12:19:55 +0200
 Subject: [PATCH] Generic boot code for Mender.
 
 Upstream-Status: Inappropriate [Mender specific]
 
-Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
+Signed-off-by: Sebastian Suesens <sebastian.suesens@zeiss.com>
 ---
- include/config_mender.h |  98 +++++++++++++++++++++++++
+ include/config_mender.h | 100 ++++++++++++++++++++++++++
  include/env_mender.h    | 156 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 254 insertions(+)
+ 2 files changed, 256 insertions(+)
  create mode 100644 include/config_mender.h
  create mode 100644 include/env_mender.h
 
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000000..3377ab0a1b
+index 00000000000..2766b4ae7c8
 --- /dev/null
 +++ b/include/config_mender.h
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,100 @@
 +/*
 +  Copyright 2017 Northern.tech AS
 +
@@ -37,13 +37,15 @@ index 0000000000..3377ab0a1b
 +  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 +*/
 +
++#include <linux/kconfig.h>
++
 +#ifndef HEADER_CONFIG_MENDER_H
 +#define HEADER_CONFIG_MENDER_H
 +
 +/* Avoid Mender specific code if we are just probing for configuration. */
 +#ifndef MENDER_AUTO_PROBING
 +
-+#include <config_mender_defines.h>
++#include <generated/config_mender_defines.h>
 +
 +#ifdef CONFIG_ENV_IS_NOWHERE
 +# error A CONFIG_ENV_IS_IN_<storage-type> define is required for Mender to work. For standard Mender setups this should be CONFIG_ENV_IS_IN_MMC for HD/SSD/MMC/SD storage setup, and CONFIG_ENV_IS_IN_UBI for Flash/UBI storage.
@@ -58,8 +60,8 @@ index 0000000000..3377ab0a1b
 +# error CONFIG_BOOTCOUNT_ENV is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#endif
 +
-+#ifndef CONFIG_ENV_REDUNDANT
-+# error CONFIG_ENV_REDUNDANT is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>. Check also https://docs.mender.io/troubleshoot/yocto-project-build for Known Issues when upgrading.
++#ifndef CONFIG_SYS_REDUNDAND_ENVIRONMENT
++# error CONFIG_SYS_REDUNDAND_ENVIRONMENT is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>. Check also https://docs.mender.io/troubleshoot/yocto-project-build for Known Issues when upgrading.
 +#endif
 +
 +#ifdef MENDER_UBI
@@ -119,7 +121,7 @@ index 0000000000..3377ab0a1b
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000000..261775afd5
+index 00000000000..e5d0fc22d11
 --- /dev/null
 +++ b/include/env_mender.h
 @@ -0,0 +1,156 @@
@@ -149,7 +151,7 @@ index 0000000000..261775afd5
 +#define MENDER_ENV_SETTINGS
 +#else
 +
-+#include <config_mender_defines.h>
++#include <generated/config_mender_defines.h>
 +
 +#ifdef MENDER_NO_DEFAULT_ALTBOOTCMD
 +# define MENDER_DEFAULT_ALTBOOTCMD
@@ -279,3 +281,6 @@ index 0000000000..261775afd5
 +#endif /* !MENDER_AUTO_PROBING */
 +
 +#endif /* HEADER_ENV_MENDER_H */
+-- 
+2.43.0
+
