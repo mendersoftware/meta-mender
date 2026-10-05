@@ -60,7 +60,7 @@ requests==2.34.2
     # via -r requirements_py3.in
 ubi-reader==0.8.14
     # via -r requirements_py3.in
-urllib3==2.7.0
+urllib3==2.8.0
     # via requests
 zstandard==0.25.0
     # via ubi-reader
