@@ -10,8 +10,8 @@ require mender-artifact.inc
 
 SRC_URI = "git://github.com/mendersoftware/mender-artifact.git;protocol=https;branch=master;destsuffix=${GO_SRCURI_DESTSUFFIX}"
 
-# Tag: 4.4.1
-SRCREV = "0dec8a3aad5b6559ba1222f699e9214638a310c3"
+# Tag: 4.4.2
+SRCREV = "0d869280f65340ae90fd1cf00c0d210dc7389aa5"
 
 # Enable this in Betas, and in branches that cannot carry this major version as
 # default.
