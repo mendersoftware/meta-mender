@@ -132,8 +132,26 @@ $QEMU_SYSTEM --version || exit 1
 
 echo "--- starting qemu"
 
+# KVM can only accelerate a guest whose architecture matches the host's, and
+# only when /dev/kvm is present. For a foreign target (e.g. qemu-system-arm on
+# an x86_64 build host) "-enable-kvm" always fails with "invalid accelerator
+# kvm"; on qemu >= 8 that failed attempt also races the "" (TCG) retry for the
+# fixed hostfwd port ("Could not set up host forwarding rule tcp::..."), so the
+# guest never starts. Only attempt KVM when it can actually work.
+kvm_usable=false
+if [ -e /dev/kvm ]; then
+    case "$(uname -m):$QEMU_SYSTEM" in
+        x86_64:*qemu-system-x86_64*|x86_64:*qemu-system-i386*|i[3456]86:*qemu-system-i386*|aarch64:*qemu-system-aarch64*|armv[67]*:*qemu-system-arm*)
+            kvm_usable=true
+            ;;
+    esac
+fi
+
 ret=0
 for maybe_kvm in -enable-kvm ""; do
+    if [ "$maybe_kvm" = "-enable-kvm" ] && [ "$kvm_usable" != true ]; then
+        continue
+    fi
     if QEMU_AUDIO_DRV=none \
             $QEMU_SYSTEM \
             -m "${QEMU_MEMORY}" \
