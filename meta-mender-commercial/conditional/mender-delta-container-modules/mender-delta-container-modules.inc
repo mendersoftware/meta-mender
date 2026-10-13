@@ -3,6 +3,8 @@ inherit mender-licensing
 DESCRIPTION = "Mender Delta Container Modules"
 HOMEPAGE = "https://mender.io"
 
+S = "${WORKDIR}/delta-docker-compose-${PV}"
+
 PACKAGES =+ "mender-delta-docker-compose"
 
 RDEPENDS:mender-delta-docker-compose = "mender-update docker-compose docker jq xdelta3"
