@@ -28,9 +28,9 @@ python set_orchestrator_device_tier() {
 set_orchestrator_device_tier[vardeps] += "MENDER_DEVICE_TIER"
 ROOTFS_POSTPROCESS_COMMAND += "set_orchestrator_device_tier;"
 
-# Replace the mock-env topology that mender-orchestrator-support installs with a limited
-# set of components to allow a deployment. The default one expects a "gateway" device_type
-# that clashes with the image device_type (IOW the machine name) in QEMU.
+# Replace the mock-env topology that mender-orchestrator-support installs 
+# with a different one where the component_type of the system device matches
+# the default device_type of the qemu device
 install_orchestrator_topology() {
     cat > ${IMAGE_ROOTFS}/data/mender-orchestrator/topology.yaml <<'TOPOLOGY'
 api_version: mender/v1
@@ -38,6 +38,9 @@ kind: topology
 system_type: "system-core"
 
 components:
+  - component_type: qemux86-64
+    interface: rootfs-image
+
   - component_type: rtos
     interface: rtos-interface
     interface_args: ["1"]
