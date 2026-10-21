@@ -334,10 +334,10 @@ IMAGE_TYPEDEP:gptimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' 
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
 # Make sure the Mender part image is available in the live installer
-IMAGE_TYPEDEP:hddimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
-                               ${@bb.utils.contains('IMAGE_FSTYPES', 'gptimg', ' gptimg', '', d)} \
-                               ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
-                               ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
+IMAGE_TYPEDEP:hddimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg.bz2', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'gptimg', ' gptimg.bz2', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg.bz2', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg.bz2', '', d)}"
 
 # Use the Mender part image as the Live image
 python() {
