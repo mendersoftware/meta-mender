@@ -209,7 +209,7 @@ EOF
     # If we padded above, and the partition table type is GPT, we need to
     # relocate the trailing backup header to the new end to avoid warnings.
     if [ "$ptable_type" = "gpt" ]; then
-        sgdisk -e "$outimgname"
+        sfdisk --relocate gpt-bak-std "$outimgname"
     fi
 
     if [ "$ptable_type" = "msdos" ]; then
@@ -234,14 +234,14 @@ EOF
     if ${@bb.utils.contains('MENDER_FEATURES', 'mender-partuuid', 'true', 'false', d)}; then
         if [ "$ptable_type" = "gpt" ]; then
             # Set Fixed PARTUUID for all devices
-            sgdisk -u ${MENDER_BOOT_PART_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_BOOT_PART}')} "$outimgname"
-            sgdisk -u ${MENDER_ROOTFS_PART_A_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_A}')} "$outimgname"
-            sgdisk -u ${MENDER_ROOTFS_PART_B_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_B}')} "$outimgname"
-            sgdisk -u ${MENDER_DATA_PART_NUMBER}:${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')} "$outimgname"
+            sfdisk --part-uuid "$outimgname" ${MENDER_BOOT_PART_NUMBER} ${@mender_get_partuuid_from_device(d, '${MENDER_BOOT_PART}')}
+            sfdisk --part-uuid "$outimgname" ${MENDER_ROOTFS_PART_A_NUMBER} ${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_A}')}
+            sfdisk --part-uuid "$outimgname" ${MENDER_ROOTFS_PART_B_NUMBER} ${@mender_get_partuuid_from_device(d, '${MENDER_ROOTFS_PART_B}')}
+            sfdisk --part-uuid "$outimgname" ${MENDER_DATA_PART_NUMBER} ${@mender_get_partuuid_from_device(d, '${MENDER_DATA_PART}')}
 	    # check if we have extra parts and setup uuid for those partitions
 	    local ext_partitions="${@get_extra_parts_partition_to_uuid(d)}"
 	    for part in ${ext_partitions}; do
-		sgdisk -u ${part} "$outimgname"
+		sfdisk --part-uuid "$outimgname" "${part%%:*}" "${part#*:}"
 	    done
 
         else
@@ -284,6 +284,7 @@ _MENDER_PART_IMAGE_DEPENDS = " \
     wic-tools:do_populate_sysroot \
     dosfstools-native:do_populate_sysroot \
     mtools-native:do_populate_sysroot \
+    util-linux-native:do_populate_sysroot \
     ${@' '.join([x + ':do_populate_sysroot' for x in d.getVar('WKS_FILE_DEPENDS').split()])} \
 "
 _MENDER_PART_IMAGE_DEPENDS += "${@bb.utils.contains('MENDER_DATA_PART_FSTYPE', 'btrfs','btrfs-tools-native:do_populate_sysroot','',d)}"
@@ -313,8 +314,7 @@ _MENDER_PART_IMAGE_DEPENDS:append:mender-systemd-boot = " \
 do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'rpi-bootfiles:do_populate_sysroot', '', d)}"
 
-do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS} \
-                              gptfdisk-native:do_populate_sysroot"
+do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
 do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
