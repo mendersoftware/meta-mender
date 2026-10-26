@@ -311,10 +311,8 @@ _MENDER_PART_IMAGE_DEPENDS:append:mender-systemd-boot = " \
 "
 
 do_image_sdimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
-do_image_sdimg[depends] += " ${@bb.utils.contains('SOC_FAMILY', 'rpi', 'rpi-bootfiles:do_populate_sysroot', '', d)}"
 
-do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS} \
-                              gptfdisk-native:do_populate_sysroot"
+do_image_uefiimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
 do_image_biosimg[depends] += "${_MENDER_PART_IMAGE_DEPENDS}"
 
@@ -336,10 +334,10 @@ IMAGE_TYPEDEP:gptimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' 
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
                                ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
 # Make sure the Mender part image is available in the live installer
-IMAGE_TYPEDEP:hddimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg', '', d)} \
-                               ${@bb.utils.contains('IMAGE_FSTYPES', 'gptimg', ' gptimg', '', d)} \
-                               ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg', '', d)} \
-                               ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg', '', d)}"
+IMAGE_TYPEDEP:hddimg:append = "${@bb.utils.contains('IMAGE_FSTYPES', 'sdimg', ' sdimg.bz2', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'gptimg', ' gptimg.bz2', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'uefiimg', ' uefiimg.bz2', '', d)} \
+                               ${@bb.utils.contains('IMAGE_FSTYPES', 'biosimg', ' biosimg.bz2', '', d)}"
 
 # Use the Mender part image as the Live image
 python() {
