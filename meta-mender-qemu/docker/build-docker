@@ -83,6 +83,7 @@ set -e
 
 EMBEDDED_IMAGE_NAME_BUILD_ARG=
 DOCKER_ARGS=
+CONTEXT="$MACHINE"
 if [ $BUILD_DEFAULTS = 1 ]; then
     if [ ! -d "$BUILDDIR" ]; then
         echo "BUILDDIR must be to a valid build directory (use oe-init-build-env)."
@@ -103,13 +104,20 @@ if [ $BUILD_DEFAULTS = 1 ]; then
             exit 1
         fi
     fi
+
+    # Build from a temporary copy so concurrent builds don't share env.txt. It's
+    # in BUILDDIR since the images are hard linked into it.
+    CONTEXT=$(mktemp -d -p "$BUILDDIR" build-docker-XXXXXX)
+    trap 'rm -rf "$CONTEXT"' EXIT
+    cp "$MACHINE/Dockerfile" "$CONTEXT/"
+
     if [ "${EMBEDDED_IMAGE_NAME}" != "" ]; then
         EMBEDDED_IMAGE_NAME_BUILD_ARG="--build-arg EMBEDDED_IMAGE=$(basename ${EMBEDDED_IMAGE_NAME})"
         echo "using ${EMBEDDED_IMAGE_NAME} as embedded image."
-        ln -Lf "${EMBEDDED_IMAGE_NAME}" "$MACHINE/"
+        ln -Lf "${EMBEDDED_IMAGE_NAME}" "$CONTEXT/"
     fi
-    ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$MACHINE/"
-    cat > "$MACHINE/env.txt" <<EOF
+    ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/$DISK_IMG" "$CONTEXT/"
+    cat > "$CONTEXT/env.txt" <<EOF
 export MACHINE=$MACHINE
 export DISK_IMG=/$DISK_IMG
 export EMBEDDED_IMAGE=/$(basename "${EMBEDDED_IMAGE_NAME}")
@@ -117,28 +125,28 @@ EOF
 
     case "$MACHINE" in
         qemux86-64)
-            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.qcow2" "$MACHINE/"
-            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.vars.qcow2" "$MACHINE/"
+            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.qcow2" "$CONTEXT/"
+            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/ovmf.vars.qcow2" "$CONTEXT/"
             DOCKER_ARGS="${EMBEDDED_IMAGE_NAME_BUILD_ARG} --build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=ovmf.qcow2 --build-arg BOOTLOADER_DATA=ovmf.vars.qcow2"
             echo "running with $DOCKER_ARGS"
-            cat >> "$MACHINE/env.txt" <<EOF
+            cat >> "$CONTEXT/env.txt" <<EOF
 export BOOTLOADER=/ovmf.qcow2
 export BOOTLOADER_DATA=/ovmf.vars.qcow2
 EOF
             ;;
         vexpress-qemu)
-            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/u-boot.elf" "$MACHINE/"
+            ln -Lf "$BUILDDIR/tmp/deploy/images/$MACHINE/u-boot.elf" "$CONTEXT/"
             DOCKER_ARGS="--build-arg DISK_IMAGE=$DISK_IMG --build-arg BOOTLOADER=u-boot.elf"
             echo "running with $DOCKER_ARGS"
-            cat >> "$MACHINE/env.txt" <<EOF
+            cat >> "$CONTEXT/env.txt" <<EOF
 export BOOTLOADER=/u-boot.elf
 EOF
             ;;
     esac
 
     # Copy needed dirs to docker context.
-    cp -rLlf ../scripts "$MACHINE/"
+    cp -rLlf ../scripts "$CONTEXT/"
 fi
 
-docker build $DOCKER_ARGS "$@" "$MACHINE"
+docker build $DOCKER_ARGS "$@" "$CONTEXT"
 exit $?
