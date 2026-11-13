@@ -7,15 +7,22 @@
 
   "baseBranchPatterns": ["master", "wrynose", "scarthgap"],
 
-  // Default pattern wants requirements[-.]*.txt; ours uses an underscore.
-  "pip_requirements": {
+  // config:recommended also ignores tests/, which hides tests/acceptance/requirements_py3.txt.
+  "ignorePaths": ["**/node_modules/**", "**/vendor/**"],
+
+  // requirements_py3.txt is pip-compile output: bump the .in and recompile it.
+  "pip-compile": {
     "managerFilePatterns": ["/(^|/)requirements_py3\\.txt$/"]
+  },
+  // pip-compile owns requirements_py3.txt and requirements_deb.txt lists apt packages.
+  "pip_requirements": {
+    "enabled": false
   },
 
   "packageRules": [
     // Python test deps: one PR per base branch, like the old dependabot group.
     {
-      "matchManagers": ["pip_requirements"],
+      "matchManagers": ["pip-compile"],
       "groupName": "python-test-dependencies",
       "groupSlug": "python-test-dependencies"
     }
