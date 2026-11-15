@@ -10,7 +10,7 @@ cffi==2.0.0
     # via cryptography
 charset-normalizer==2.1.1
     # via requests
-cryptography==46.0.7
+cryptography==50.0.2
     # via ubi-reader
 execnet==2.1.1
     # via pytest-xdist
@@ -24,19 +24,19 @@ iniconfig==2.0.0
     # via pytest
 jinja2==3.1.6
     # via pytest-html
-lzallright==0.2.3
+lzallright==0.2.6
     # via ubi-reader
 markupsafe==2.1.3
     # via jinja2
-packaging==23.1
+packaging==26.3
     # via pytest
-pluggy==1.5.0
+pluggy==1.7.0
     # via pytest
 pycparser==2.22
     # via cffi
 pygments==2.20.0
     # via pytest
-pytest==9.0.3
+pytest==9.2.0
     # via
     #   -r requirements_py3.in
     #   pytest-html
@@ -54,11 +54,13 @@ python-lzo==1.15
     # via -r requirements_py3.in
 pyyaml==6.0.3
     # via -r requirements_py3.in
-redo==3.0.0
+redo==3.0.1
     # via -r requirements_py3.in
-requests==2.33.1
+requests==2.34.2
     # via -r requirements_py3.in
-ubi-reader==0.8.13
+ubi-reader==0.8.16
     # via -r requirements_py3.in
 urllib3==2.7.0
     # via requests
+zstandard==0.25.0
+    # via ubi-reader
