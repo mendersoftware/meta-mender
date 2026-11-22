@@ -14,7 +14,7 @@ cryptography==46.0.7
     # via ubi-reader
 execnet==2.1.1
     # via pytest-xdist
-filelock==3.25.2
+filelock==4.2.1
     # via -r requirements_py3.in
 flaky==3.8.1
     # via -r requirements_py3.in
