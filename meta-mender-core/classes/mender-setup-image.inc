@@ -92,7 +92,7 @@ def mender_default_state_scripts_version(d):
 
 # Setup state script version file.
 MENDER_STATE_SCRIPTS_VERSION = "${@mender_default_state_scripts_version(d)}"
-ROOTFS_POSTPROCESS_COMMAND += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image', 'mender_create_scripts_version_file', '', d)}"
+ROOTFS_POSTPROCESS_COMMAND += "${@bb.utils.contains('MENDER_FEATURES', 'mender-install', 'mender_create_scripts_version_file', '', d)}"
 
 mender_create_scripts_version_file() {
     install -d -m 755 ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/
