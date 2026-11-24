@@ -44,12 +44,19 @@ def main():
     rootfs = "%s.ext4" % args.img
     extract_ext4(img=args.img, rootfs=rootfs)
 
+
+    write_config = False
+    mender_conf_location = "/etc/mender/mender.conf"
+    if os.path.exists(mender_conf_location):
+        with open(mender_conf_location) as fd:
+            provided_config = json.load(fd)
+            write_config = True
     get(local_path="mender.conf",
-        remote_path="/etc/mender/mender.conf",
+        remote_path=mender_conf_location,
         rootfs=rootfs)
     with open("mender.conf") as fd:
-        conf = json.load(fd)
-        write_config = False
+        device_local_config = json.load(fd)
+    conf = device_local_config | provided_config
 
     if args.tenant_token:
         conf['TenantToken'] = args.tenant_token
@@ -118,7 +125,7 @@ EOF
             json.dump(conf, fd, indent=4, sort_keys=True)
             fd.write("\n")
         put(local_path="mender.conf",
-            remote_path="/etc/mender/mender.conf",
+            remote_path=mender_conf_location,
             rootfs=rootfs)
         os.unlink("mender.conf")
 
