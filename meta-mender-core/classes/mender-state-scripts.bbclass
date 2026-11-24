@@ -1,19 +1,19 @@
 inherit deploy
 
+# Allow empty package when recipe contains only Artifact scripts (no rootfs scripts).
+# Artifact scripts deploy to .mender artifact, not to rootfs, so the package may be empty.
+ALLOW_EMPTY:${PN} = "1"
+
 MENDER_STATE_SCRIPTS_DIR = "${B}/mender-state-scripts"
 
 # Default is to look in these two directories for scripts.
 MENDER_STATE_SCRIPTS ?= "${S}/mender-state-scripts ${MENDER_STATE_SCRIPTS_DIR}"
 
-do_create_default_script_dirs() {
-    # Doing this automatically has two advantages: The user can install directly
-    # into the directories with no preparation. And, we can complain if any of
-    # the targets in MENDER_STATE_SCRIPTS doesn't exist, because a directory
-    # that exists, but is empty, is different from not existing at all.
-
-    mkdir -p ${S}/mender-state-scripts ${B}/mender-state-scripts
-}
-addtask do_create_default_script_dirs after do_patch before do_configure
+# Ensure default script directories exist before configure.
+# - dirs: creates ${S}/mender-state-scripts if missing (preserves source-provided scripts)
+# - cleandirs: cleans ${MENDER_STATE_SCRIPTS_DIR} to remove stale build-generated scripts
+do_configure[dirs] += "${S}/mender-state-scripts"
+do_configure[cleandirs] += "${MENDER_STATE_SCRIPTS_DIR}"
 
 # Takes one argument, which is "install" or "deploy".
 install_or_deploy_scripts() {
