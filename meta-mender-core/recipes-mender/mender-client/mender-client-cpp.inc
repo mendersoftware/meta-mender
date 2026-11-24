@@ -295,9 +295,11 @@ do_install:append() {
     fi
 
     # Setup ignorelist to ensure udev does not automatically mount Mender managed partitions
-    install -d ${D}${sysconfdir}/udev/mount.ignorelist.d
-    echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
-    echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-image', 'true', 'false', d)}; then
+        install -d ${D}${sysconfdir}/udev/mount.ignorelist.d
+        echo ${MENDER_ROOTFS_PART_A} > ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
+        echo ${MENDER_ROOTFS_PART_B} >> ${D}${sysconfdir}/udev/mount.ignorelist.d/mender
+    fi
 
     # The target is only available in 5.1.x and newer
     DESTDIR='${D}' cmake_runcmake_build --target install-dbus-service-files || true
