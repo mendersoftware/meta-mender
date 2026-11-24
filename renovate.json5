@@ -5,6 +5,9 @@
     "github>mendersoftware/mendertesting//renovate/common.json5"
   ],
 
+  "reviewers": ["team:client-dependabot-reviewers"],
+  "reviewersFromCodeOwners": false,
+
   "baseBranchPatterns": ["master", "wrynose", "scarthgap"],
 
   // config:recommended also ignores tests/, which hides tests/acceptance/requirements_py3.txt.
