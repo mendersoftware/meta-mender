@@ -83,22 +83,6 @@ mender_update_fstab_file() {
     fi
 }
 
-def mender_default_state_scripts_version(d):
-    pref_mender = d.getVar('PREFERRED_VERSION:pn-mender-client')
-    if pref_mender and pref_mender.startswith("1."):
-        return "2"
-    else:
-        return "3"
-
-# Setup state script version file.
-MENDER_STATE_SCRIPTS_VERSION = "${@mender_default_state_scripts_version(d)}"
-ROOTFS_POSTPROCESS_COMMAND += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image', 'mender_create_scripts_version_file', '', d)}"
-
-mender_create_scripts_version_file() {
-    install -d -m 755 ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/
-    echo -n "${MENDER_STATE_SCRIPTS_VERSION}" > ${IMAGE_ROOTFS}${sysconfdir}/mender/scripts/version
-}
-
 IMAGE_ROOTFS_EXCLUDE_PATH:append:mender-image = " data/ ${@d.getVar('MENDER_BOOT_PART_MOUNT_LOCATION')[1:]}/"
 
 
