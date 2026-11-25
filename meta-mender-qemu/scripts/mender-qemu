@@ -16,13 +16,15 @@
 set -e
 set -x
 
-TMPDIR=${TMPDIR:-$(mktemp -d /tmp/mender-qemu.XXXXXXXX)}
+# Always use a private directory, also when TMPDIR is already set: it is
+# removed on exit. If set, the caller's TMPDIR is used as its parent.
+TMPDIR=$(mktemp -d "${TMPDIR:-/tmp}/mender-qemu.XXXXXXXX")
 export TMPDIR
 trap cleanup 1 15
 
 cleanup() {
     if [ -n "$TMPDIR" -a -e "$TMPDIR" ]; then
-        rm -rf $TMPDIR
+        rm -rf "$TMPDIR"
     fi
 }
 
