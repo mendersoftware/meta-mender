@@ -1,4 +1,4 @@
-From 7bc27a7201d19a5e39fe6f7f9017c1b272f759f6 Mon Sep 17 00:00:00 2001
+From 0367404ac7312ac08bb3d2e64113dd9203cfe105 Mon Sep 17 00:00:00 2001
 From: Kristian Amlie <kristian.amlie@northern.tech>
 Date: Tue, 21 Apr 2020 12:54:15 +0200
 Subject: [PATCH] Generic boot code for Mender.
@@ -15,7 +15,7 @@ Signed-off-by: Kristian Amlie <kristian.amlie@northern.tech>
 
 diff --git a/include/config_mender.h b/include/config_mender.h
 new file mode 100644
-index 0000000000..3377ab0a1b
+index 00000000000..fbe9714c78d
 --- /dev/null
 +++ b/include/config_mender.h
 @@ -0,0 +1,98 @@
@@ -58,8 +58,8 @@ index 0000000000..3377ab0a1b
 +# error CONFIG_BOOTCOUNT_ENV is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>
 +#endif
 +
-+#ifndef CONFIG_ENV_REDUNDANT
-+# error CONFIG_ENV_REDUNDANT is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>. Check also https://docs.mender.io/troubleshoot/yocto-project-build for Known Issues when upgrading.
++#if !(defined(CONFIG_ENV_REDUNDANT) || defined(CONFIG_SYS_REDUNDAND_ENVIRONMENT))
++# error CONFIG_ENV_REDUNDANT or CONFIG_SYS_REDUNDAND_ENVIRONMENT is required for Mender to work. Make sure that: 1) All the instructions at https://docs.mender.io/system-updates-yocto-project/board-integration/bootloader-support/u-boot have been followed. 2) All required layers are included in bblayers.conf, including any board specific layers such as meta-mender-<board>. Check also https://docs.mender.io/troubleshoot/yocto-project-build for Known Issues when upgrading.
 +#endif
 +
 +#ifdef MENDER_UBI
@@ -119,7 +119,7 @@ index 0000000000..3377ab0a1b
 +#endif /* HEADER_CONFIG_MENDER_H */
 diff --git a/include/env_mender.h b/include/env_mender.h
 new file mode 100644
-index 0000000000..261775afd5
+index 00000000000..261775afd5b
 --- /dev/null
 +++ b/include/env_mender.h
 @@ -0,0 +1,156 @@
