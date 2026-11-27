@@ -9,7 +9,7 @@ RDEPENDS:${PN} = "glib-2.0 mender-auth"
 MENDER_CONNECT_SHELL ??= "/bin/sh"
 MENDER_CONNECT_USER ??= "nobody"
 SYSTEMD_AUTO_ENABLE ?= "enable"
-SYSTEMD_SERVICE:${PN} = "mender-connect.service"
+SYSTEMD_SERVICE:${PN}:mender-systemd = "mender-connect.service"
 
 B = "${WORKDIR}/build"
 
@@ -66,6 +66,6 @@ do_install:append:mender-systemd() {
     install -m 0644 ${B}/src/${GO_IMPORT}/support/mender-connect.service ${D}${systemd_unitdir}/system/
 }
 
-FILES:${PN}:append = "\
+FILES:${PN}:append:mender-systemd = "\
     ${systemd_unitdir}/system/mender-connect.service \
 "

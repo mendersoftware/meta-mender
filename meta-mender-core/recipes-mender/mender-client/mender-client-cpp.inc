@@ -20,8 +20,8 @@ RDEPENDS:mender-auth += "mender-config"
 
 RDEPENDS:mender-update += "mender-auth mender-config"
 
-SYSTEMD_SERVICE:mender-update = "mender-updated.service"
-SYSTEMD_SERVICE:mender-auth = "mender-authd.service"
+SYSTEMD_SERVICE:mender-update:mender-systemd = "mender-updated.service"
+SYSTEMD_SERVICE:mender-auth:mender-systemd = "mender-authd.service"
 SYSTEMD_PACKAGES = "mender-update mender-auth"
 
 MENDER_CLIENT ?= "mender-updated"
@@ -158,11 +158,11 @@ FILES:mender-auth-dev += "\
     ${datadir}/dbus-1/interfaces/io.mender.Authentication1.xml \
 "
 
-FILES:mender-update += "\
+FILES:mender-update:append:mender-systemd = "\
     ${systemd_unitdir}/system/mender-updated.service \
 "
 
-FILES:mender-auth += "\
+FILES:mender-auth:append:mender-systemd = "\
     ${systemd_unitdir}/system/mender-authd.service \
 "
 
@@ -355,7 +355,9 @@ do_install:append:class-target:mender-persist-systemd-machine-id() {
 do_install() {
     DESTDIR='${D}' cmake_runcmake_build --target install-bin
     DESTDIR='${D}' cmake_runcmake_build --target install-identity-scripts
-    DESTDIR='${D}' cmake_runcmake_build --target install-systemd
+    if ${@bb.utils.contains('MENDER_FEATURES', 'mender-systemd', 'true', 'false', d)}; then
+        DESTDIR='${D}' cmake_runcmake_build --target install-systemd
+    fi
     if ${@bb.utils.contains('PACKAGECONFIG', 'modules', 'true', 'false', d)}; then
         DESTDIR='${D}' cmake_runcmake_build --target install-modules
     fi
