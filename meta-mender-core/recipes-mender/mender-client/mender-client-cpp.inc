@@ -275,6 +275,9 @@ do_install:append() {
 
     install -m 444 ${B}/device_type ${D}${_MENDER_PERSISTENT_DIR}/
 
+    install -d -m 755 ${D}/${sysconfdir}/mender/scripts/
+    echo -n "3" > ${D}/${sysconfdir}/mender/scripts/version
+
     #install our prepared configuration
     install -d ${D}/${sysconfdir}/mender
     if [ -f ${B}/transient_mender.conf ]; then
