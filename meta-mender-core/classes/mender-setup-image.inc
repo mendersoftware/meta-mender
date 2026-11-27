@@ -34,7 +34,8 @@ MENDER_BOOT_PART_MOUNT_LOCATION:mender-grub:mender-bios = "/boot/grub"
 EFI_PREFIX:mender-image = "${MENDER_BOOT_PART_MOUNT_LOCATION}"
 
 # Update fstab for Mender
-ROOTFS_POSTPROCESS_COMMAND += "mender_update_fstab_file"
+ROOTFS_POSTPROCESS_COMMAND += "${@bb.utils.contains('MENDER_FEATURES', 'mender-image', 'mender_update_fstab_file', '', d)}"
+
 mender_update_fstab_file() {
     local tmpBootPart="${MENDER_BOOT_PART}"
     local tmpDataPart="${MENDER_DATA_PART}"
