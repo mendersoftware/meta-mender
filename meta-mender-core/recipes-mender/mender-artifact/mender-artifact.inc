@@ -5,6 +5,7 @@ GO_IMPORT = "github.com/mendersoftware/mender-artifact"
 
 inherit go
 inherit go-ptest
+inherit mender-go-version-check
 inherit pkgconfig
 
 GOPATHDIR = "${B}/src/${GO_IMPORT}"

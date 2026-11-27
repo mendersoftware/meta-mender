@@ -1290,6 +1290,36 @@ deployed-test-dir9/*;renamed-deployed-test-dir9/ \
                 bytes(file, "utf-8") in output
             ), f"{file} seems not to be a part of the {mender_pkg}-dev package, like it should"
 
+    @pytest.mark.cross_platform
+    def test_go_version_check(self, prepared_test_build, bitbake_image):
+        """Test that the go recipes fail with an explicit error when go.mod
+        requires a newer Go than the build has."""
+
+        # mender-snapshot, because mender-licensing would fail first on the fake
+        # source in the other go recipes.
+        with tempfile.TemporaryDirectory() as srcdir:
+            gomod_dir = os.path.join(
+                srcdir, "src", "github.com", "mendersoftware", "mender-snapshot"
+            )
+            os.makedirs(gomod_dir)
+            with open(os.path.join(gomod_dir, "go.mod"), "w") as fd:
+                fd.write(
+                    "module github.com/mendersoftware/mender-snapshot\n\ngo 1.999\n"
+                )
+
+            try:
+                build_image(
+                    prepared_test_build["build_dir"],
+                    prepared_test_build["bitbake_corebase"],
+                    bitbake_image,
+                    [f'EXTERNALSRC:pn-mender-snapshot = "{srcdir}"'],
+                    target="-c compile mender-snapshot",
+                    capture=True,
+                )
+                pytest.fail("Build should fail when go.mod requires a newer Go")
+            except subprocess.CalledProcessError as e:
+                assert "mender-snapshot needs Go >= 1.999" in e.output
+
 
 def versions_of_recipe(recipe_name, recipe_dir=None):
     """Returns a list of all the versions we have of the given recipe, excluding

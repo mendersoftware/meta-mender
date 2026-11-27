@@ -8,6 +8,7 @@ B = "${WORKDIR}/build"
 
 inherit go-mod
 inherit go-ptest
+inherit mender-go-version-check
 
 GO_IMPORT = "github.com/mendersoftware/mender-snapshot"
 

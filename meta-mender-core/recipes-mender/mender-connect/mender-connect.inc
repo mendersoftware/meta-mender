@@ -15,6 +15,7 @@ B = "${WORKDIR}/build"
 
 inherit go-mod
 inherit go-ptest
+inherit mender-go-version-check
 inherit pkgconfig
 inherit systemd
 
